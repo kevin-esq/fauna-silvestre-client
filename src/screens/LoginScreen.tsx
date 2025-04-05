@@ -1,85 +1,257 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  BackHandler,
+  ToastAndroid,
+  Switch,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import useAuth from '../hooks/useAuth';
+import CustomTextInput from '../components/CustomTextInput';
+import CustomButton from '../components/CustomButton';
+import SocialButton from '../components/SocialButton';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const LoginScreen = ({ navigation }) => {
-  const { login } = useAuth();
+  const [backPressedOnce, setBackPressedOnce] = useState(false);
   const [email, setEmail] = useState('');
+  const [savedEmail, setSavedEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
 
+  const { login } = useAuth();
+
+  useEffect(() => {
+    const loadSavedEmail = async () => {
+      const storedEmail = await AsyncStorage.getItem('savedEmail');
+      if (storedEmail) {
+        setSavedEmail(storedEmail);
+        setEmail(storedEmail);
+      }
+    };
+    loadSavedEmail();
+  }, []);
+
+  useEffect(() => {
+    const backAction = () => {
+      if (!backPressedOnce) {
+        ToastAndroid.show('Presiona atrás de nuevo para salir', ToastAndroid.SHORT);
+        setBackPressedOnce(true);
+        setTimeout(() => setBackPressedOnce(false), 2000);
+        return true;
+      }
+      BackHandler.exitApp();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [backPressedOnce]);
+
+  const isValidEmail = (email) => {
+    setEmail(email.trim());
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
   const handleLogin = async () => {
+    const trimmedEmail = email.trim();
+
+    if (!savedEmail && !isValidEmail(trimmedEmail)) {
+      setError('Correo electrónico inválido');
+      return;
+    }
+
     try {
-      await login({ email, password }, rememberMe);
-      navigation.navigate('Home'); // Redirige a la pantalla principal
-    } catch (err) {
-      setError('Error de autenticación');
+      await login({ email: trimmedEmail, password }, rememberMe);
+      if (rememberMe) {
+        await AsyncStorage.setItem('savedEmail', trimmedEmail);
+      } else {
+        await AsyncStorage.removeItem('savedEmail');
+      }
+      navigation.navigate('Home');
+    } catch {
+      setError('Correo o contraseña incorrectos');
     }
   };
 
+  const clearSavedEmail = async () => {
+    await AsyncStorage.removeItem('savedEmail');
+    setSavedEmail('');
+    setEmail('');
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Iniciar Sesión</Text>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        onChangeText={setEmail}
-        value={email}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        secureTextEntry
-        onChangeText={setPassword}
-        value={password}
-      />
-      <View style={styles.checkboxContainer}>
-        <Text>Recordar Sesión</Text>
-        <Button
-          title={rememberMe ? 'Sí' : 'No'}
-          onPress={() => setRememberMe(!rememberMe)}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Image source={require('../assets/favicon.png')} style={styles.logo} />
+
+        <Text style={styles.title}>
+          {savedEmail ? '¡Bienvenido de nuevo! 👋' : '¡Hola! 👋'}
+        </Text>
+        <Text style={styles.subtitle}>
+          {savedEmail
+            ? `Hola de nuevo ${savedEmail}, ingresa tu contraseña`
+            : 'Inicia sesión para continuar'}
+        </Text>
+
+        {error !== '' && (
+          <View style={styles.errorContainer}>
+            <MaterialIcons name="error-outline" size={20} color="#ef4444" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {!savedEmail && (
+          <CustomTextInput
+            type="email"
+            placeholder="Correo electrónico"
+            onChange={setEmail}
+            value={email}
+            style={styles.input}
+          />
+        )}
+
+        <CustomTextInput
+          type="password"
+          placeholder="Contraseña"
+          onChange={setPassword}
+          value={password}
+          style={styles.input}
         />
-      </View>
-      <Button title="Ingresar" onPress={handleLogin} />
-      <Button
-        title="¿Olvidaste tu contraseña?"
-        onPress={() => navigation.navigate('ForgotPassword')}
-      />
-      <Button
-        title="Registrarse"
-        onPress={() => navigation.navigate('Register')}
-      />
-    </View>
+
+        <View style={styles.rememberContainer}>
+          <Text style={styles.rememberText}>Recordar sesión</Text>
+          <Switch
+            value={rememberMe}
+            onValueChange={setRememberMe}
+            trackColor={{ false: '#ccc', true: '#81b0ff' }}
+            thumbColor={rememberMe ? '#007AFF' : '#f4f3f4'}
+          />
+        </View>
+
+        <CustomButton title="Ingresar" onPress={handleLogin} style={styles.button} />
+
+        {savedEmail && (
+          <TouchableOpacity onPress={clearSavedEmail} style={{ alignSelf: 'center', marginTop: 4 }}>
+            <Text style={{ color: '#007AFF', fontSize: 14 }}>¿No eres tú? Cambiar cuenta</Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          onPress={() => navigation.replace('ForgotPassword')}
+          style={styles.forgotPassword}
+        >
+          <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.orText}>O inicia sesión con</Text>
+
+        <View style={styles.socialContainer}>
+          <SocialButton title="Google" onPress={() => {}} type="google" />
+          <SocialButton title="Facebook" onPress={() => {}} type="facebook" />
+        </View>
+
+        <Text style={styles.orText}>¿No tienes cuenta?</Text>
+        <CustomButton
+          title="Registrarse"
+          onPress={() => navigation.replace('Register')}
+          style={styles.button}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center'
+    padding: 24,
+    backgroundColor: '#fff',
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    alignSelf: 'center',
+    marginBottom: 16,
+    resizeMode: 'contain',
   },
   title: {
-    fontSize: 24,
-    marginBottom: 20
+    fontSize: 26,
+    fontWeight: '700',
+    textAlign: 'center',
+    color: '#333',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 15
+    marginBottom: 16,
   },
-  checkboxContainer: {
+  errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15
+    backgroundColor: '#fdecea',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
   },
-  error: {
-    color: 'red',
-    marginBottom: 10
-  }
+  errorText: {
+    color: '#b91c1c',
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  rememberContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    backgroundColor: '#f9f9f9',
+  },
+  rememberText: {
+    fontSize: 16,
+    color: '#444',
+  },
+  button: {
+    marginBottom: 12,
+  },
+  forgotPassword: {
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: '#007AFF',
+  },
+  orText: {
+    textAlign: 'center',
+    fontSize: 15,
+    color: '#777',
+    marginVertical: 12,
+  },
+  socialContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
 });
 
 export default LoginScreen;
