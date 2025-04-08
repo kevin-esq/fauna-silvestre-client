@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,13 @@ import {
   ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialIcons } from '@expo/vector-icons';
+
 import useAuth from '../hooks/useAuth';
 import CustomTextInput from '../components/CustomTextInput';
 import CustomButton from '../components/CustomButton';
 import SocialButton from '../components/SocialButton';
-import { MaterialIcons } from '@expo/vector-icons';
+import { validateLoginFields } from '../utils/loginValidation';
 
 const LoginScreen = ({ navigation }) => {
   const [backPressedOnce, setBackPressedOnce] = useState(false);
@@ -56,22 +58,21 @@ const LoginScreen = ({ navigation }) => {
     return () => backHandler.remove();
   }, [backPressedOnce]);
 
-  const isValidEmail = (email) => {
-    setEmail(email.trim());
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
-
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     const trimmedEmail = email.trim();
+    setEmail(trimmedEmail);
 
-    if (!savedEmail && !isValidEmail(trimmedEmail)) {
-      setError('Correo electrónico inválido');
+    const validationError = validateLoginFields(trimmedEmail, password);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
+    setError('');
+
     try {
       await login({ email: trimmedEmail, password }, rememberMe);
+      
       if (rememberMe) {
         await AsyncStorage.setItem('savedEmail', trimmedEmail);
       } else {
@@ -81,13 +82,13 @@ const LoginScreen = ({ navigation }) => {
     } catch {
       setError('Correo o contraseña incorrectos');
     }
-  };
+  }, [email, password, rememberMe, login, navigation]);
 
-  const clearSavedEmail = async () => {
+  const clearSavedEmail = useCallback(async () => {
     await AsyncStorage.removeItem('savedEmail');
     setSavedEmail('');
     setEmail('');
-  };
+  }, []);
 
   return (
     <KeyboardAvoidingView
@@ -144,15 +145,12 @@ const LoginScreen = ({ navigation }) => {
         <CustomButton title="Ingresar" onPress={handleLogin} style={styles.button} />
 
         {savedEmail && (
-          <TouchableOpacity onPress={clearSavedEmail} style={{ alignSelf: 'center', marginTop: 4 }}>
-            <Text style={{ color: '#007AFF', fontSize: 14 }}>¿No eres tú? Cambiar cuenta</Text>
+          <TouchableOpacity onPress={clearSavedEmail} style={styles.clearEmail}>
+            <Text style={styles.clearEmailText}>¿No eres tú? Cambiar cuenta</Text>
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity
-          onPress={() => navigation.replace('ForgotPassword')}
-          style={styles.forgotPassword}
-        >
+        <TouchableOpacity onPress={() => navigation.replace('ForgotPassword')} style={styles.forgotPassword}>
           <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>
 
@@ -164,11 +162,7 @@ const LoginScreen = ({ navigation }) => {
         </View>
 
         <Text style={styles.orText}>¿No tienes cuenta?</Text>
-        <CustomButton
-          title="Registrarse"
-          onPress={() => navigation.replace('Register')}
-          style={styles.button}
-        />
+        <CustomButton title="Registrarse" onPress={() => navigation.replace('Register')} style={styles.button} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -232,6 +226,14 @@ const styles = StyleSheet.create({
   },
   button: {
     marginBottom: 12,
+  },
+  clearEmail: {
+    alignSelf: 'center',
+    marginTop: 4,
+  },
+  clearEmailText: {
+    color: '#007AFF',
+    fontSize: 14,
   },
   forgotPassword: {
     alignSelf: 'center',

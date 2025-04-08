@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, FC } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,26 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  TextInputProps,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as DocumentPicker from 'expo-document-picker';
 import { MaterialIcons } from '@expo/vector-icons';
 
-export type InputType = 'text' | 'password' | 'email' | 'date' | 'file' | 'select' | 'textarea';
+export type InputType =
+  | 'username'
+  | 'name'
+  | 'lastName'
+  | 'location'
+  | 'text'
+  | 'password'
+  | 'email'
+  | 'date'
+  | 'file'
+  | 'select'
+  | 'textarea'
+  | 'number';
 
 interface Option {
   label: string;
@@ -33,7 +46,26 @@ interface CustomInputProps {
   disabled?: boolean;
 }
 
-const CustomInput: React.FC<CustomInputProps> = ({
+const getAutoCompleteType = (type: InputType): TextInputProps['autoComplete'] => {
+  switch (type) {
+    case 'username':
+      return 'username';
+    case 'password':
+      return 'password';
+    case 'email':
+      return 'email';
+    case 'name':
+      return 'name';
+    case 'lastName':
+      return 'name-family';
+    case 'location':
+      return 'address-line1';
+    default:
+      return 'off';
+  }
+};
+
+const CustomInput: FC<CustomInputProps> = ({
   label,
   type,
   value = '',
@@ -52,15 +84,18 @@ const CustomInput: React.FC<CustomInputProps> = ({
   const [selectedFile, setSelectedFile] = useState<string | null>(value || null);
   const [showPassword, setShowPassword] = useState(false);
 
+  const borderColor = error ? '#ef4444' : isFocused ? '#3b82f6' : '#ccc';
+  const borderWidth = isFocused || error ? 2 : 1;
+
   const handleFocus = () => setIsFocused(true);
   const handleBlur = () => setIsFocused(false);
 
   const handleDateChange = useCallback(
-    (event: any, selectedDate?: Date) => {
+    (_: any, selectedDate?: Date) => {
       setShowDatePicker(false);
       if (selectedDate) {
         setDate(selectedDate);
-        onChange && onChange(selectedDate.toISOString());
+        onChange?.(selectedDate.toISOString());
       }
     },
     [onChange]
@@ -69,28 +104,32 @@ const CustomInput: React.FC<CustomInputProps> = ({
   const handleFilePick = useCallback(async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({});
-      if ('name' in result && result.name && typeof result.name === 'string') {
+      if ('name' in result && typeof result.name === 'string') {
         setSelectedFile(result.name);
-        onChange && onChange(result.name);
+        onChange?.(result.name);
       }
-    } catch (error) {
-      console.error('Error al seleccionar el archivo:', error);
+    } catch (err) {
+      console.error('Error al seleccionar archivo:', err);
     }
   }, [onChange]);
 
-  const borderColor = error ? '#ef4444' : isFocused ? '#3b82f6' : '#ccc';
-  const borderWidth = isFocused || error ? 2 : 1;
-
-  const renderInput = () => {
-    const commonInputProps = {
-      placeholder,
-      value,
-      onFocus: handleFocus,
-      onBlur: handleBlur,
-      onChangeText: onChange,
-      editable: !disabled,
-      autoFocus,
-      style: [
+  const renderTextInput = (
+    keyboardType: 'default' | 'email-address' | 'numeric' = 'default',
+    secureTextEntry = false
+  ) => (
+    <TextInput
+      placeholder={placeholder}
+      value={value}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      onChangeText={onChange}
+      editable={!disabled}
+      autoFocus={autoFocus}
+      multiline={type === 'textarea'}
+      keyboardType={keyboardType}
+      secureTextEntry={secureTextEntry}
+      autoComplete={getAutoCompleteType(type)}
+      style={[
         styles.input,
         type === 'textarea' && styles.textarea,
         {
@@ -98,9 +137,11 @@ const CustomInput: React.FC<CustomInputProps> = ({
           borderWidth,
           backgroundColor: disabled ? '#f5f5f5' : '#fff',
         },
-      ],
-    };
+      ]}
+    />
+  );
 
+  const renderInputByType = () => {
     switch (type) {
       case 'date':
         return (
@@ -130,6 +171,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
             )}
           </>
         );
+
       case 'select':
         return (
           <View
@@ -140,7 +182,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
           >
             <Picker
               selectedValue={value}
-              onValueChange={(itemValue) => onChange && onChange(itemValue)}
+              onValueChange={(val) => onChange?.(val)}
               style={styles.picker}
               enabled={!disabled}
             >
@@ -150,6 +192,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
             </Picker>
           </View>
         );
+
       case 'file':
         return (
           <TouchableOpacity
@@ -168,6 +211,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
             </View>
           </TouchableOpacity>
         );
+
       case 'password':
         return (
           <View
@@ -185,6 +229,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
               secureTextEntry={!showPassword}
               editable={!disabled}
               autoFocus={autoFocus}
+              autoComplete={getAutoCompleteType(type)}
               style={[styles.passwordInput, { flex: 1 }]}
             />
             <TouchableOpacity
@@ -200,15 +245,22 @@ const CustomInput: React.FC<CustomInputProps> = ({
             </TouchableOpacity>
           </View>
         );
+
+      case 'email':
+        return renderTextInput('email-address');
+
+      case 'number':
+        return renderTextInput('numeric');
+
       default:
-        return <TextInput {...commonInputProps} multiline={type === 'textarea'} />;
+        return renderTextInput();
     }
   };
 
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      {renderInput()}
+      {renderInputByType()}
       {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
     </View>
   );

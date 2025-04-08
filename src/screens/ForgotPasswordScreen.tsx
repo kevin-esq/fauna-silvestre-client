@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,49 +9,49 @@ import {
   Platform,
   ScrollView
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import useAuth from '../hooks/useAuth';
 import CustomTextInput from '../components/CustomTextInput';
 import CustomButton from '../components/CustomButton';
-import { MaterialIcons } from '@expo/vector-icons';
 
 const ForgotPasswordScreen = ({ navigation }) => {
-  const [backPressedOnce, setBackPressedOnce] = useState(false);
-
   const { forgot } = useAuth();
+
+  const [backPressedOnce, setBackPressedOnce] = useState(false);
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const backAction = () => {
-      if (!backPressedOnce) {
-        ToastAndroid.show("Presiona atrás de nuevo para regresar", ToastAndroid.SHORT);
-        setBackPressedOnce(true);
-        setTimeout(() => setBackPressedOnce(false), 2000);
-        return true;
-      }
-      navigation.replace("Login");
+  const handleBackAction = useCallback(() => {
+    if (!backPressedOnce) {
+      ToastAndroid.show('Presiona atrás de nuevo para regresar', ToastAndroid.SHORT);
+      setBackPressedOnce(true);
+      setTimeout(() => setBackPressedOnce(false), 2000);
       return true;
-    };
+    }
+    navigation.replace('Login');
+    return true;
+  }, [backPressedOnce, navigation]);
 
-    const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackAction);
     return () => backHandler.remove();
-  }, [backPressedOnce]);
+  }, [handleBackAction]);
 
-  const handleForgotPassword = async () => {
+  const handleForgotPassword = useCallback(async () => {
     try {
       await forgot(email);
       setMessage('✅ Se ha enviado un correo de recuperación');
       setError('');
-    } catch (err) {
+    } catch {
       setError('❌ Error al enviar el correo');
       setMessage('');
     }
-  };
+  }, [email, forgot]);
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={styles.flexContainer}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
@@ -97,6 +97,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  flexContainer: { flex: 1 },
   container: {
     padding: 24,
     backgroundColor: '#fff',
