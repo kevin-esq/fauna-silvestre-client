@@ -1,128 +1,119 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  BackHandler,
-  ToastAndroid,
   Switch,
   Image,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
   ScrollView,
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { MaterialIcons } from '@expo/vector-icons';
-
-import useAuth from '../hooks/useAuth';
-import CustomTextInput from '../components/CustomTextInput';
-import CustomButton from '../components/CustomButton';
-import SocialButton from '../components/SocialButton';
-import { validateLoginFields } from '../utils/loginValidation';
+  Animated,
+  Alert
+} from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
+import CustomTextInput from "../components/CustomTextInput";
+import CustomButton from "../components/CustomButton";
+import SocialButton from "../components/SocialButton";
+import { validateLoginFields } from "../utils/loginValidation";
+import { Credentials } from "../data/models/AuthModels";
+import { NavigateReset } from "../utils/navigation";
+import { useAuthContext } from "../contexts/AuthContext";
+import useDoubleBackExit from "../hooks/useDoubleBackExit";
+import useAuth from "../hooks/useAuth";
 
 const LoginScreen = ({ navigation }) => {
-  const [backPressedOnce, setBackPressedOnce] = useState(false);
-  const [email, setEmail] = useState('');
-  const [savedEmail, setSavedEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const errorOpacity = useRef(new Animated.Value(0)).current;
 
+  const { setAuthToken } = useAuthContext();
   const { login } = useAuth();
+  useDoubleBackExit();
 
   useEffect(() => {
-    const loadSavedEmail = async () => {
-      const storedEmail = await AsyncStorage.getItem('savedEmail');
-      if (storedEmail) {
-        setSavedEmail(storedEmail);
-        setEmail(storedEmail);
-      }
-    };
-    loadSavedEmail();
-  }, []);
+    if (error) {
+      Animated.timing(errorOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(errorOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [error]);
 
   useEffect(() => {
-    const backAction = () => {
-      if (!backPressedOnce) {
-        ToastAndroid.show('Presiona atrás de nuevo para salir', ToastAndroid.SHORT);
-        setBackPressedOnce(true);
-        setTimeout(() => setBackPressedOnce(false), 2000);
-        return true;
-      }
-      BackHandler.exitApp();
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
-    return () => backHandler.remove();
-  }, [backPressedOnce]);
+    if (error) {
+      setError("");
+    }
+  }, [username, password]);
 
   const handleLogin = useCallback(async () => {
-    const trimmedEmail = email.trim();
-    setEmail(trimmedEmail);
+    const trimmedUsername = username.trim();
+    setUsername(trimmedUsername);
 
-    const validationError = validateLoginFields(trimmedEmail, password);
-    if (validationError) {
+   // const validationError = validateLoginFields(trimmedUsername, password);
+    /*if (validationError) {
       setError(validationError);
       return;
-    }
+    }*/
 
-    setError('');
+    setError("");
+
+    const credentials: Credentials = {
+      UserName: trimmedUsername,
+      Password: password,
+    };
 
     try {
-      await login({ email: trimmedEmail, password }, rememberMe);
-      
-      if (rememberMe) {
-        await AsyncStorage.setItem('savedEmail', trimmedEmail);
-      } else {
-        await AsyncStorage.removeItem('savedEmail');
-      }
-      navigation.navigate('Home');
-    } catch {
-      setError('Correo o contraseña incorrectos');
+      // Supongamos que login devuelve un token
+      const token = await login(credentials, rememberMe);
+      setAuthToken(token);
+     // NavigateReset("Home");
+    } catch (localError) {
+      setError("Nombre de usuario o contraseña incorrectos");
+      console.log("error", localError);
     }
-  }, [email, password, rememberMe, login, navigation]);
-
-  const clearSavedEmail = useCallback(async () => {
-    await AsyncStorage.removeItem('savedEmail');
-    setSavedEmail('');
-    setEmail('');
-  }, []);
+  }, [username, password, rememberMe, login, setAuthToken, navigation]);
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Image source={require('../assets/favicon.png')} style={styles.logo} />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Image source={require("../assets/favicon.png")} style={styles.logo} />
 
-        <Text style={styles.title}>
-          {savedEmail ? '¡Bienvenido de nuevo! 👋' : '¡Hola! 👋'}
-        </Text>
-        <Text style={styles.subtitle}>
-          {savedEmail
-            ? `Hola de nuevo ${savedEmail}, ingresa tu contraseña`
-            : 'Inicia sesión para continuar'}
-        </Text>
+        <Text style={styles.title}>¡Hola! 👋</Text>
+        <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
 
-        {error !== '' && (
-          <View style={styles.errorContainer}>
+        {error ? (
+          <Animated.View style={[styles.errorContainer, { opacity: errorOpacity }]}>
             <MaterialIcons name="error-outline" size={20} color="#ef4444" />
             <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
+          </Animated.View>
+        ) : null}
 
-        {!savedEmail && (
-          <CustomTextInput
-            type="email"
-            placeholder="Correo electrónico"
-            onChange={setEmail}
-            value={email}
-            style={styles.input}
-          />
-        )}
+        <CustomTextInput
+          type="text"
+          placeholder="Nombre de usuario"
+          onChange={setUsername}
+          value={username}
+          autoFocus
+          style={[styles.input, error ? { borderColor: "#ef4444" } : {}]}
+          icon={<MaterialIcons name="person" size={20} color="#888" />}
+        />
 
         <CustomTextInput
           type="password"
@@ -130,6 +121,7 @@ const LoginScreen = ({ navigation }) => {
           onChange={setPassword}
           value={password}
           style={styles.input}
+          icon={<MaterialIcons name="key" size={20} color="#888" />}
         />
 
         <View style={styles.rememberContainer}>
@@ -137,32 +129,31 @@ const LoginScreen = ({ navigation }) => {
           <Switch
             value={rememberMe}
             onValueChange={setRememberMe}
-            trackColor={{ false: '#ccc', true: '#81b0ff' }}
-            thumbColor={rememberMe ? '#007AFF' : '#f4f3f4'}
+            trackColor={{ false: "#ccc", true: "#81b0ff" }}
+            thumbColor={rememberMe ? "#007AFF" : "#f4f3f4"}
           />
         </View>
 
-        <CustomButton title="Ingresar" onPress={handleLogin} style={styles.button} />
+        <CustomButton
+          title="Ingresar"
+          onPress={handleLogin}
+          style={styles.button}
+          disabled={!username || !password}
+        />
 
-        {savedEmail && (
-          <TouchableOpacity onPress={clearSavedEmail} style={styles.clearEmail}>
-            <Text style={styles.clearEmailText}>¿No eres tú? Cambiar cuenta</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity onPress={() => navigation.replace('ForgotPassword')} style={styles.forgotPassword}>
+        <TouchableOpacity
+          onPress={() => NavigateReset("ForgotPassword")}
+          style={styles.forgotPassword}
+        >
           <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>
 
-        <Text style={styles.orText}>O inicia sesión con</Text>
-
-        <View style={styles.socialContainer}>
-          <SocialButton title="Google" onPress={() => {}} type="google" />
-          <SocialButton title="Facebook" onPress={() => {}} type="facebook" />
-        </View>
-
         <Text style={styles.orText}>¿No tienes cuenta?</Text>
-        <CustomButton title="Registrarse" onPress={() => navigation.replace('Register')} style={styles.button} />
+        <CustomButton
+          title="Registrarse"
+          onPress={() => NavigateReset("Register")}
+          style={styles.button}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -171,88 +162,75 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     padding: 24,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   logo: {
     width: 100,
     height: 100,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 16,
-    resizeMode: 'contain',
+    resizeMode: "contain",
   },
   title: {
     fontSize: 26,
-    fontWeight: '700',
-    textAlign: 'center',
-    color: '#333',
+    fontWeight: "700",
+    textAlign: "center",
+    color: "#333",
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
     marginBottom: 24,
   },
   input: {
     marginBottom: 16,
   },
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fdecea',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fdecea",
     padding: 10,
     borderRadius: 8,
     marginBottom: 12,
   },
   errorText: {
-    color: '#b91c1c',
+    color: "#b91c1c",
     marginLeft: 8,
     fontSize: 14,
   },
   rememberContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 20,
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 10,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: "#f9f9f9",
   },
   rememberText: {
     fontSize: 16,
-    color: '#444',
+    color: "#444",
   },
   button: {
     marginBottom: 12,
   },
-  clearEmail: {
-    alignSelf: 'center',
-    marginTop: 4,
-  },
-  clearEmailText: {
-    color: '#007AFF',
-    fontSize: 14,
-  },
   forgotPassword: {
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 16,
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: "#007AFF",
   },
   orText: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 15,
-    color: '#777',
+    color: "#777",
     marginVertical: 12,
-  },
-  socialContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
   },
 });
 

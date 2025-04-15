@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useCallback } from 'react';
+import React, { useReducer, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,40 +7,39 @@ import {
   ToastAndroid,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
-} from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+  ScrollView,
+} from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 
-import useAuth from '../hooks/useAuth';
-import CustomTextInput from '../components/CustomTextInput';
-import CustomButton from '../components/CustomButton';
+import useAuth from "../hooks/useAuth";
+import CustomTextInput from "../components/CustomTextInput";
+import CustomButton from "../components/CustomButton";
 
-import { genderOptions, locationOptions } from '../constants/registerOptions';
-import { validateRegisterFields } from '../utils/validation';
-import { sanitizeRegisterFields } from '../utils/sanitize';
-import { RegisterState } from '../types/RegisterState';
-import { RegisterAction } from '../types/RegisterAction';
+import { genderOptions, locationOptions } from "../constants/registerOptions";
+import { validateRegisterFields } from "../utils/validation";
+import { sanitizeRegisterFields } from "../utils/sanitize";
+import { RegisterState } from "../types/RegisterState";
+import { RegisterAction } from "../types/RegisterAction";
+import { UserData } from "../data/models/AuthModels";
+import { NavigateReset } from "../utils/navigation";
 
 const initialState: RegisterState = {
-  username: '',
-  name: '',
-  lastName: '',
-  location: '',
-  alternativeLocation: '',
-  gender: '',
-  otherGender: '',
-  age: '',
-  email: '',
-  password: '',
-  confirmPassword: '',
-  error: '',
+  username: "",
+  name: "",
+  lastName: "",
+  location: "",
+  alternativeLocation: "",
+  gender: "",
+  otherGender: "",
+  age: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  error: "",
   backPressedOnce: false,
 };
 
-function reducer(
-  state: RegisterState,
-  action: RegisterAction
-): RegisterState {
+function reducer(state: RegisterState, action: RegisterAction): RegisterState {
   return { ...state, ...action };
 }
 
@@ -54,29 +53,32 @@ const RegisterScreen = ({ navigation }) => {
 
   const handleBackPress = useCallback(() => {
     if (!state.backPressedOnce) {
-      showToast('Presiona atrás de nuevo para regresar');
+      showToast("Presiona atrás de nuevo para regresar");
       dispatch({ backPressedOnce: true });
       setTimeout(() => dispatch({ backPressedOnce: false }), 2000);
       return true;
     }
-    navigation.replace('Login');
+    NavigateReset("Login");
     return true;
   }, [state.backPressedOnce, navigation, showToast]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
+      "hardwareBackPress",
       handleBackPress
     );
     return () => backHandler.remove();
   }, [handleBackPress]);
 
-  const onChange = useCallback((key: string) => (value: string) => {
-    dispatch({ [key]: value });
-  }, []);
+  const onChange = useCallback(
+    (key: string) => (value: string) => {
+      dispatch({ [key]: value });
+    },
+    []
+  );
 
   const handleRegister = useCallback(async () => {
-    dispatch({ error: '' });
+    dispatch({ error: "" });
 
     const sanitizedState = sanitizeRegisterFields(state);
     dispatch(sanitizedState);
@@ -96,27 +98,27 @@ const RegisterScreen = ({ navigation }) => {
       gender,
       age,
       email,
-      password
+      password,
     } = sanitizedState;
 
     const newUser = {
-      Username: username,
-      Name: name,
-      LastName: lastName,
-      Location: location,
-      AlternativeLocation: alternativeLocation,
-      Gender: gender,
-      Age: parseInt(age, 10),
-      Email: email,
-      Password: password,
-      UserType: 'User',
-    };
+      userName: username,
+      name: name,
+      lastName: lastName,
+      locality: location,
+      gender: 1,
+      age: Number(age),
+      email : email,
+      password: password,
+    } as UserData;
 
     try {
+      console.log(newUser);
       await register(newUser);
-      navigation.navigate('Home');
-    } catch {
-      dispatch({ error: 'Error al registrarse' });
+      NavigateReset("Login");
+    } catch (error) {
+      dispatch({ error: "Error al registrarse" });
+      console.log("Error al registrarse:", error);
     }
   }, [state, register, navigation]);
 
@@ -131,13 +133,13 @@ const RegisterScreen = ({ navigation }) => {
     email,
     password,
     confirmPassword,
-    error
+    error,
   } = state;
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
         contentContainerStyle={styles.container}
@@ -146,7 +148,7 @@ const RegisterScreen = ({ navigation }) => {
         <Text style={styles.title}>Crear una cuenta 📝</Text>
         <Text style={styles.subtitle}>Rellena los campos para registrarte</Text>
 
-        {error !== '' && (
+        {error !== "" && (
           <View style={styles.errorContainer}>
             <MaterialIcons name="error-outline" size={20} color="#ef4444" />
             <Text style={styles.errorText}>{error}</Text>
@@ -157,65 +159,84 @@ const RegisterScreen = ({ navigation }) => {
           type="username"
           placeholder="Nombre de usuario"
           value={username}
-          onChange={onChange('username')}
+          onChange={onChange("username")}
+          icon={<MaterialIcons name="person-outline" size={20} color="#888" />}
         />
+
         <CustomTextInput
           type="name"
           placeholder="Nombre"
           value={name}
-          onChange={onChange('name')}
+          onChange={onChange("name")}
+          icon={<MaterialIcons name="badge" size={20} color="#888" />}
         />
+
         <CustomTextInput
           type="lastName"
           placeholder="Apellidos"
           value={lastName}
-          onChange={onChange('lastName')}
+          onChange={onChange("lastName")}
+          icon={<MaterialIcons name="person" size={20} color="#888" />}
         />
+
         <CustomTextInput
           type="select"
           placeholder="Localidad"
           value={location}
-          onChange={onChange('location')}
+          onChange={onChange("location")}
           options={locationOptions}
+          icon={<MaterialIcons name="location-on" size={20} color="#888" />}
         />
-        {location === 'other' && (
+
+        {location === "other" && (
           <CustomTextInput
             type="text"
             placeholder="Ubicación alternativa"
             value={alternativeLocation}
-            onChange={onChange('alternativeLocation')}
+            onChange={onChange("alternativeLocation")}
+            icon={<MaterialIcons name="edit-location" size={20} color="#888" />}
           />
         )}
+
         <CustomTextInput
           type="select"
           placeholder="Género"
           value={gender}
-          onChange={onChange('gender')}
+          onChange={onChange("gender")}
           options={genderOptions}
+          icon={<MaterialIcons name="wc" size={20} color="#888" />}
         />
+
         <CustomTextInput
           type="number"
           placeholder="Edad (18-65)"
           value={age}
-          onChange={onChange('age')}
+          onChange={onChange("age")}
+          icon={<MaterialIcons name="calendar-today" size={20} color="#888" />}
         />
+
         <CustomTextInput
           type="email"
           placeholder="Correo electrónico"
           value={email}
-          onChange={onChange('email')}
+          onChange={onChange("email")}
+          icon={<MaterialIcons name="email" size={20} color="#888" />}
         />
+
         <CustomTextInput
           type="password"
           placeholder="Contraseña"
           value={password}
-          onChange={onChange('password')}
+          onChange={onChange("password")}
+          icon={<MaterialIcons name="lock-outline" size={20} color="#888" />}
         />
+
         <CustomTextInput
           type="password"
           placeholder="Confirmar contraseña"
           value={confirmPassword}
-          onChange={onChange('confirmPassword')}
+          onChange={onChange("confirmPassword")}
+          icon={<MaterialIcons name="lock-reset" size={20} color="#888" />}
         />
 
         <CustomButton
@@ -227,7 +248,7 @@ const RegisterScreen = ({ navigation }) => {
         <Text style={styles.orText}>¿Ya tienes una cuenta?</Text>
         <CustomButton
           title="Inicia Sesión"
-          onPress={() => navigation.replace('Login')}
+          onPress={() => NavigateReset("Login")}
           style={styles.secondaryButton}
         />
       </ScrollView>
@@ -237,34 +258,35 @@ const RegisterScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: {
+    top: 15,
     padding: 24,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
-    textAlign: 'center',
-    color: '#333',
-    marginBottom: 6,
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#222",
+    textAlign: "center",
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 15,
-    color: '#666',
-    textAlign: 'center',
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
     marginBottom: 24,
   },
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fdecea',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fdecea",
     padding: 10,
     borderRadius: 8,
     marginBottom: 16,
   },
   errorText: {
-    color: '#b91c1c',
+    color: "#b91c1c",
     marginLeft: 8,
     fontSize: 14,
   },
@@ -272,14 +294,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   orText: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 15,
-    color: '#777',
+    color: "#777",
     marginTop: 16,
     marginBottom: 8,
   },
   secondaryButton: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: "#e0e0e0",
   },
 });
 

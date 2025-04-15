@@ -6,7 +6,7 @@ export const validateRegisterFields = (fields: RegisterFields): string | null =>
     gender, age, email, password, confirmPassword
   } = fields;
 
-  const usernameRegex = /^[a-zA-Z0-9_]{1,20}$/;
+  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
   if (!usernameRegex.test(username)) return 'El nombre de usuario debe ser alfanumérico y menor a 20 caracteres';
 
   const nameRegex = /^[a-zA-ZÀ-ÿ\s]{1,20}$/;
@@ -25,8 +25,8 @@ export const validateRegisterFields = (fields: RegisterFields): string | null =>
   if (!emailRegex.test(email)) return 'Correo electrónico inválido';
   if (email.length > 50) return 'El correo debe tener menos de 50 caracteres';
 
-  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{1,10}$/;
-  if (!passwordRegex.test(password)) return 'Contraseña inválida: máx 10 caracteres, debe incluir letras y números';
+  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{8,}$/;
+  if (!passwordRegex.test(password)) return 'Contraseña inválida: minimo 8 caracteres, debe incluir letras y números';
 
   if (password !== confirmPassword) return 'Las contraseñas no coinciden';
 

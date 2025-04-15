@@ -1,13 +1,19 @@
 export default class User {
-    public id: string;
-    public name: string;
-    public email: string;
-    public token: string;
-  
-    constructor(id: string, name: string, email: string, token: string) {
-      this.id = id;
-      this.name = name;
-      this.email = email;
-      this.token = token;
-    }
+  userName: string
+  name: string
+  lastName: string
+  locality: string
+  gender: string
+  age: number
+  email: string
+
+  constructor(userName: string, name: string, lastName: string, locality: string, gender: string, age: number, email: string) {
+    this.userName = userName;
+    this.name = name;
+    this.lastName = lastName;
+    this.locality = locality;
+    this.gender = gender;
+    this.age = age;
+    this.email = email;
+  }
   }

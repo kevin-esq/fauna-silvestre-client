@@ -1,19 +1,23 @@
-export const validateLoginFields = (email: string, password: string): string | null => {
-    const trimmedEmail = email.trim();
-    
-    if (!trimmedEmail) {
-      return 'El correo electrónico es obligatorio';
-    }
+export const validateLoginFields = (username: string, password: string): string | null => {
+  const trimmedUsername = username.trim();
+  if (!trimmedUsername) {
+    return "El nombre de usuario es obligatorio";
+  }
   
-    const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      return 'Correo electrónico inválido';
-    }
+  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+  if (!usernameRegex.test(trimmedUsername)) {
+    return "El nombre de usuario incorrecto";
+  }
   
-    if (!password) {
-      return 'La contraseña es obligatoria';
-    }
+  if (!password) {
+    return "La contraseña es obligatoria";
+  }
   
-    return null;
-  };
+  // La contraseña debe tener al menos 8 caracteres, 1 letra y 1 dígito.
+  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{8,}$/;
+  if (!passwordRegex.test(password)) {
+    return "Contraeña Incorrecta";
+  }
   
+  return null;
+};

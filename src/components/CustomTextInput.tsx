@@ -1,4 +1,4 @@
-import React, { useState, useCallback, FC } from 'react';
+import React, { useState, useCallback, FC } from "react";
 import {
   View,
   Text,
@@ -7,25 +7,25 @@ import {
   StyleSheet,
   Platform,
   TextInputProps,
-} from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as DocumentPicker from 'expo-document-picker';
-import { MaterialIcons } from '@expo/vector-icons';
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import * as DocumentPicker from "expo-document-picker";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export type InputType =
-  | 'username'
-  | 'name'
-  | 'lastName'
-  | 'location'
-  | 'text'
-  | 'password'
-  | 'email'
-  | 'date'
-  | 'file'
-  | 'select'
-  | 'textarea'
-  | 'number';
+  | "username"
+  | "name"
+  | "lastName"
+  | "location"
+  | "text"
+  | "password"
+  | "email"
+  | "date"
+  | "file"
+  | "select"
+  | "textarea"
+  | "number";
 
 interface Option {
   label: string;
@@ -44,31 +44,34 @@ interface CustomInputProps {
   errorMessage?: string;
   autoFocus?: boolean;
   disabled?: boolean;
+  icon?: React.ReactNode;
 }
 
-const getAutoCompleteType = (type: InputType): TextInputProps['autoComplete'] => {
+const getAutoCompleteType = (
+  type: InputType
+): TextInputProps["autoComplete"] => {
   switch (type) {
-    case 'username':
-      return 'username';
-    case 'password':
-      return 'password';
-    case 'email':
-      return 'email';
-    case 'name':
-      return 'name';
-    case 'lastName':
-      return 'name-family';
-    case 'location':
-      return 'address-line1';
+    case "username":
+      return "username";
+    case "password":
+      return "password";
+    case "email":
+      return "email";
+    case "name":
+      return "name";
+    case "lastName":
+      return "name-family";
+    case "location":
+      return "address-line1";
     default:
-      return 'off';
+      return "off";
   }
 };
 
 const CustomInput: FC<CustomInputProps> = ({
   label,
   type,
-  value = '',
+  value = "",
   placeholder,
   onChange,
   options,
@@ -77,14 +80,17 @@ const CustomInput: FC<CustomInputProps> = ({
   errorMessage,
   autoFocus = false,
   disabled = false,
+  icon,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [date, setDate] = useState(new Date());
-  const [selectedFile, setSelectedFile] = useState<string | null>(value || null);
+  const [selectedFile, setSelectedFile] = useState<string | null>(
+    value || null
+  );
   const [showPassword, setShowPassword] = useState(false);
 
-  const borderColor = error ? '#ef4444' : isFocused ? '#3b82f6' : '#ccc';
+  const borderColor = error ? "#ef4444" : isFocused ? "#3b82f6" : "#ccc";
   const borderWidth = isFocused || error ? 2 : 1;
 
   const handleFocus = () => setIsFocused(true);
@@ -104,80 +110,103 @@ const CustomInput: FC<CustomInputProps> = ({
   const handleFilePick = useCallback(async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({});
-      if ('name' in result && typeof result.name === 'string') {
+      if ("name" in result && typeof result.name === "string") {
         setSelectedFile(result.name);
         onChange?.(result.name);
       }
     } catch (err) {
-      console.error('Error al seleccionar archivo:', err);
+      console.error("Error al seleccionar archivo:", err);
     }
   }, [onChange]);
 
   const renderTextInput = (
-    keyboardType: 'default' | 'email-address' | 'numeric' = 'default',
+    keyboardType: "default" | "email-address" | "numeric" = "default",
     secureTextEntry = false
   ) => (
-    <TextInput
-      placeholder={placeholder}
-      value={value}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      onChangeText={onChange}
-      editable={!disabled}
-      autoFocus={autoFocus}
-      multiline={type === 'textarea'}
-      keyboardType={keyboardType}
-      secureTextEntry={secureTextEntry}
-      autoComplete={getAutoCompleteType(type)}
+    <View
       style={[
-        styles.input,
-        type === 'textarea' && styles.textarea,
+        styles.inputWrapper,
         {
           borderColor,
           borderWidth,
-          backgroundColor: disabled ? '#f5f5f5' : '#fff',
+          backgroundColor: disabled ? "#f5f5f5" : "#fff",
         },
       ]}
-    />
+    >
+      {icon && <View style={styles.iconContainer}>{icon}</View>}
+      <TextInput
+        placeholder={placeholder}
+        value={value}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onChangeText={onChange}
+        editable={!disabled}
+        autoFocus={autoFocus}
+        autoCapitalize="none"
+        multiline={type === "textarea"}
+        keyboardType={keyboardType}
+        secureTextEntry={secureTextEntry}
+        autoComplete={getAutoCompleteType(type)}
+        style={[styles.input, type === "textarea" && styles.textarea]}
+      />
+    </View>
   );
 
   const renderInputByType = () => {
     switch (type) {
-      case 'date':
+      case "date":
         return (
           <>
             <TouchableOpacity
               onPress={() => setShowDatePicker(true)}
               style={[
                 styles.inputContainer,
-                { borderColor, borderWidth, backgroundColor: disabled ? '#f5f5f5' : '#fff' },
+                {
+                  borderColor,
+                  borderWidth,
+                  backgroundColor: disabled ? "#f5f5f5" : "#fff",
+                },
               ]}
               disabled={disabled}
             >
               <View style={styles.row}>
-                <Text style={[styles.inputText, { color: value ? '#000' : '#888' }]}>
-                  {value ? new Date(value).toLocaleDateString() : placeholder || 'Selecciona fecha'}
+                <Text
+                  style={[styles.inputText, { color: value ? "#000" : "#888" }]}
+                >
+                  {value
+                    ? new Date(value).toLocaleDateString()
+                    : placeholder || "Selecciona fecha"}
                 </Text>
-                {value && <MaterialIcons name="check-circle" size={20} color="#4caf50" />}
+                {value && (
+                  <MaterialIcons
+                    name="check-circle"
+                    size={20}
+                    color="#4caf50"
+                  />
+                )}
               </View>
             </TouchableOpacity>
             {showDatePicker && (
               <DateTimePicker
                 value={date}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={handleDateChange}
               />
             )}
           </>
         );
 
-      case 'select':
+      case "select":
         return (
           <View
             style={[
               styles.pickerContainer,
-              { borderColor, borderWidth, backgroundColor: disabled ? '#f5f5f5' : '#fff' },
+              {
+                borderColor,
+                borderWidth,
+                backgroundColor: disabled ? "#f5f5f5" : "#fff",
+              },
             ]}
           >
             <Picker
@@ -187,39 +216,59 @@ const CustomInput: FC<CustomInputProps> = ({
               enabled={!disabled}
             >
               {options?.map((opt) => (
-                <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+                <Picker.Item
+                  key={opt.value}
+                  label={opt.label}
+                  value={opt.value}
+                />
               ))}
             </Picker>
           </View>
         );
 
-      case 'file':
+      case "file":
         return (
           <TouchableOpacity
             onPress={handleFilePick}
             style={[
               styles.inputContainer,
-              { borderColor, borderWidth, backgroundColor: disabled ? '#f5f5f5' : '#fff' },
+              {
+                borderColor,
+                borderWidth,
+                backgroundColor: disabled ? "#f5f5f5" : "#fff",
+              },
             ]}
             disabled={disabled}
           >
             <View style={styles.row}>
-              <Text style={[styles.inputText, { color: selectedFile ? '#000' : '#888' }]}>
-                {selectedFile || placeholder || 'Selecciona archivo'}
+              <Text
+                style={[
+                  styles.inputText,
+                  { color: selectedFile ? "#000" : "#888" },
+                ]}
+              >
+                {selectedFile || placeholder || "Selecciona archivo"}
               </Text>
-              {selectedFile && <MaterialIcons name="check-circle" size={20} color="#4caf50" />}
+              {selectedFile && (
+                <MaterialIcons name="check-circle" size={20} color="#4caf50" />
+              )}
             </View>
           </TouchableOpacity>
         );
 
-      case 'password':
+      case "password":
         return (
           <View
             style={[
-              styles.passwordContainer,
-              { borderColor, borderWidth, backgroundColor: disabled ? '#f5f5f5' : '#fff' },
+              styles.inputWrapper,
+              {
+                borderColor,
+                borderWidth,
+                backgroundColor: disabled ? "#f5f5f5" : "#fff",
+              },
             ]}
           >
+            {icon && <View style={styles.iconContainer}>{icon}</View>}
             <TextInput
               placeholder={placeholder}
               value={value}
@@ -238,7 +287,7 @@ const CustomInput: FC<CustomInputProps> = ({
               disabled={disabled}
             >
               <MaterialIcons
-                name={showPassword ? 'visibility' : 'visibility-off'}
+                name={showPassword ? "visibility" : "visibility-off"}
                 size={24}
                 color="#888"
               />
@@ -246,11 +295,11 @@ const CustomInput: FC<CustomInputProps> = ({
           </View>
         );
 
-      case 'email':
-        return renderTextInput('email-address');
+      case "email":
+        return renderTextInput("email-address");
 
-      case 'number':
-        return renderTextInput('numeric');
+      case "number":
+        return renderTextInput("numeric");
 
       default:
         return renderTextInput();
@@ -267,7 +316,7 @@ const CustomInput: FC<CustomInputProps> = ({
 };
 
 const commonShadow = {
-  shadowColor: '#000',
+  shadowColor: "#000",
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.06,
   shadowRadius: 6,
@@ -279,70 +328,80 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   label: {
-    marginBottom: 4,
-    fontSize: 14,
-    color: '#555',
-    fontWeight: '500',
+    marginBottom: 6,
+    fontSize: 15,
+    color: "#333",
+    fontWeight: "600",
   },
-  inputContainer: {
-    height: 50,
-    borderRadius: 12,
-    justifyContent: 'center',
-    paddingHorizontal: 15,
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 52,
+    backgroundColor: "#fff",
+    borderColor: "#ccc",
+    borderWidth: 1,
     ...commonShadow,
   },
-  inputText: {
+  inputContainer: {
+    borderRadius: 14,
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    height: 52,
+    backgroundColor: "#fff",
+    ...commonShadow,
+  },
+  pickerContainer: {
+    borderRadius: 14,
+    overflow: "hidden",
+    height: 52,
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    backgroundColor: "#fff",
+    ...commonShadow,
+  },
+  picker: {
+    height: 52,
     fontSize: 16,
   },
   input: {
     fontSize: 16,
-    color: '#000',
-    height: 50,
-    paddingHorizontal: 15,
-    borderRadius: 12,
-    ...commonShadow,
-  },
-  textarea: {
-    height: 100,
-    textAlignVertical: 'top',
-    paddingTop: 10,
-  },
-  pickerContainer: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    height: 50,
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    ...commonShadow,
-  },
-  picker: {
-    height: 50,
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 50,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    ...commonShadow,
+    color: "#222",
+    flex: 1,
+    height: "100%",
+    paddingVertical: Platform.OS === "ios" ? 12 : 8,
   },
   passwordInput: {
     fontSize: 16,
-    color: '#000',
+    color: "#222",
     paddingVertical: 0,
+  },
+  inputText: {
+    fontSize: 16,
+    color: "#222",
+  },
+  textarea: {
+    height: 120,
+    textAlignVertical: "top",
+    paddingTop: 12,
+  },
+  iconContainer: {
+    marginRight: 10,
   },
   showPasswordButton: {
     paddingLeft: 10,
   },
   errorText: {
-    color: '#ef4444',
-    fontSize: 12,
-    marginTop: 4,
+    color: "#ef4444",
+    fontSize: 13,
+    marginTop: 6,
+    fontWeight: "500",
   },
   row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 });
 
