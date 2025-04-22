@@ -1,28 +1,21 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  FlatList,
-} from "react-native";
-import FloatingActionButton from "../components/FloatingActionButton";
-import { getDashboardStats, getAllAnimals } from "../utils/fakeData";
-import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import { View, Text, TouchableOpacity, Alert, FlatList } from "react-native";
 import styles from "./HomeScreen.styles";
-import PublicationCard from "../components/PublicationCard";
-import * as Location from "expo-location";
+import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import moment from "moment";
+import * as Location from "expo-location";
+
+import FloatingActionButton from "../components/FloatingActionButton";
 import AnimalCard from "../components/AnimalCard";
+import { getDashboardStats, getAllAnimals } from "../utils/fakeData";
 import { useAuthContext } from "../contexts/AuthContext";
 import useDoubleBackExit from "../hooks/useDoubleBackExit";
+import useUser from "../hooks/useUser";
+import { NavigateReset } from "../utils/navigation";
 
 const HomeScreen = ({ navigation }) => {
-  // Simulación de usuario; en producción utiliza tu hook de autenticación.
-  const { user } = {
-    user: { id: "1", role: "user", name: "Kevin" },
-  };
+  const user = useUser();
+  const { setAuthToken } = useAuthContext();
 
   const [dashboardStats, setDashboardStats] = useState({
     published: 0,
@@ -31,125 +24,147 @@ const HomeScreen = ({ navigation }) => {
   const [animals, setAnimals] = useState([]);
   const [locationInfo, setLocationInfo] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
-  const { setAuthToken } = useAuthContext();
+  const [refreshing, setRefreshing] = useState(false);
 
   useDoubleBackExit();
 
   useEffect(() => {
-    // Cargar estadísticas y publicaciones simuladas
-    const loadData = async () => {
-      const stats = getDashboardStats(user?.role);
-      setDashboardStats(stats);
-      setAnimals(getAllAnimals());
-    };
-
-    // Obtener ubicación actual y geocodificarla
-    const fetchLocation = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          setLoadingLocation(false);
-          return;
-        }
-        const loc = await Location.getCurrentPositionAsync({});
-        const geo = await Location.reverseGeocodeAsync({
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        });
-        if (geo.length > 0) {
-          const { city, region, country } = geo[0];
-          setLocationInfo({ city, region, country });
-        }
-      } catch (error) {
-        console.log("Error al obtener ubicación:", error);
-      } finally {
-        setLoadingLocation(false);
-      }
-    };
-
     loadData();
     fetchLocation();
   }, []);
 
+  const loadData = () => {
+    //const newStats = getDashboardStats(user);
+    const newAnimals = getAllAnimals(); // Aquí puedes implementar paginación real si gustas
+    // setDashboardStats(newStats);
+    setAnimals(newAnimals);
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadData();
+    setRefreshing(false);
+  };
+
+  const handleLoadMore = () => {
+    const moreAnimals = getAllAnimals();
+    setAnimals((prev) => {
+      const existingIds = new Set(prev.map((a) => a.id));
+      const newUnique = moreAnimals.filter((a) => !existingIds.has(a.id));
+      return [...prev, ...newUnique];
+    });
+  };
+
+  const fetchLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") return;
+
+      const loc = await Location.getCurrentPositionAsync({});
+      const geo = await Location.reverseGeocodeAsync({
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+      });
+
+      if (geo.length > 0) {
+        const { city, region } = geo[0];
+        setLocationInfo({ city, region });
+      }
+    } catch (err) {
+      console.log("Error al obtener ubicación:", err);
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
+
   const handleLogout = () => {
     Alert.alert(
       "Cerrar sesión",
-      "¿Estás seguro de que quieres salir?",
+      "¿Deseas salir de la aplicación?",
       [
         { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sí",
-          onPress: async () => {
-            setAuthToken("");
-          },
-        },
+        { text: "Sí", onPress: () => setAuthToken("") },
       ],
       { cancelable: true }
     );
   };
 
-  const localTime = moment().format("HH:mm");
+  const renderHeader = () => {
+    const localTime = moment().format("HH:mm");
 
-  // Sección del encabezado con saludo, ubicación y hora
-  const renderHeader = () => (
-    <View style={styles.headerContainer}>
-      <View style={styles.headerTop}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>👋 Hola, {user.name}</Text>
-          <Text style={styles.location}>
+    return (
+      <View style={styles.headerContainer}>
+        <View style={styles.logoutTopRight}>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <MaterialIcons name="logout" size={22} color="#fff" />
+            <Text style={styles.logoutButtonText}>Salir</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.title}>👋 ¡Hola de nuevo!</Text>
+
+        <Text style={styles.subtitle}>
+          Mira los animales existentes aquí. ¡Gracias por contribuir!
+        </Text>
+
+        <View style={styles.locationContainer}>
+          <Text style={styles.locationText}>
             📍{" "}
             {loadingLocation
-              ? "Cargando ubicación..."
-              : locationInfo
-              ? `${locationInfo.city}, ${locationInfo.region}`
-              : "Ubicación no disponible"}
+              ? "Buscando ubicación..."
+              : locationInfo?.city || "Ubicación no disponible"}
           </Text>
-          <Text style={styles.time}>⏱️ {localTime}</Text>
+          <Text style={styles.locationText}>🕒 Hora actual: {localTime}</Text>
         </View>
 
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <MaterialIcons name="logout" size={22} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.statsCard}>
-        <Text style={styles.sectionTitle}>📊 Tus estadísticas</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{dashboardStats.published}</Text>
-            <Text style={styles.statLabel}>Publicadas</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{dashboardStats.pending}</Text>
-            <Text style={styles.statLabel}>Pendientes</Text>
+        <View style={styles.statsCard}>
+          <Text style={styles.sectionTitle}>Tus publicaciones</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{dashboardStats.published}</Text>
+              <Text style={styles.statLabel}>Publicadas</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{dashboardStats.pending}</Text>
+              <Text style={styles.statLabel}>Pendientes</Text>
+            </View>
           </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
       <FlatList
         data={animals}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={({ item }) => (
           <AnimalCard
             animal={item}
             onPress={() =>
-              navigation.navigate("AnimalDetails", {
-                animal: item,
-              })
+              navigation.navigate("AnimalDetails", { animal: item })
             }
           />
         )}
         ListHeaderComponent={renderHeader}
         contentContainerStyle={styles.list}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.2}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       />
 
       <FloatingActionButton
-        onPress={() => navigation.navigate("AddPublication")}
-        Icon={<FontAwesome name="camera" size={24} color="#fff" />}
+        onPress={() => NavigateReset("AddPublication")}
+        Icon={
+          <>
+            <FontAwesome name="camera" size={26} color="#fff" />
+            <Text style={{ color: "#fff", fontSize: 16, marginTop: 6 }}>
+              Nueva foto
+            </Text>
+          </>
+        }
       />
     </View>
   );

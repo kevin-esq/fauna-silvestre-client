@@ -14,7 +14,6 @@ export const AuthProvider = ({ children }) => {
   const setAuthToken = async (newToken: string) => {
     await saveToken(newToken);
     setToken(newToken);
-    console.log("Token actualizado:");
   };
 
   const logout = async () => {

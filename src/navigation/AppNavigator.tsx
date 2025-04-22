@@ -12,10 +12,23 @@ import { navigationRef } from "../services/navigationRef";
 import { ActivityIndicator, View } from "react-native";
 import AnimalViewScreen from "../screens/AnimalViewScreen";
 import { useAuthContext } from "../contexts/AuthContext";
-import AddPublicationScreen from "../screens/AddPublicationScreen";
+import {  CameraGalleryScreen } from "../screens/CameraGalleryScreen";
+import ImagePreviewScreen from "../screens/ImagePreviewScreen";
+import PublicationFormScreen from "../screens/PublicationFormScreen";
+import { CustomHomeHeader } from "../components/CustomHeader";
 
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
+
+function PublicationStackNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }} id={undefined}>
+      <Stack.Screen name="CameraGallery" component={CameraGalleryScreen} />
+      <Stack.Screen name="ImagePreview" component={ImagePreviewScreen} />
+      <Stack.Screen name="Formulario" component={PublicationFormScreen} />
+    </Stack.Navigator>
+  );
+}
 
 const AppDrawer = () => (
   <Drawer.Navigator
@@ -25,7 +38,7 @@ const AppDrawer = () => (
     <Drawer.Screen
       name="Home"
       component={HomeScreen}
-      options={{ title: "Inicio", drawerLabel: "Principal" }}
+      options={{ title: "Inicio", drawerLabel: "Principal", /*header: () => <CustomHomeHeader />,*/ headerShown: true }}
     />
     <Drawer.Screen
       name="Publications"
@@ -48,7 +61,7 @@ const AppDrawer = () => (
     />
     <Drawer.Screen
       name="AddPublication"
-      component={AddPublicationScreen}
+      component={PublicationStackNavigator}
       options={{ headerShown: false, drawerItemStyle: { display: "none" } }}
     />
   </Drawer.Navigator>
@@ -75,7 +88,7 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer ref={navigationRef}>
-      {isAuthenticated ? <AppDrawer /> : <AuthStack />}
+      {!isAuthenticated ? <AppDrawer /> : <AuthStack />}
     </NavigationContainer>
   );
 }

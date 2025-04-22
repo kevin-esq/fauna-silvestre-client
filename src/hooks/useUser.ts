@@ -1,7 +1,6 @@
 import User from "../domain/entities/User";
 import { useState, useEffect } from "react";
 import getUser from "../domain/useCases/getUser";
-import IUserRepository from "../domain/interfaces/IUserRepository";
 import UserRepository from "../data/repositories/UserRepository";
 
 const useUser = () => {

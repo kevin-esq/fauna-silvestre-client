@@ -12,12 +12,12 @@ const FloatingActionButton = ({ onPress, Icon }) => (
 const styles = StyleSheet.create({
   floatingButton: {
     position: "absolute",
-    bottom: 20,
+    bottom: 30,
     right: 20,
-    backgroundColor: "#FF5733",
-    padding: 20,
+    backgroundColor: "#FF6F61",
+    paddingVertical: 14,
+    paddingHorizontal: 18,
     borderRadius: 50,
-    justifyContent: "center",
     alignItems: "center",
   },
 });
