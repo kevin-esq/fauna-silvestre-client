@@ -17,6 +17,12 @@ export class ImagePickerService {
 
     if (!result.assets?.[0]) return null;
 
+    const { GPSLatitude, GPSLongitude } = result.assets[0].exif ?? {};
+
+    console.log(`Latitud: ${GPSLatitude}, Longitud: ${GPSLongitude}`);
+
+    console.log('[ImagePickerService] Result:', result);
+
     return {
       uri: result.assets[0].uri,
       width: result.assets[0].width,

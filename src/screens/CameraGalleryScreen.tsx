@@ -1,34 +1,45 @@
-import React from 'react';
+import React, { useRef, useEffect } from "react";
 import {
   View,
   StyleSheet,
   ActivityIndicator,
   Text,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Camera } from 'react-native-vision-camera';
-import { useCameraDevices } from 'react-native-vision-camera';
-import { useCamera } from '../hooks/useCamera';
-import { useGallery } from '../hooks/useGallery';
-import { useRecentImages } from '../hooks/useRecentImages';
-import { TopControls } from '../components/TopControls';
-import { CaptureButton } from '../components/CaptureButton';
-import { GalleryButton } from '../components/GalleryButton';
-import { ThumbnailList } from '../components/ThumbnailList';
-import { LocationService } from '../services/LocationService';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import CustomButton from '../components/CustomButton';
+  Animated,
+  Dimensions,
+  SafeAreaView,
+  StatusBar,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Camera } from "react-native-vision-camera";
+import { useCameraDevices } from "react-native-vision-camera";
+import { useCamera } from "../hooks/useCamera";
+//import { useGallery } from "../hooks/useGallery";
+import { useRecentImages } from "../hooks/useRecentImages";
+import { TopControls } from "../components/TopControls";
+import { CaptureButton } from "../components/CaptureButton";
+import { GalleryButton } from "../components/GalleryButton";
+import { ThumbnailList } from "../components/ThumbnailList";
+import { LocationService } from "../services/LocationService";
+import { Modalize } from "react-native-modalize";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import * as Haptics from "expo-haptics";
+import { useGallery } from "./../hooks/useGallery";
+import CustomImagePickerScreen from "./CustomImagePickerScreen";
+
+const { width } = Dimensions.get("window");
 
 type StackParamList = {
   ImagePreview: { imageUri: string; location?: any };
+  CustomImagePickerScreen: undefined;
 };
 
 export const CameraGalleryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const navigation =
-    useNavigation<NativeStackNavigationProp<StackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>();
   const devices = useCameraDevices();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const {
     cameraRef,
@@ -41,91 +52,189 @@ export const CameraGalleryScreen: React.FC = () => {
     cancelCapture,
   } = useCamera();
 
-  const { pickAndNavigate, openUri } = useGallery();
+  //const { pickAndNavigate, openUri } = useGallery();
+  const { openUri } = require("../hooks/useGallery").useGallery();
   const recentImages = useRecentImages();
 
+  const galleryModalRef = useRef<Modalize>(null);
+
   const device = devices[position];
-  if (!device) return <Loading />;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  useEffect(() => {
+    if (isCapturing) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.2,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [isCapturing]);
 
   const handleCapture = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       const uri = await takePhoto();
       const location = await LocationService.getCurrentCoords();
-      navigation.navigate('ImagePreview', { imageUri: uri, location });
+      navigation.navigate("ImagePreview", { imageUri: uri, location });
     } catch {
       cancelCapture();
     }
   };
 
+  const handleOpenGallery = () => galleryModalRef.current?.open();
+  const handleConfirm = (uri: string) => {
+    galleryModalRef.current?.close();
+    //navigation.navigate("ImagePreview", { imageUri: uri, location: /*…*/ });
+  };
+  const handleCancel = () => galleryModalRef.current?.close();
+
+  if (!device) return <Loading />;
+
   return (
-    <View style={styles.full}>
-      <Camera
-        ref={cameraRef}
-        style={StyleSheet.absoluteFill}
-        device={device}
-        isActive={true}
-        photo
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
       />
+      <Animated.View style={[styles.full, { opacity: fadeAnim }]}>
+        <Camera
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          device={device}
+          isActive={true}
+          photo
+          enableZoomGesture={true}
+        />
 
-      <TopControls
-        onBack={() => navigation.goBack()}
-        onToggleFlash={toggleFlashMode}
-        onFlip={flipCamera}
-        flashMode={flashMode}
-        showFlash={position === 0}
-      />
+        {/* Controles arriba */}
+        <TopControls
+          onBack={() => navigation.goBack()}
+          onToggleFlash={toggleFlashMode}
+          onFlip={flipCamera}
+          flashMode={flashMode}
+          showFlash={true}
+          style={{ marginTop: insets.top }}
+        />
 
-      <View
-        style={[styles.captureContainer, { bottom: insets.bottom + 100 }]}
-      >
-        <CaptureButton onPress={handleCapture} disabled={isCapturing} />
-      </View>
+        {/* Controles abajo */}
+        <View
+          style={[
+            styles.bottomControls,
+            { paddingBottom: insets.bottom + 10 },
+          ]}>
+          <GalleryButton onPress={handleOpenGallery} />
 
-      <GalleryButton onPress={pickAndNavigate} />
-      <ThumbnailList uris={recentImages} onSelect={openUri} />
+          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <CaptureButton onPress={handleCapture} isActive={isCapturing} />
+          </Animated.View>
+        </View>
 
-      {isCapturing && (
-        <LoadingOverlay onCancel={cancelCapture} />
-      )}
-    </View>
+        {/* Miniaturas recientes */}
+        {recentImages.length > 0 && (
+          <View
+            style={[
+              styles.thumbnailContainer,
+              {
+                bottom: insets.bottom + 120,
+                height: width * 0.2 + 30,
+              },
+            ]}>
+            <ThumbnailList uris={recentImages} onSelect={openUri} />
+          </View>
+        )}
+      </Animated.View>
+      <Modalize
+        ref={galleryModalRef}
+        adjustToContentHeight={false} // Cambiado a false
+        modalHeight={Dimensions.get("window").height * 0.8} // 80% de la pantalla
+        handleStyle={{ backgroundColor: "#ccc", width: 80 }}
+        modalStyle={{
+          backgroundColor: "#FAFAFA",
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          overflow: "hidden", // Importante para bordes redondeados
+        }}
+        panGestureEnabled={true}
+        withOverlay={true}
+        overlayStyle={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
+        withHandle={true}
+        childrenStyle={{ flex: 1 }} // Asegura que el contenido ocupe todo el espacio
+        scrollViewProps={{
+          scrollEnabled: true,
+          stickyHeaderIndices: [0], // Para mantener el header fijo
+          contentContainerStyle: { flexGrow: 1 }, // Importante
+        }}>
+        <View style={{ flex: 1 }}>
+          <CustomImagePickerScreen
+            onConfirm={handleConfirm}
+            onCancel={handleCancel}
+          />
+        </View>
+      </Modalize>
+    </SafeAreaView>
   );
 };
 
-const Loading: React.FC = () => (
+const Loading = () => (
   <View style={styles.loadingContainer}>
+    <ActivityIndicator size="large" color="#ffffff" />
     <Text style={styles.loadingText}>Cargando cámara...</Text>
-    <ActivityIndicator size="large" color="#007AFF" />
-  </View>
-);
-
-const LoadingOverlay: React.FC<{ onCancel(): void }> = ({ onCancel }) => (
-  <View style={styles.overlay}>
-    <ActivityIndicator size="large" color="#fff" />
-    <Text style={styles.overlayText}>Procesando foto...</Text>
-    <CustomButton title="Cancelar" onPress={onCancel} />
   </View>
 );
 
 const styles = StyleSheet.create({
-  full: { flex: 1, backgroundColor: '#000' },
-  captureContainer: {
-    position: 'absolute',
-    alignSelf: 'center',
-    zIndex: 10,
+  safeArea: {
+    flex: 1,
+    backgroundColor: "black",
+  },
+  full: {
+    flex: 1,
+    backgroundColor: "black",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "black",
   },
-  loadingText: { color: '#fff', fontSize: 18, marginBottom: 10 },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 99,
+  loadingText: {
+    marginTop: 20,
+    fontSize: 16,
+    color: "white",
   },
-  overlayText: { color: '#fff', fontSize: 18, marginVertical: 10 },
+  bottomControls: {
+    position: "absolute",
+    bottom: 20,
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingHorizontal: 30,
+  },
+  thumbnailContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useContext } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,7 @@ import SocialButton from "../components/SocialButton";
 import { validateLoginFields } from "../utils/loginValidation";
 import { Credentials } from "../data/models/AuthModels";
 import { NavigateReset } from "../utils/navigation";
-import { useAuthContext } from "../contexts/AuthContext";
+import { AuthContext } from "../contexts/AuthContext";
 import useDoubleBackExit from "../hooks/useDoubleBackExit";
 import useAuth from "../hooks/useAuth";
 
@@ -30,7 +30,6 @@ const LoginScreen = ({ navigation }) => {
   const [error, setError] = useState("");
   const errorOpacity = useRef(new Animated.Value(0)).current;
 
-  const { setAuthToken } = useAuthContext();
   const { login } = useAuth();
   useDoubleBackExit();
 
@@ -76,13 +75,12 @@ const LoginScreen = ({ navigation }) => {
     try {
       // Supongamos que login devuelve un token
       const token = await login(credentials, rememberMe);
-      setAuthToken(token);
-     // NavigateReset("Home");
+      if (token) console.log("[LoginScreen] token", token);
     } catch (localError) {
       setError("Nombre de usuario o contraseña incorrectos");
       console.log("error", localError);
     }
-  }, [username, password, rememberMe, login, setAuthToken, navigation]);
+  }, [username, password, rememberMe, login, navigation]);
 
   return (
     <KeyboardAvoidingView
@@ -110,7 +108,7 @@ const LoginScreen = ({ navigation }) => {
           placeholder="Nombre de usuario"
           onChange={setUsername}
           value={username}
-          autoFocus
+         // autoFocus
           style={[styles.input, error ? { borderColor: "#ef4444" } : {}]}
           icon={<MaterialIcons name="person" size={20} color="#888" />}
         />

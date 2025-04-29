@@ -1,4 +1,4 @@
-import IAuthRepository from "../interfaces/IAuthRepository";
+import { IAuthRepository }  from "../interfaces/IAuthRepository";
 import { UserData } from "../../data/models/AuthModels";
 
 export default async function registerUser(authRepository: IAuthRepository, userData: UserData) {
@@ -8,4 +8,4 @@ export default async function registerUser(authRepository: IAuthRepository, user
     } catch (error) {
       throw error;
     }
-  } 
+  }

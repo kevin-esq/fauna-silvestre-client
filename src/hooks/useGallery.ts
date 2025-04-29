@@ -2,7 +2,6 @@ import { useNavigation } from '@react-navigation/native';
 import { ImagePickerService } from '../services/ImagePickerService';
 import { MediaLibraryService } from '../services/MediaLibraryService';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MediaMetadata } from '../services/MediaLibraryService';
 import { LocationObjectCoords } from 'expo-location';
 
 type StackParamList = {

@@ -1,21 +1,27 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Alert, FlatList } from "react-native";
-import styles from "./HomeScreen.styles";
+import React, { useState, useEffect, useContext } from "react";
+import { View, Text, Alert, FlatList } from "react-native";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import moment from "moment";
 import * as Location from "expo-location";
 
+import styles from "./HomeScreen.styles";
 import FloatingActionButton from "../components/FloatingActionButton";
 import AnimalCard from "../components/AnimalCard";
+import AnimatedPressable from "../components/AnimatedPressable";
 import { getDashboardStats, getAllAnimals } from "../utils/fakeData";
-import { useAuthContext } from "../contexts/AuthContext";
+import { AuthContext } from "../contexts/AuthContext";
 import useDoubleBackExit from "../hooks/useDoubleBackExit";
 import useUser from "../hooks/useUser";
 import { NavigateReset } from "../utils/navigation";
 
+/**
+ * Pantalla principal del usuario.
+ * Muestra información relevante como hora actual, ubicación y ficha técnica de animales registrados.
+ * Adaptada para ser más comprensible para adultos mayores.
+ */
 const HomeScreen = ({ navigation }) => {
   const user = useUser();
-  const { setAuthToken } = useAuthContext();
+  const { signOut } = useContext(AuthContext);
 
   const [dashboardStats, setDashboardStats] = useState({
     published: 0,
@@ -25,6 +31,7 @@ const HomeScreen = ({ navigation }) => {
   const [locationInfo, setLocationInfo] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentTime, setCurrentTime] = useState(moment().format("HH:mm"));
 
   useDoubleBackExit();
 
@@ -33,19 +40,33 @@ const HomeScreen = ({ navigation }) => {
     fetchLocation();
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(moment().format("HH:mm"));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  /**
+   * Carga las publicaciones y animales del usuario.
+   */
   const loadData = () => {
-    //const newStats = getDashboardStats(user);
-    const newAnimals = getAllAnimals(); // Aquí puedes implementar paginación real si gustas
-    // setDashboardStats(newStats);
+    const newAnimals = getAllAnimals();
     setAnimals(newAnimals);
   };
 
+  /**
+   * Refresca los datos cuando el usuario baja para actualizar.
+   */
   const handleRefresh = () => {
     setRefreshing(true);
     loadData();
     setRefreshing(false);
   };
 
+  /**
+   * Carga más animales al llegar al final de la lista.
+   */
   const handleLoadMore = () => {
     const moreAnimals = getAllAnimals();
     setAnimals((prev) => {
@@ -55,6 +76,9 @@ const HomeScreen = ({ navigation }) => {
     });
   };
 
+  /**
+   * Solicita permisos y obtiene la ubicación actual.
+   */
   const fetchLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -77,48 +101,50 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Cierra sesión del usuario actual.
+   */
   const handleLogout = () => {
     Alert.alert(
       "Cerrar sesión",
       "¿Deseas salir de la aplicación?",
       [
         { text: "Cancelar", style: "cancel" },
-        { text: "Sí", onPress: () => setAuthToken("") },
+        { text: "Sí", onPress: () => signOut() },
       ],
       { cancelable: true }
     );
   };
 
+  /**
+   * Renderiza el encabezado con la hora, ubicación, estadísticas y botón de ayuda.
+   */
   const renderHeader = () => {
-    const localTime = moment().format("HH:mm");
-
     return (
       <View style={styles.headerContainer}>
-        <View style={styles.logoutTopRight}>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <MaterialIcons name="logout" size={22} color="#fff" />
-            <Text style={styles.logoutButtonText}>Salir</Text>
-          </TouchableOpacity>
-        </View>
+        <AnimatedPressable onPress={handleLogout} style={styles.logoutButton}>
+          <MaterialIcons name="logout" size={24} color="#fff" />
+          <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
+        </AnimatedPressable>
 
-        <Text style={styles.title}>👋 ¡Hola de nuevo!</Text>
+        <Text style={styles.greeting}>👋 ¡Hola de nuevo!</Text>
 
-        <Text style={styles.subtitle}>
-          Mira los animales existentes aquí. ¡Gracias por contribuir!
+        <Text style={styles.description}>
+          Aquí puedes ver la ficha técnica de animales en el registro.{"\n"}Gracias por tu aporte.
         </Text>
 
-        <View style={styles.locationContainer}>
-          <Text style={styles.locationText}>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoText}>
             📍{" "}
             {loadingLocation
               ? "Buscando ubicación..."
-              : locationInfo?.city || "Ubicación no disponible"}
+              : locationInfo?.city || "Ubicación desconocida"}
           </Text>
-          <Text style={styles.locationText}>🕒 Hora actual: {localTime}</Text>
+          <Text style={styles.infoText}>🕒 Hora local: {currentTime}</Text>
         </View>
 
-        <View style={styles.statsCard}>
-          <Text style={styles.sectionTitle}>Tus publicaciones</Text>
+        <AnimatedPressable onPress={() => navigation.navigate("Publications")} style={styles.statsCard}>
+          <Text style={styles.sectionTitle}>Publicaciones</Text>
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
               <Text style={styles.statValue}>{dashboardStats.published}</Text>
@@ -129,7 +155,19 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.statLabel}>Pendientes</Text>
             </View>
           </View>
-        </View>
+        </AnimatedPressable>
+
+        <AnimatedPressable
+          style={styles.helpButton}
+          onPress={() =>
+            Alert.alert(
+              "¿Necesitas ayuda?",
+              "Puedes llamar al 123456789 o escribirnos a soporte@fauna.com"
+            )
+          }>
+          <MaterialIcons name="help-outline" size={22} color="#000" />
+          <Text style={styles.helpText}>¿Necesitas ayuda?</Text>
+        </AnimatedPressable>
       </View>
     );
   };

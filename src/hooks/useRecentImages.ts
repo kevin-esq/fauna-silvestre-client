@@ -7,8 +7,9 @@ export function useRecentImages() {
   useEffect(() => {
     (async () => {
       const { status } = await MediaLibrary.requestPermissionsAsync();
+      const recentAlbum = await MediaLibrary.getAlbumAsync('Camera');
       if (status !== 'granted') return;
-      const result = await MediaLibrary.getAssetsAsync({ first: 20, mediaType: 'photo', sortBy: [MediaLibrary.SortBy.creationTime] });
+      const result = await MediaLibrary.getAssetsAsync({ first: 20, mediaType: 'photo', sortBy: [MediaLibrary.SortBy.creationTime], album: recentAlbum });
       setImages(result.assets.map(a => a.uri));
     })();
   }, []);

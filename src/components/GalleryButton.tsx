@@ -1,16 +1,32 @@
-import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React from "react";
+import { TouchableOpacity, StyleSheet } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 
-type Props = { onPress: () => void };
-export const GalleryButton: React.FC<Props> = ({ onPress }) => (
-  <TouchableOpacity onPress={onPress} style={styles.container}>
-    <Ionicons name="images-outline" size={24} color="#007AFF" />
-    <Text style={styles.text}>Galería</Text>
+type Props = {
+  onPress: () => void;
+  style?: any;
+};
+
+export const GalleryButton: React.FC<Props> = ({ onPress, style }) => (
+  <TouchableOpacity
+    onPress={() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onPress();
+    }}
+    style={[styles.button, style]}
+    activeOpacity={0.7}>
+    <MaterialIcons name="photo-library" size={40} color="#fff" />
   </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
-  container: { position: 'absolute', bottom: 120, left: 20, flexDirection: 'row', backgroundColor: '#fff', padding: 8, borderRadius: 20, alignItems: 'center', elevation: 5 },
-  text: { marginLeft: 8, color: '#007AFF', fontSize: 16, fontWeight: '600' },
+  button: {
+    backgroundColor: "rgba(0,0,0,0.3)",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

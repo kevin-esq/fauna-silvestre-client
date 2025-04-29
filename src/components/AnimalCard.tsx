@@ -1,11 +1,18 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { View, Text, Image } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import AnimatedPressable from "./AnimatedPressable";
 import styles from "./AnimalCard.styles";
 
+/**
+ * Tarjeta animada que muestra la información de un animal.
+ *
+ * @param {Object} animal - Objeto con información del animal.
+ * @param {Function} onPress - Acción al presionar la tarjeta.
+ */
 const AnimalCard = ({ animal, onPress }) => {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
+    <AnimatedPressable style={styles.card} onPress={onPress}>
       <Image source={{ uri: animal.image }} style={styles.image} />
       <View style={styles.info}>
         <Text style={styles.commonName}>{animal.commonName}</Text>
@@ -21,7 +28,7 @@ const AnimalCard = ({ animal, onPress }) => {
           </Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 };
 

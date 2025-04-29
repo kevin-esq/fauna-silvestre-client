@@ -11,74 +11,103 @@ import CustomDrawerContent from "../components/CustomDrawerContent";
 import { navigationRef } from "../services/navigationRef";
 import { ActivityIndicator, View } from "react-native";
 import AnimalViewScreen from "../screens/AnimalViewScreen";
-import { useAuthContext } from "../contexts/AuthContext";
-import {  CameraGalleryScreen } from "../screens/CameraGalleryScreen";
+import { AuthContext } from "../contexts/AuthContext";
+import { CameraGalleryScreen } from "../screens/CameraGalleryScreen";
 import ImagePreviewScreen from "../screens/ImagePreviewScreen";
 import PublicationFormScreen from "../screens/PublicationFormScreen";
+import  CustomImagePickerScreen  from "../screens/CustomImagePickerScreen";
 import { CustomHomeHeader } from "../components/CustomHeader";
+import { useContext } from "react";
 
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
 
 function PublicationStackNavigator() {
+  console.log("[PublicationStackNavigator] render");
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }} id={undefined}>
       <Stack.Screen name="CameraGallery" component={CameraGalleryScreen} />
+     {/*} <Stack.Screen
+        name="CustomImagePickerScreen"
+        component={CustomImagePickerScreen}
+        options={{ title: "Seleccionar imagen" }}
+      />{*}*/}
       <Stack.Screen name="ImagePreview" component={ImagePreviewScreen} />
       <Stack.Screen name="Formulario" component={PublicationFormScreen} />
     </Stack.Navigator>
   );
 }
 
-const AppDrawer = () => (
-  <Drawer.Navigator
-    id={undefined}
-    drawerContent={(props) => <CustomDrawerContent {...props} />}
-  >
-    <Drawer.Screen
-      name="Home"
-      component={HomeScreen}
-      options={{ title: "Inicio", drawerLabel: "Principal", /*header: () => <CustomHomeHeader />,*/ headerShown: true }}
-    />
-    <Drawer.Screen
-      name="Publications"
-      component={PublicationScreen}
-      options={{ title: "Publicaciones", drawerLabel: "Publicaciones" }}
-    />
-    <Drawer.Screen
-      name="PublicationDetails"
-      component={PublicationViewScreen}
-      options={{ headerShown: false, drawerItemStyle: { display: "none" } }}
-    />
-    <Drawer.Screen
-      name="AnimalDetails"
-      component={AnimalViewScreen}
-      options={{
-        title: "Detalles del Animal",
-        headerShown: false,
-        drawerItemStyle: { display: "none" },
-      }}
-    />
-    <Drawer.Screen
-      name="AddPublication"
-      component={PublicationStackNavigator}
-      options={{ headerShown: false, drawerItemStyle: { display: "none" } }}
-    />
-  </Drawer.Navigator>
-);
+const AppDrawer = () => {
+  console.log("[AppDrawer] render");
+  return (
+    <Drawer.Navigator
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      id={undefined}>
+      <Drawer.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          title: "Inicio",
+          drawerLabel: "Principal",
+          headerShown: true,
+        }}
+      />
+      <Drawer.Screen
+        name="Publications"
+        component={PublicationScreen}
+        options={{
+          title: "Publicaciones",
+          drawerLabel: "Publicaciones",
+        }}
+      />
+      <Drawer.Screen
+        name="PublicationDetails"
+        component={PublicationViewScreen}
+        options={{
+          headerShown: false,
+          drawerItemStyle: { display: "none" },
+        }}
+      />
+      <Drawer.Screen
+        name="AnimalDetails"
+        component={AnimalViewScreen}
+        options={{
+          title: "Detalles del Animal",
+          headerShown: false,
+          drawerItemStyle: { display: "none" },
+        }}
+      />
+      <Drawer.Screen
+        name="AddPublication"
+        component={PublicationStackNavigator}
+        options={{
+          headerShown: false,
+          drawerItemStyle: { display: "none" },
+        }}
+      />
+    </Drawer.Navigator>
+  );
+};
 
-const AuthStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }} id={undefined}>
-    <Stack.Screen name="Login" component={LoginScreen} />
-    <Stack.Screen name="Register" component={RegisterScreen} />
-    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-  </Stack.Navigator>
-);
+const AuthStack = () => {
+  console.log("[AuthStack] render");
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }} id={undefined}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </Stack.Navigator>
+  );
+};
 
 export default function AppNavigator() {
-  const { isAuthenticated } = useAuthContext();
+  const { token, isLoading } = useContext(AuthContext);
+  console.log("[AppNavigator] isLoading =", isLoading, "token =", token);
+  console.log("[AppNavigator] render ➤ token =", token);
 
-  if (isAuthenticated === null) {
+  if (isLoading) {
+    console.log("[AppNavigator] cargando token…");
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
@@ -86,9 +115,15 @@ export default function AppNavigator() {
     );
   }
 
+  console.log(
+    `[AppNavigator] isLoading false → ${
+      token ? "mostrar AppDrawer" : "mostrar AuthStack"
+    }`
+  );
+
   return (
     <NavigationContainer ref={navigationRef}>
-      {!isAuthenticated ? <AppDrawer /> : <AuthStack />}
+      {token ? <AppDrawer /> : <AuthStack />}
     </NavigationContainer>
   );
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,11 @@ import {
   DrawerItemList,
 } from '@react-navigation/drawer';
 import { FontAwesome, Ionicons } from '@expo/vector-icons'; // Puedes usar otro set de íconos si prefieres
-import { useAuthContext } from '../contexts/AuthContext';
+import { AuthContext } from '../contexts/AuthContext';
 
 const CustomDrawerContent = (props) => {
   const { navigation } = props;
-  const {setAuthToken} = useAuthContext();
+  const {signOut} = useContext(AuthContext);
 
   const user = {
     name: 'Kevin Esquivel',
@@ -23,7 +23,7 @@ const CustomDrawerContent = (props) => {
   };
 
   const handleLogout = () => {
-    setAuthToken('');
+    signOut();
   };
 
   const handleSettings = () => {
