@@ -132,7 +132,7 @@ export const CameraGalleryScreen: React.FC = () => {
           onToggleFlash={toggleFlashMode}
           onFlip={flipCamera}
           flashMode={flashMode}
-          showFlash={true}
+          showFlash={position === 0}
           style={{ marginTop: insets.top }}
         />
 
@@ -165,31 +165,20 @@ export const CameraGalleryScreen: React.FC = () => {
       </Animated.View>
       <Modalize
         ref={galleryModalRef}
-        adjustToContentHeight={false} // Cambiado a false
-        modalHeight={Dimensions.get("window").height * 0.8} // 80% de la pantalla
-        handleStyle={{ backgroundColor: "#ccc", width: 80 }}
-        modalStyle={{
-          backgroundColor: "#FAFAFA",
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          overflow: "hidden", // Importante para bordes redondeados
+        adjustToContentHeight={false}
+        modalHeight={Dimensions.get("window").height * 0.8}
+        scrollViewProps={{
+          scrollEnabled: true,
+          nestedScrollEnabled: true,
         }}
         panGestureEnabled={true}
         withOverlay={true}
-        overlayStyle={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
-        withHandle={true}
-        childrenStyle={{ flex: 1 }} // Asegura que el contenido ocupe todo el espacio
-        scrollViewProps={{
-          scrollEnabled: true,
-          stickyHeaderIndices: [0], // Para mantener el header fijo
-          contentContainerStyle: { flexGrow: 1 }, // Importante
-        }}>
-        <View style={{ flex: 1 }}>
-          <CustomImagePickerScreen
-            onConfirm={handleConfirm}
-            onCancel={handleCancel}
-          />
-        </View>
+        handlePosition="inside"
+        childrenStyle={{ flex: 1 }}>
+        <CustomImagePickerScreen
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+        />
       </Modalize>
     </SafeAreaView>
   );

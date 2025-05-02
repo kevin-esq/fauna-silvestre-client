@@ -12,6 +12,7 @@
     "@react-native-async-storage/async-storage": "^1.23.1",
     "@react-native-camera-roll/camera-roll": "^7.10.0",
     "@react-native-community/datetimepicker": "^8.2.0",
+    "@react-native-community/viewpager": "^5.0.11",
     "@react-native-picker/picker": "^2.9.0",
     "@react-native/typescript-config": "^0.79.0",
     "@react-navigation/drawer": "^7.3.9",
