@@ -1,27 +1,14 @@
-import { AxiosInstance } from 'axios';
-import { Credentials, UserData } from '../../data/models/AuthModels';
-import { ILogger } from '../../data/repositories/AuthRepository';
+// domain/interfaces/IAuthRepository.ts
+import {Credentials, UserData} from "../models/AuthModels";
+import { HttpError, NetworkError } from '../../shared/types/errors';
 
 /**
- * Clase abstracta que define el contrato para un repositorio de Auth.
- * - Recibe la instancia de Axios por constructor.
- * - Declara un miembro `api` que los hijos usarán.
+ * Contrato para operaciones de autenticación.
+ * @interface
  */
-export abstract class IAuthRepository {
-  protected readonly api: AxiosInstance;
-  protected readonly logger: ILogger;
-
-  constructor(api: AxiosInstance, logger: ILogger) {
-    this.api = api;
-    this.logger = logger;
-  }
-
-  /** Inicia sesión y devuelve el token */
-  abstract login(credentials: Credentials): Promise<string>;
-
-  /** Registra un usuario y devuelve el status HTTP */
-  abstract register(userData: UserData): Promise<number>;
-
-  /** Envía email para recuperación y devuelve el status HTTP */
-  abstract forgotPassword(email: string): Promise<number>;
+export interface IAuthRepository {
+  login(credentials: Credentials): Promise<string>;
+  register(userData: UserData): Promise<void>;
+  forgotPassword(email: string): Promise<void>;
+  handleError(error: unknown): HttpError | NetworkError;
 }

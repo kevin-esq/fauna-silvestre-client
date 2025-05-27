@@ -1,45 +1,71 @@
 // src/data/repositories/UserRepository.ts
-import { IUserRepository } from "../../domain/interfaces/IUserRepository";
-import { AxiosInstance, AxiosResponse } from "axios";
-import User from "../../domain/entities/User";
+import { AxiosInstance } from 'axios';
+import { BaseRepository } from './BaseRepository';
+import { IUserRepository } from '../../domain/interfaces/IUserRepository';
+import  User  from '../../domain/entities/User';
+import { UserMapper } from '../mappers/UserMapper';
+import { UserModel } from '../models/UserModel';
+import {ILogger} from "../../shared/types/ILogger";
 
 /**
- * Repositorio para manejo de datos de usuario autenticado.
- * Implementa métodos para interactuar con la API.
+ * Implementación concreta del repositorio de usuario.
+ * @class
+ * @extends BaseRepository
+ * @implements IUserRepository
  */
-export class UserRepository extends IUserRepository {
-  /**
-   * Construye el repositorio inyectando la instancia de Axios.
-   * @param api Instancia de Axios preconfigurada con interceptors.
-   */
-  constructor(api: AxiosInstance) {
-    super(api);
+export class UserRepository extends BaseRepository implements IUserRepository {
+  constructor(
+      protected readonly api: AxiosInstance,
+      protected readonly logger: ILogger
+  ) {
+    super(api, logger);
   }
 
   /**
-   * @inheritdoc
+   * Obtiene los datos del usuario autenticado.
+   * @async
+   * @returns {Promise<User>} Entidad de usuario del dominio
+   * @throws {HttpError | NetworkError} Errores específicos del dominio
    */
   async getUser(): Promise<User> {
-    console.log("[UserRepository.getUser] Iniciando petición de datos de usuario");
-    const response: AxiosResponse<User> = await this.api.get<User>(
-      "/Users/user-information"
-    );
-    this.ensureSuccessStatus(response);
-    console.log(
-      "[UserRepository.getUser] Datos recibidos:",
-      response.data
-    );
-    return response.data;
+    try {
+      this.logger.debug('[UserRepository] Obteniendo datos de usuario');
+
+      const response = await this.api.get<UserModel>('/Users/user-information');
+      this.ensureSuccessStatus(response);
+
+      this.logger.info('[UserRepository] Datos de usuario obtenidos exitosamente');
+      return UserMapper.toDomain(response.data);
+
+    } catch (error) {
+      const processedError = this.handleHttpError(error, 'getUser');
+      this.logger.error('[UserRepository] Error obteniendo usuario', processedError);
+      throw processedError;
+    }
   }
 
   /**
-   * Verifica que la respuesta HTTP tenga status 200.
-   * @param response Respuesta de Axios
-   * @throws {Error} Si el status no es 200.
+   * Actualiza la información del usuario.
+   * @async
+   * @param {Partial<User>} userData - Datos actualizados del usuario
+   * @returns {Promise<User>} Usuario actualizado
+   * @throws {HttpError | NetworkError} Errores específicos del dominio
    */
-  private ensureSuccessStatus(response: AxiosResponse<any>): void {
-    if (response.status !== 200) {
-      throw new Error(`Error HTTP: ${response.status}`);
+  async updateUser(userData: Partial<User>): Promise<User> {
+    try {
+      this.logger.debug('[UserRepository] Actualizando datos de usuario', { userData });
+
+      const modelData = UserMapper.toModel(userData as User);
+      const response = await this.api.patch<UserModel>('/Users/update', modelData);
+      this.ensureSuccessStatus(response);
+
+      this.logger.info('[UserRepository] Usuario actualizado exitosamente');
+      return UserMapper.toDomain(response.data);
+
+    } catch (error) {
+      const processedError = this.handleHttpError(error, 'updateUser');
+      this.logger.error('[UserRepository] Error actualizando usuario', processedError);
+      throw processedError;
     }
   }
 }

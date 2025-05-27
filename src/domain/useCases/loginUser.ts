@@ -1,5 +1,5 @@
 import { IAuthRepository } from "../interfaces/IAuthRepository";
-import { Credentials } from "../../data/models/AuthModels";
+import { Credentials } from "../models/AuthModels";
 
 export default async function loginUser(authRepository: IAuthRepository, credentials: Credentials) {
     try {
