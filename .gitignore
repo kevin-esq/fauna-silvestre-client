@@ -31,12 +31,7 @@ yarn-error.*
 
 # local env files
 .env*.local
-.env
-.env.production
-!.env.example
 
 # typescript
 *.tsbuildinfo
 .qodo
-
-src/@types/env.d.ts

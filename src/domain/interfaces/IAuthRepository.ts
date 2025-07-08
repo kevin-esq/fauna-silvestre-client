@@ -1,14 +1,25 @@
-// domain/interfaces/IAuthRepository.ts
-import {Credentials, UserData} from "../models/AuthModels";
-import { HttpError, NetworkError } from '../../shared/types/errors';
+import User from "../entities/User";
 
-/**
- * Contrato para operaciones de autenticación.
- * @interface
- */
-export interface IAuthRepository {
-  login(credentials: Credentials): Promise<string>;
-  register(userData: UserData): Promise<void>;
-  forgotPassword(email: string): Promise<void>;
-  handleError(error: unknown): HttpError | NetworkError;
-}
+interface Credentials {
+    username: string;
+    password: string;
+  }
+
+  interface UserData {
+    name: string;
+    email: string;
+    password: string;
+  }
+
+export default class IAuthRepository {
+    async login(credentials: Credentials) : Promise<User> {
+      throw new Error("Method not implemented.");
+    }
+    async register(userData: UserData) : Promise<User> {
+      throw new Error("Method not implemented.");
+    }
+    async forgotPassword(email: string) {
+      throw new Error("Method not implemented.");
+    }
+  }
+  
