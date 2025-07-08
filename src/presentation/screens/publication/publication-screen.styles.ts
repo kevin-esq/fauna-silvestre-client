@@ -1,0 +1,107 @@
+import { StyleSheet } from "react-native";
+
+export const createStyles = (vars: Record<string, string>) => StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: vars["--text-secondary"],
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 40,
+    paddingHorizontal: 20,
+  },
+  list: {
+    paddingBottom: 20,
+    paddingTop: 10,
+    width: "95%",
+    alignSelf: "center",
+  },
+  errorText: {
+    textAlign: 'center',
+    marginBottom: 12,
+    marginHorizontal: 16,
+    fontSize: 14,
+    color: vars["--text-secondary"],
+  },
+  searchInput: {
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: vars["--background-secondary"],
+    color: vars["--text-secondary"],
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: vars["--background-secondary"],
+    paddingHorizontal: 20,
+  },
+  modalContent: {
+    width: '85%',
+    padding: 20,
+    borderRadius: 12,
+    shadowColor: vars["--background-secondary"],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: vars["--text"],
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    marginBottom: 16,
+    color: vars["--text-secondary"],
+  },
+  reasonInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 20,
+    textAlignVertical: 'top',
+    minHeight: 120,
+    fontSize: 14,
+    color: vars["--text-secondary"],
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalButton: {
+    borderRadius: 8,
+    paddingVertical: 12,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    fontWeight: '600',
+    color: vars["--text"],
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+});

@@ -1,33 +1,27 @@
-// src/app/App.tsx
-import React, {useMemo} from 'react';
-import { ApiProvider } from '../services/http/ApiProvider';
-import { AuthProvider } from '../presentation/contexts/AuthContext';
-import { AuthService } from '../services/auth/AuthService';
-import { ConsoleLogger } from '../services/logging/ConsoleLogger';
-import AppNavigator from '../presentation/navigation/AppNavigator';
-import axios from "axios";
-import Config from "react-native-config";
-
-const logger = new ConsoleLogger('debug');
+// src/app/app.tsx
+import React from 'react';
+import { AuthProvider } from '../presentation/contexts/auth-context';
+import AppNavigator from '../presentation/navigation/app-navigator';
+import { NavigationProvider, navigationRef } from '../presentation/navigation/navigation-provider';
+import { NavigationContainer } from '@react-navigation/native';
+import { ThemeProvider } from '../presentation/contexts/theme-context';
+import { PublicationProvider } from '../presentation/contexts/publication-context';
+import { LoadingProvider } from '../presentation/contexts/loading-context';
 
 export default function App() {
-    const apiProviderValue = useMemo(() => {
-        const httpClient = axios.create({
-            baseURL: process.env.EXPO_PUBLIC_API_URL,
-            timeout: Number( process.env.EXPO_PUBLIC_API_TIMEOUT),
-        });
-        return { instance: httpClient, setAuthToken: (token: string | null) => {
-                httpClient.defaults.headers.common['Authorization'] = token ? `Bearer ${token}` : null;
-            }};
-    }, []);
-
-    const authService = useMemo(() => new AuthService(apiProviderValue, logger), [apiProviderValue]);
-
-    return (
-        <ApiProvider logger={logger}>
-            <AuthProvider authService={authService}>
-                    <AppNavigator />
-            </AuthProvider>
-        </ApiProvider>
-    );
+  return (
+    <NavigationContainer ref={navigationRef}>
+      <AuthProvider>
+        <NavigationProvider>
+          <ThemeProvider>
+            <LoadingProvider>
+              <PublicationProvider>
+                <AppNavigator />
+              </PublicationProvider>
+            </LoadingProvider>
+          </ThemeProvider>
+        </NavigationProvider>
+      </AuthProvider>
+    </NavigationContainer>
+  );
 }

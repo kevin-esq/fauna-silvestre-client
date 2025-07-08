@@ -1,8 +1,7 @@
-import { RegisterState } from '../../domain/types/RegisterState';
+import { RegisterState } from '../../domain/types/register-state';
 
 export const sanitizeRegisterFields = (state: RegisterState): RegisterState => ({
   ...state,
-  username: state.username.replace(/\s+/g, ''),
   name: state.name.trim(),
   lastName: state.lastName.trim(),
   email: state.email.replace(/\s+/g, ''),

@@ -1,4 +1,14 @@
 // Función para generar estadísticas aleatorias basadas en el rol del usuario.
+export interface UserModel {
+  id: string;
+  name: string;
+  userName: string;
+  email: string;
+  locality: string;
+  role: 'admin' | 'moderator' | 'user';
+  avatarUrl: string;
+}
+
 export const getDashboardStats = (role: string | undefined) => {
     if (role === "admin") {
       return {
@@ -113,5 +123,44 @@ export const getAllAnimals = () => [
       "Ponen de 2 a 4 huevos en cavidades de árboles, incuban por ~18 días",
     behavior:
       "Social, viven en pequeños grupos, vocalizan con sonidos graves y roncos",
+  },
+];
+
+export const getAllUsers = (): UserModel[] => [
+  {
+    id: "1",
+    name: "Kevin Esquivel",
+    userName: "kevin03",
+    email: "kevin@email.com",
+    locality: "San José",
+    role: "admin",
+    avatarUrl: "https://randomuser.me/api/portraits/men/1.jpg",
+  },
+  {
+    id: "2",
+    name: "Laura Jiménez",
+    userName: "lauraj",
+    email: "laura@email.com",
+    locality: "Alajuela",
+    role: "moderator",
+    avatarUrl: "https://randomuser.me/api/portraits/women/2.jpg",
+  },
+  {
+    id: "3",
+    name: "Carlos Pérez",
+    userName: "cperez",
+    email: "carlos@email.com",
+    locality: "Cartago",
+    role: "user",
+    avatarUrl: "https://randomuser.me/api/portraits/men/3.jpg",
+  },
+  {
+    id: "4",
+    name: "Andrea Torres",
+    userName: "andrea_t",
+    email: "andrea@email.com",
+    locality: "Heredia",
+    role: "user",
+    avatarUrl: "https://randomuser.me/api/portraits/women/4.jpg",
   },
 ];

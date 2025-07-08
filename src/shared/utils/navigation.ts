@@ -1,4 +1,4 @@
-import {navigationRef} from "../../presentation/navigation/navigationRef";
+import {navigationRef} from "../../presentation/navigation/navigation-ref";
 
 export const NavigateReset = (routeName: string) => {
     navigationRef.current?.reset({

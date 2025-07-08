@@ -27,7 +27,26 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
-    ]
+      "expo-secure-store",
+      ["expo-build-properties", {
+        "android": {
+          "compileSdkVersion": 35,
+          "targetSdkVersion": 35,
+          "buildToolsVersion": "35.0.0",
+          "minSdkVersion": 23
+        }
+      }]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "cea26ba2-953a-4b72-ab58-56edd01e0c45"
+      },
+      "EXPO_PUBLIC_BASE_URL": "https://86b9-187-150-185-64.ngrok-free.app",
+      "EXPO_PUBLIC_API_URL": "https://86b9-187-150-185-64.ngrok-free.app/api",
+      "EXPO_PUBLIC_API_TIMEOUT": "15000"
+    }
   }
 }

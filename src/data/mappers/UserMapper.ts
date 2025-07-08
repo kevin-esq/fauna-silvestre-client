@@ -1,5 +1,5 @@
 // data/mappers/UserMapper.ts
-import User  from '../../domain/entities/User';
+import User  from '../../domain/entities/user.entity';
 import { UserModel } from '../models/UserModel';
 
 /**

@@ -6,7 +6,7 @@ export const genderOptions = [
   ];
   
   export const locationOptions = [
-    { label: 'Raudales', value: 'raudales' },
+    { label: 'Raudales', value: 'Raudales' },
     { label: 'Chiclayo', value: 'Chiclayo' },
     { label: 'Lima', value: 'Lima' },
     { label: 'Otra Localidad', value: 'other' },

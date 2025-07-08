@@ -22,9 +22,9 @@ export async function metaToLocation(photo: PhotoFile): Promise<Location | null>
   return {
     width: metadata.width,
     height: metadata.height,
-    latitude: toNumber(metadata.GPSLatitude ?? metadata.latitude),
-    longitude: toNumber(metadata.GPSLongitude ?? metadata.longitude),
-    altitude: toNumber(metadata.GPSAltitude),
-    accuracy: toNumber(metadata.GPSHPositioningError)
+    latitude: toNumber(metadata.GPSLatitude ?? metadata.latitude) || 0,
+    longitude: toNumber(metadata.GPSLongitude ?? metadata.longitude) || 0,
+    altitude: toNumber(metadata.GPSAltitude) || 0,
+    accuracy: toNumber(metadata.GPSHPositioningError) || 0
   };
 }

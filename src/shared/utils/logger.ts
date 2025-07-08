@@ -1,5 +1,5 @@
 // src/utils/logger.ts
-import { ILogger } from '../../data/repositories/AuthRepository';
+import { ILogger } from '../../shared/types/ILogger';
 
 export class ContextLogger implements ILogger {
   constructor(private readonly context: string = 'App') {}
@@ -14,5 +14,9 @@ export class ContextLogger implements ILogger {
 
   error(message: string, error?: Error): void {
     console.error(`[${this.context}] ${message}`, error || '');
+  }
+
+  warn(message: string, metadata?: Record<string, unknown>): void {
+    console.warn(`[${this.context}] ${message}`, metadata);
   }
 }
