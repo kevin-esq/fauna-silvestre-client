@@ -1,10 +1,8 @@
-import {IAuthRepository} from "../interfaces/IAuthRepository";
-import {UserData} from "../models/AuthModels";
-
-export default async function registerUser(authRepository: IAuthRepository, userData: UserData) {
+export default async function registerUser(authRepository, userData) {
     try {
-        return await authRepository.register(userData);
+      const user = await authRepository.register(userData);
+      return user;
     } catch (error) {
       throw error;
     }
-  }
+  }  
