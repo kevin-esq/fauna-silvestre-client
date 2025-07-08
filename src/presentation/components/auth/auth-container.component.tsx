@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { useTheme } from '../../contexts/theme-context';
 import {
   Text,
   StyleSheet,
@@ -13,15 +12,15 @@ interface AuthContainerProps {
   children: React.ReactNode;
   title: string;
   subtitle: string;
+  variables: any;
 }
 
-const AuthContainer: React.FC<AuthContainerProps> = ({ title, subtitle, children }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+const AuthContainer: React.FC<AuthContainerProps> = ({ title, subtitle, children, variables }) => {
+  const styles = useMemo(() => createStyles(variables), [variables]);
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={{ flex: 1, backgroundColor: variables['--background'] }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -40,12 +39,12 @@ const AuthContainer: React.FC<AuthContainerProps> = ({ title, subtitle, children
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (variables: any) => StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
         padding: 24,
-    backgroundColor: colors.background,
+    backgroundColor: variables['--background'],
   },
   logo: {
     width: 150,
@@ -58,11 +57,11 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontSize: 26,
         fontWeight: '700',
     textAlign: 'center',
-    color: colors.text,
+    color: variables['--text'],
   },
   subtitle: {
         fontSize: 16,
-    color: colors.textSecondary,
+    color: variables['--text-secondary'],
     textAlign: 'center',
     marginBottom: 24,
   },

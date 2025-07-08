@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text, Image } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
 import AnimatedPressable from "../ui/animated-pressable.component";
 import styles from "./animal-card.styles";
-
+import Icon from 'react-native-vector-icons/MaterialIcons';
+  
 /**
  * Tarjeta animada que muestra la información de un animal.
  *
@@ -18,7 +18,7 @@ const AnimalCard = ({ animal, onPress }: { animal: any; onPress: () => void }) =
         <Text style={styles.commonName}>{animal.commonName}</Text>
         <Text style={styles.scientificName}>{animal.scientificName}</Text>
         <View style={styles.statusContainer}>
-          <MaterialIcons
+          <Icon
             name="eco"
             size={16}
             color={animal.statusColor || "gray"}

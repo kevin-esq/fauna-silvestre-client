@@ -1,5 +1,4 @@
 // utils/metadataUtils.ts
-import { PhotoFile } from 'react-native-vision-camera';
 
 export type GeoLocation = {
   latitude: number;

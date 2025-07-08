@@ -1,7 +1,7 @@
-import * as SecureStore from 'expo-secure-store';
 import { ILogger } from '../../shared/types/ILogger';
 import { ConsoleLogger } from '../logging/console-logger';
 import { StorageError } from '../../shared/types/custom-errors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Defines the contract for a secure key-value storage service.
@@ -45,7 +45,7 @@ class SecureStorageService implements ISecureStorage {
    */
   async save(key: string, value: string): Promise<void> {
     try {
-      await SecureStore.setItemAsync(key, value);
+      await AsyncStorage.setItem(key, value);
       this.logger.debug(`[SecureStorage] Saved value for key: ${key}`);
     } catch (error) {
       this.logger.error(`[SecureStorage] Failed to save value for key: ${key}`, error as Error);
@@ -61,11 +61,11 @@ class SecureStorageService implements ISecureStorage {
    */
   async getValueFor(key: string): Promise<string | null> {
     try {
-      const value = await SecureStore.getItemAsync(key);
-      this.logger.debug(`[SecureStorage] ${value ? 'Retrieved' : 'Did not find'} value for key: ${key}`);
+      const value = await AsyncStorage.getItem(key);
+      this.logger.debug(`[AsyncStorage] ${value ? 'Retrieved' : 'Did not find'} value for key: ${key}`);
       return value;
     } catch (error) {
-      this.logger.error(`[SecureStorage] Failed to get value for key: ${key}`, error as Error);
+      this.logger.error(`[AsyncStorage] Failed to get value for key: ${key}`, error as Error);
       throw new StorageError(`Could not retrieve data for key: ${key}`);
     }
   }
@@ -77,10 +77,10 @@ class SecureStorageService implements ISecureStorage {
    */
   async deleteValueFor(key: string): Promise<void> {
     try {
-      await SecureStore.deleteItemAsync(key);
-      this.logger.debug(`[SecureStorage] Deleted value for key: ${key}`);
+      await AsyncStorage.removeItem(key);
+      this.logger.debug(`[AsyncStorage] Deleted value for key: ${key}`);
     } catch (error) {
-      this.logger.error(`[SecureStorage] Failed to delete value for key: ${key}`, error as Error);
+      this.logger.error(`[AsyncStorage] Failed to delete value for key: ${key}`, error as Error);
       throw new StorageError(`Could not delete data for key: ${key}`);
     }
   }

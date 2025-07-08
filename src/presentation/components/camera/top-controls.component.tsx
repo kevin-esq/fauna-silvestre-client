@@ -1,7 +1,8 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 type Props = {
   onBack: () => void;
@@ -21,7 +22,7 @@ export const TopControls: React.FC<Props> = ({
   style,
 }) => {
   const handlePress = (action: () => void) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    ReactNativeHapticFeedback.trigger('impactLight', { ignoreAndroidSystemSettings: true });
     action();
   };
 

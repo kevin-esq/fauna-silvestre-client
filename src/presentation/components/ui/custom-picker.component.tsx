@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/theme-context';
 import { Picker } from '@react-native-picker/picker';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 interface PickerOption {
   label: string;
@@ -10,7 +10,7 @@ interface PickerOption {
 }
 
 interface CustomPickerProps {
-  iconName: keyof typeof MaterialIcons.glyphMap;
+  iconName: React.ComponentProps<typeof MaterialIcons>['name'];
   selectedValue: string | number;
   onValueChange: (value: string | number) => void;
   options: PickerOption[];

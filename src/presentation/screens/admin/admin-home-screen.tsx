@@ -1,7 +1,11 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import * as Location from 'expo-location';
+import Location from 'react-native-get-location';
+import { Platform } from 'react-native';
+import Geocoding from 'react-native-geocoding';
+import { request, PERMISSIONS } from 'react-native-permissions';
 import moment from 'moment';
 import 'moment/locale/es';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -50,29 +54,49 @@ const AdminHeader: React.FC = React.memo(() => {
     const timer = setInterval(() => setCurrentTime(moment().format('h:mm A')), 60000);
     all.load();
     return () => clearInterval(timer);
-  }, []);
+  }, [all]);
 
   useEffect(() => {
-    (async () => {
+    const fetchLocation = async () => {
       setLoadingLocation(true);
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocationInfo({ city: 'Permiso denegado', country: '' });
-        setLoadingLocation(false);
-        return;
-      }
       try {
-        const location = await Location.getCurrentPositionAsync({});
-        const reverseGeocode = await Location.reverseGeocodeAsync(location.coords);
-        if (reverseGeocode[0]) {
-          setLocationInfo({ city: reverseGeocode[0].city, country: reverseGeocode[0].country });
+        const permission = await request(
+          Platform.select({
+            android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+            ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
+          })!
+        );
+
+        if (permission !== 'granted') {
+          throw new Error('Permiso de ubicación denegado');
         }
+
+        const location = await Location.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 15000,
+        });
+
+        // --- IMPORTANTE ---
+        // Reemplaza "YOUR_GOOGLE_MAPS_API_KEY" con tu clave de API de Google Maps.
+        Geocoding.init('AIzaSyDP5t-v593J7Zwu68eO5CIrBzu_xV4b8VQ');
+
+        const response = await Geocoding.from(location.latitude, location.longitude);
+        const address = response.results[0];
+        
+        const city = address.address_components.find(c => c.types.includes('locality'))?.long_name;
+        const country = address.address_components.find(c => c.types.includes('country'))?.long_name;
+
+        setLocationInfo({ city: city || 'N/A', country: country || 'N/A' });
+
       } catch (error) {
+        console.error(error);
         setLocationInfo({ city: 'Ubicación no disponible', country: '' });
-      } finally { 
+      } finally {
         setLoadingLocation(false);
       }
-    })();
+    };
+
+    fetchLocation();
   }, []);
 
   return (
@@ -93,7 +117,7 @@ const AdminHeader: React.FC = React.memo(() => {
         <View style={styles.separator} />
         <Ionicons name="location-outline" size={16} color={variables['--text-secondary']} />
         {loadingLocation ? (
-          <ActivityIndicator size="small" color={variables['--text-secondary']} style={{ marginLeft: 8 }} />
+          <ActivityIndicator size="small" color={variables['--text-secondary']} style={styles.activityIndicator} />
         ) : (
           <Text style={styles.timeAndLocationText}>
             {locationInfo.city}, {locationInfo.country}
@@ -104,39 +128,19 @@ const AdminHeader: React.FC = React.memo(() => {
   );
 });
 
-const StatsCard: React.FC = React.memo(() => {
+
+
+const CardButton: React.FC<{ icon: string; label: string; onPress: () => void }> = React.memo(({ icon, label, onPress }) => {
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
-  const { all } = usePublications();
 
   return (
-    <View style={styles.statsContainer}>
-      <View style={styles.statBox}>
-        {
-        all.isLoading ? 
-        (<ActivityIndicator size="small" color={variables['--text-secondary']} style={{ marginLeft: 8 }} />) : 
-        (<Text style={styles.statValue}>{all.publications.filter((p) => p.status === 'accepted').length}</Text>)
-        }
-        <Text style={styles.statLabel}>Publicados</Text>
-      </View>
-      <View style={styles.statBox}>
-        {
-        all.isLoading ? 
-        (<ActivityIndicator size="small" color={variables['--text-secondary']} style={{ marginLeft: 8 }} />) : 
-        (<Text style={styles.statValue}>{all.publications.filter((p) => p.status === 'pending').length}</Text>)
-        }
-        <Text style={styles.statLabel}>Pendientes</Text>
-      </View>
-      <View style={styles.statBox}>
-        {
-        all.isLoading ? 
-        (<ActivityIndicator size="small" color={variables['--text-secondary']} style={{ marginLeft: 8 }} />) : 
-        (<Text style={styles.statValue}>{all.publications.filter((p) => p.status === 'rejected').length}</Text>)
-        }
-        <Text style={styles.statLabel}>Rechazados</Text>
-      </View>
-    </View>
+    <TouchableOpacity style={styles.cardButton} onPress={onPress}>
+      <Ionicons name={icon} size={22} color={variables['--primary']} />
+      <Text style={styles.cardButtonText}>{label}</Text>
+      <Ionicons name="arrow-forward" size={16} color={variables['--text-secondary']} style={styles.buttonIcon} />
+    </TouchableOpacity>
   );
 });
 
@@ -194,7 +198,23 @@ const AdminHomeScreen: React.FC = () => {
   const ListHeader = (
     <>
       <AdminHeader />
-      <StatsCard />
+      <View style={styles.cardButtonContainer}>
+        <CardButton
+          icon="newspaper-outline"
+          label="Revisar Publicaciones"
+          onPress={() => navigation.navigate('ReviewPublication')}
+        />
+        <CardButton
+          icon="shield-checkmark-outline"
+          label="Ver Publicaciones Aceptadas"
+          onPress={() => navigation.navigate('ViewPublications')}
+        />
+        <CardButton
+          icon="people-outline"
+          label="Gestionar Usuarios"
+          onPress={() => console.log('Navigate to User Management')}
+        />
+      </View>
       <Text style={styles.listHeader}>Usuarios Recientes</Text>
     </>
   );

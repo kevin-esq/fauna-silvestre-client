@@ -1,7 +1,7 @@
 import React from "react";
 import { TouchableOpacity, StyleSheet } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 type Props = {
   onPress: () => void;
@@ -11,12 +11,12 @@ type Props = {
 export const GalleryButton: React.FC<Props> = ({ onPress, style }) => (
   <TouchableOpacity
     onPress={() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      ReactNativeHapticFeedback.trigger('impactLight', { ignoreAndroidSystemSettings: true });
       onPress();
     }}
     style={[styles.button, style]}
     activeOpacity={0.7}>
-    <MaterialIcons name="photo-library" size={40} color="#fff" />
+    <Icon name="photo-library" size={40} color="#fff" />
   </TouchableOpacity>
 );
 

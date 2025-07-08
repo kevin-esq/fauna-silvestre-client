@@ -1,23 +1,24 @@
 import { useEffect, useState } from "react";
-import * as ScreenOrientation from "expo-screen-orientation";
+import Orientation, { OrientationType } from "react-native-orientation-locker";
 
 export const useDeviceOrientation = () => {
-  const [orientation, setOrientation] = useState<ScreenOrientation.Orientation | null>(null);
+  const [orientation, setOrientation] = useState<OrientationType | null>(null);
 
   useEffect(() => {
-    const getInitialOrientation = async () => {
-      const currentOrientation = await ScreenOrientation.getOrientationAsync();
-      setOrientation(currentOrientation);
-    };
-
-    getInitialOrientation();
-
-    const subscription = ScreenOrientation.addOrientationChangeListener((event) => {
-      setOrientation(event.orientationInfo.orientation);
+    // Obtener la orientación inicial
+    Orientation.getOrientation((current) => {
+      setOrientation(current);
     });
 
+    // Escuchar cambios de orientación
+    const orientationChangeHandler = (newOrientation: OrientationType) => {
+      setOrientation(newOrientation);
+    };
+
+    Orientation.addOrientationListener(orientationChangeHandler);
+
     return () => {
-      ScreenOrientation.removeOrientationChangeListener(subscription);
+      Orientation.removeOrientationListener(orientationChangeHandler);
     };
   }, []);
 

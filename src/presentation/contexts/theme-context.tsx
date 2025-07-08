@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { secureStorageService } from '../../services/storage/secure-storage.service';
 
 interface ThemeColors {
   // Colores principales
@@ -279,7 +279,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Efecto para cargar el tema guardado (si existe)
   useEffect(() => {
     const loadTheme = async () => {
-      const savedTheme = await SecureStore.getItemAsync('theme');
+      const savedTheme = await secureStorageService.getValueFor('theme');
       if (savedTheme === 'dark') {
         setIsDark(true);
         setTheme(darkTheme);
@@ -297,7 +297,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsDark(newIsDark);
     setTheme(newIsDark ? darkTheme : lightTheme);
     try {
-      await SecureStore.setItemAsync('theme', newIsDark ? 'dark' : 'light');
+      await secureStorageService.save('theme', newIsDark ? 'dark' : 'light');
     } catch (e) {
       console.error('Error saving theme:', e);
     }

@@ -73,6 +73,9 @@ export const createStyles = (vars: Record<string, any>) => {
       backgroundColor: vars['--border-color'],
       marginHorizontal: 12,
     },
+    activityIndicator: {
+      marginLeft: 8,
+    },
 
     statsContainer: {
       flexDirection: 'row',
@@ -146,6 +149,31 @@ export const createStyles = (vars: Record<string, any>) => {
       fontSize: 14,
       color: vars['--text-secondary'],
       marginTop: 2,
+    },
+
+    cardButtonText: {
+      color: vars['--primary'],
+      fontWeight: '600',
+    },
+
+    buttonIcon: {
+      marginLeft: 8,
+    },
+    cardButtonContainer: {
+      paddingHorizontal: 20,
+      marginTop: 10,
+    },
+    cardButton: {
+      backgroundColor: vars['--background'],
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      elevation: 2,
+      shadowColor: vars['--shadow-color'],
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
     },
     emptyListContainer: {
       alignItems: 'center',

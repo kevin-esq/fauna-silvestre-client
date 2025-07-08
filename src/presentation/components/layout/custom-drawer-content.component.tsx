@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,9 @@ import {
   DrawerContentScrollView,
   DrawerItemList,
 } from '@react-navigation/drawer';
-import { FontAwesome, Ionicons } from '@expo/vector-icons';
-import {useAuth} from "../../contexts/auth-context"; // Puedes usar otro set de íconos si prefieres
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import {useAuth} from "../../contexts/auth-context";
 
 const CustomDrawerContent = (props: any) => {
   const { navigation } = props;
