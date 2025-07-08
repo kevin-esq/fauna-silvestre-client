@@ -1,13 +1,11 @@
-import {PublicationService} from "../../services/publication/publication.service";
+import {publicationService} from "../../services/publication/publication.service";
 
 export default async function rejectPublicationUseCase(
-    publicationService: PublicationService,
     publicationId: string,
-    token: string | undefined
 ): Promise<void> {
     try {
-        return await publicationService.rejectPublication(publicationId, token as string);
+        return await publicationService.rejectPublication(publicationId);
     } catch (error) {
         throw error;
     }
-}
+}   

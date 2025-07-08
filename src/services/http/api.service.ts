@@ -3,22 +3,25 @@ import { ISecureStorage, secureStorageService } from '../storage/secure-storage.
 import { ILogger } from '../../shared/types/ILogger';
 import { ConsoleLogger } from '../logging/console-logger';
 import { ApiError, NetworkError } from '../../shared/types/custom-errors';
-import Constants from 'expo-constants';
-import { ExpoConfig } from 'expo/config';
+import appJson from '../../../app.json';
 
 /**
  * A singleton service for managing API calls using Axios.
  * It handles Axios instance configuration, token injection, and global error handling.
  */
+
+const {
+  extra,
+} = appJson as { extra: Record<string, any> };
+
 class ApiService {
   private static instance: ApiService;
   public readonly client: AxiosInstance;
   private onUnauthorizedCallback: (() => void) | null = null;
 
-  private readonly expoConfig: (ExpoConfig & { hostUri?: string | undefined; }) | null;
   private readonly extraConfig: { [k: string]: any } | undefined;
-  private readonly EXPO_PUBLIC_API_URL: string;
-  private readonly EXPO_PUBLIC_API_TIMEOUT: number;
+  private readonly API_URL: string;
+  private readonly API_TIMEOUT: number;
 
   /**
    * Private constructor to enforce the singleton pattern.
@@ -26,14 +29,13 @@ class ApiService {
    * @param logger The logging service.
    */
   private constructor(private readonly storageService: ISecureStorage, private readonly logger: ILogger) {
-    this.expoConfig = Constants.expoConfig;
-    this.extraConfig = this.expoConfig?.extra;
-    this.EXPO_PUBLIC_API_URL = this.extraConfig?.EXPO_PUBLIC_API_URL || '';
-    this.EXPO_PUBLIC_API_TIMEOUT = Number(this.extraConfig?.EXPO_PUBLIC_API_TIMEOUT || 15000);
+    this.extraConfig = extra;
+    this.API_URL = this.extraConfig?.API_URL || '';
+    this.API_TIMEOUT = Number(this.extraConfig?.API_TIMEOUT || 15000);
 
     this.client = axios.create({
-      baseURL: this.EXPO_PUBLIC_API_URL,
-      timeout: this.EXPO_PUBLIC_API_TIMEOUT,
+      baseURL: this.API_URL,
+      timeout: this.API_TIMEOUT,
       headers: { 'Content-Type': 'application/json' },
     });
 
@@ -108,20 +110,20 @@ class ApiService {
         }
 
         // Create a specific ApiError
-        return Promise.reject(new ApiError(response.data?.message || 'An API error occurred.', response.status));
+        return Promise.reject(new ApiError(response.data?.message || 'Ocurrió un error de API.', response.status));
       } else if (request) {
         // The request was made but no response was received (e.g., network error)
         this.logger.error(`[ApiService] Network Error: No response for ${method} ${url}`, error);
-        return Promise.reject(new NetworkError('No response from server. Please check your network connection.'));
+        return Promise.reject(new NetworkError('No se recibió respuesta del servidor. Por favor, verifique su conexión a internet.'));
       } else {
         // Something happened in setting up the request that triggered an Error
         this.logger.error(`[ApiService] Request Setup Error: ${method} ${url}`, error);
-        return Promise.reject(new ApiError(message));
+        return Promise.reject(new ApiError('Ocurrió un error inesperado.'));
       }
     }
 
     this.logger.error('[ApiService] Non-Axios error occurred', error);
-    return Promise.reject(new ApiError('An unexpected error occurred.'));
+    return Promise.reject(new ApiError('Ocurrió un error inesperado.'));
   }
 }
 

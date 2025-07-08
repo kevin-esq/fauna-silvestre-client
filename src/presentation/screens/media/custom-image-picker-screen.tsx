@@ -13,9 +13,8 @@ import {
 import {
   CameraRoll,
   Album,
-  PhotoIdentifier,
 } from "@react-native-camera-roll/camera-roll/src/CameraRoll";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 // --- Constants & Types ---------------------------------------
 const { width } = Dimensions.get("window");
@@ -238,7 +237,7 @@ const IconButton = memo(
     color = "#424242",
     accessibilityLabel,
   }: {
-    name: keyof typeof Ionicons.glyphMap;
+    name: React.ComponentProps<typeof Ionicons>['name'];
     onPress: () => void;
     color?: string;
     accessibilityLabel: string;

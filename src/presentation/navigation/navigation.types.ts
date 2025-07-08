@@ -1,7 +1,5 @@
-import type { DrawerScreenProps } from '@react-navigation/drawer';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PublicationsModel } from '../../domain/models/publication.models';
-import Animal from '../../domain/entities/animal.entity';
 
 // Única fuente de verdad para todas las rutas de la aplicación.
 export type RootStackParamList = {

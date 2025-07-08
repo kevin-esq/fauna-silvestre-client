@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Switch,
 } from 'react-native';
@@ -41,8 +40,8 @@ const LoginScreen = () => {
   const [rememberMe, setRememberMe] = useState(false);
 
   return (
-    <AuthContainer title="¡Hola! 👋" subtitle="Inicia sesión para continuar">
-      <ErrorMessage message={error} />
+    <AuthContainer title="¡Hola! 👋" subtitle="Inicia sesión para continuar" variables={variables}>
+      <ErrorMessage message={error} variables={variables} />
 
       <AuthTextInput
         iconName="person"
@@ -52,7 +51,7 @@ const LoginScreen = () => {
         autoCapitalize="none"
         autoCorrect={false}
         error={!!error}
-        theme={theme}
+        variables={variables}
         style={[
           styles.input,
           {
@@ -69,7 +68,7 @@ const LoginScreen = () => {
         onChangeText={setPassword}
         secureTextEntry
         error={!!error}
-        theme={theme}
+        variables={variables}
         style={[
           styles.input,
           {
@@ -94,6 +93,7 @@ const LoginScreen = () => {
         onPress={handleLogin}
         style={styles.button}
         disabled={!username || !password}
+        variables={variables}
       />
 
       <TouchableOpacity
@@ -112,6 +112,7 @@ const LoginScreen = () => {
         onPress={() => navigate('Register')}
         style={styles.button}
         variant="secondary"
+        variables={variables}
       />
     </AuthContainer>
   );

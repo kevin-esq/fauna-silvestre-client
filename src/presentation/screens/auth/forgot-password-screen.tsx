@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, TouchableOpacity } from 'react-native';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { useForgotPassword, ResetStep } from '../../hooks/use-forgot-password.hook';
 
@@ -23,15 +23,15 @@ const EmailStep = ({ email, setEmail, onContinue, theme, styles }: { email: stri
       onChangeText={setEmail}
       keyboardType="email-address"
       autoCapitalize="none"
-      theme={theme}    />
-    <CustomButton title="Enviar Código" onPress={onContinue} style={styles.button} />
+      variables={themeVariables(theme)}    />
+    <CustomButton title="Enviar Código" onPress={onContinue} style={styles.button} variables={themeVariables(theme)} />
   </>
 );
 
-const CodeStep = ({ code, setCode, onContinue, onResend, styles }: { code: string; setCode: (code: string) => void; onContinue: () => void; onResend: () => void, theme: any, styles: any }) => (
+const CodeStep = ({ code, setCode, onContinue, onResend, styles, theme }: { code: string; setCode: (code: string) => void; onContinue: () => void; onResend: () => void, theme: any, styles: any }) => (
   <>
-    <CodeInput code={code} setCode={setCode} />
-    <CustomButton title="Verificar Código" onPress={onContinue} style={styles.button} />
+    <CodeInput code={code} setCode={setCode} variables={themeVariables(theme)} />
+    <CustomButton title="Verificar Código" onPress={onContinue} style={styles.button} variables={themeVariables(theme)} />
     <TouchableOpacity onPress={onResend}>
       <Text style={styles.resendText}>Reenviar código</Text>
     </TouchableOpacity>
@@ -46,7 +46,7 @@ const PasswordStep = ({ newPassword, setNewPassword, confirmPassword, setConfirm
       value={newPassword}
       onChangeText={setNewPassword}
       secureTextEntry
-      theme={theme}
+      variables={themeVariables(theme)}
     />
     <AuthTextInput
       iconName="lock-reset"
@@ -54,9 +54,9 @@ const PasswordStep = ({ newPassword, setNewPassword, confirmPassword, setConfirm
       value={confirmPassword}
       onChangeText={setConfirmPassword}
       secureTextEntry
-      theme={theme}
+      variables={themeVariables(theme)}
     />
-    <CustomButton title="Cambiar Contraseña" onPress={onContinue} style={styles.button} />
+    <CustomButton title="Cambiar Contraseña" onPress={onContinue} style={styles.button} variables={themeVariables(theme)}/>
   </>
 );
 
@@ -80,8 +80,8 @@ const ForgotPasswordScreen = () => {
   };
 
   return (
-    <AuthContainer title="Recuperar Contraseña 🔐" subtitle={subtitles[currentStep]}>
-      <ErrorMessage message={error || message} isSuccess={!!message && !error} />
+    <AuthContainer title="Recuperar Contraseña 🔐" subtitle={subtitles[currentStep]} variables={variables}>
+      <ErrorMessage message={error || message} isSuccess={!!message && !error} variables={variables} />
 
       {currentStep === ResetStep.EMAIL && (
         <EmailStep email={email} setEmail={setEmail} onContinue={sendResetPasswordEmail} theme={theme} styles={styles} />
@@ -114,6 +114,7 @@ const ForgotPasswordScreen = () => {
         onPress={() => navigate('Login')}
         variant="secondary"
         style={styles.button}
+        variables={variables}
       />
     </AuthContainer>
   );

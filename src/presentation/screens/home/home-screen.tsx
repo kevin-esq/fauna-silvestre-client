@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useTheme, themeVariables } from '../../contexts/theme-context';
 import { useAuth } from '../../contexts/auth-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createStyles } from './home-screen.styles';
 import FloatingActionButton from '../../components/ui/floating-action-button.component';
 import { usePublications } from '../../contexts/publication-context';

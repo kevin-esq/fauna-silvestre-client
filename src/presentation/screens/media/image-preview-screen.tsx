@@ -6,15 +6,11 @@ import {
   Text,
   TouchableOpacity,
   Animated,
-  Dimensions,
   SafeAreaView,
   StatusBar
 } from "react-native";
 import { NavigationProp, useNavigation, useRoute } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from 'expo-haptics';
-
-const { width } = Dimensions.get('window');
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 const ImagePreviewScreen = () => {
   const navigation = useNavigation<NavigationProp<any>>();
@@ -28,15 +24,13 @@ const ImagePreviewScreen = () => {
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   const handleContinue = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     navigation.navigate("PublicationForm", { imageUri, location });
   };
 
   const handleGoBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     navigation.goBack();
   };
 

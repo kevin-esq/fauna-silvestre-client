@@ -1,4 +1,4 @@
-import React, { useState, useCallback, FC } from "react";
+import React, { useState, useCallback, FC, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import * as DocumentPicker from "expo-document-picker";
-import { MaterialIcons } from "@expo/vector-icons";
+import { pick } from "@react-native-documents/picker";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 export type InputType =
   | "username"
@@ -109,30 +109,37 @@ const CustomInput: FC<CustomInputProps> = ({
 
   const handleFilePick = useCallback(async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({});
-      if ("name" in result && typeof result.name === "string") {
-        setSelectedFile(result.name);
-        onChange?.(result.name);
+      const result = await pick({
+        allowMultiSelection: false,
+        type: ['*/*'], // o 'application/pdf', 'image/*', etc. según lo que quieras permitir
+      });
+  
+      if (result?.length) {
+        const file = result[0];
+        setSelectedFile(file.name);
+        onChange?.(file.name as string);
       }
-    } catch (err) {
-      console.error("Error al seleccionar archivo:", err);
+    } catch (err: any) {
+      if (err?.code !== 'DOCUMENT_PICKER_CANCELED') {
+        console.error("Error al seleccionar archivo:", err);
+      }
     }
   }, [onChange]);
+
+  const wrapperStyle = useMemo(() => [
+    styles.inputWrapper,
+    {
+      borderColor,
+      borderWidth,
+      backgroundColor: disabled ? "#f5f5f5" : "#fff",
+    },
+  ], [borderColor, borderWidth, disabled]);
 
   const renderTextInput = (
     keyboardType: "default" | "email-address" | "numeric" = "default",
     secureTextEntry = false
   ) => (
-    <View
-      style={[
-        styles.inputWrapper,
-        {
-          borderColor,
-          borderWidth,
-          backgroundColor: disabled ? "#f5f5f5" : "#fff",
-        },
-      ]}
-    >
+    <View style={wrapperStyle}>
       {icon && <View style={styles.iconContainer}>{icon}</View>}
       <TextInput
         placeholder={placeholder}

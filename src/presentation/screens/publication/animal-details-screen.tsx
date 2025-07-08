@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { ArrowLeft } from "lucide-react-native";
+import Ionicons from "react-native-vector-icons/Ionicons";
 import { useTheme, themeVariables } from "../../contexts/theme-context";
 import { StyleSheet } from "react-native";
 
@@ -22,7 +22,7 @@ const AnimalDetailsScreen = ({ route }: { route: any }) => {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeft size={24} color={theme.colors.text} />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           <Text style={styles.backText}>Volver</Text>
         </TouchableOpacity>
       </View>

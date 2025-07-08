@@ -7,10 +7,9 @@ import {
   Text,
   ScrollView,
   Platform,
-  Animated,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { themeVariables } from '../../contexts/theme-context';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 interface AnimalSearchableDropdownProps<T extends string> {
   options: readonly T[];
@@ -24,13 +23,24 @@ const AnimalSearchableDropdown = <T extends string>({
   options,
   selectedValue,
   onValueChange,
-  placeholder = 'Selecciona un animal',
+  placeholder = 'Selecciona...',
   theme,
 }: AnimalSearchableDropdownProps<T>) => {
-  const vars = useMemo(() => themeVariables(theme), [theme]);
-
+  const vars = themeVariables(theme);
   const [isOpen, setIsOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const styles = useMemo(() => createStyles(vars), [vars]);
+
+  const selectedOptionTextStyle = useMemo(() => ({
+    color: vars['--text-on-primary'],
+    fontWeight: '600' as const,
+  }), [vars]);
+
+  const optionTextStyle = useMemo(() => ({
+    color: vars['--text'],
+    fontWeight: '400' as const,
+  }), [vars]);
+
   const filteredOptions = useMemo(
     () =>
       options.filter((opt) =>
@@ -44,8 +54,6 @@ const AnimalSearchableDropdown = <T extends string>({
     setSearchText('');
     onValueChange(value);
   };
-
-  const styles = useMemo(() => createStyles(vars), [vars]);
 
   return (
     <View style={styles.container}>
@@ -63,7 +71,7 @@ const AnimalSearchableDropdown = <T extends string>({
           placeholderTextColor={vars['--text-secondary']}
           editable={true}
         />
-        <Ionicons
+        <Icon
           name={isOpen ? 'chevron-up' : 'chevron-down'}
           size={20}
           color={vars['--text-secondary']}
@@ -90,12 +98,7 @@ const AnimalSearchableDropdown = <T extends string>({
                   <Text
                     style={[
                       styles.optionText,
-                      {
-                        color: isSelected
-                          ? vars['--text-on-primary']
-                          : vars['--text'],
-                        fontWeight: isSelected ? '600' : '400',
-                      },
+                      isSelected ? selectedOptionTextStyle : optionTextStyle,
                     ]}
                   >
                     {option}

@@ -7,8 +7,7 @@ import {
   StyleSheet,
   Dimensions,
 } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 const { width } = Dimensions.get("window");
 
@@ -34,7 +33,6 @@ export const ThumbnailList: React.FC<ThumbnailListProps> = ({
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onSelect(item);
             }}
             style={styles.thumbnail}

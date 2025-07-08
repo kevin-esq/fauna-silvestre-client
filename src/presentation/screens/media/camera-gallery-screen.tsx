@@ -22,7 +22,6 @@ import { LocationService } from "../../../services/location/location.service";
 import { Modalize } from "react-native-modalize";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import * as Haptics from "expo-haptics";
 import CustomImagePickerScreen from "./custom-image-picker-screen";
 import {useLoading} from "../../contexts/loading-context";
 
@@ -66,7 +65,7 @@ export const CameraGalleryScreen: React.FC = () => {
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   useEffect(() => {
     if (isCapturing) {
@@ -87,11 +86,10 @@ export const CameraGalleryScreen: React.FC = () => {
     } else {
       pulseAnim.setValue(1);
     }
-  }, [isCapturing]);
+  }, [isCapturing, pulseAnim]);
 
   const handleCapture = async () => {
     showLoading();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       const uri = await takePhoto();
       const location = await LocationService.getCurrentCoords();
@@ -106,6 +104,7 @@ export const CameraGalleryScreen: React.FC = () => {
   const handleOpenGallery = () => galleryModalRef.current?.open();
   const handleConfirm = (uri: string) => {
     galleryModalRef.current?.close();
+    navigation.navigate("ImagePreview", { imageUri: uri });
   };
   const handleCancel = () => galleryModalRef.current?.close();
 

@@ -1,15 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { View, TextInput, StyleSheet, TextInputProps, TouchableOpacity } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 interface AuthTextInputProps extends TextInputProps {
-  iconName: React.ComponentProps<typeof MaterialIcons>['name'];
+  iconName: React.ComponentProps<typeof Icon>['name'];
   error?: boolean;
-  theme: any;
+  variables: any;
 }
 
-const AuthTextInput: React.FC<AuthTextInputProps> = ({ iconName, error, style, theme, ...props }) => {
-  const styles = useMemo(() => createStyles(theme), [theme]);
+const AuthTextInput: React.FC<AuthTextInputProps> = ({ iconName, error, style, variables, ...props }) => {
+  const styles = useMemo(() => createStyles(variables), [variables]);
 
   const isPasswordInput = props.secureTextEntry;
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -20,19 +20,19 @@ const AuthTextInput: React.FC<AuthTextInputProps> = ({ iconName, error, style, t
 
   return (
     <View style={[styles.inputContainer, error ? styles.errorBorder : null, style]}>
-      <MaterialIcons name={iconName} size={24} color={theme.colors.textSecondary} style={styles.icon} />
+      <Icon name={iconName} size={24} color={variables['--text-secondary']} style={styles.icon} />
       <TextInput
         style={styles.input}
-        placeholderTextColor={theme.colors.placeholder}
+        placeholderTextColor={variables['--placeholder']}
         {...props}
         secureTextEntry={isPasswordInput && !isPasswordVisible}
       />
       {isPasswordInput && (
         <TouchableOpacity onPress={togglePasswordVisibility}>
-          <MaterialIcons
+          <Icon
             name={isPasswordVisible ? 'visibility-off' : 'visibility'}
             size={24}
-            color={theme.colors.textSecondary}
+            color={variables['--text-secondary']}
           />
         </TouchableOpacity>
       )}
@@ -40,14 +40,14 @@ const AuthTextInput: React.FC<AuthTextInputProps> = ({ iconName, error, style, t
   );
 };
 
-const createStyles = (theme: any) => StyleSheet.create({
+const createStyles = (variables: any) => StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceVariant,
+    backgroundColor: variables['--surface-variant'],
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: variables['--border'],
     paddingHorizontal: 15,
     marginBottom: 16,
   },
@@ -58,7 +58,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     flex: 1,
         height: 50,
     fontSize: 16,
-    color: theme.colors.text,
+    color: variables['--text'],
   },
   errorBorder: {
     borderColor: '#ef4444',

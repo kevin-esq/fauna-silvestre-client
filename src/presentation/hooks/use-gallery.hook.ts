@@ -1,14 +1,21 @@
 import { useNavigation } from '@react-navigation/native';
-import { ImagePickerService } from '../../services/media/image-picker.service';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { MediaLibraryService } from '../../services/media/media-library.service';
 
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { LocationObjectCoords } from 'expo-location';
 
 type StackParamList = {
   ImagePreview: {
     imageUri: string;
-    location?: LocationObjectCoords
+    location?: {
+      latitude: number;
+      longitude: number;
+      altitude: number;
+      accuracy: number;
+      altitudeAccuracy: number;
+      heading: number;
+      speed: number;
+    };
   };
 };
 
@@ -16,18 +23,25 @@ export function useGallery() {
   const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>();
 
   const pickAndNavigate = async () => {
-    const result = await ImagePickerService.pickFromGallery();
-    console.log("result", result);
-    if (!result?.uri) return;
-    const { exif } = result;
+    const response = await new Promise<any>((resolve) =>
+      launchImageLibrary(
+        { mediaType: 'photo', quality: 1, selectionLimit: 1 },
+        resolve
+      )
+    );
+
+    const asset = response?.assets?.[0];
+    if (!asset?.uri) return;
+
+    const metadata = await MediaLibraryService.extractMetadata(asset.uri);
 
     let location;
-    if (exif?.GPSLatitude && exif?.GPSLongitude) {
+    if (metadata) {
       location = {
-        latitude: exif.GPSLatitude,
-        longitude: exif.GPSLongitude,
-        altitude: exif.GPSAltitude || 0,
-        accuracy: exif.GPSPositionError || 0,
+        latitude: metadata.latitude,
+        longitude: metadata.longitude,
+        altitude: metadata.altitude ?? 0,
+        accuracy: metadata.accuracy ?? 0,
         altitudeAccuracy: 0,
         heading: 0,
         speed: 0,
@@ -35,21 +49,21 @@ export function useGallery() {
     }
 
     navigation.navigate('ImagePreview', {
-      imageUri: result.uri,
-      location
+      imageUri: asset.uri,
+      location,
     });
   };
 
   const openUri = async (uri: string) => {
-        const metadata = await MediaLibraryService.extractMetadata(uri);
+    const metadata = await MediaLibraryService.extractMetadata(uri);
 
     let location;
-    if (metadata?.latitude && metadata?.longitude) {
+    if (metadata) {
       location = {
         latitude: metadata.latitude,
         longitude: metadata.longitude,
-        altitude: metadata.altitude || 0,
-        accuracy: metadata.accuracy || 0,
+        altitude: metadata.altitude ?? 0,
+        accuracy: metadata.accuracy ?? 0,
         altitudeAccuracy: 0,
         heading: 0,
         speed: 0,

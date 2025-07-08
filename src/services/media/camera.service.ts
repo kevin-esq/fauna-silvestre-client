@@ -1,5 +1,7 @@
+// services/camera/camera.service.ts
+
 import { Camera, PhotoFile } from 'react-native-vision-camera';
-import * as ImageManipulator from 'expo-image-manipulator';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
 import { metaToLocation } from '../../shared/utils/metaParser';
 
 export type FlashMode = 'off' | 'on' | 'auto';
@@ -27,9 +29,8 @@ export interface ProcessedPhoto extends PhotoFile {
 }
 
 export class CameraService {
-  constructor(
-    private cameraRef: React.RefObject<Camera>
-  ) {}
+  constructor(private cameraRef: React.RefObject<Camera>) {}
+
   /** Toma la foto y respeta abortSignal */
   async takePhoto(
     useFlashFront: boolean,
@@ -44,14 +45,15 @@ export class CameraService {
     }
 
     const captureOpts = useFlashFront
-      ? { flash: flashMode, includeLocation: true }
-      : { includeLocation: true };
+      ? { flash: flashMode, enableHighQualityPhotos: true }
+      : { enableHighQualityPhotos: true };
 
-      const photo = await this.cameraRef.current.takePhoto(captureOpts);
+    const photo = await this.cameraRef.current.takePhoto(captureOpts);
 
     if (options?.abortSignal?.aborted) {
       throw new CaptureCancelledError();
     }
+
     return this.processPhoto(photo, options);
   }
 
@@ -61,26 +63,39 @@ export class CameraService {
     options?: TakePhotoOptions
   ): Promise<ProcessedPhoto> {
     try {
-      // redimensionar
-      const manipulated = await ImageManipulator.manipulateAsync(
-        `file://${photo.path}`,
-        [{ resize: { width: 1080 } }],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      // 1. Redimensionar con react-native-image-resizer
+      const originalWidth = photo.width || 1080;
+      const originalHeight = photo.height || originalWidth;
+      const targetWidth = 1080;
+      const targetHeight = Math.round((originalHeight / originalWidth) * targetWidth);
+
+      const resized = await ImageResizer.createResizedImage(
+        photo.path,
+        targetWidth,
+        targetHeight,
+        'JPEG',
+        80 // calidad del 0 al 100
       );
+
       if (options?.abortSignal?.aborted) {
         throw new CaptureCancelledError();
       }
 
-      // extraer GPS
+      // 2. Extraer GPS desde metadata EXIF
       const location = await metaToLocation(photo).catch(() => null);
+
       if (options?.abortSignal?.aborted) {
         throw new CaptureCancelledError();
       }
 
       options?.onCaptureProgress?.(100);
+
       return {
         ...photo,
-        path: manipulated.uri.replace('file://', ''),
+        // la ruta devuelta por ImageResizer ya es un path válido (contiene 'file://')
+        path: resized.uri.replace('file://', ''),
+        width: targetWidth,
+        height: targetHeight,
         metadata: photo.metadata,
         location: location || undefined,
       };
@@ -93,7 +108,6 @@ export class CameraService {
 
   toggleFlash(current: FlashMode): FlashMode {
     const modes: FlashMode[] = ['off', 'on', 'auto'];
-
     return modes[(modes.indexOf(current) + 1) % modes.length];
   }
 
