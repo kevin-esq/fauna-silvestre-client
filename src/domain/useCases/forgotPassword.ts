@@ -1,9 +1,10 @@
-export default async function forgotPassword(authRepository, email) {
+import IAuthRepository from "../interfaces/IAuthRepository";
+
+export default async function forgotPassword(authRepository: IAuthRepository, email: string) {
     try {
-      const result = await authRepository.forgotPassword(email);
-      return result;
+      const response = await authRepository.forgotPassword(email);
+      return response;
     } catch (error) {
       throw error;
     }
   }
-  

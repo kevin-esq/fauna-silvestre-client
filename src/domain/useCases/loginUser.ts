@@ -1,9 +1,13 @@
-export default async function loginUser(authRepository, credentials) {
+import { IAuthRepository } from "../interfaces/IAuthRepository";
+import { Credentials } from "../models/AuthModels";
+
+export default async function loginUser(authRepository: IAuthRepository, credentials: Credentials) {
     try {
-      const user = await authRepository.login(credentials);
-      return user;
+      console.log("[loginUser] credentials", credentials);
+      const token = await authRepository.login(credentials);
+      console.log("[loginUser] token", token);
+      return token;
     } catch (error) {
       throw error;
     }
   }
-  
