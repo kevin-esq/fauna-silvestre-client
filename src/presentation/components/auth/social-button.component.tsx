@@ -1,4 +1,4 @@
-import { Icon } from 'lucide-react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 

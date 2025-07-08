@@ -37,7 +37,7 @@ const PublicationScreen: React.FC = () => {
     const [hasMore, setHasMore] = useState(true);
 
     const searchRef = useRef('');
-    const timeoutRef = useRef<NodeJS.Timeout>();
+    const timeoutRef = useRef<NodeJS.Timeout>(null);
 
     const MemoizedPublicationCard = React.memo(PublicationCard);
 
@@ -54,7 +54,7 @@ const PublicationScreen: React.FC = () => {
 
     useEffect(() => {
         loadPublications();
-    }, []);
+    }, [loadPublications]);
 
         useDrawerBackHandler();
 
@@ -121,7 +121,7 @@ const PublicationScreen: React.FC = () => {
     publication={item}
     onPress={() => handlePress(item) }
   />
-), [handlePress]);
+), [handlePress, MemoizedPublicationCard]);
 
     const renderFooter = () => {
         if (!isLoading) return null;

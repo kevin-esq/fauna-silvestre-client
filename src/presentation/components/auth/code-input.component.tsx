@@ -1,16 +1,15 @@
 import React, { useRef, useMemo } from 'react';
 import { View, TextInput, StyleSheet, NativeSyntheticEvent, TextInputKeyPressEventData } from 'react-native';
-import { useTheme } from '../../contexts/theme-context';
 
 interface CodeInputProps {
   code: string;
   setCode: (code: string) => void;
   digitCount?: number;
+  variables: any;
 }
 
-const CodeInput: React.FC<CodeInputProps> = ({ code, setCode, digitCount = 5 }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+const CodeInput: React.FC<CodeInputProps> = ({ code, setCode, digitCount = 5, variables }) => {
+  const styles = useMemo(() => createStyles(variables), [variables]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   const codeDigits = useMemo(() => {
@@ -50,7 +49,7 @@ const CodeInput: React.FC<CodeInputProps> = ({ code, setCode, digitCount = 5 }) 
       {Array.from({ length: digitCount }).map((_, index) => (
         <TextInput
           key={index}
-          ref={(ref) => (inputRefs.current[index] = ref)}
+          ref={(ref) => { inputRefs.current[index] = ref; }}
           style={styles.codeInput}
           keyboardType="number-pad"
           maxLength={1}
@@ -64,7 +63,7 @@ const CodeInput: React.FC<CodeInputProps> = ({ code, setCode, digitCount = 5 }) 
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (variables: any) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -75,13 +74,13 @@ const createStyles = (colors: any) => StyleSheet.create({
     width: 50,
     height: 60,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: variables['--border'],
     borderRadius: 8,
     textAlign: 'center',
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.text,
-    backgroundColor: colors.surfaceVariant,
+    color: variables['--text'],
+    backgroundColor: variables['--surface-variant'],
   },
 });
 

@@ -1,6 +1,6 @@
 // navigation/app-navigator.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../contexts/auth-context';
 
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -64,10 +64,10 @@ const AdminDrawer = () => {
     useEffect(() => {
         pending.load();
         all.load();
-    }, []);
+    });
     return (
         <Drawer.Navigator
-            drawerContent={(props) => <CustomDrawerContent {...props} />}>
+            drawerContent={CustomDrawerContent}>
             <Drawer.Screen
                 name="Home"
                 component={AdminHomeScreen}
@@ -118,7 +118,7 @@ const UserDrawer = () => {
     console.log('[UserDrawer] render');
     return (
         <Drawer.Navigator
-            drawerContent={(props) => <CustomDrawerContent {...props} />}>
+            drawerContent={CustomDrawerContent}>
             <Drawer.Screen
                 name="Home"
                 component={HomeScreen}

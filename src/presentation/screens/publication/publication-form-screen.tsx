@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Alert, Animated, Dimensions, Image, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, Image, Modal, Platform, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
 import { useLoading } from '../../contexts/loading-context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
@@ -46,7 +46,7 @@ const PublicationFormScreen: React.FC = () => {
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   const handleSubmit = useCallback(async () => {
     if (!imageUri) {
@@ -96,12 +96,10 @@ const PublicationFormScreen: React.FC = () => {
   }, [formState, imageUri, location, showLoading, hideLoading, navigate]);
 
   const toggleImageExpand = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setFormState(prev => ({ ...prev, isImageExpanded: !prev.isImageExpanded }));
   }, []);
 
   const handleAnimalSelect = useCallback((animal: typeof animalOptions[number]) => {
-    Haptics.selectionAsync();
     setFormState(prev => ({ ...prev, animal }));
   }, []);
 

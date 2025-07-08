@@ -1,7 +1,5 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { useTheme, themeVariables } from "../../contexts/theme-context";
-
 interface CustomButtonProps {
   title: string;
   onPress: () => void;
@@ -9,6 +7,7 @@ interface CustomButtonProps {
   textStyle?: object;
   disabled?: boolean;
   variant?: 'primary' | 'secondary';
+  variables: Record<string, string> | undefined;
 }
 
 const CustomButton: React.FC<CustomButtonProps> = ({
@@ -18,33 +17,59 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   textStyle,
   disabled,
   variant = 'primary',
-  ...props
+  variables,
 }) => {
-  const { theme } = useTheme();
-  const variables = themeVariables(theme);
   const styles = createStyles(variables);
+
+  const buttonStyle = [
+    styles.button,
+    variant === 'primary' ? styles.primaryButton : styles.secondaryButton,
+    style,
+    disabled && styles.disabledButton,
+  ];
+
+  const textStyleFinal = [
+    styles.text,
+    variant === 'primary' ? styles.primaryText : styles.secondaryText,
+    textStyle,
+  ];
 
   return (
     <TouchableOpacity 
-      style={[styles.button, variant === 'primary' ? { backgroundColor: theme.colors.primary } : { backgroundColor: theme.colors.secondary }, style, disabled && { opacity: 0.5 }]}
+      style={buttonStyle}
       onPress={onPress}
       disabled={disabled}
     >
-      <Text style={[styles.text, variant === 'primary' ? { color: theme.colors.textOnPrimary } : { color: theme.colors.textOnSecondary }, textStyle]}>{title}</Text>
+      <Text style={textStyleFinal}>{title}</Text>
     </TouchableOpacity>
   );
 };
 
-const createStyles = (variables: any) => StyleSheet.create({
+const createStyles = (variables: Record<string, string> | undefined) => StyleSheet.create({
   button: {
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
     marginVertical: 10,
   },
+  primaryButton: {
+    backgroundColor: variables?.['--primary'],
+  },
+  secondaryButton: {
+    backgroundColor: variables?.['--secondary'],
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
   text: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  primaryText: {
+    color: variables?.['--text-on-primary'],
+  },
+  secondaryText: {
+    color: variables?.['--text-on-secondary'],
   },
 });
 

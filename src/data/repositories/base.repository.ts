@@ -2,8 +2,6 @@
 import { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { HttpError, NetworkError } from '../../shared/types/errors';
 import { ILogger } from '../../shared/types/ILogger';
-import { apiService } from '../../services/http/api.service';
-import { ConsoleLogger } from '../../services/logging/console-logger';
 
 /**
  * Clase base para repositorios HTTP.

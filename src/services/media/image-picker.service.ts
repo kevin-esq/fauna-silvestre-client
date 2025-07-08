@@ -1,29 +1,22 @@
-import * as ImagePicker from 'expo-image-picker';
-import { useState } from 'react';
+// services/image-picker/image-picker.service.ts
+import * as ImagePicker from '@react-native-camera-roll/camera-roll';
 
 export class ImagePickerService {
   static async pickFromGallery(): Promise<{
     uri: string;
     width?: number;
     height?: number;
-    exif?: any;
   } | null> {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 1,
-      exif: true,
+    const result = await ImagePicker.CameraRoll.getPhotos({
+      first: 1,
+      assetType: 'Photos',
     });
 
-    if (!result.assets || !result.assets[0]) {
+    if (!result.edges || !result.edges[0]) {
       return null;
     }
 
-    const { uri, width, height, exif } = result.assets[0];
-
-    const { GPSLatitude, GPSLongitude } = exif ?? {};
-
-    console.log(`Latitud: ${GPSLatitude}, Longitud: ${GPSLongitude}`);
+    const { uri, width, height } = result.edges[0].node.image;
 
     console.log('[ImagePickerService] Result:', result);
 
@@ -31,7 +24,6 @@ export class ImagePickerService {
       uri,
       width,
       height,
-      exif
     };
   }
 }

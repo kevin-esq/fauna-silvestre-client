@@ -9,10 +9,11 @@ import {
   Modal,
   Dimensions,
 } from "react-native";
-import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { useNavigationActions } from "../../navigation/navigation-provider";
 import { useTheme } from "../../contexts/theme-context";
-import * as Haptics from 'expo-haptics';
 import type { PublicationsModel } from '../../../domain/models/publication.models';
 import LocationMap from "../../components/ui/location-map.component";
 
@@ -53,7 +54,6 @@ const PublicationDetailsScreen = ({ route }: PublicationDetailsScreenProps) => {
   const [isImageExpanded, setIsImageExpanded] = useState(false);
 
   const toggleImageExpand = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsImageExpanded(!isImageExpanded);
   }, [isImageExpanded]);
 

@@ -47,7 +47,7 @@ const ReviewPublicationsScreen: React.FC = () => {
 
   useEffect(() => {
     loadPending();
-  }, []);
+  }, [loadPending]);
 
   const filtered = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();

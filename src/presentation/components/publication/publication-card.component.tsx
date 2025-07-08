@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, Image, StyleSheet, Button } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import AnimatedPressable from '../ui/animated-pressable.component';
 import { PublicationsModel } from '../../../domain/models/publication.models';
 import { useTheme, themeVariables } from "../../contexts/theme-context";

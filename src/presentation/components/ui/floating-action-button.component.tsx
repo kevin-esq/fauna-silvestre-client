@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Pressable, Text, StyleSheet, View, StyleProp, ViewStyle } from "react-native";
+import { Pressable, Text, View, StyleProp, ViewStyle, StyleSheet } from "react-native";
 import { MotiView } from "moti";
 import { useTheme, themeVariables } from "../../contexts/theme-context";
 

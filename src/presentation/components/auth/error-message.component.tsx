@@ -1,16 +1,15 @@
 import React, { useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { useTheme } from '../../contexts/theme-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Text, StyleSheet, Animated } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 interface FeedbackMessageProps {
   message: string | null;
   isSuccess?: boolean;
+  variables: Record<string, string> | undefined;
 }
 
-const ErrorMessage: React.FC<FeedbackMessageProps> = ({ message, isSuccess = false }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+const ErrorMessage: React.FC<FeedbackMessageProps> = ({ message, isSuccess = false, variables }) => {
+  const styles = useMemo(() => createStyles(variables), [variables]);
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -19,7 +18,7 @@ const ErrorMessage: React.FC<FeedbackMessageProps> = ({ message, isSuccess = fal
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, [message]);
+  }, [message, opacity]);
 
   if (!message) {
     return null;
@@ -28,18 +27,17 @@ const ErrorMessage: React.FC<FeedbackMessageProps> = ({ message, isSuccess = fal
   const containerStyle = isSuccess ? styles.successContainer : styles.errorContainer;
   const textStyle = isSuccess ? styles.successText : styles.errorText;
   const iconName = isSuccess ? 'check-circle' : 'error';
-  const iconColor = isSuccess ? colors.success : colors.error;
-  const textColor = isSuccess ? colors.success : colors.error;
+  const iconColor = isSuccess ? styles.successText.color : styles.errorText.color;
 
   return (
     <Animated.View style={[styles.container, containerStyle, { opacity }]}>
-      <MaterialIcons name={iconName} size={20} color={iconColor} />
-      <Text style={[styles.text, textStyle, { color: textColor }]}>{message}</Text>
+      <Icon name={iconName} size={20} color={iconColor} />
+      <Text style={[styles.text, textStyle]}>{message}</Text>
     </Animated.View>
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (variables: Record<string, string> | undefined) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -48,10 +46,10 @@ const createStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   errorContainer: {
-    backgroundColor: '#fdecea',
+    backgroundColor: variables?.['--error'],
   },
   successContainer: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: variables?.['--success'],
   },
   text: {
     marginLeft: 10,
@@ -59,10 +57,10 @@ const createStyles = (colors: any) => StyleSheet.create({
     fontWeight: '500',
   },
   errorText: {
-    color: '#b91c1c',
+    color: variables?.['--text-on-primary'], // Usually white text on red background
   },
   successText: {
-    color: '#047857',
+    color: variables?.['--text-on-primary'], // Same as error, white text on green background
   },
 });
 

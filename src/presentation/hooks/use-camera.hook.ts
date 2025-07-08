@@ -1,16 +1,15 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, RefObject } from 'react';
 import { Camera } from 'react-native-vision-camera';
 import {
   CameraService,
   CaptureCancelledError,
   FlashMode,
   ProcessedPhoto,
-  TakePhotoOptions,
 } from '../../services/media/camera.service';
 import { Alert, InteractionManager } from 'react-native';
 
 export function useCamera() {
-  const cameraRef = useRef<Camera>(null);
+  const cameraRef = useRef<Camera | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const processingRef = useRef(false);
 
@@ -18,7 +17,7 @@ export function useCamera() {
   const [position, setPosition] = useState<0 | 1>(0);
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
 
-  const service = useRef(new CameraService(cameraRef)).current;
+  const service = useRef(new CameraService(cameraRef as RefObject<Camera>)).current;
 
   useEffect(() => {
     return () => {
