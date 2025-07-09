@@ -11,6 +11,7 @@ import { PublicationsModel, PublicationStatus } from '../../../domain/models/pub
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { createStyles } from './publication-screen.styles';
 import { themeVariables } from '../../contexts/theme-context';
+import moment from 'moment';
 
 const statusOptions = [
     { label: 'Todos', value: 'all' as const },
@@ -21,11 +22,19 @@ const statusOptions = [
 
 const PAGE_SIZE = 10;
 
+const EmptyListComponent = React.memo(({ searchQuery, styles, theme }: { searchQuery: string, styles: any, theme: any }) => (
+    <View style={styles.centered}>
+        <Text style={[styles.emptyText, { color: theme.colors.text }]}>
+            {searchQuery ? 'Sin resultados' : 'No hay publicaciones.'}
+        </Text>
+    </View>
+));
+
 const PublicationScreen: React.FC = () => {
     const { theme } = useTheme();
     const variables = themeVariables(theme);
     const styles = createStyles(variables);
-    const { all } = usePublications();
+    const { state, actions: { loadAll } } = usePublications();
     const { navigate } = useNavigationActions();
 
     const [selectedStatus, setSelectedStatus] = useState<PublicationStatus | 'all'>('all');
@@ -33,8 +42,9 @@ const PublicationScreen: React.FC = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [paginatedData, setPaginatedData] = useState<PublicationsModel[]>([]);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [_currentPage, setCurrentPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+    const [_currentTime, setCurrentTime] = useState(moment().format('h:mm A'));
 
     const searchRef = useRef('');
     const timeoutRef = useRef<NodeJS.Timeout>(null);
@@ -44,13 +54,15 @@ const PublicationScreen: React.FC = () => {
     const loadPublications = useCallback(async () => {
         setRefreshing(true);
         try {
-            await all.load();
+            const timer = setInterval(() => setCurrentTime(moment().format('h:mm A')), 60000);
+            await loadAll();
+            clearInterval(timer);
         } catch (err) {
             Alert.alert('Error', 'No se pudieron cargar publicaciones.');
         } finally {
             setRefreshing(false);
         }
-    }, [all]);
+    }, [loadAll]);
 
     useEffect(() => {
         loadPublications();
@@ -59,7 +71,7 @@ const PublicationScreen: React.FC = () => {
         useDrawerBackHandler();
 
     const filtered = useMemo(() =>
-            all.publications.filter(pub => {
+            state.all.publications.filter((pub: PublicationsModel) => {
                 const matchStatus = selectedStatus === 'all' || pub.status === selectedStatus;
                 const matchQuery = !searchQuery ||
                 pub.commonNoun.toLowerCase().includes(searchQuery) ||
@@ -67,7 +79,7 @@ const PublicationScreen: React.FC = () => {
 
                 return matchStatus && matchQuery;
             }),
-        [all.publications, selectedStatus, searchQuery]
+        [state.all.publications, selectedStatus, searchQuery]
     );
 
     // PAGINATION LOGIC (from filtered publications)
@@ -128,7 +140,7 @@ const PublicationScreen: React.FC = () => {
         return <LoadingIndicator theme={theme} text="Cargando más publicaciones..." />;
     };
 
-    if (all.isLoading && !refreshing && all.publications.length === 0) {
+    if (state.all.isLoading && !refreshing && state.all.publications.length === 0) {
         return <LoadingIndicator theme={theme} text="Cargando publicaciones..." />;
     }
 
@@ -161,13 +173,9 @@ const PublicationScreen: React.FC = () => {
                         tintColor={theme.colors.primary}
                     />
                 }
-                ListEmptyComponent={() => (
-                    <View style={styles.centered}>
-                        <Text style={[styles.emptyText, { color: theme.colors.text }]}>
-                            {searchQuery ? 'Sin resultados' : 'No hay publicaciones.'}
-                        </Text>
-                    </View>
-                )}
+                ListEmptyComponent={
+                    <EmptyListComponent searchQuery={searchQuery} styles={styles} theme={theme} />
+                }
                 onEndReached={loadMore}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={renderFooter}

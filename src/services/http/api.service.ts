@@ -30,8 +30,8 @@ class ApiService {
    */
   private constructor(private readonly storageService: ISecureStorage, private readonly logger: ILogger) {
     this.extraConfig = extra;
-    this.API_URL = this.extraConfig?.API_URL || '';
-    this.API_TIMEOUT = Number(this.extraConfig?.API_TIMEOUT || 15000);
+    this.API_URL = this.extraConfig?.PUBLIC_API_URL || '';
+    this.API_TIMEOUT = Number(this.extraConfig?.PUBLIC_API_TIMEOUT || 15000);
 
     this.client = axios.create({
       baseURL: this.API_URL,
@@ -96,7 +96,7 @@ class ApiService {
    */
   private responseErrorInterceptor(error: any): Promise<never> {
     if (axios.isAxiosError(error)) {
-      const { response, request, message, config } = error;
+      const { response, request, config } = error;
       const method = config?.method?.toUpperCase();
       const url = config?.url;
 
@@ -110,6 +110,7 @@ class ApiService {
         }
 
         // Create a specific ApiError
+        console.error(response.data);
         return Promise.reject(new ApiError(response.data?.message || 'Ocurrió un error de API.', response.status));
       } else if (request) {
         // The request was made but no response was received (e.g., network error)

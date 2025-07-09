@@ -16,6 +16,7 @@ import SearchBar from '../../components/ui/search-bar.component';
 import LoadingIndicator from '../../components/ui/loading-indicator.component';
 import RejectionModal from '../../components/publication/rejection-modal.component';
 import { createStyles } from './review-publications-screen.styles';
+import moment from 'moment';
 
 const PAGE_SIZE = 10;
 
@@ -24,7 +25,7 @@ const ReviewPublicationsScreen: React.FC = () => {
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
   const insets = useSafeAreaInsets();
-  const { pending } = usePublications();
+  const { state: { pending, error }, actions: { loadPending, approve, reject } } = usePublications();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [currentId, setCurrentId] = useState<string | null>(null);
@@ -33,21 +34,24 @@ const ReviewPublicationsScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [paginatedData, setPaginatedData] = useState<PublicationResponse[]>([]);
   const [hasMore, setHasMore] = useState(true);
+  const [_currentTime, setCurrentTime] = useState(moment().format('h:mm A'));
 
-  const loadPending = useCallback(async () => {
+  const loadPendingPublications = useCallback(async () => {
     setRefreshing(true);
     try {
-      await pending.load();
+      const timer = setInterval(() => setCurrentTime(moment().format('h:mm A')), 60000);
+      await loadPending();
+      clearInterval(timer);
     } catch {
       Alert.alert('Error', 'No se pudieron cargar publicaciones pendientes.');
     } finally {
       setRefreshing(false);
     }
-  }, [pending]);
+  }, [loadPending]);
 
   useEffect(() => {
-    loadPending();
-  }, [loadPending]);
+    loadPendingPublications();
+  }, [loadPendingPublications]);
 
   const filtered = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
@@ -87,20 +91,20 @@ const ReviewPublicationsScreen: React.FC = () => {
     (id: string) => {
       Alert.alert('Aprobar publicación', '¿Confirmas aprobación?', [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sí', onPress: () => pending.approve(id) },
+        { text: 'Sí', onPress: () => approve(id) },
       ]);
     },
-    [pending]
+    [approve]
   );
 
   const handleReject = useCallback((id: string) => setCurrentId(id), []);
 
   const confirmReject = useCallback(() => {
     if (!reason.trim()) return;
-    pending.reject(currentId!);
+    reject(currentId!);
     setCurrentId(null);
     setReason('');
-  }, [currentId, reason, pending]);
+  }, [currentId, reason, reject]);
 
   const renderPublicationItem = useCallback(
     ({ item }: { item: PublicationResponse }) => (
@@ -154,8 +158,8 @@ const ReviewPublicationsScreen: React.FC = () => {
 
       {filtered.length > 0 && renderResultCount()}
 
-      {pending.error && (
-        <Text style={[styles.errorText, { color: theme.colors.error }]}> {pending.error} </Text>
+      {error && (
+        <Text style={[styles.errorText, { color: theme.colors.error }]}> {error} </Text>
       )}
 
       <FlatList
