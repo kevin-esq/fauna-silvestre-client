@@ -42,7 +42,7 @@ interface LocationInfo {
 const AdminHeader: React.FC = React.memo(() => {
   const { theme } = useTheme();
   const { user, signOut } = useAuth();
-  const { all } = usePublications();
+  const { actions: { loadAll } } = usePublications();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
 
@@ -52,9 +52,9 @@ const AdminHeader: React.FC = React.memo(() => {
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(moment().format('h:mm A')), 60000);
-    all.load();
+    loadAll();
     return () => clearInterval(timer);
-  }, [all]);
+  }, [loadAll]);
 
   useEffect(() => {
     const fetchLocation = async () => {

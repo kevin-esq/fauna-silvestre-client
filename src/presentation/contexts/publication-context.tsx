@@ -29,14 +29,11 @@ type Action =
 // --- CONTEXT TYPE (Public API) ---
 
 export interface PublicationContextType {
-    all: { publications: PublicationsModel[]; isLoading: boolean; load: () => Promise<void>; };
-    pending: {
-        publications: PublicationResponse[];
-        isLoading: boolean;
-        error: string | null;
-        hasMore: boolean;
-        load: () => Promise<void>;
-        loadMore: () => Promise<void>;
+    state: State;
+    actions: {
+        loadAll: () => Promise<void>;
+        loadPending: () => Promise<void>;
+        loadMorePending: () => Promise<void>;
         approve: (recordId: string) => Promise<void>;
         reject: (recordId: string) => Promise<void>;
     };
@@ -175,18 +172,14 @@ export const PublicationProvider = ({ children }: { children: React.ReactNode })
     }, [loadPendingPublications, showLoading, hideLoading]);
 
     const contextValue = useMemo((): PublicationContextType => ({
-        all: {
-            ...state.all,
-            load: loadAllPublications,
-        },
-        pending: {
-            ...state.pending,
-            error: state.error,
-            load: loadPendingPublications,
-            loadMore: loadMorePendingPublications,
+        state,
+        actions: {
+            loadAll: loadAllPublications,
+            loadPending: loadPendingPublications,
+            loadMorePending: loadMorePendingPublications,
             approve: approvePublication,
             reject: rejectPublication,
-        },
+        }
     }), [state, loadAllPublications, loadPendingPublications, loadMorePendingPublications, approvePublication, rejectPublication]);
 
     return (

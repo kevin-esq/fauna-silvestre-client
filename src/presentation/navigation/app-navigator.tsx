@@ -1,6 +1,6 @@
 // navigation/app-navigator.tsx
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '../contexts/auth-context';
 
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -31,7 +31,6 @@ import ImagePreviewScreen from '../screens/media/image-preview-screen';
 
 // Components & Contexts
 import CustomDrawerContent from '../components/layout/custom-drawer-content.component';
-import { usePublications } from '../contexts/publication-context';
 
 import { RootStackParamList } from './navigation.types';
 
@@ -60,11 +59,6 @@ function PublicationStackNavigator() {
 
 const AdminDrawer = () => {
     console.log('[AdminDrawer] render');
-    const { pending, all } = usePublications();
-    useEffect(() => {
-        pending.load();
-        all.load();
-    });
     return (
         <Drawer.Navigator
             drawerContent={CustomDrawerContent}>
