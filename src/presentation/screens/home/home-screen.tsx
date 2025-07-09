@@ -15,7 +15,7 @@ const HomeScreen = () => {
   const { navigate } = useNavigationActions();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
-  const { all } = usePublications();
+  const { state: { all } } = usePublications();
 
   const handleLogout = () => {
     Alert.alert(
