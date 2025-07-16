@@ -5,9 +5,5 @@ import {publicationService} from "../../services/publication/publication.service
 export default async function createPublicationUseCase(
     publicationData: PublicationData,
 ): Promise<void> {
-    try {
-        await publicationService.addPublication(publicationData);
-    } catch (error) {
-        throw error;
-    }
+    await publicationService.addPublication(publicationData);
 }

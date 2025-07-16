@@ -23,12 +23,11 @@ export function useGallery() {
   const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>();
 
   const pickAndNavigate = async () => {
-    const response = await new Promise<any>((resolve) =>
-      launchImageLibrary(
-        { mediaType: 'photo', quality: 1, selectionLimit: 1 },
-        resolve
-      )
-    );
+    const response = await launchImageLibrary({
+      mediaType: 'photo',
+      quality: 1,
+      selectionLimit: 1,
+    });
 
     const asset = response?.assets?.[0];
     if (!asset?.uri) return;

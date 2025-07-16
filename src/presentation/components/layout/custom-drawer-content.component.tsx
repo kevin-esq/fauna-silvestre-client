@@ -9,12 +9,13 @@ import {
 import {
   DrawerContentScrollView,
   DrawerItemList,
+  DrawerContentComponentProps,
 } from '@react-navigation/drawer';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useAuth} from "../../contexts/auth-context";
 
-const CustomDrawerContent = (props: any) => {
+const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { navigation } = props;
   const {signOut, user} = useAuth();
 

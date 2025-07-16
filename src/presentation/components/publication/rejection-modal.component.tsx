@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { themeVariables } from "../../contexts/theme-context";
+import { themeVariables, Theme } from "../../contexts/theme-context";
 
 interface RejectionModalProps {
   visible: boolean;
@@ -19,7 +19,7 @@ interface RejectionModalProps {
   rejectionReason: string;
   setRejectionReason: (text: string) => void;
   onConfirm: () => void;
-  theme: any;
+  theme: Theme;
 }
 
 const RejectionModal: React.FC<RejectionModalProps> = ({

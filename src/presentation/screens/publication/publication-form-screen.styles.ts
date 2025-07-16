@@ -149,4 +149,12 @@ export const createStyles = (vars: Record<string, string>, width: number, height
     width: width,
     height: height * 0.8,
   },
+  stateSelectorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: vars["--border"],
+  },
 });

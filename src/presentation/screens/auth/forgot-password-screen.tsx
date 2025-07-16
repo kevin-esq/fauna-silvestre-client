@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, TouchableOpacity } from 'react-native';
+import { Text, TouchableOpacity, StyleProp, ViewStyle, TextStyle } from 'react-native';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { useForgotPassword, ResetStep } from '../../hooks/use-forgot-password.hook';
 
@@ -10,11 +10,15 @@ import CodeInput from '../../components/auth/code-input.component';
 import ErrorMessage from '../../components/auth/error-message.component';
 import CustomButton from '../../components/ui/custom-button.component';
 import { createStyles } from './forgot-password-screen.styles';
-import { useTheme } from '../../contexts/theme-context';
-import { themeVariables } from '../../contexts/theme-context';
+import { useTheme, Theme, themeVariables } from '../../contexts/theme-context';
+
+type StepProps = {
+  theme: Theme;
+  styles: { button: StyleProp<ViewStyle>; resendText?: StyleProp<TextStyle> };
+};
 
 // Step Components
-const EmailStep = ({ email, setEmail, onContinue, theme, styles }: { email: string; setEmail: (email: string) => void; onContinue: () => void, theme: any, styles: any }) => (
+const EmailStep = ({ email, setEmail, onContinue, theme, styles }: StepProps & { email: string; setEmail: (email: string) => void; onContinue: () => void }) => (
   <>
     <AuthTextInput
       iconName="email"
@@ -28,7 +32,7 @@ const EmailStep = ({ email, setEmail, onContinue, theme, styles }: { email: stri
   </>
 );
 
-const CodeStep = ({ code, setCode, onContinue, onResend, styles, theme }: { code: string; setCode: (code: string) => void; onContinue: () => void; onResend: () => void, theme: any, styles: any }) => (
+const CodeStep = ({ code, setCode, onContinue, onResend, styles, theme }: StepProps & { code: string; setCode: (code: string) => void; onContinue: () => void; onResend: () => void }) => (
   <>
     <CodeInput code={code} setCode={setCode} variables={themeVariables(theme)} />
     <CustomButton title="Verificar Código" onPress={onContinue} style={styles.button} variables={themeVariables(theme)} />
@@ -38,7 +42,7 @@ const CodeStep = ({ code, setCode, onContinue, onResend, styles, theme }: { code
   </>
 );
 
-const PasswordStep = ({ newPassword, setNewPassword, confirmPassword, setConfirmPassword, onContinue, theme, styles }: { newPassword: string; setNewPassword: (newPassword: string) => void; confirmPassword: string; setConfirmPassword: (confirmPassword: string) => void; onContinue: () => void, theme: any, styles: any }) => (
+const PasswordStep = ({ newPassword, setNewPassword, confirmPassword, setConfirmPassword, onContinue, theme, styles }: StepProps & { newPassword: string; setNewPassword: (newPassword: string) => void; confirmPassword: string; setConfirmPassword: (confirmPassword: string) => void; onContinue: () => void }) => (
   <>
     <AuthTextInput
       iconName="lock-outline"

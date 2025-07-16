@@ -21,7 +21,7 @@ export class ConsoleLogger implements ILogger {
      * @param message The primary message to log.
      * @param metadata Additional data to include in the log.
      */
-    public debug(message: string, ...metadata: any[]): void {
+    public debug(message: string, ...metadata: unknown[]): void {
         if (this.shouldLog('debug')) {
             console.debug(`[DEBUG] ${message}`, ...metadata);
         }
@@ -32,7 +32,7 @@ export class ConsoleLogger implements ILogger {
      * @param message The primary message to log.
      * @param metadata Additional data to include in the log.
      */
-    public info(message: string, ...metadata: any[]): void {
+    public info(message: string, ...metadata: unknown[]): void {
         if (this.shouldLog('info')) {
             console.info(`[INFO] ${message}`, ...metadata);
         }
@@ -43,7 +43,7 @@ export class ConsoleLogger implements ILogger {
      * @param message The primary message to log.
      * @param metadata Additional data to include in the log.
      */
-    public warn(message: string, ...metadata: any[]): void {
+    public warn(message: string, ...metadata: unknown[]): void {
         if (this.shouldLog('warn')) {
             console.warn(`[WARN] ${message}`, ...metadata);
         }
@@ -55,7 +55,7 @@ export class ConsoleLogger implements ILogger {
      * @param error The associated Error object.
      * @param metadata Additional data to include in the log.
      */
-    public error(message: string, error?: Error, ...metadata: any[]): void {
+    public error(message: string, error?: Error, ...metadata: unknown[]): void {
         if (this.shouldLog('error')) {
             const logObject = {
                 message,

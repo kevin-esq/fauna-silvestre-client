@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-export const createStyles = (vars: Record<string, any>) => {
+export const createStyles = (vars: Record<string, string>) => {
     return StyleSheet.create({
         container: {
             flex: 1,

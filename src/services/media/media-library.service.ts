@@ -9,7 +9,7 @@ export interface MediaMetadata {
   width?: number;
   height?: number;
   creationTime?: number;
-  exif?: any;
+  exif?: unknown;
 }
 
 export class MediaLibraryService {

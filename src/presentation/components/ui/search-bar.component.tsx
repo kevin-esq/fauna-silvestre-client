@@ -1,27 +1,25 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TextInput, StyleSheet } from 'react-native';
+import { Theme } from '../../contexts/theme-context';
+import { themeVariables } from '../../contexts/theme-context';
 
 interface SearchBarProps {
     value: string;
     onChangeText: (text: string) => void;
     placeholder: string;
-    theme: any;
+    theme: Theme;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ value, onChangeText, placeholder, theme }) => {
+    const variables = useMemo(() => themeVariables(theme), [theme]);
+    const styles = useMemo(() => createStyles(variables), [variables]);
     return (
         <TextInput
             style={[
                 styles.searchInput,
-                {
-                    backgroundColor: theme.colors.surface,
-                    color: theme.colors.text,
-                    borderColor: theme.colors.border,
-                    //placeholderTextColor: theme.colors.placeholder,
-                }
             ]}
             placeholder={placeholder}
-            placeholderTextColor={theme.colors.placeholder}
+            placeholderTextColor={variables['--placeholder']}
             value={value}
             onChangeText={onChangeText}
             clearButtonMode="while-editing"
@@ -29,7 +27,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ value, onChangeText, placeholder,
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (vars: Record<string, string>) =>
+StyleSheet.create({
     searchInput: {
         padding: 12,
         borderRadius: 8,
@@ -37,6 +36,9 @@ const styles = StyleSheet.create({
         marginVertical: 12,
         fontSize: 16,
         borderWidth: 1,
+        backgroundColor: vars['--surface'],
+        color: vars['--text'],
+        borderColor: vars['--border'],
     },
 });
 

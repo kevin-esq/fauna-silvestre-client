@@ -1,11 +1,10 @@
 // components/custom-image-picker-screen.tsx
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, useEffect, memo, useMemo } from "react";
 import {
   View,
   Text,
   FlatList,
   ActivityIndicator,
-  StyleSheet,
   Dimensions,
   TouchableOpacity,
   Image,
@@ -15,6 +14,9 @@ import {
   Album,
 } from "@react-native-camera-roll/camera-roll/src/CameraRoll";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { Theme, themeVariables } from "../../contexts/theme-context";
+import { createStyles } from "./custom-image-picker-screen.styles";
+import type { StyleProp, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 
 // --- Constants & Types ---------------------------------------
 const { width } = Dimensions.get("window");
@@ -34,7 +36,89 @@ interface ImageItem {
 interface Props {
   onConfirm: (uri: string) => void;
   onCancel: () => void;
+  theme: Theme;
 }
+
+// Estilos compartidos
+interface Styles {
+  container: StyleProp<ViewStyle>;
+  header: StyleProp<ViewStyle>;
+  headerTitle: StyleProp<TextStyle>;
+  tabContainer: StyleProp<ViewStyle>;
+  tabButton: StyleProp<ViewStyle>;
+  tabActive: StyleProp<ViewStyle>;
+  tabText: StyleProp<TextStyle>;
+  gridContainer: StyleProp<ViewStyle>;
+  photoContainer: StyleProp<ViewStyle>;
+  photo: StyleProp<ImageStyle>;
+  selectionBadge: StyleProp<ViewStyle>;
+  centered: StyleProp<ViewStyle>;
+  loadingText: StyleProp<TextStyle>;
+  retryButton: StyleProp<ViewStyle>;
+  retryText: StyleProp<TextStyle>;
+  floatingContainer: StyleProp<ViewStyle>;
+  errorText: StyleProp<TextStyle>;
+}
+
+// Props principales del componente
+interface Props {
+  onConfirm: (uri: string) => void;
+  onCancel: () => void;
+  theme: Theme;
+}
+
+// Header
+interface HeaderProps {
+  onCancel: () => void;
+  styles: Styles;
+  variables: Record<string, string>;
+}
+
+// AlbumTabs
+interface AlbumTabsProps {
+  albums: Album[];
+  active: Album | null;
+  onSelect: (a: Album) => void;
+  styles: Styles;
+}
+
+// PhotoTile
+interface PhotoTileProps {
+  uri: string;
+  selected: boolean;
+  onPress: () => void;
+  styles: Styles;
+  variables: Record<string, string>;
+}
+
+// FloatingActions
+interface FloatingActionsProps {
+  onConfirm: () => void;
+  onClear: () => void;
+  styles: Styles;
+  variables: Record<string, string>;
+}
+
+// IconButton
+interface IconButtonProps {
+  name: React.ComponentProps<typeof Ionicons>['name'];
+  onPress: () => void;
+  variables: Record<string, string>;
+  accessibilityLabel: string;
+}
+
+// LoadingIndicator
+interface LoadingIndicatorProps {
+  styles: Styles;
+}
+
+// ErrorState
+interface ErrorStateProps {
+  message: string;
+  onRetry: () => void;
+  styles: Styles;
+}
+
 
 // --- Hook: Camera Roll ---------------------------------------
 function useCameraRoll() {
@@ -88,21 +172,26 @@ function useCameraRoll() {
 }
 
 // --- Component -----------------------------------------------
-const CameraImagePicker: React.FC<Props> = ({ onConfirm, onCancel }) => {
+const CameraImagePicker: React.FC<Props> = ({ onConfirm, onCancel, theme }) => {
   const { albums, photos, activeAlbum, setActiveAlbum, loading, error } =
     useCameraRoll();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const variables = useMemo(() => themeVariables(theme), [theme]);
+  const styles = useMemo(() => createStyles(variables, ITEM_SIZE), [variables]);
 
   const handleSelect = (id: string) =>
     setSelectedId((prev) => (prev === id ? null : id));
   const clearSelection = () => setSelectedId(null);
   const confirm = () => {
     const selected = photos.find((p) => p.id === selectedId);
-    selected && onConfirm(selected.uri);
+    if (selected) {
+      onConfirm(selected.uri);
+    }
   };
 
   if (error) {
-    return <ErrorState message={error} onRetry={clearSelection} />;
+    return <ErrorState message={error} onRetry={clearSelection} styles={styles} />;
   }
 
   return (
@@ -110,7 +199,7 @@ const CameraImagePicker: React.FC<Props> = ({ onConfirm, onCancel }) => {
       {/* <Header onCancel={onCancel} /> */}
 
       {loading ? (
-        <LoadingIndicator />
+        <LoadingIndicator styles={styles} />
       ) : (
         <View style={styles.gridContainer}>
           <FlatList<ImageItem>
@@ -122,24 +211,27 @@ const CameraImagePicker: React.FC<Props> = ({ onConfirm, onCancel }) => {
                 uri={item.uri}
                 selected={item.id === selectedId}
                 onPress={() => handleSelect(item.id)}
+                styles={styles}
+                variables={variables}
               />
             )}
             nestedScrollEnabled
             removeClippedSubviews
             ListHeaderComponent={() => (
               <View>
-                <Header onCancel={onCancel} />
+                <Header onCancel={onCancel} styles={styles} variables={variables} />
                 <AlbumTabs
                   albums={albums}
                   active={activeAlbum}
                   onSelect={setActiveAlbum}
-                />
+                  styles={styles}
+                                  />
               </View>
             )}
             ListFooterComponent={() => <View style={{ height: ITEM_SIZE }} />}
           />
           {selectedId && (
-            <FloatingActions onConfirm={confirm} onClear={clearSelection} />
+            <FloatingActions onConfirm={confirm} onClear={clearSelection} styles={styles} variables={variables} />
           )}
         </View>
       )}
@@ -148,12 +240,13 @@ const CameraImagePicker: React.FC<Props> = ({ onConfirm, onCancel }) => {
 };
 
 // --- Sub-components ------------------------------------------
-const Header = memo(({ onCancel }: { onCancel: () => void }) => (
+const Header = memo(({ onCancel, styles, variables }: HeaderProps) => (
   <View style={styles.header}>
     <IconButton
       name="arrow-back"
       onPress={onCancel}
       accessibilityLabel={ACCESSIBILITY.backButton}
+      variables={variables}
     />
     <Text style={styles.headerTitle}>{ACCESSIBILITY.headerLabel}</Text>
     <View style={{ width: 40 }} />
@@ -165,11 +258,8 @@ const AlbumTabs = memo(
     albums,
     active,
     onSelect,
-  }: {
-    albums: Album[];
-    active: Album | null;
-    onSelect: (a: Album) => void;
-  }) => (
+    styles,
+  }: AlbumTabsProps) => (
     <View style={styles.tabContainer}>
       {albums.map((album) => (
         <TouchableOpacity
@@ -192,11 +282,9 @@ const PhotoTile = memo(
     uri,
     selected,
     onPress,
-  }: {
-    uri: string;
-    selected: boolean;
-    onPress: () => void;
-  }) => (
+    styles,
+    variables,
+  }: PhotoTileProps) => (
     <TouchableOpacity
       style={styles.photoContainer}
       onPress={onPress}
@@ -204,7 +292,7 @@ const PhotoTile = memo(
       <Image source={{ uri }} style={styles.photo} />
       {selected && (
         <View style={styles.selectionBadge}>
-          <Ionicons name="checkmark-circle" size={32} color="#FFF" />
+          <Ionicons name="checkmark-circle" size={32} color={variables['--text-color']} />
         </View>
       )}
     </TouchableOpacity>
@@ -212,18 +300,18 @@ const PhotoTile = memo(
 );
 
 const FloatingActions = memo(
-  ({ onConfirm, onClear }: { onConfirm: () => void; onClear: () => void }) => (
+  ({ onConfirm, onClear, styles, variables }: FloatingActionsProps) => (
     <View style={styles.floatingContainer}>
       <IconButton
         name="close-circle"
         onPress={onClear}
-        color="#D32F2F"
+        variables={variables}
         accessibilityLabel={ACCESSIBILITY.clearButton}
       />
       <IconButton
         name="checkmark-circle"
         onPress={onConfirm}
-        color="#2E7D32"
+        variables={variables}
         accessibilityLabel={ACCESSIBILITY.confirmButton}
       />
     </View>
@@ -234,24 +322,19 @@ const IconButton = memo(
   ({
     name,
     onPress,
-    color = "#424242",
+    variables,
     accessibilityLabel,
-  }: {
-    name: React.ComponentProps<typeof Ionicons>['name'];
-    onPress: () => void;
-    color?: string;
-    accessibilityLabel: string;
-  }) => (
+  }: IconButtonProps) => (
     <TouchableOpacity
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}>
-      <Ionicons name={name} size={28} color={color} />
+      <Ionicons name={name} size={28} color={variables['--text-color']} />
     </TouchableOpacity>
   )
 );
 
-const LoadingIndicator = memo(() => (
+const LoadingIndicator = memo(({ styles }: LoadingIndicatorProps) => (
   <View style={styles.centered}>
     <ActivityIndicator size="large" color="#2E7D32" />
     <Text style={styles.loadingText}>Cargando fotos...</Text>
@@ -259,7 +342,7 @@ const LoadingIndicator = memo(() => (
 ));
 
 const ErrorState = memo(
-  ({ message, onRetry }: { message: string; onRetry: () => void }) => (
+  ({ message, onRetry, styles }: ErrorStateProps) => (
     <View style={styles.centered}>
       <Text style={styles.errorText}>{message}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
@@ -268,68 +351,5 @@ const ErrorState = memo(
     </View>
   )
 );
-
-// --- Styles -----------------------------------------------
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FAFAFA" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    backgroundColor: "#E8F5E9",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  headerTitle: { fontSize: 18, fontWeight: "600", color: "#2E7D32" },
-  tabContainer: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: "#FFF",
-  },
-  tabButton: {
-    marginRight: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: "#E0E0E0",
-  },
-  tabActive: { backgroundColor: "#2E7D32" },
-  tabText: { fontSize: 14, color: "#424242" },
-  gridContainer: { flex: 1 },
-  photoContainer: {
-    width: ITEM_SIZE,
-    height: ITEM_SIZE,
-    margin: 1,
-    backgroundColor: "#FFF",
-  },
-  photo: { flex: 1, borderRadius: 6 },
-  selectionBadge: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(46,125,50,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  floatingContainer: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    flexDirection: "row",
-  },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: { marginTop: 12, fontSize: 16, color: "#616161" },
-  errorText: { fontSize: 16, color: "#D32F2F", textAlign: "center" },
-  retryButton: {
-    marginTop: 12,
-    backgroundColor: "#2E7D32",
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 20,
-  },
-  retryText: { color: "#FFF", fontWeight: "bold" },
-});
 
 export default CameraImagePicker;

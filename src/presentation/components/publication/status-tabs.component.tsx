@@ -1,8 +1,19 @@
 import React, { memo } from 'react';
-import { Text, TouchableOpacity, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  View,
+  StyleProp,
+  ViewStyle,
+  TextStyle,
+} from 'react-native';
 import { PublicationStatus } from '../../../domain/models/publication.models';
-import { useTheme } from "../../contexts/theme-context";
+import { useTheme } from '../../contexts/theme-context';
+import { themeVariables } from '../../contexts/theme-context';
 
+// --- TIPOS ---
 interface StatusTab {
   label: string;
   value: PublicationStatus | 'all';
@@ -15,12 +26,14 @@ interface StatusTabsProps {
   theme?: ReturnType<typeof useTheme>['theme'];
 }
 
-const StatusTabs: React.FC<StatusTabsProps> = memo(({ statuses, active, onSelect, theme }) => {
+// --- COMPONENTE ---
+const StatusTabs: React.FC<StatusTabsProps> = ({ statuses, active, onSelect, theme }) => {
   const { theme: defaultTheme } = useTheme();
   const currentTheme = theme || defaultTheme;
+  const vars = themeVariables(currentTheme);
 
   return (
-    <View style={[styles.container, { backgroundColor: currentTheme.colors.surface }]}>
+    <View style={[styles.container, { backgroundColor: vars['--surface'] }]}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -31,6 +44,7 @@ const StatusTabs: React.FC<StatusTabsProps> = memo(({ statuses, active, onSelect
       >
         {statuses.map(({ label, value }, idx) => {
           const isActive = active === value;
+
           return (
             <TouchableOpacity
               key={value}
@@ -39,29 +53,9 @@ const StatusTabs: React.FC<StatusTabsProps> = memo(({ statuses, active, onSelect
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
               accessibilityLabel={`Filtrar por ${label}`}
-              style={[
-                styles.tabButton,
-                {
-                  backgroundColor: isActive ? currentTheme.colors.primary : currentTheme.colors.surface,
-                  borderColor: isActive ? currentTheme.colors.primary : currentTheme.colors.border,
-                  marginRight: idx === statuses.length - 1 ? 0 : 12,
-                  shadowColor: isActive ? currentTheme.colors.primary : 'transparent',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: isActive ? 0.3 : 0,
-                  shadowRadius: isActive ? 4 : 0,
-                  elevation: isActive ? 4 : 0,
-                }
-              ]}
+              style={getTabButtonStyle(vars, isActive, idx === statuses.length - 1)}
             >
-              <Text
-                style={[
-                  styles.tabText,
-                  {
-                    color: isActive ? currentTheme.colors.textOnPrimary : currentTheme.colors.textSecondary,
-                    fontWeight: isActive ? '700' : '500',
-                  }
-                ]}
-              >
+              <Text style={getTabTextStyle(vars, isActive)}>
                 {label}
               </Text>
             </TouchableOpacity>
@@ -70,8 +64,37 @@ const StatusTabs: React.FC<StatusTabsProps> = memo(({ statuses, active, onSelect
       </ScrollView>
     </View>
   );
+};
+
+StatusTabs.displayName = 'StatusTabs';
+
+// --- ESTILOS DINÁMICOS ---
+const getTabButtonStyle = (
+  vars: Record<string, string>,
+  isActive: boolean,
+  isLast: boolean
+): StyleProp<ViewStyle> => ({
+  backgroundColor: isActive ? vars['--primary'] : vars['--surface'],
+  borderColor: isActive ? vars['--primary'] : vars['--border'],
+  shadowColor: isActive ? vars['--primary'] : 'transparent',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: isActive ? 0.3 : 0,
+  shadowRadius: isActive ? 4 : 0,
+  elevation: isActive ? 4 : 0,
+  marginRight: isLast ? 0 : 12,
+  ...styles.tabButton,
 });
 
+const getTabTextStyle = (
+  vars: Record<string, string>,
+  isActive: boolean
+): StyleProp<TextStyle> => ({
+  color: isActive ? vars['--text-on-primary'] : vars['--text-secondary'],
+  fontWeight: isActive ? '700' : '500',
+  ...styles.tabText,
+});
+
+// --- ESTILOS ESTÁTICOS ---
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 10,
@@ -96,4 +119,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default StatusTabs;
+export default memo(StatusTabs);

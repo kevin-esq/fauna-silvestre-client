@@ -8,15 +8,15 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import { themeVariables } from '../../contexts/theme-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { Theme, themeVariables } from '../../contexts/theme-context';
 
 interface AnimalSearchableDropdownProps<T extends string> {
   options: readonly T[];
   selectedValue: T;
   onValueChange: (value: T) => void;
   placeholder?: string;
-  theme: any;
+  theme: Theme;
 }
 
 const AnimalSearchableDropdown = <T extends string>({

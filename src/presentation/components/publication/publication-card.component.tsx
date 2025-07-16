@@ -1,11 +1,14 @@
-import React, { useMemo } from 'react';
+// PublicationCard.tsx
+
+import React from 'react';
 import { View, Text, Image, StyleSheet, Button } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import AnimatedPressable from '../ui/animated-pressable.component';
 import { PublicationsModel } from '../../../domain/models/publication.models';
-import { useTheme, themeVariables } from "../../contexts/theme-context";
+import { useTheme, themeVariables } from '../../contexts/theme-context';
 
-// --- CONFIG ---
+// --- CONSTANTES DE CONFIGURACIÓN ---
+
 const STATUS_CONFIG = {
   rejected: { icon: 'times-circle', colorKey: '--error', label: 'Rechazada' },
   pending: { icon: 'hourglass-half', colorKey: '--warning', label: 'Pendiente' },
@@ -17,27 +20,29 @@ const ANIMAL_STATE_CONFIG = {
   DEAD: { icon: 'ambulance', colorKey: '--error', label: 'Muerto' },
 } as const;
 
-// --- SUB-COMPONENTES ---
+// --- COMPONENTE StatusRow ---
 
 interface StatusRowProps {
-  icon: string;
+  icon: React.ComponentProps<typeof FontAwesome>['name'];
   color: string;
   label: string;
 }
 
 const StatusRow = React.memo(({ icon, color, label }: StatusRowProps) => {
-  const styles = useStatusRowStyles(color);
+  const styles = getStatusRowStyles(color);
+
   return (
     <View style={styles.container}>
-      <FontAwesome name={icon as any} size={16} color={color} />
+      <FontAwesome name={icon} size={16} color={color} />
       <Text style={styles.text} numberOfLines={1} ellipsizeMode="tail">
         {label}
       </Text>
     </View>
   );
 });
+StatusRow.displayName = 'StatusRow';
 
-const useStatusRowStyles = (color: string) =>
+const getStatusRowStyles = (color: string) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -52,16 +57,18 @@ const useStatusRowStyles = (color: string) =>
     },
   });
 
+// --- COMPONENTE PublicationImage ---
+
 interface PublicationImageProps {
   uri?: string;
   commonNoun: string;
   viewMode: 'card' | 'presentation';
 }
 
-const PublicationImage: React.FC<PublicationImageProps> = React.memo(({ uri, commonNoun, viewMode }) => {
+const PublicationImage = React.memo(({ uri, commonNoun, viewMode }: PublicationImageProps) => {
   const { theme } = useTheme();
-  const variables = themeVariables(theme);
-  const styles = useImageStyles(variables, viewMode);
+  const vars = themeVariables(theme);
+  const styles = getImageStyles(vars, viewMode);
 
   if (uri) {
     return (
@@ -76,27 +83,28 @@ const PublicationImage: React.FC<PublicationImageProps> = React.memo(({ uri, com
 
   return (
     <View style={styles.placeholder}>
-      <FontAwesome name="image" size={50} color={variables["--text-secondary"]} />
-      <Text style={[styles.placeholderText, { color: variables["--text-secondary"] }]}>
+      <FontAwesome name="image" size={50} color={vars['--text-secondary']} />
+      <Text style={[styles.placeholderText, { color: vars['--text-secondary'] }]}>
         Imagen no disponible
       </Text>
     </View>
   );
 });
+PublicationImage.displayName = 'PublicationImage';
 
-const useImageStyles = (vars: Record<string, string>, viewMode: 'card' | 'presentation') =>
+const getImageStyles = (vars: Record<string, string>, viewMode: 'card' | 'presentation') =>
   StyleSheet.create({
     image: {
       width: '100%',
       height: viewMode === 'card' ? 180 : 300,
-      backgroundColor: vars["--surface-variant"],
+      backgroundColor: vars['--surface-variant'],
     },
     placeholder: {
       width: '100%',
       height: viewMode === 'card' ? 180 : 300,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: vars["--surface-variant"],
+      backgroundColor: vars['--surface-variant'],
     },
     placeholderText: {
       marginTop: 8,
@@ -104,41 +112,40 @@ const useImageStyles = (vars: Record<string, string>, viewMode: 'card' | 'presen
     },
   });
 
+// --- COMPONENTE PublicationContent ---
+
 interface PublicationContentProps {
   publication: PublicationsModel;
 }
 
-const PublicationContent: React.FC<PublicationContentProps> = React.memo(({ publication }) => {
+const PublicationContent = React.memo(({ publication }: PublicationContentProps) => {
   const { theme } = useTheme();
-  const variables = themeVariables(theme);
-  const styles = useContentStyles(variables);
+  const vars = themeVariables(theme);
+  const styles = getContentStyles();
+
   const { commonNoun, description, status, animalState, location } = publication;
 
-  const statusConfig = useMemo(() => STATUS_CONFIG[status] || STATUS_CONFIG.pending, [status]);
-  const animalConfig = useMemo(
-    () => ANIMAL_STATE_CONFIG[animalState as keyof typeof ANIMAL_STATE_CONFIG] || ANIMAL_STATE_CONFIG.ALIVE,
-    [animalState]
-  );
+  const statusData = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
+  const animalData = ANIMAL_STATE_CONFIG[animalState as keyof typeof ANIMAL_STATE_CONFIG] ?? ANIMAL_STATE_CONFIG.ALIVE;
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: variables["--text"] }]} numberOfLines={2}>
+      <Text style={[styles.title, { color: vars['--text'] }]} numberOfLines={2}>
         {commonNoun}
       </Text>
-      <Text style={[styles.description, { color: variables["--text-secondary"] }]} numberOfLines={3}>
+      <Text style={[styles.description, { color: vars['--text-secondary'] }]} numberOfLines={3}>
         {description}
       </Text>
 
-      <StatusRow icon={statusConfig.icon} color={variables[statusConfig.colorKey as keyof typeof variables]} label={statusConfig.label} />
-      <StatusRow icon={animalConfig.icon} color={variables[animalConfig.colorKey as keyof typeof variables]} label={animalConfig.label} />
-      {location && (
-        <StatusRow icon="map-marker" color={variables["--info"]} label={location} />
-      )}
+      <StatusRow icon={statusData.icon} color={vars[statusData.colorKey]} label={statusData.label} />
+      <StatusRow icon={animalData.icon} color={vars[animalData.colorKey]} label={animalData.label} />
+      {location && <StatusRow icon="map-marker" color={vars['--info']} label={location} />}
     </View>
   );
 });
+PublicationContent.displayName = 'PublicationContent';
 
-const useContentStyles = (vars: Record<string, string>) =>
+const getContentStyles = () =>
   StyleSheet.create({
     container: {
       marginTop: 4,
@@ -154,6 +161,8 @@ const useContentStyles = (vars: Record<string, string>) =>
     },
   });
 
+// --- COMPONENTE ReviewButtons ---
+
 interface ReviewButtonsProps {
   actions: {
     onApprove: () => void;
@@ -161,20 +170,21 @@ interface ReviewButtonsProps {
   };
 }
 
-const ReviewButtons: React.FC<ReviewButtonsProps> = React.memo(({ actions }) => {
+const ReviewButtons = React.memo(({ actions }: ReviewButtonsProps) => {
   const { theme } = useTheme();
-  const variables = themeVariables(theme);
-  const styles = useReviewButtonsStyles();
+  const vars = themeVariables(theme);
+  const styles = getReviewButtonStyles();
 
   return (
     <View style={styles.container}>
-      <Button title="Rechazar" onPress={actions.onReject} color={variables["--error"]} />
-      <Button title="Aprobar" onPress={actions.onApprove} color={variables["--success"]} />
+      <Button title="Rechazar" onPress={actions.onReject} color={vars['--error']} />
+      <Button title="Aprobar" onPress={actions.onApprove} color={vars['--success']} />
     </View>
   );
 });
+ReviewButtons.displayName = 'ReviewButtons';
 
-const useReviewButtonsStyles = () =>
+const getReviewButtonStyles = () =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -186,7 +196,7 @@ const useReviewButtonsStyles = () =>
     },
   });
 
-// --- MAIN COMPONENT ---
+// --- COMPONENTE PRINCIPAL ---
 
 interface PublicationCardProps {
   publication: PublicationsModel;
@@ -198,43 +208,41 @@ interface PublicationCardProps {
   viewMode?: 'card' | 'presentation';
 }
 
-const PublicationCard: React.FC<PublicationCardProps> = React.memo(({
-  publication,
-  onPress,
-  reviewActions,
-  viewMode = 'card',
-}) => {
-  const { theme } = useTheme();
-  const variables = themeVariables(theme);
-  const styles = useMainStyles(variables);
+const PublicationCard = React.memo(
+  ({ publication, onPress, reviewActions, viewMode = 'card' }: PublicationCardProps) => {
+    const { theme } = useTheme();
+    const vars = themeVariables(theme);
+    const styles = getMainCardStyles(vars);
 
-  return (
-    <AnimatedPressable style={styles.card} onPress={onPress}>
-      <PublicationImage
-        uri={publication.img}
-        commonNoun={publication.commonNoun}
-        viewMode={viewMode}
-      />
-      <View style={styles.contentWrapper}>
-        <PublicationContent publication={publication} />
-        {reviewActions && <ReviewButtons actions={reviewActions} />}
-      </View>
-    </AnimatedPressable>
-  );
-});
+    return (
+      <AnimatedPressable style={styles.card} onPress={onPress}>
+        <PublicationImage
+          uri={publication.img}
+          commonNoun={publication.commonNoun}
+          viewMode={viewMode}
+        />
+        <View style={styles.contentWrapper}>
+          <PublicationContent publication={publication} />
+          {reviewActions && <ReviewButtons actions={reviewActions} />}
+        </View>
+      </AnimatedPressable>
+    );
+  }
+);
+PublicationCard.displayName = 'PublicationCard';
 
-const useMainStyles = (vars: Record<string, string>) =>
+const getMainCardStyles = (vars: Record<string, string>) =>
   StyleSheet.create({
     card: {
       borderRadius: 16,
       overflow: 'hidden',
       marginBottom: 16,
       elevation: 4,
-      shadowColor: vars["--surface-variant"],
+      shadowColor: vars['--surface-variant'],
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,
-      backgroundColor: vars["--surface"],
+      backgroundColor: vars['--surface'],
     },
     contentWrapper: {
       padding: 16,

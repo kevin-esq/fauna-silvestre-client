@@ -16,7 +16,6 @@ import SearchBar from '../../components/ui/search-bar.component';
 import LoadingIndicator from '../../components/ui/loading-indicator.component';
 import RejectionModal from '../../components/publication/rejection-modal.component';
 import { createStyles } from './review-publications-screen.styles';
-import moment from 'moment';
 
 const PAGE_SIZE = 10;
 
@@ -34,14 +33,11 @@ const ReviewPublicationsScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [paginatedData, setPaginatedData] = useState<PublicationResponse[]>([]);
   const [hasMore, setHasMore] = useState(true);
-  const [_currentTime, setCurrentTime] = useState(moment().format('h:mm A'));
 
   const loadPendingPublications = useCallback(async () => {
     setRefreshing(true);
     try {
-      const timer = setInterval(() => setCurrentTime(moment().format('h:mm A')), 60000);
       await loadPending();
-      clearInterval(timer);
     } catch {
       Alert.alert('Error', 'No se pudieron cargar publicaciones pendientes.');
     } finally {
@@ -66,7 +62,7 @@ const ReviewPublicationsScreen: React.FC = () => {
   useEffect(() => {
     setPaginatedData(filtered.slice(0, PAGE_SIZE));
     setHasMore(filtered.length > PAGE_SIZE);
-  }, [filtered]);
+  }, [filtered]);  
 
   const loadMore = useCallback(() => {
     if (isLoading || !hasMore) return;

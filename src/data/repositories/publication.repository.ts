@@ -1,8 +1,6 @@
 import { AxiosInstance } from 'axios';
 import { BaseRepository } from "./base.repository";
-import { ConsoleLogger } from "../../services/logging/console-logger";
 import { ILogger } from "../../shared/types/ILogger";
-import { apiService } from "../../services/http/api.service";
 import { IPublicationRepository } from "../../domain/interfaces/publication.repository.interface";
 import {
     PublicationData,
@@ -23,11 +21,11 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
 
     async createPublication(publication: PublicationData): Promise<void> {
         try {
-            const response = await this.api.post('/Animal/NewRecord', publication, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const response = await this.api.post('/Animal/NewRecord', publication);
+
             this.ensureSuccessStatus(response);
         } catch (error) {
+            console.log(error);
             throw this.handleHttpError(error, 'Error al crear la publicación');
         }
     }
@@ -124,5 +122,3 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
         }
     }
 }
-
-export const publicationRepository = new PublicationRepository(apiService.client, new ConsoleLogger('debug'));

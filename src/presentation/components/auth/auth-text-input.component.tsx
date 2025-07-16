@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 interface AuthTextInputProps extends TextInputProps {
   iconName: React.ComponentProps<typeof Icon>['name'];
   error?: boolean;
-  variables: any;
+  variables: Record<string, string>;
 }
 
 const AuthTextInput: React.FC<AuthTextInputProps> = ({ iconName, error, style, variables, ...props }) => {
@@ -40,7 +40,7 @@ const AuthTextInput: React.FC<AuthTextInputProps> = ({ iconName, error, style, v
   );
 };
 
-const createStyles = (variables: any) => StyleSheet.create({
+const createStyles = (variables: Record<string, string>) => StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',

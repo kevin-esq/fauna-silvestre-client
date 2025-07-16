@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Modal, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { Theme } from '../../contexts/theme-context';
 
 interface Props {
   visible: boolean;
-  theme?: any;
+  theme?: Theme;
 }
 
 export const LoadingModal = ({ visible, theme }: Props) => {

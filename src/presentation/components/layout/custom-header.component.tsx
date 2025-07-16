@@ -3,9 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../contexts/auth-context";
+import { DrawerNavigationProp } from "@react-navigation/drawer";
+import { RootStackParamList } from "../../navigation/navigation.types";
 
 export const CustomHomeHeader = () => {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<DrawerNavigationProp<RootStackParamList>>();
   const { signOut } = useAuth();
 
   return (
@@ -14,7 +16,7 @@ export const CustomHomeHeader = () => {
         <Ionicons name="menu" size={28} color="#333" />
       </TouchableOpacity>
       <Text style={styles.title}>Inicio</Text>
-      <TouchableOpacity onPress={signOut}>
+      <TouchableOpacity onPress={() => signOut()}>
         <Ionicons name="log-out-outline" size={24} color="red" />
       </TouchableOpacity>
     </View>
