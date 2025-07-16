@@ -3,14 +3,9 @@ import { View, Text, Image } from "react-native";
 import AnimatedPressable from "../ui/animated-pressable.component";
 import styles from "./animal-card.styles";
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { AnimalModel } from "../../../domain/models/animal.models";
   
-/**
- * Tarjeta animada que muestra la información de un animal.
- *
- * @param {Object} animal - Objeto con información del animal.
- * @param {Function} onPress - Acción al presionar la tarjeta.
- */
-const AnimalCard = ({ animal, onPress }: { animal: any; onPress: () => void }) => {
+const AnimalCard = ({ animal, onPress }: { animal: AnimalModel; onPress: () => void }) => {
   return (
     <AnimatedPressable style={styles.card} onPress={onPress}>
       <Image source={{ uri: animal.image }} style={styles.image} />

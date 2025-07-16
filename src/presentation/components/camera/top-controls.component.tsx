@@ -1,5 +1,5 @@
 import React from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { View, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
@@ -10,7 +10,7 @@ type Props = {
   onFlip: () => void;
   flashMode: "off" | "on" | "auto";
   showFlash: boolean;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
 };
 
 export const TopControls: React.FC<Props> = ({

@@ -1,10 +1,10 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, StyleProp, ViewStyle, TextStyle } from 'react-native';
 interface CustomButtonProps {
   title: string;
   onPress: () => void;
-  style?: object;
-  textStyle?: object;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
   disabled?: boolean;
   variant?: 'primary' | 'secondary';
   variables: Record<string, string> | undefined;

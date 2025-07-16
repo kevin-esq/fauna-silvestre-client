@@ -1,9 +1,8 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
   Image,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Modal,
@@ -13,9 +12,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { useNavigationActions } from "../../navigation/navigation-provider";
-import { useTheme } from "../../contexts/theme-context";
+import { themeVariables, useTheme } from "../../contexts/theme-context";
 import type { PublicationsModel } from '../../../domain/models/publication.models';
 import LocationMap from "../../components/ui/location-map.component";
+import { createStyles } from "./publication-details-screen.styles";
 
 const { width, height } = Dimensions.get("window");
 
@@ -48,6 +48,8 @@ const PublicationDetailsScreen = ({ route }: PublicationDetailsScreenProps) => {
   const { goBack } = useNavigationActions();
   const { theme } = useTheme();
   const { publication } = route.params;
+  const variables = useMemo(() => themeVariables(theme), [theme]);
+  const styles = useMemo(() => createStyles(variables, width, height), [variables]);
 
   const statusConfig = STATUS_CONFIG[publication.status] || STATUS_CONFIG.pending;
 
@@ -76,6 +78,7 @@ const PublicationDetailsScreen = ({ route }: PublicationDetailsScreenProps) => {
             uri={publication.img}
             isExpanded={isImageExpanded}
             onToggleExpand={toggleImageExpand}
+            styles={styles}
           />
         ) : (
             <View style={styles.imagePlaceholder}>
@@ -175,9 +178,10 @@ interface ImagePreviewProps {
   uri: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  styles: ReturnType<typeof createStyles>;
 }
 
-const ImagePreview: React.FC<ImagePreviewProps> = ({ uri, isExpanded, onToggleExpand }) => (
+const ImagePreview: React.FC<ImagePreviewProps> = ({ uri, isExpanded, onToggleExpand, styles }) => (
   <>
     <TouchableOpacity onPress={onToggleExpand} activeOpacity={0.8}>
       <Image source={{ uri }} style={styles.image} resizeMode="cover" />
@@ -198,122 +202,5 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ uri, isExpanded, onToggleEx
     </Modal>
   </>
 );
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  expandIconContainer: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 6,
-    borderRadius: 20,
-  },
-  contentContainer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalCloseButton: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 10,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    borderRadius: 20,
-    padding: 8,
-  },
-  expandedImage: {
-    width: width,
-    height: height * 0.8,
-  },
-  header: {
-    marginBottom: 20,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-  image: {
-    width: "100%",
-    height: 250,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  imagePlaceholder: {
-    width: "100%",
-    height: 250,
-    borderRadius: 10,
-    marginBottom: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  locationText: {
-    marginLeft: 8,
-    fontSize: 16,
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  status: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginLeft: 8,
-  },
-  rejectionContainer: {
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  rejectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  rejectionText: {
-    fontSize: 16,
-  },
-  button: {
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-});
 
 export default PublicationDetailsScreen;

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,79 +8,113 @@ import {
   Dimensions,
   SafeAreaView,
   StatusBar,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Camera } from "react-native-vision-camera";
-import { useCameraDevices } from "react-native-vision-camera";
-import { useCamera } from "../../hooks/use-camera.hook";
-import { useRecentImages } from "../../hooks/use-recent-images.hook";
-import { TopControls } from "../../components/camera/top-controls.component";
-import { CaptureButton } from "../../components/camera/capture-button.component";
-import { GalleryButton } from "../../components/camera/gallery-button.component";
-import { ThumbnailList } from "../../components/camera/thumbnail-list.component";
-import { LocationService } from "../../../services/location/location.service";
-import { Modalize } from "react-native-modalize";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import CustomImagePickerScreen from "./custom-image-picker-screen";
-import {useLoading} from "../../contexts/loading-context";
+  Alert,
+  StyleProp,
+  ViewStyle,
+  TextStyle,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Camera } from 'react-native-vision-camera';
+import { useCamera } from '../../hooks/use-camera.hook';
+import { useRecentImages } from '../../hooks/use-recent-images.hook';
+import { TopControls } from '../../components/camera/top-controls.component';
+import { CaptureButton } from '../../components/camera/capture-button.component';
+import { GalleryButton } from '../../components/camera/gallery-button.component';
+import { ThumbnailList } from '../../components/camera/thumbnail-list.component';
+import { Modalize } from 'react-native-modalize';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import CustomImagePickerScreen from './custom-image-picker-screen';
+import { useLoading } from '../../contexts/loading-context';
+import { themeVariables, useTheme } from '../../contexts/theme-context';
+import { useGallery } from '../../hooks/use-gallery.hook';
+import Location from 'react-native-get-location';
+import type { Location as LocationType } from 'react-native-get-location';
+import { createStyles } from './camera-gallery-screen.styles';
 
-
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 
 type StackParamList = {
-  ImagePreview: { imageUri: string; location?: any };
+  ImagePreview: { imageUri: string; location?: LocationType };
   CustomImagePickerScreen: undefined;
 };
+
+interface PermissionMessageProps {
+  styles: {
+    loadingContainer: StyleProp<ViewStyle>;
+    loadingText: StyleProp<TextStyle>;
+  };
+  title: string;
+  message: string;
+}
+
+interface LoadingProps {
+  styles: {
+    loadingContainer: StyleProp<ViewStyle>;
+    loadingText: StyleProp<TextStyle>;
+  };
+}
+
+
+const PermissionMessage = ({ styles, title, message }: PermissionMessageProps) => (
+  <View style={styles.loadingContainer}>
+    <Text style={styles.loadingText}>{title}</Text>
+    <Text style={styles.loadingText}>{message}</Text>
+  </View>
+);
+
+const Loading = ({ styles }: LoadingProps) => (
+  <View style={styles.loadingContainer}>
+    <ActivityIndicator size="large" color="#ffffff" />
+    <Text style={styles.loadingText}>Cargando cámara...</Text>
+  </View>
+);
 
 export const CameraGalleryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>();
-  const devices = useCameraDevices();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const { showLoading, hideLoading } = useLoading();
 
   const {
     cameraRef,
+    device,
+    isCameraReady,
     isCapturing,
-    position,
+    permissionStatus,
+    cameraPosition,
     flashMode,
     takePhoto,
-    toggleFlashMode,
     flipCamera,
-    cancelCapture,
+    toggleFlashMode,
   } = useCamera();
 
-  const { openUri } = require("../../hooks/use-gallery.hook").useGallery();
+  const { openUri } = useGallery();
   const recentImages = useRecentImages();
 
   const galleryModalRef = useRef<Modalize>(null);
 
-  const device = devices[position];
+  const { theme } = useTheme();
+  const variables = useMemo(() => themeVariables(theme), [theme]);
+  const styles = useMemo(() => createStyles(variables), [variables]);
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
+    if (isCameraReady) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isCameraReady, fadeAnim]);
 
   useEffect(() => {
     if (isCapturing) {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.2,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
+          Animated.timing(pulseAnim, { toValue: 1.2, duration: 500, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
         ])
       ).start();
     } else {
@@ -91,12 +125,20 @@ export const CameraGalleryScreen: React.FC = () => {
   const handleCapture = async () => {
     showLoading();
     try {
-      const uri = await takePhoto();
-      const location = await LocationService.getCurrentCoords();
-      hideLoading();
-      navigation.navigate("ImagePreview", { imageUri: uri, location });
-    } catch {
-      cancelCapture();
+      const photo = await takePhoto();
+      if (!photo) {
+        Alert.alert('Error', 'No se pudo capturar la foto.');
+        return;
+      }
+      const location = await Location.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 15000,
+      });
+      navigation.navigate('ImagePreview', { imageUri: `file://${photo.path}`, location });
+    } catch (error) {
+      console.error('An unexpected error occurred during capture:', error);
+      Alert.alert('Error', 'Ocurrió un error inesperado al capturar la foto.');
+    } finally {
       hideLoading();
     }
   };
@@ -104,53 +146,53 @@ export const CameraGalleryScreen: React.FC = () => {
   const handleOpenGallery = () => galleryModalRef.current?.open();
   const handleConfirm = (uri: string) => {
     galleryModalRef.current?.close();
-    navigation.navigate("ImagePreview", { imageUri: uri });
+    navigation.navigate('ImagePreview', { imageUri: uri });
   };
   const handleCancel = () => galleryModalRef.current?.close();
 
-  if (!device) return <Loading />;
+  if (permissionStatus !== 'granted') {
+    if (permissionStatus === 'denied') {
+      return <PermissionMessage styles={styles} title="Permiso denegado" message="Para usar la cámara, por favor habilita el permiso en los ajustes." />;
+    }
+    if (permissionStatus === 'restricted') {
+      return <PermissionMessage styles={styles} title="Cámara restringida" message="El acceso a la cámara está restringido por una política del dispositivo." />;
+    }
+    return <Loading styles={styles} />;
+  }
+
+  if (!device) return <Loading styles={styles} />;
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
-      />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <Animated.View style={[styles.full, { opacity: fadeAnim }]}>
-        <Camera
-          ref={cameraRef}
-          style={StyleSheet.absoluteFill}
-          device={device}
-          isActive={true}
-          photo
-          enableZoomGesture={true}
-        />
+        {isCameraReady && (
+          <Camera
+            ref={cameraRef}
+            style={StyleSheet.absoluteFill}
+            device={device}
+            isActive={true}
+            photo
+            enableZoomGesture={true}
+          />
+        )}
 
-        {/* Controles arriba */}
         <TopControls
           onBack={() => navigation.goBack()}
           onToggleFlash={toggleFlashMode}
           onFlip={flipCamera}
           flashMode={flashMode}
-          showFlash={position === 0}
+          showFlash={cameraPosition === 0}
           style={{ marginTop: insets.top }}
         />
 
-        {/* Controles abajo */}
-        <View
-          style={[
-            styles.bottomControls,
-            { paddingBottom: insets.bottom + 10 },
-          ]}>
+        <View style={[styles.bottomControls, { paddingBottom: insets.bottom + 10 }]}>
           <GalleryButton onPress={handleOpenGallery} />
-
           <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
             <CaptureButton onPress={handleCapture} isActive={isCapturing} />
           </Animated.View>
         </View>
 
-        {/* Miniaturas recientes */}
         {recentImages.length > 0 && (
           <View
             style={[
@@ -167,64 +209,14 @@ export const CameraGalleryScreen: React.FC = () => {
       <Modalize
         ref={galleryModalRef}
         adjustToContentHeight={false}
-        modalHeight={Dimensions.get("window").height * 0.8}
-        scrollViewProps={{
-          scrollEnabled: true,
-          nestedScrollEnabled: true,
-        }}
+        modalHeight={Dimensions.get('window').height * 0.8}
+        scrollViewProps={{ scrollEnabled: true, nestedScrollEnabled: true }}
         panGestureEnabled={true}
         withOverlay={true}
         handlePosition="inside"
-        childrenStyle={{ flex: 1 }}>
-        <CustomImagePickerScreen
-          onConfirm={handleConfirm}
-          onCancel={handleCancel}
-        />
+        childrenStyle={styles.modalContent}>
+        <CustomImagePickerScreen theme={theme} onConfirm={handleConfirm} onCancel={handleCancel} />
       </Modalize>
     </SafeAreaView>
   );
 };
-
-const Loading = () => (
-  <View style={styles.loadingContainer}>
-    <ActivityIndicator size="large" color="#ffffff" />
-    <Text style={styles.loadingText}>Cargando cámara...</Text>
-  </View>
-);
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  full: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "black",
-  },
-  loadingText: {
-    marginTop: 20,
-    fontSize: 16,
-    color: "white",
-  },
-  bottomControls: {
-    position: "absolute",
-    bottom: 20,
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    paddingHorizontal: 30,
-  },
-  thumbnailContainer: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    zIndex: 10,
-  },
-});

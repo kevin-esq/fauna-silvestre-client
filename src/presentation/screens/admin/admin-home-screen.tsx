@@ -40,6 +40,7 @@ interface LocationInfo {
 // --- Sub-components ---
 
 const AdminHeader: React.FC = React.memo(() => {
+  AdminHeader.displayName = 'AdminHeader';
   const { theme } = useTheme();
   const { user, signOut } = useAuth();
   const { actions: { loadAll } } = usePublications();
@@ -60,12 +61,14 @@ const AdminHeader: React.FC = React.memo(() => {
     const fetchLocation = async () => {
       setLoadingLocation(true);
       try {
-        const permission = await request(
-          Platform.select({
-            android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-            ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
-          })!
-        );
+        const permissionType = Platform.select({
+          android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+          ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
+        });
+        
+        if (!permissionType) return;
+        
+        const permission = await request(permissionType);        
 
         if (permission !== 'granted') {
           throw new Error('Permiso de ubicación denegado');
@@ -81,15 +84,18 @@ const AdminHeader: React.FC = React.memo(() => {
         Geocoding.init('AIzaSyDP5t-v593J7Zwu68eO5CIrBzu_xV4b8VQ');
 
         const response = await Geocoding.from(location.latitude, location.longitude);
+        if (!response.results?.length) throw new Error('No se encontraron resultados');
         const address = response.results[0];
-        
+
         const city = address.address_components.find(c => c.types.includes('locality'))?.long_name;
         const country = address.address_components.find(c => c.types.includes('country'))?.long_name;
 
         setLocationInfo({ city: city || 'N/A', country: country || 'N/A' });
 
-      } catch (error) {
-        console.error(error);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error(error.message);
+        }
         setLocationInfo({ city: 'Ubicación no disponible', country: '' });
       } finally {
         setLoadingLocation(false);
@@ -106,9 +112,9 @@ const AdminHeader: React.FC = React.memo(() => {
           <Text style={styles.greeting}>Hola, {user?.name || 'Admin'}</Text>
           <Text style={styles.subGreeting}>Qué bueno verte de nuevo.</Text>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
+        <TouchableOpacity accessibilityRole="button" style={styles.logoutButton} onPress={signOut}>
           <Ionicons name="log-out-outline" size={24} color={variables['--text-secondary']} />
-          <Text style={styles.logoutButtonText}>Salir</Text>
+          <Text accessibilityLabel="Salir" style={styles.logoutButtonText}>Salir</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.timeAndLocationContainer}>
@@ -131,30 +137,32 @@ const AdminHeader: React.FC = React.memo(() => {
 
 
 const CardButton: React.FC<{ icon: string; label: string; onPress: () => void }> = React.memo(({ icon, label, onPress }) => {
+  CardButton.displayName = 'CardButton';
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
 
   return (
-    <TouchableOpacity style={styles.cardButton} onPress={onPress}>
+    <TouchableOpacity accessibilityRole="button" style={styles.cardButton} onPress={onPress}>
       <Ionicons name={icon} size={22} color={variables['--primary']} />
-      <Text style={styles.cardButtonText}>{label}</Text>
+      <Text accessibilityLabel={label} style={styles.cardButtonText}>{label}</Text>
       <Ionicons name="arrow-forward" size={16} color={variables['--text-secondary']} style={styles.buttonIcon} />
     </TouchableOpacity>
   );
 });
 
 const UserItem: React.FC<{ item: UserModel }> = React.memo(({ item }) => {
+  UserItem.displayName = 'UserItem';
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
 
   return (
-    <TouchableOpacity style={styles.userCard}>
+    <TouchableOpacity accessibilityRole="button" style={styles.userCard}>
       <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
       <View style={styles.userInfo}>
-        <Text style={styles.userName}>{item.name}</Text>
-        <Text style={styles.userEmail}>{item.email}</Text>
+        <Text accessibilityLabel={item.name} style={styles.userName}>{item.name}</Text>
+        <Text accessibilityLabel={item.email} style={styles.userEmail}>{item.email}</Text>
       </View>
       <Ionicons name="chevron-forward" size={24} color={variables['--text-secondary']} />
     </TouchableOpacity>
@@ -177,8 +185,10 @@ const AdminHomeScreen: React.FC = () => {
     try {
       const fetchedUsers = await getAllUsers();
       setUsers(fetchedUsers);
-    } catch (error) {
-      console.error('Error fetching users:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
       setUsers([]);
     } finally {
       setLoading(false);
@@ -212,7 +222,9 @@ const AdminHomeScreen: React.FC = () => {
         <CardButton
           icon="people-outline"
           label="Gestionar Usuarios"
-          onPress={() => console.log('Navigate to User Management')}
+          onPress={() => {
+            // TODO: implementar navegación a Gestión de Usuarios
+          }}
         />
       </View>
       <Text style={styles.listHeader}>Usuarios Recientes</Text>
@@ -237,7 +249,7 @@ const AdminHomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList
+      <FlatList<UserModel>
         data={users}
         renderItem={({ item }) => <UserItem item={item} />}
         keyExtractor={(item) => item.id}

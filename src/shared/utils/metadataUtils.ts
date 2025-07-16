@@ -1,5 +1,7 @@
 // utils/metadataUtils.ts
 
+import { PhotoFile } from 'react-native-vision-camera';
+
 export type GeoLocation = {
   latitude: number;
   longitude: number;
@@ -7,25 +9,46 @@ export type GeoLocation = {
   accuracy?: number;
 };
 
-export const metaToLocation = (photo: any): GeoLocation | null => {
+// Solo los campos que nos interesan
+interface PhotoMetadata {
+  GPSLatitude?: string | number;
+  GPSLongitude?: string | number;
+  GPSAltitude?: string | number;
+  GPSHPositioningError?: string | number;
+}
+
+function isMetadata(meta: unknown): meta is PhotoMetadata {
+  if (typeof meta !== 'object' || meta === null) return false;
+  return (
+    'GPSLatitude' in meta ||
+    'GPSLongitude' in meta ||
+    'GPSAltitude' in meta ||
+    'GPSHPositioningError' in meta
+  );
+}
+
+export const metaToLocation = (photo: PhotoFile): GeoLocation | null => {
   const { metadata } = photo;
-  if (!metadata) return null;
+  if (!isMetadata(metadata)) return null;
 
-  return {
-    latitude: parseCoordinate(metadata.GPSLatitude),
-    longitude: parseCoordinate(metadata.GPSLongitude),
-    altitude: parseNumber(metadata.GPSAltitude),
-    accuracy: parseNumber(metadata.GPSHPositioningError),
-  };
+  const latitude = parseCoordinate(metadata.GPSLatitude);
+  const longitude = parseCoordinate(metadata.GPSLongitude);
+
+  const altitude = parseNumber(metadata.GPSAltitude);
+  const accuracy = parseNumber(metadata.GPSHPositioningError);
+
+  if (latitude == null || longitude == null) return null;
+
+  return { latitude, longitude, altitude, accuracy };
 };
 
-const parseNumber = (value: unknown): number | undefined => {
-  const num = Number(value);
+function parseNumber(value: unknown): number | undefined {
+  if (value == null) return undefined;
+  const num = typeof value === 'string' ? parseFloat(value) : Number(value);
   return Number.isFinite(num) ? num : undefined;
-};
+}
 
-const parseCoordinate = (value: unknown): number => {
+function parseCoordinate(value: unknown): number | null {
   const num = parseNumber(value);
-  if (num === undefined) throw new Error('Invalid coordinate');
-  return num;
-};
+  return num != null ? num : null;
+}

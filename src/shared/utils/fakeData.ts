@@ -22,59 +22,6 @@ export const getDashboardStats = (role: string | undefined) => {
     };
   };
 
-
-export const getUserPublications = (userId: string) => {
-  return {
-    published: [
-      {
-        id: "1",
-        title: "Avistamiento de jaguar",
-        description: "Fotografía de un jaguar en la selva.",
-        imageUrl: "https://static.inaturalist.org/photos/51015966/large.jpg",
-        date: "2025-04-06",
-        animalStatus: "alive",
-        status: "published",
-        location: "108 25.0N, 98 30.0W",
-      },
-      {
-        id: "2",
-        title: "Guacamaya roja",
-        description: "Hermosa guacamaya en libertad.",
-        imageUrl: "https://www.portalambiental.com.mx/sites/default/files/media/image/2021/06/guacamaya.jpeg",
-        date: "2025-04-05",
-        status: "published",
-        animalStatus: "dead",
-        location: "108 25.0N, 98 30.0W",
-      },
-    ],
-    pending: [
-      {
-        id: "3",
-        title: "Serpiente desconocida",
-        description: "Posiblemente especie nueva.",
-        imageUrl: "https://ecotox.mx/wp-content/uploads/2021/07/Serpientes.webp",
-        date: "2025-04-07",
-        status: "pending",
-        animalStatus: "alive",
-        location: "108 25.0N, 98 30.0W",
-      },
-    ],
-    rejected: [
-      {
-        id: "4",
-        title: "Puma visto en zona urbana",
-        description: "El puma parecía perdido.",
-        reason: "La foto es poco clara",
-        imageUrl: "https://www.clarin.com/img/2018/06/19/Byo4Z2UZX_1256x620__1.jpg",
-        status: "rejected",
-        date: "2025-04-04",
-        animalStatus: "alive",
-        location: "108 25.0N, 98 30.0W",
-      },
-    ],
-  };
-};
-
 export const getAllAnimals = () => [
   {
     id: "1",

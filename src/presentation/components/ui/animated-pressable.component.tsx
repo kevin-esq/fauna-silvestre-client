@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable } from "react-native";
+import { Pressable, StyleProp, ViewStyle } from "react-native";
 import { MotiView } from "moti";
 
 /**
@@ -10,7 +10,7 @@ import { MotiView } from "moti";
  * @param {object} style - Estilo adicional del botón.
  * @returns {JSX.Element}
  */
-const AnimatedPressable = ({ children, onPress, style }: { children: React.ReactNode; onPress: any; style?: any }) => {
+const AnimatedPressable = ({ children, onPress, style }: { children: React.ReactNode; onPress: (() => void) | undefined; style?: StyleProp<ViewStyle> }) => {
   const [pressed, setPressed] = useState(false);
 
   return (

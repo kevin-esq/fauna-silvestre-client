@@ -53,7 +53,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   );
 };
 
-const createStyles = (vars: Record<string, any>) =>
+const createStyles = (vars: Record<string, string>) =>
   StyleSheet.create({
     wrapper: {
       position: "absolute",

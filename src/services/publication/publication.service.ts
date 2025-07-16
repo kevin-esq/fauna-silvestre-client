@@ -1,41 +1,44 @@
-import { publicationRepository } from '../../data/repositories/publication.repository';
+import { PublicationRepository } from '../../data/repositories/publication.repository';
 import { IPublicationRepository } from '../../domain/interfaces/publication.repository.interface';
-import { PublicationData, PublicationResponse, PublicationsModel } from '../../domain/models/publication.models';
+import { PublicationData, PublicationsModel, PublicationResponse } from '../../domain/models/publication.models';
+import { apiService } from '../http/api.service';
+import { ConsoleLogger } from '../logging/console-logger';
 
 class PublicationService {
-  constructor(private readonly publicationRepo: IPublicationRepository) {}
+  constructor(private readonly publicationRepository: IPublicationRepository) {}
 
-  async addPublication(publicationData: PublicationData): Promise<void> {
-    return this.publicationRepo.createPublication(publicationData);
+  createPublication(publication: PublicationData): Promise<void> {
+    return this.publicationRepository.createPublication(publication);
   }
 
-  async getUserPendingPublications(): Promise<PublicationResponse[]> {
-    return this.publicationRepo.getUserPendingPublications();
+  getUserPublications(): Promise<PublicationsModel[]> {
+    return this.publicationRepository.getUserPublications();
   }
 
-  async getUserPublications(): Promise<PublicationsModel[]> {
-    return this.publicationRepo.getUserPublications();
+  getAllPublications(): Promise<PublicationsModel[]> {
+    return this.publicationRepository.getAllPublications();
   }
 
-  async getPublicationById(recordId: string): Promise<PublicationResponse> {
-    return this.publicationRepo.getPublicationById(recordId);
+  getUserPendingPublications(): Promise<PublicationResponse[]> {
+    return this.publicationRepository.getUserPendingPublications();
   }
 
-  async getAllPublications(): Promise<PublicationsModel[]> {
-    return this.publicationRepo.getAllPublications();
+  getAllPendingPublications(page: number, limit: number): Promise<PublicationResponse[]> {
+    return this.publicationRepository.getAllPendingPublications(page, limit);
   }
 
-    async getAllPendingPublications(page: number, limit: number): Promise<PublicationResponse[]> {
-        return this.publicationRepo.getAllPendingPublications(page, limit);
+  getPublicationById(recordId: string): Promise<PublicationResponse> {
+    return this.publicationRepository.getPublicationById(recordId);
   }
 
-  async acceptPublication(publicationId: string): Promise<void> {
-    return this.publicationRepo.acceptPublication(publicationId);
+  acceptPublication(publicationId: string): Promise<void> {
+    return this.publicationRepository.acceptPublication(publicationId);
   }
 
-  async rejectPublication(publicationId: string): Promise<void> {
-    return this.publicationRepo.rejectPublication(publicationId);
+  rejectPublication(publicationId: string): Promise<void> {
+    return this.publicationRepository.rejectPublication(publicationId);
   }
 }
 
+const publicationRepository = new PublicationRepository(apiService.client, new ConsoleLogger('debug'));
 export const publicationService = new PublicationService(publicationRepository);

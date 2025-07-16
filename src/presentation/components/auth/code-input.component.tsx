@@ -5,7 +5,7 @@ interface CodeInputProps {
   code: string;
   setCode: (code: string) => void;
   digitCount?: number;
-  variables: any;
+  variables: Record<string, string>;
 }
 
 const CodeInput: React.FC<CodeInputProps> = ({ code, setCode, digitCount = 5, variables }) => {
@@ -63,7 +63,7 @@ const CodeInput: React.FC<CodeInputProps> = ({ code, setCode, digitCount = 5, va
   );
 };
 
-const createStyles = (variables: any) => StyleSheet.create({
+const createStyles = (variables: Record<string, string>) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -1,11 +1,11 @@
 import React from "react";
-import { TouchableOpacity, StyleSheet } from "react-native";
+import { TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 type Props = {
   onPress: () => void;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
 };
 
 export const GalleryButton: React.FC<Props> = ({ onPress, style }) => (

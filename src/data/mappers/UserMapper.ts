@@ -14,7 +14,7 @@ export class UserMapper {
    * @returns {User} Entidad de dominio
    */
   static toDomain(data: UserModel): User {
-    return new User(data.id, data.userName, data.name, data.lastName, data.locality, data.gender, data.age, data.email, data.token);
+    return new User("", data.userName, data.name, data.lastName, data.locality, data.gender, data.age, data.email, "", "");
   }
 
   /**
@@ -25,7 +25,6 @@ export class UserMapper {
    */
   static toModel(entity: User): UserModel {
     return {
-      id: entity.id,
       userName: entity.UserName,
       name: entity.name,
       lastName: entity.lastName,
@@ -33,7 +32,6 @@ export class UserMapper {
       gender: entity.gender,
       age: entity.age,
       email: entity.email,
-      token: entity.token
     };
   }
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, ActivityIndicator, Text, Image, Animated } from 'react-native';
 import { useTheme, themeVariables } from '../../contexts/theme-context';
 import { createStyles } from './splash-screen.styles';
+import SplashIcon from '../../../assets/splash-icon.png';
 
 // Componente para animación de puntos (...)
 const AnimatedDots = () => {
@@ -46,7 +47,7 @@ const SplashScreen = () => {
     <View style={styles.container}>
       <Animated.View style={[styles.logoContainer, { transform: [{ scale: scaleValue }] }]}>
         <Image 
-          source={require('../../../assets/splash-icon.png')}
+          source={SplashIcon}
           style={styles.logo}
           resizeMode="contain"
         />

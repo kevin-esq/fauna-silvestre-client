@@ -7,12 +7,13 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import favicon from '../../../assets/favicon.png';
 
 interface AuthContainerProps {
   children: React.ReactNode;
   title: string;
   subtitle: string;
-  variables: any;
+  variables: Record<string, string>;
 }
 
 const AuthContainer: React.FC<AuthContainerProps> = ({ title, subtitle, children, variables }) => {
@@ -28,7 +29,7 @@ const AuthContainer: React.FC<AuthContainerProps> = ({ title, subtitle, children
         keyboardShouldPersistTaps="handled"
       >
         <Image
-          source={require('../../../assets/favicon.png')}
+          source={favicon}
           style={styles.logo}
         />
         <Text style={styles.title}>{title}</Text>
@@ -39,7 +40,7 @@ const AuthContainer: React.FC<AuthContainerProps> = ({ title, subtitle, children
   );
 };
 
-const createStyles = (variables: any) => StyleSheet.create({
+const createStyles = (variables: Record<string, string>) => StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',

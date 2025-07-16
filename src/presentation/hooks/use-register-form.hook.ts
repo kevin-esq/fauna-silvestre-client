@@ -93,8 +93,12 @@ export const useRegisterForm = () => {
     try {
       await auth.registerUser(userData);
       navigate('Login');
-    } catch (error) {
-      dispatch({ error: 'Error al registrarse. Inténtalo de nuevo.' });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        dispatch({ error: error.message });
+      } else {
+        dispatch({ error: 'Error al registrarse. Inténtalo de nuevo.' });
+      }
     } finally {
       isSubmitting.current = false;
       hideLoading();

@@ -1,5 +1,63 @@
 import { StyleSheet } from 'react-native';
 
-export const createStyles = (vars: Record<string, string>) => StyleSheet.create({
-    // Add your styles here
-});
+export const createStyles = (vars: Record<string, string>, ITEM_SIZE: number) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: vars['--background-color'] },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: 16,
+      backgroundColor: vars['--background-color'],
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    headerTitle: { fontSize: 18, fontWeight: "600", color: vars['--text-color'] },
+    tabContainer: {
+      flexDirection: "row",
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      backgroundColor: vars['--background-color'],
+    },
+    tabButton: {
+      marginRight: 12,
+      paddingVertical: 6,
+      paddingHorizontal: 14,
+      borderRadius: 20,
+      backgroundColor: vars['--background-color'],
+    },
+    tabActive: { backgroundColor: vars['--primary-color'] },
+    tabText: { fontSize: 14, color: vars['--text-color'] },
+    gridContainer: { flex: 1 },
+    photoContainer: {
+      width: ITEM_SIZE,
+      height: ITEM_SIZE,
+      margin: 1,
+      backgroundColor: vars['--background-color'],
+    },
+    photo: { flex: 1, borderRadius: 6 },
+    selectionBadge: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: vars['--background-color'],
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    floatingContainer: {
+      position: "absolute",
+      bottom: 20,
+      right: 20,
+      flexDirection: "row",
+    },
+    centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+    loadingText: { marginTop: 12, fontSize: 16, color: vars['--text-color'] },
+    errorText: { fontSize: 16, color: vars['--error-color'], textAlign: "center" },
+    retryButton: {
+      marginTop: 12,
+      backgroundColor: vars['--background-color'],
+      paddingVertical: 10,
+      paddingHorizontal: 24,
+      borderRadius: 20,
+    },
+    retryText: { color: vars['--text-color'], fontWeight: "bold" },
+  });

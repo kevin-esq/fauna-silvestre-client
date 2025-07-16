@@ -10,8 +10,13 @@ import { useNavigation } from "@react-navigation/native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useTheme, themeVariables } from "../../contexts/theme-context";
 import { StyleSheet } from "react-native";
+import Animal from "../../../domain/entities/animal.entity";
 
-const AnimalDetailsScreen = ({ route }: { route: any }) => {
+interface Props {
+  route: { params: { animal: Animal } };
+}
+
+const AnimalDetailsScreen: React.FC<Props> = ({ route }) => {
   const { animal } = route.params;
   const navigation = useNavigation();
   const { theme } = useTheme();
@@ -31,20 +36,8 @@ const AnimalDetailsScreen = ({ route }: { route: any }) => {
       <Image source={{ uri: animal.image }} style={styles.image} />
 
       {/* Nombre y nombre científico */}
-      <Text style={[styles.commonName, { color: theme.colors.text }]}>{animal.commonName}</Text>
-      <Text style={[styles.scientificName, { color: theme.colors.text }]}>{animal.scientificName}</Text>
-
-      {/* Información general */}
-      <View style={styles.infoBlock}>
-        <Text style={[styles.label, { color: theme.colors.text }]}>Nombre en inglés:</Text>
-        <Text style={[styles.value, { color: theme.colors.text }]}>{animal.englishName}</Text>
-
-        <Text style={[styles.label, { color: theme.colors.text }]}>Especie:</Text>
-        <Text style={[styles.value, { color: theme.colors.text }]}>{animal.species}</Text>
-
-        <Text style={[styles.label, { color: theme.colors.text }]}>Estado de conservación:</Text>
-        <Text style={[styles.value, { color: animal.statusColor }]}>{animal.status}</Text>
-      </View>
+      <Text style={[styles.commonName, { color: theme.colors.text }]}>{animal.commonNoun}</Text>
+      <Text style={[styles.scientificName, { color: theme.colors.text }]}>{animal.specie}</Text>
 
       {/* Descripción e información adicional */}
       <View style={styles.infoBlock}>
@@ -55,28 +48,13 @@ const AnimalDetailsScreen = ({ route }: { route: any }) => {
         <Text style={[styles.value, { color: theme.colors.text }]}>{animal.habitat}</Text>
 
         <Text style={[styles.label, { color: theme.colors.text }]}>Dieta:</Text>
-        <Text style={[styles.value, { color: theme.colors.text }]}>{animal.diet}</Text>
-
-        <Text style={[styles.label, { color: theme.colors.text }]}>Altura promedio:</Text>
-        <Text style={[styles.value, { color: theme.colors.text }]}>{animal.averageHeight}</Text>
-
-        <Text style={[styles.label, { color: theme.colors.text }]}>Peso promedio:</Text>
-        <Text style={[styles.value, { color: theme.colors.text }]}>{animal.averageWeight}</Text>
-
-        <Text style={[styles.label, { color: theme.colors.text }]}>Esperanza de vida:</Text>
-        <Text style={[styles.value, { color: theme.colors.text }]}>{animal.lifespan}</Text>
+        <Text style={[styles.value, { color: theme.colors.text }]}>{animal.feeding}</Text>
 
         <Text style={[styles.label, { color: theme.colors.text }]}>Distribución geográfica:</Text>
         <Text style={[styles.value, { color: theme.colors.text }]}>{animal.distribution}</Text>
 
-        <Text style={[styles.label, { color: theme.colors.text }]}>Actividad:</Text>
-        <Text style={[styles.value, { color: theme.colors.text }]}>{animal.activity}</Text>
-
         <Text style={[styles.label, { color: theme.colors.text }]}>Reproducción:</Text>
         <Text style={[styles.value, { color: theme.colors.text }]}>{animal.reproduction}</Text>
-
-        <Text style={[styles.label, { color: theme.colors.text }]}>Comportamiento:</Text>
-        <Text style={[styles.value, { color: theme.colors.text }]}>{animal.behavior}</Text>
       </View>
     </ScrollView>
   );

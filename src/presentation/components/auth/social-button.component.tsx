@@ -14,7 +14,7 @@ const SocialButton = ({ title, onPress, type }: { title: string; onPress: () => 
   return (
     <TouchableOpacity style={[styles.button, { backgroundColor }]} onPress={onPress}>
       <View style={styles.iconContainer}>
-        <Icon name={getIconName() as any} size={20} color="#fff" />
+        <Icon name={getIconName()} size={20} color="#fff" />
       </View>
       <Text style={styles.text}>{title}</Text>
     </TouchableOpacity>

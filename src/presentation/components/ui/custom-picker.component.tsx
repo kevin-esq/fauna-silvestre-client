@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { useTheme } from '../../contexts/theme-context';
+import { useTheme, themeVariables } from '../../contexts/theme-context';
 import { Picker } from '@react-native-picker/picker';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -18,12 +18,13 @@ interface CustomPickerProps {
 }
 
 const CustomPicker: React.FC<CustomPickerProps> = ({ iconName, selectedValue, onValueChange, options, enabled = true }) => {
-  const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { theme } = useTheme();
+  const vars = themeVariables(theme);
+  const styles = useMemo(() => createStyles(vars), [vars]);
 
   return (
     <View style={styles.container}>
-      <MaterialIcons name={iconName} size={24} color={colors.textSecondary} style={styles.icon} />
+      <MaterialIcons name={iconName} size={24} color={vars['--text-secondary']} style={styles.icon} />
       <Picker
         selectedValue={selectedValue}
         onValueChange={(itemValue) => onValueChange(itemValue)}
@@ -38,16 +39,16 @@ const CustomPicker: React.FC<CustomPickerProps> = ({ iconName, selectedValue, on
   );
 };
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (vars: Record<string, string>) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surfaceVariant,
+    backgroundColor: vars['--surface-variant'],
     borderRadius: 8,
     paddingHorizontal: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: vars['--border'],
     height: 50,
   },
   icon: {
@@ -55,7 +56,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
   picker: {
     flex: 1,
-    color: colors.text,
+    color: vars['--text-secondary'],
   },
 });
 

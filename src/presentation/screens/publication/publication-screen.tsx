@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { View, FlatList, Text, RefreshControl, Alert } from 'react-native';
+import { View, FlatList, Text, RefreshControl } from 'react-native';
 import { useTheme } from '../../contexts/theme-context';
 import useDrawerBackHandler from '../../hooks/use-drawer-back-handler.hook';
 import PublicationCard from '../../components/publication/publication-card.component';
@@ -12,6 +12,7 @@ import { useNavigationActions } from '../../navigation/navigation-provider';
 import { createStyles } from './publication-screen.styles';
 import { themeVariables } from '../../contexts/theme-context';
 import moment from 'moment';
+import { Theme } from '../../contexts/theme-context';
 
 const statusOptions = [
     { label: 'Todos', value: 'all' as const },
@@ -22,7 +23,7 @@ const statusOptions = [
 
 const PAGE_SIZE = 10;
 
-const EmptyListComponent = React.memo(({ searchQuery, styles, theme }: { searchQuery: string, styles: any, theme: any }) => (
+const EmptyListComponent = React.memo(({ searchQuery, styles, theme }: { searchQuery: string, styles: ReturnType<typeof createStyles>, theme: Theme }) => (
     <View style={styles.centered}>
         <Text style={[styles.emptyText, { color: theme.colors.text }]}>
             {searchQuery ? 'Sin resultados' : 'No hay publicaciones.'}
@@ -42,9 +43,9 @@ const PublicationScreen: React.FC = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [paginatedData, setPaginatedData] = useState<PublicationsModel[]>([]);
-    const [_currentPage, setCurrentPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
-    const [_currentTime, setCurrentTime] = useState(moment().format('h:mm A'));
+    const currentPageRef = useRef(1);
+    const currentTimeRef = useRef(moment().format('h:mm A'));
 
     const searchRef = useRef('');
     const timeoutRef = useRef<NodeJS.Timeout>(null);
@@ -54,11 +55,11 @@ const PublicationScreen: React.FC = () => {
     const loadPublications = useCallback(async () => {
         setRefreshing(true);
         try {
-            const timer = setInterval(() => setCurrentTime(moment().format('h:mm A')), 60000);
+            const timer = setInterval(() => currentTimeRef.current = moment().format('h:mm A'), 60000);
             await loadAll();
             clearInterval(timer);
         } catch (err) {
-            Alert.alert('Error', 'No se pudieron cargar publicaciones.');
+            console.error(err);
         } finally {
             setRefreshing(false);
         }
@@ -86,7 +87,7 @@ const PublicationScreen: React.FC = () => {
     useEffect(() => {
         // When filters change, reset pagination
         setPaginatedData(filtered.slice(0, PAGE_SIZE));
-        setCurrentPage(1);
+        currentPageRef.current = 1;
         setHasMore(filtered.length > PAGE_SIZE);
     }, [filtered]);
 
@@ -114,7 +115,7 @@ const PublicationScreen: React.FC = () => {
 
             if (newItems.length > 0) {
                 setPaginatedData(prevData => [...prevData, ...newItems]);
-                setCurrentPage(prevPage => prevPage + 1);
+                currentPageRef.current += 1;
             }
 
             if (currentLength + newItems.length >= filtered.length) {
