@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, FlatList } from 'react-native';
 import { useTheme, themeVariables } from '../../contexts/theme-context';
 import { useAuth } from '../../contexts/auth-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createStyles } from './home-screen.styles';
 import FloatingActionButton from '../../components/ui/floating-action-button.component';
-import { usePublications } from '../../contexts/publication-context';
-import AnimalCard from '../../components/animal/animal-card.component';
 import { useNavigationActions } from '../../navigation/navigation-provider';
+import { usePublications } from '../../contexts/publication-context';
+import PublicationCard from '../../components/publication/publication-card.component';
 
 const HomeScreen = () => {
   const { theme } = useTheme();
@@ -15,7 +15,7 @@ const HomeScreen = () => {
   const { navigate } = useNavigationActions();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
-  const { state: { all } } = usePublications();
+  const { state } = usePublications();
 
   const handleLogout = () => {
     Alert.alert(
@@ -47,11 +47,11 @@ const HomeScreen = () => {
         <Text style={styles.sectionTitle}>Estadísticas</Text>
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{all.publications.length}</Text>
+            <Text style={styles.statValue}>{state.pending.publications.length}</Text>
             <Text style={styles.statLabel}>Publicaciones</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statValue}>0</Text>
             <Text style={styles.statLabel}>Especies</Text>
           </View>
         </View>
@@ -62,14 +62,16 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
+      
       <FlatList
-        data={all.publications}
-        renderItem={({ item }) => <AnimalCard animal={item} onPress={() => navigate('PublicationDetails', { publication: item })} />}
+        data={state.pending.publications}
+        renderItem={({ item }) => <PublicationCard publication={item} onPress={() => navigate('PublicationDetails', { publication: item, status: 'pending' })} status="pending" />}
         keyExtractor={(item) => item.recordId.toString()}
         contentContainerStyle={styles.list}
         ListHeaderComponent={renderHeader}
         showsVerticalScrollIndicator={false}
       />
+      
       <FloatingActionButton onPress={handleAddPublication} icon={<Ionicons name="camera" size={24} color={variables['--text-on-primary']} />} />
     </View>
   );

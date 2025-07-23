@@ -11,6 +11,7 @@ export interface ISecureStorage {
   save(key: string, value: string): Promise<void>;
   getValueFor(key: string): Promise<string | null>;
   deleteValueFor(key: string): Promise<void>;
+  clear(): Promise<void>;
 }
 
 /**
@@ -82,6 +83,16 @@ class SecureStorageService implements ISecureStorage {
     } catch (error) {
       this.logger.error(`[AsyncStorage] Failed to delete value for key: ${key}`, error as Error);
       throw new StorageError(`Could not delete data for key: ${key}`);
+    }
+  }
+
+  async clear(): Promise<void> {
+    try {
+      await AsyncStorage.clear();
+      this.logger.debug('[AsyncStorage] Cleared all data');
+    } catch (error) {
+      this.logger.error('[AsyncStorage] Failed to clear data', error as Error);
+      throw new StorageError('Could not clear data');
     }
   }
 }

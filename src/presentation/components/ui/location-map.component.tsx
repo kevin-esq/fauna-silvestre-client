@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, ActivityIndicator, Text } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useTheme } from "../../contexts/theme-context";
 import axios from 'axios';
+import Config from 'react-native-config'
 
 interface LocationMapProps {
     location: string;
@@ -91,10 +92,11 @@ const LocationMap = ({ location }: LocationMapProps) => {
                 initialRegion={{
                     latitude: coordinates.latitude,
                     longitude: coordinates.longitude,
-                    latitudeDelta: 0.005, // Zoom más cercano
+                    latitudeDelta: 0.005,
                     longitudeDelta: 0.005,
                 }}
-             //   key={mapKey}
+                key={Config.GOOGLE_MAPS_API_KEY}
+                provider={PROVIDER_GOOGLE}
             >
                 <Marker
                     coordinate={{

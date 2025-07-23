@@ -14,9 +14,10 @@ import {
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useAuth} from "../../contexts/auth-context";
+import { useNavigationActions } from '../../navigation/navigation-provider';
 
 const CustomDrawerContent = (props: DrawerContentComponentProps) => {
-  const { navigation } = props;
+  const { navigateAndReset } = useNavigationActions();
   const {signOut, user} = useAuth();
 
   if (!user) {
@@ -28,7 +29,8 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   };
 
   const handleSettings = () => {
-    navigation.navigate('Settings');
+    //navigateAndReset('Settings');
+    // TODO: implementar navegación a Configuración
   };
 
   return (
@@ -37,7 +39,10 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.profileWrapper}
-          onPress={() => navigation.navigate('Profile')}
+          onPress={() => {
+            //navigateAndReset('Profile')
+            // TODO: implementar navegación a Perfil
+          }}
         >
           <Image source={{ uri: "https://avatars.githubusercontent.com/u/39220825?v=4" }} style={styles.avatar} />
           <View>
@@ -48,7 +53,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
 
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate('AddPublication')}
+          onPress={() => navigateAndReset('AddPublication')}
         >
           <FontAwesome name="camera" size={24} color="#fff" />
         </TouchableOpacity>

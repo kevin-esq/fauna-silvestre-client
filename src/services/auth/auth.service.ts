@@ -91,8 +91,7 @@ class AuthService {
   async signOut(): Promise<void> {
     try {
       this.logger.info('[AuthService] Signing out user.');
-      await this.storage.deleteValueFor(ACCESS_TOKEN_KEY);
-      await this.storage.deleteValueFor(REFRESH_TOKEN_KEY);
+      await this.storage.clear();
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error('[AuthService] signOut failed', err);

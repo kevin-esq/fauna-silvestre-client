@@ -22,23 +22,15 @@ import { CaptureButton } from '../../components/camera/capture-button.component'
 import { GalleryButton } from '../../components/camera/gallery-button.component';
 import { ThumbnailList } from '../../components/camera/thumbnail-list.component';
 import { Modalize } from 'react-native-modalize';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import CustomImagePickerScreen from './custom-image-picker-screen';
 import { useLoading } from '../../contexts/loading-context';
 import { themeVariables, useTheme } from '../../contexts/theme-context';
 import { useGallery } from '../../hooks/use-gallery.hook';
-import Location from 'react-native-get-location';
-import type { Location as LocationType } from 'react-native-get-location';
+import Location, { Location as LocationType } from 'react-native-get-location';
 import { createStyles } from './camera-gallery-screen.styles';
+import { useNavigationActions } from '../../navigation/navigation-provider';
 
 const { width } = Dimensions.get('window');
-
-type StackParamList = {
-  ImagePreview: { imageUri: string; location?: LocationType };
-  CustomImagePickerScreen: undefined;
-};
-
 interface PermissionMessageProps {
   styles: {
     loadingContainer: StyleProp<ViewStyle>;
@@ -72,7 +64,7 @@ const Loading = ({ styles }: LoadingProps) => (
 
 export const CameraGalleryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NativeStackNavigationProp<StackParamList>>();
+  const { navigate, goBack } = useNavigationActions();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const { showLoading, hideLoading } = useLoading();
@@ -130,11 +122,11 @@ export const CameraGalleryScreen: React.FC = () => {
         Alert.alert('Error', 'No se pudo capturar la foto.');
         return;
       }
-      const location = await Location.getCurrentPosition({
+      const location: LocationType = await Location.getCurrentPosition({
         enableHighAccuracy: true,
         timeout: 15000,
       });
-      navigation.navigate('ImagePreview', { imageUri: `file://${photo.path}`, location });
+      navigate('ImagePreview', { imageUri: `file://${photo.path}`, location });
     } catch (error) {
       console.error('An unexpected error occurred during capture:', error);
       Alert.alert('Error', 'Ocurrió un error inesperado al capturar la foto.');
@@ -144,9 +136,9 @@ export const CameraGalleryScreen: React.FC = () => {
   };
 
   const handleOpenGallery = () => galleryModalRef.current?.open();
-  const handleConfirm = (uri: string) => {
+  const handleConfirm = (uri: string, location: LocationType) => {
     galleryModalRef.current?.close();
-    navigation.navigate('ImagePreview', { imageUri: uri });
+    navigate('ImagePreview', { imageUri: uri, location });
   };
   const handleCancel = () => galleryModalRef.current?.close();
 
@@ -178,7 +170,7 @@ export const CameraGalleryScreen: React.FC = () => {
         )}
 
         <TopControls
-          onBack={() => navigation.goBack()}
+          onBack={() => goBack()}
           onToggleFlash={toggleFlashMode}
           onFlip={flipCamera}
           flashMode={flashMode}

@@ -55,9 +55,9 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
     async getAllPublications(): Promise<PublicationsModel[]> {
         try {
             const [accepted, rejected, pending] = await Promise.all([
-                this.api.get<PublicationResponse[]>('/Animal/all-records/Accepted'),
-                this.api.get<PublicationResponse[]>('/Animal/all-records/Rejected'),
-                this.api.get<PublicationResponse[]>('/Animal/all-records/Pending')
+                this.api.get<PublicationResponse[]>('/Animal/all-records/Accepted?page=1&size=10'),
+                this.api.get<PublicationResponse[]>('/Animal/all-records/Rejected?page=1&size=10'),
+                this.api.get<PublicationResponse[]>('/Animal/all-records/Pending?page=1&size=10')
             ]);
 
             this.ensureSuccessStatus(accepted);
@@ -74,9 +74,9 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
         }
     }
 
-    async getUserPendingPublications(): Promise<PublicationResponse[]> {
+    async getUserPendingPublications(page: number, limit: number): Promise<PublicationResponse[]> {
         try {
-            const response = await this.api.get<PublicationResponse[]>('/Animal/AnimalRecordByUser/Pending');
+            const response = await this.api.get<PublicationResponse[]>(`/Animal/AnimalRecordByUser/Pending?page=${page}&size=${limit}`);
             this.ensureSuccessStatus(response);
             return response.data;
         } catch (error) {
@@ -84,13 +84,56 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
         }
     }
 
-        async getAllPendingPublications(page: number, limit: number): Promise<PublicationResponse[]> {
+    async getUserRejectedPublications(page: number, limit: number): Promise<PublicationResponse[]> {
         try {
-                        const response = await this.api.get<PublicationResponse[]>(`/Animal/all-records/Pending?page=${page}&limit=${limit}`);
+            const response = await this.api.get<PublicationResponse[]>(`/Animal/AnimalRecordByUser/Rejected?page=${page}&size=${limit}`);
+            this.ensureSuccessStatus(response);
+            return response.data;
+        } catch (error) {
+            throw this.handleHttpError(error, 'Error al obtener las publicaciones rechazadas del usuario');
+        }
+    }
+
+    async getAllPendingPublications(page: number, limit: number): Promise<PublicationResponse[]> {
+        try {
+            console.log(`[getAllPendingPublications] page=${page}&size=${limit}`);
+            const response = await this.api.get<PublicationResponse[]>(`/Animal/all-records/Pending?page=${page}&size=${limit}`);
             this.ensureSuccessStatus(response);
             return response.data;
         } catch (error) {
             throw this.handleHttpError(error, 'Error al obtener todas las publicaciones pendientes');
+        }
+    }
+
+    async getUserAcceptedPublications(page: number, limit: number): Promise<PublicationResponse[]> {
+        try {
+            const response = await this.api.get<PublicationResponse[]>(`/Animal/AnimalRecordByUser/Accepted?page=${page}&size=${limit}`);
+            this.ensureSuccessStatus(response);
+            return response.data;
+        } catch (error) {
+            throw this.handleHttpError(error, 'Error al obtener las publicaciones aceptadas del usuario');
+        }
+    }
+
+    async getAllAcceptedPublications(page: number, limit: number): Promise<PublicationResponse[]> {
+        try {
+            console.log(`[getAllAcceptedPublications] page=${page}&size=${limit}`);
+            const response = await this.api.get<PublicationResponse[]>(`/Animal/all-records/Accepted?page=${page}&size=${limit}`);
+            this.ensureSuccessStatus(response);
+            return response.data;
+        } catch (error) {
+            throw this.handleHttpError(error, 'Error al obtener todas las publicaciones aceptadas');
+        }
+    }
+
+    async getAllRejectedPublications(page: number, limit: number): Promise<PublicationResponse[]> {
+        try {
+            console.log(`[getAllRejectedPublications] page=${page}&size=${limit}`);
+            const response = await this.api.get<PublicationResponse[]>(`/Animal/all-records/Rejected?page=${page}&size=${limit}`);
+            this.ensureSuccessStatus(response);
+            return response.data;
+        } catch (error) {
+            throw this.handleHttpError(error, 'Error al obtener todas las publicaciones rechazadas');
         }
     }
 

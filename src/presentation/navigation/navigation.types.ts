@@ -1,7 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { PublicationsModel } from '../../domain/models/publication.models';
-import { AnimalModel } from '../../domain/models/animal.models';
+import { PublicationResponse, PublicationStatus } from '../../domain/models/publication.models';
 import type { Location } from 'react-native-get-location';
+import Animal from '../../domain/entities/animal.entity';
 
 // Única fuente de verdad para todas las rutas de la aplicación.
 export type RootStackParamList = {
@@ -16,14 +16,14 @@ export type RootStackParamList = {
     Publications: undefined;
     ReviewPublication: undefined;
     ViewPublications: undefined;
-    PublicationDetails: { publication: PublicationsModel };
-    AnimalDetails: { animal: AnimalModel };
+    PublicationDetails: { publication: PublicationResponse, status: PublicationStatus, reason?: string };
+    AnimalDetails: { animal: Animal };
     AddPublication: undefined;
 
     // Stack anidado para "Agregar Publicación"
     CameraGallery: undefined;
-    ImagePreview: { imageUri: string };
-    PublicationForm: { imageUri: string, location: Location };
+    ImagePreview: { imageUri: string, location?: Location };
+    PublicationForm: { imageUri: string, location?: Location };
 };
 
 // Tipos para los props de cada pantalla, basados en el RootStackParamList

@@ -104,4 +104,7 @@ export const createStyles = (vars: Record<string, string>) => StyleSheet.create(
     alignItems: 'center',
     width: '100%',
   },
+  primary: {
+    color: vars["--primary"],
+  },
 });

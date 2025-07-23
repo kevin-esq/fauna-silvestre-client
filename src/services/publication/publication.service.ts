@@ -19,12 +19,28 @@ class PublicationService {
     return this.publicationRepository.getAllPublications();
   }
 
-  getUserPendingPublications(): Promise<PublicationResponse[]> {
-    return this.publicationRepository.getUserPendingPublications();
+  getUserPendingPublications(page: number, limit: number): Promise<PublicationResponse[]> {
+    return this.publicationRepository.getUserPendingPublications(page, limit);
+  }
+
+  getUserAcceptedPublications(page: number, limit: number): Promise<PublicationResponse[]> {
+    return this.publicationRepository.getUserAcceptedPublications(page, limit);
+  }
+
+  getUserRejectedPublications(page: number, limit: number): Promise<PublicationResponse[]> {
+    return this.publicationRepository.getUserRejectedPublications(page, limit);
   }
 
   getAllPendingPublications(page: number, limit: number): Promise<PublicationResponse[]> {
     return this.publicationRepository.getAllPendingPublications(page, limit);
+  }
+
+  getAllAcceptedPublications(page: number, limit: number): Promise<PublicationResponse[]> {
+    return this.publicationRepository.getAllAcceptedPublications(page, limit);
+  }
+
+  getAllRejectedPublications(page: number, limit: number): Promise<PublicationResponse[]> {
+    return this.publicationRepository.getAllRejectedPublications(page, limit);
   }
 
   getPublicationById(recordId: string): Promise<PublicationResponse> {
