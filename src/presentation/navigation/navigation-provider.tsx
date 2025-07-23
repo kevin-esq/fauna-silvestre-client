@@ -19,6 +19,10 @@ interface NavigationContextType {
         name: T,
         params?: RootStackParamList[T]
     ) => void;
+    navigateAndReset: <T extends keyof RootStackParamList>(
+        name: T,
+        params?: RootStackParamList[T]
+    ) => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
@@ -39,6 +43,19 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
         }
     }, []);
 
+    const navigateAndReset = useCallback(<T extends keyof RootStackParamList>(
+        name: T,
+        params?: RootStackParamList[T]
+      ) => {
+        if (navigationRef.isReady()) {
+          navigationRef.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name, params }],
+            })
+          );
+        }
+      }, []);
     const goBack = useCallback(() => {
         if (navigationRef.isReady() && navigationRef.canGoBack()) {
             navigationRef.goBack();
@@ -54,7 +71,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
         }
     }, []);
 
-    const contextValue = useMemo(() => ({ navigate, goBack, push }), [navigate, goBack, push]);
+    const contextValue = useMemo(() => ({ navigate, goBack, push, navigateAndReset }), [navigate, goBack, push, navigateAndReset]);
 
     return (
         <NavigationContext.Provider value={contextValue}>

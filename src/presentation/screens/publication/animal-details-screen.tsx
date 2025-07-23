@@ -6,19 +6,18 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useTheme, themeVariables } from "../../contexts/theme-context";
 import { StyleSheet } from "react-native";
-import Animal from "../../../domain/entities/animal.entity";
+import { useNavigationActions } from "../../navigation/navigation-provider";
+import { DrawerScreenProps } from '@react-navigation/drawer';
+import { RootStackParamList } from "../../navigation/navigation.types";
 
-interface Props {
-  route: { params: { animal: Animal } };
-}
+type Props = DrawerScreenProps<RootStackParamList, 'AnimalDetails'>;
 
 const AnimalDetailsScreen: React.FC<Props> = ({ route }) => {
   const { animal } = route.params;
-  const navigation = useNavigation();
+  const navigation = useNavigationActions();
   const { theme } = useTheme();
   const variables = themeVariables(theme);
   const styles = createStyles(variables);

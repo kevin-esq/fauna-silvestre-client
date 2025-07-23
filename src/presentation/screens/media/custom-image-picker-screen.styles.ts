@@ -1,63 +1,114 @@
 import { StyleSheet } from 'react-native';
 
-export const createStyles = (vars: Record<string, string>, ITEM_SIZE: number) => StyleSheet.create({
-    container: { flex: 1, backgroundColor: vars['--background-color'] },
+export const createStyles = (variables: Record<string, string>) => 
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: variables['--background-color'],
+    },
     header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: 16,
-      backgroundColor: vars['--background-color'],
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    headerTitle: { fontSize: 18, fontWeight: "600", color: vars['--text-color'] },
-    tabContainer: {
-      flexDirection: "row",
-      paddingVertical: 8,
+      height: 56,
+      justifyContent: 'center',
       paddingHorizontal: 16,
-      backgroundColor: vars['--background-color'],
+      borderBottomWidth: 1,
+      borderBottomColor: variables['--border-color'],
     },
-    tabButton: {
-      marginRight: 12,
-      paddingVertical: 6,
-      paddingHorizontal: 14,
-      borderRadius: 20,
-      backgroundColor: vars['--background-color'],
+    content: {
+      flex: 1,
     },
-    tabActive: { backgroundColor: vars['--primary-color'] },
-    tabText: { fontSize: 14, color: vars['--text-color'] },
-    gridContainer: { flex: 1 },
-    photoContainer: {
-      width: ITEM_SIZE,
-      height: ITEM_SIZE,
-      margin: 1,
-      backgroundColor: vars['--background-color'],
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '500',
+      color: variables['--text-color'],
     },
-    photo: { flex: 1, borderRadius: 6 },
-    selectionBadge: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: vars['--background-color'],
-      justifyContent: "center",
-      alignItems: "center",
+    backButton: {
+      position: 'absolute',
+      left: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
     },
-    floatingContainer: {
-      position: "absolute",
-      bottom: 20,
-      right: 20,
-      flexDirection: "row",
+    albumGrid: {
+      padding: 8,
     },
-    centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-    loadingText: { marginTop: 12, fontSize: 16, color: vars['--text-color'] },
-    errorText: { fontSize: 16, color: vars['--error-color'], textAlign: "center" },
-    retryButton: {
-      marginTop: 12,
-      backgroundColor: vars['--background-color'],
-      paddingVertical: 10,
+    albumItem: {
+      width: '50%',
+      padding: 8,
+    },
+    albumCover: {
+      width: '100%',
+      aspectRatio: 1,
+      borderRadius: 4,
+    },
+    albumTitle: {
+      marginTop: 8,
+      fontSize: 16,
+      fontWeight: '500',
+      color: variables['--text-color'],
+    },
+    albumCount: {
+      fontSize: 14,
+      color: variables['--secondary-text-color'],
+    },
+    photoGrid: {
+      padding: 1,
+    },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: 16,
+      color: variables['--text-color'],
+    },
+    errorText: {
+      color: variables['--error-color'],
+      marginBottom: 16,
+    },
+    confirmButton: {
+      position: 'absolute',
+      bottom: 24,
+      alignSelf: 'center',
+      backgroundColor: variables['--accent-color'],
+      paddingVertical: 12,
       paddingHorizontal: 24,
-      borderRadius: 20,
+      borderRadius: 24,
     },
-    retryText: { color: vars['--text-color'], fontWeight: "bold" },
+    buttonText: {
+      color: variables['--text-secondary'],
+      fontWeight: '500',
+    },
+    floatingButtonContainer: {
+      position: 'absolute',
+      bottom: 20,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    photoItem: {
+      width: '33.33%',
+      aspectRatio: 1,
+      padding: 1,
+    },
+    photo: {
+      width: '100%',
+      height: '100%',
+    },
+    selectionOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    selectionBadge: {
+      marginBottom: 8,
+    },
+    selectionText: {
+      color: 'white',
+      fontSize: 12,
+      fontWeight: '500',
+      textAlign: 'center',
+      paddingHorizontal: 8,
+    },
   });

@@ -17,14 +17,14 @@ import LoadingIndicator from '../../components/ui/loading-indicator.component';
 import RejectionModal from '../../components/publication/rejection-modal.component';
 import { createStyles } from './review-publications-screen.styles';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 const ReviewPublicationsScreen: React.FC = () => {
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
   const insets = useSafeAreaInsets();
-  const { state: { pending, error }, actions: { loadPending, approve, reject } } = usePublications();
+  const { state: { pending, error }, actions: { loadStatus, approve, reject } } = usePublications();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [currentId, setCurrentId] = useState<string | null>(null);
@@ -37,13 +37,13 @@ const ReviewPublicationsScreen: React.FC = () => {
   const loadPendingPublications = useCallback(async () => {
     setRefreshing(true);
     try {
-      await loadPending();
+      await loadStatus('pending');
     } catch {
       Alert.alert('Error', 'No se pudieron cargar publicaciones pendientes.');
     } finally {
       setRefreshing(false);
     }
-  }, [loadPending]);
+  }, [loadStatus]);
 
   useEffect(() => {
     loadPendingPublications();
@@ -79,8 +79,8 @@ const ReviewPublicationsScreen: React.FC = () => {
       if (currentLength + newItems.length >= filtered.length) {
         setHasMore(false);
       }
-      setIsLoading(false);
-    }, 250);
+      setIsLoading(false); 
+    }, 250);                    
   }, [filtered, hasMore, isLoading, paginatedData.length]);
 
   const handleApprove = useCallback(
@@ -105,7 +105,8 @@ const ReviewPublicationsScreen: React.FC = () => {
   const renderPublicationItem = useCallback(
     ({ item }: { item: PublicationResponse }) => (
       <PublicationCard
-        publication={{ ...item, status: 'pending' }}
+        publication={item}
+        status="pending"
         reviewActions={{
           onApprove: () => handleApprove(item.recordId.toString()),
           onReject: () => handleReject(item.recordId.toString()),
@@ -166,7 +167,7 @@ const ReviewPublicationsScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={loadPending}
+            onRefresh={() => loadStatus('pending')}
             colors={[theme.colors.primary]}
             tintColor={theme.colors.primary}
           />

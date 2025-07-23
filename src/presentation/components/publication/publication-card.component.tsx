@@ -4,7 +4,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, Button } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import AnimatedPressable from '../ui/animated-pressable.component';
-import { PublicationsModel } from '../../../domain/models/publication.models';
+import { PublicationResponse, PublicationStatus } from '../../../domain/models/publication.models';
 import { useTheme, themeVariables } from '../../contexts/theme-context';
 
 // --- CONSTANTES DE CONFIGURACIÓN ---
@@ -115,15 +115,16 @@ const getImageStyles = (vars: Record<string, string>, viewMode: 'card' | 'presen
 // --- COMPONENTE PublicationContent ---
 
 interface PublicationContentProps {
-  publication: PublicationsModel;
+  publication: PublicationResponse;
+  status: PublicationStatus;
 }
 
-const PublicationContent = React.memo(({ publication }: PublicationContentProps) => {
+const PublicationContent = React.memo(({ publication, status }: PublicationContentProps) => {
   const { theme } = useTheme();
   const vars = themeVariables(theme);
   const styles = getContentStyles();
 
-  const { commonNoun, description, status, animalState, location } = publication;
+  const { commonNoun, description, animalState, location } = publication;
 
   const statusData = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
   const animalData = ANIMAL_STATE_CONFIG[animalState as keyof typeof ANIMAL_STATE_CONFIG] ?? ANIMAL_STATE_CONFIG.ALIVE;
@@ -199,7 +200,8 @@ const getReviewButtonStyles = () =>
 // --- COMPONENTE PRINCIPAL ---
 
 interface PublicationCardProps {
-  publication: PublicationsModel;
+  publication: PublicationResponse;
+  status: PublicationStatus;
   onPress?: () => void;
   reviewActions?: {
     onApprove: () => void;
@@ -209,7 +211,7 @@ interface PublicationCardProps {
 }
 
 const PublicationCard = React.memo(
-  ({ publication, onPress, reviewActions, viewMode = 'card' }: PublicationCardProps) => {
+  ({ publication, onPress, reviewActions, viewMode = 'card', status }: PublicationCardProps) => {
     const { theme } = useTheme();
     const vars = themeVariables(theme);
     const styles = getMainCardStyles(vars);
@@ -222,7 +224,7 @@ const PublicationCard = React.memo(
           viewMode={viewMode}
         />
         <View style={styles.contentWrapper}>
-          <PublicationContent publication={publication} />
+          <PublicationContent publication={publication} status={status} />
           {reviewActions && <ReviewButtons actions={reviewActions} />}
         </View>
       </AnimatedPressable>

@@ -13,7 +13,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { useNavigationActions } from "../../navigation/navigation-provider";
 import { themeVariables, useTheme } from "../../contexts/theme-context";
-import type { PublicationsModel } from '../../../domain/models/publication.models';
+import type { PublicationResponse, PublicationStatus } from '../../../domain/models/publication.models';
 import LocationMap from "../../components/ui/location-map.component";
 import { createStyles } from "./publication-details-screen.styles";
 
@@ -22,7 +22,9 @@ const { width, height } = Dimensions.get("window");
 interface PublicationDetailsScreenProps {
   route: {
     params: {
-      publication: PublicationsModel;
+      publication: PublicationResponse;
+      status: PublicationStatus;
+      reason?: string;
     };
   };
 }
@@ -47,11 +49,11 @@ const STATUS_CONFIG = {
 const PublicationDetailsScreen = ({ route }: PublicationDetailsScreenProps) => {
   const { goBack } = useNavigationActions();
   const { theme } = useTheme();
-  const { publication } = route.params;
+  const { publication, status, reason } = route.params;
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables, width, height), [variables]);
 
-  const statusConfig = STATUS_CONFIG[publication.status] || STATUS_CONFIG.pending;
+  const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
   const [isImageExpanded, setIsImageExpanded] = useState(false);
 
@@ -130,7 +132,7 @@ const PublicationDetailsScreen = ({ route }: PublicationDetailsScreenProps) => {
           </Text>
         </View>
 
-        {publication.status === "rejected" && "publication.reason" && (
+        {status === "rejected" && reason && (
             <View style={[
               styles.rejectionContainer,
               { backgroundColor: theme.colors.error }
@@ -145,7 +147,7 @@ const PublicationDetailsScreen = ({ route }: PublicationDetailsScreenProps) => {
                 styles.rejectionText,
                 { color: theme.colors.error }
               ]}>
-                {"publication.reason"}
+                {reason}
               </Text>
             </View>
         )}

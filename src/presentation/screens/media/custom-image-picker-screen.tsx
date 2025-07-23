@@ -1,355 +1,481 @@
 // components/custom-image-picker-screen.tsx
-import React, { useState, useEffect, memo, useMemo } from "react";
+import React, { useState, useEffect, useMemo, memo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   FlatList,
   ActivityIndicator,
-  Dimensions,
   TouchableOpacity,
   Image,
-} from "react-native";
-import {
-  CameraRoll,
-  Album,
-} from "@react-native-camera-roll/camera-roll/src/CameraRoll";
-import Ionicons from "react-native-vector-icons/Ionicons";
-import { Theme, themeVariables } from "../../contexts/theme-context";
-import { createStyles } from "./custom-image-picker-screen.styles";
+  Dimensions,
+} from 'react-native';
+import { Album, PhotoIdentifier, CameraRoll } from '@react-native-camera-roll/camera-roll';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Theme, themeVariables } from '../../contexts/theme-context';
+import { createStyles } from './custom-image-picker-screen.styles';
 import type { StyleProp, ViewStyle, TextStyle, ImageStyle } from 'react-native';
+import { Location } from 'react-native-get-location';
+import { MediaLibraryService } from '../../../services/media/media-library.service';
 
-// --- Constants & Types ---------------------------------------
-const { width } = Dimensions.get("window");
-const ITEM_SIZE = width / 3;
-const ACCESSIBILITY = {
-  headerLabel: "Selector de fotos",
-  backButton: "Volver atrás",
-  confirmButton: "Confirmar selección",
-  clearButton: "Limpiar selección",
-};
+// --- Constants ---
+const PAGE_SIZE = 100;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const PHOTO_ITEM_SIZE = SCREEN_WIDTH / 3;
+const INITIAL_RENDER_COUNT = 24;
+const MAX_RENDER_PER_BATCH = 24;
+const WINDOW_SIZE = 7;
 
+// --- Types ---
 interface ImageItem {
   uri: string;
   id: string;
 }
 
+interface AlbumWithCover extends Album {
+  coverUri?: string;
+}
+
 interface Props {
-  onConfirm: (uri: string) => void;
+  onConfirm: (uri: string, location: Location) => void;
   onCancel: () => void;
   theme: Theme;
 }
 
-// Estilos compartidos
 interface Styles {
   container: StyleProp<ViewStyle>;
   header: StyleProp<ViewStyle>;
   headerTitle: StyleProp<TextStyle>;
-  tabContainer: StyleProp<ViewStyle>;
-  tabButton: StyleProp<ViewStyle>;
-  tabActive: StyleProp<ViewStyle>;
-  tabText: StyleProp<TextStyle>;
-  gridContainer: StyleProp<ViewStyle>;
-  photoContainer: StyleProp<ViewStyle>;
+  albumGrid: StyleProp<ViewStyle>;
+  albumItem: StyleProp<ViewStyle>;
+  albumCover: StyleProp<ImageStyle>;
+  albumTitle: StyleProp<TextStyle>;
+  albumCount: StyleProp<TextStyle>;
+  photoGrid: StyleProp<ViewStyle>;
+  photoItem: StyleProp<ViewStyle>;
   photo: StyleProp<ImageStyle>;
   selectionBadge: StyleProp<ViewStyle>;
   centered: StyleProp<ViewStyle>;
   loadingText: StyleProp<TextStyle>;
-  retryButton: StyleProp<ViewStyle>;
-  retryText: StyleProp<TextStyle>;
-  floatingContainer: StyleProp<ViewStyle>;
   errorText: StyleProp<TextStyle>;
+  backButton: StyleProp<ViewStyle>;
+  confirmButton: StyleProp<ViewStyle>;
+  buttonText: StyleProp<TextStyle>;
+  selectionOverlay: StyleProp<ViewStyle>;
+  selectionText: StyleProp<TextStyle>;
+  floatingButtonContainer: StyleProp<ViewStyle>;
+  content: StyleProp<ViewStyle>;
 }
 
-// Props principales del componente
-interface Props {
-  onConfirm: (uri: string) => void;
-  onCancel: () => void;
-  theme: Theme;
-}
+const parseCoordinate = (value: unknown): number => {
+  if (value == null) return 0;
+  if (typeof value === 'number') return value;
+  
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
+};
 
-// Header
-interface HeaderProps {
-  onCancel: () => void;
-  styles: Styles;
-  variables: Record<string, string>;
-}
-
-// AlbumTabs
-interface AlbumTabsProps {
-  albums: Album[];
-  active: Album | null;
-  onSelect: (a: Album) => void;
-  styles: Styles;
-}
-
-// PhotoTile
-interface PhotoTileProps {
-  uri: string;
-  selected: boolean;
-  onPress: () => void;
-  styles: Styles;
-  variables: Record<string, string>;
-}
-
-// FloatingActions
-interface FloatingActionsProps {
-  onConfirm: () => void;
-  onClear: () => void;
-  styles: Styles;
-  variables: Record<string, string>;
-}
-
-// IconButton
-interface IconButtonProps {
-  name: React.ComponentProps<typeof Ionicons>['name'];
-  onPress: () => void;
-  variables: Record<string, string>;
-  accessibilityLabel: string;
-}
-
-// LoadingIndicator
-interface LoadingIndicatorProps {
-  styles: Styles;
-}
-
-// ErrorState
-interface ErrorStateProps {
-  message: string;
-  onRetry: () => void;
-  styles: Styles;
-}
-
-
-// --- Hook: Camera Roll ---------------------------------------
+// --- Custom Hook: Camera Roll ---
 function useCameraRoll() {
-  const [albums, setAlbums] = useState<Album[]>([]);
+  const [albums, setAlbums] = useState<AlbumWithCover[]>([]);
   const [photos, setPhotos] = useState<ImageItem[]>([]);
-  const [activeAlbum, setActiveAlbum] = useState<Album | null>(null);
+  const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithCover | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [endCursor, setEndCursor] = useState<string | null>(null);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [cachedAlbums, setCachedAlbums] = useState<Record<string, ImageItem[]>>({});
 
-  // Load all albums
-  useEffect(() => {
-    CameraRoll.getAlbums({ assetType: "Photos" })
-      .then((fetched) => {
-        setAlbums(fetched);
-        setActiveAlbum(
-          fetched.find((a) => a.title === "Camera Roll") || fetched[0]
-        );
-      })
-      .catch(() => setError("Error cargando álbumes"));
+  const loadAlbums = useCallback(async () => {
+    try {
+      setLoading(true);
+      const fetchedAlbums = await CameraRoll.getAlbums({ assetType: 'Photos' });
+      
+      const albumsWithCovers = await Promise.all(
+        fetchedAlbums.map(async album => {
+          try {
+            const photos = await CameraRoll.getPhotos({
+              first: 1,
+              groupName: album.title,
+              assetType: 'Photos',
+            });
+            return {
+              ...album,
+              coverUri: photos.edges[0]?.node.image.uri,
+            };
+          } catch {
+            return { ...album, coverUri: undefined };
+          }
+        })
+      );
+
+      setAlbums(albumsWithCovers);
+      setError(null);
+    } catch (err) {
+      setError('Error loading albums');
+      console.error('Failed to load albums:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Load photos when album changes
-  useEffect(() => {
-    if (!activeAlbum) return;
-    setLoading(true);
-    CameraRoll.getPhotos({
-      first: 100,
-      groupName: activeAlbum.title,
-      assetType: "Photos",
-      include: ["filename"],
-    })
-      .then((result) => {
-        const formatted = result.edges.map((edge) => ({
-          uri: edge.node.image.uri,
-          id: edge.node.image.filename || String(edge.node.timestamp),
-        }));
-        setPhotos(formatted);
-      })
-      .catch(() => setError("Error cargando fotos"))
-      .finally(() => setLoading(false));
-  }, [activeAlbum]);
+  const loadAlbumPhotos = useCallback(async (album: Album, after?: string) => {
+    if (!hasNextPage && after) return;
+    
+    try {
+      if (after) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+      
+      // Check if we have cached data for this album
+      const cachedData = cachedAlbums[album.title];
+      if (!after && cachedData) {
+        setPhotos(cachedData);
+        setLoading(false);
+        return;
+      }
+      
+      const result = await CameraRoll.getPhotos({
+        first: PAGE_SIZE,
+        after: after || undefined,
+        groupName: album.title,
+        assetType: 'Photos',
+        include: ['filename'],
+      });
+
+      const newPhotos = result.edges.map((edge: PhotoIdentifier) => ({
+        uri: edge.node.image.uri,
+        id: edge.node.image.filename || `${edge.node.timestamp}-${edge.node.location?.latitude || 0}`,
+      }));
+
+      setPhotos(prev => {
+        const updatedPhotos = after ? [...prev, ...newPhotos] : newPhotos;
+        
+        // Cache first page of each album
+        if (!after) {
+          setCachedAlbums(prevCache => ({
+            ...prevCache,
+            [album.title]: updatedPhotos
+          }));
+        }
+        
+        return updatedPhotos;
+      });
+      
+      setEndCursor(result.page_info.end_cursor || null);
+      setHasNextPage(result.page_info.has_next_page);
+      setError(null);
+    } catch (err) {
+      setError('Error loading photos');
+      console.error('Failed to load photos:', err);
+    } finally {
+      if (after) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
+    }
+  }, [hasNextPage, cachedAlbums]);
 
   return {
     albums,
     photos,
-    activeAlbum,
-    setActiveAlbum,
+    selectedAlbum,
+    setSelectedAlbum,
+    loadAlbums,
+    loadAlbumPhotos,
+    endCursor,
+    hasNextPage,
     loading,
+    loadingMore,
     error,
   };
 }
 
-// --- Component -----------------------------------------------
-const CameraImagePicker: React.FC<Props> = ({ onConfirm, onCancel, theme }) => {
-  const { albums, photos, activeAlbum, setActiveAlbum, loading, error } =
-    useCameraRoll();
+// --- Main Component ---
+const CameraImagePicker: React.FC<Props> = ({ onConfirm, theme }) => {
+  const {
+    albums,
+    photos,
+    selectedAlbum,
+    setSelectedAlbum,
+    loadAlbums,
+    loadAlbumPhotos,
+    endCursor,
+    hasNextPage,
+    loading,
+    loadingMore,
+    error,
+  } = useCameraRoll();
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
   const variables = useMemo(() => themeVariables(theme), [theme]);
-  const styles = useMemo(() => createStyles(variables, ITEM_SIZE), [variables]);
+  const styles = useMemo(() => createStyles(variables), [variables]);
+  const lastSelectedIdRef = useRef<string | null>(null);
+  const lastSelectTimeRef = useRef<number>(0);
+  const isMountedRef = useRef(true);
+  const photoListRef = useRef<FlatList>(null);
 
-  const handleSelect = (id: string) =>
-    setSelectedId((prev) => (prev === id ? null : id));
-  const clearSelection = () => setSelectedId(null);
-  const confirm = () => {
-    const selected = photos.find((p) => p.id === selectedId);
-    if (selected) {
-      onConfirm(selected.uri);
+  useEffect(() => {
+    isMountedRef.current = true;
+    loadAlbums();
+    
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [loadAlbums]);
+
+  useEffect(() => {
+    if (selectedAlbum && photoListRef.current) {
+      photoListRef.current.scrollToOffset({ offset: 0, animated: false });
     }
-  };
+  }, [selectedAlbum]);
+
+  const confirmPhoto = useCallback(async (uri: string) => {
+    try {
+      const metadata = await MediaLibraryService.extractMetadata(uri);
+      const location: Location = {
+        latitude: parseCoordinate(metadata?.latitude),
+        longitude: parseCoordinate(metadata?.longitude),
+        altitude: parseCoordinate(metadata?.altitude),
+        accuracy: parseCoordinate(metadata?.accuracy),
+        speed: 0,
+        time: 0,
+        bearing: 0,
+        provider: 0,
+        verticalAccuracy: 0,
+        course: 0,
+      };
+      onConfirm(uri, location);
+    } catch (err) {
+      console.error('Error processing photo:', err);
+      // Consider showing an error to the user here
+    }
+  }, [onConfirm]);
+
+  const handleAlbumSelect = useCallback((album: Album) => {
+    setSelectedAlbum(album);
+    setSelectedId(null);
+  }, [setSelectedAlbum]);
+
+  const handlePhotoSelect = useCallback((id: string) => {
+    const now = Date.now();
+    const lastSelectedId = lastSelectedIdRef.current;
+    const lastSelectTime = lastSelectTimeRef.current;
+    
+    // Double-tap detection
+    if (id === lastSelectedId && (now - lastSelectTime) < 500) {
+      const selectedPhoto = photos.find(photo => photo.id === id);
+      if (selectedPhoto) {
+        confirmPhoto(selectedPhoto.uri);
+      }
+      return;
+    }
+  
+    // Update selection
+    setSelectedId(prev => (prev === id ? null : id));
+    lastSelectedIdRef.current = id;
+    lastSelectTimeRef.current = now;
+  }, [photos, confirmPhoto]);
+
+  const handleConfirm = useCallback(() => {
+    if (!selectedId) return;
+    
+    const selectedPhoto = photos.find(photo => photo.id === selectedId);
+    if (selectedPhoto) {
+      confirmPhoto(selectedPhoto.uri);
+    } else {
+      console.warn('Selected photo not found');
+    }
+  }, [selectedId, photos, confirmPhoto]);
+
+  const handleEndReached = useCallback(() => {
+    if (selectedAlbum && hasNextPage && endCursor && !loadingMore) {
+      loadAlbumPhotos(selectedAlbum, endCursor);
+    }
+  }, [selectedAlbum, endCursor, hasNextPage, loadAlbumPhotos, loadingMore]);
+
+  const getItemLayout = useCallback((_: unknown, index: number) => ({
+    length: PHOTO_ITEM_SIZE,
+    offset: PHOTO_ITEM_SIZE * Math.floor(index / 3) * 3,
+    index,
+  }), []);
+
+  const keyExtractor = useCallback((item: ImageItem) => item.id, []);
+
+    // Optimized render item
+    const renderPhotoItem = useCallback(({ item }: { item: ImageItem }) => (
+      <PhotoItem
+        uri={item.uri}
+        selected={item.id === selectedId}
+        onPress={() => handlePhotoSelect(item.id)}
+        styles={styles}
+        itemSize={PHOTO_ITEM_SIZE}
+      />
+    ), [selectedId, handlePhotoSelect, styles]);
 
   if (error) {
-    return <ErrorState message={error} onRetry={clearSelection} styles={styles} />;
+    return (
+      <ErrorView 
+        message={error} 
+        onRetry={selectedAlbum ? () => loadAlbumPhotos(selectedAlbum) : loadAlbums} 
+        styles={styles} 
+      />
+    );
   }
 
   return (
     <View style={styles.container}>
-      {/* <Header onCancel={onCancel} /> */}
+      {/* ... Header ... */}
 
-      {loading ? (
-        <LoadingIndicator styles={styles} />
-      ) : (
-        <View style={styles.gridContainer}>
-          <FlatList<ImageItem>
+      {/* Main Content */}
+      <View style={styles.content}>
+        {loading && !selectedAlbum && albums.length === 0 ? (
+          <LoadingView styles={styles} />
+        ) : selectedAlbum ? (
+          <FlatList
+            ref={photoListRef}
+            key="photos-list"
             data={photos}
-            keyExtractor={(item) => item.id}
+            keyExtractor={keyExtractor}
             numColumns={3}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.1} // More sensitive threshold
+            contentContainerStyle={styles.photoGrid}
+            renderItem={renderPhotoItem}
+            ListFooterComponent={
+              loadingMore ? (
+                <View style={[styles.centered, { height: 80 }]}>
+                  <ActivityIndicator size="small" color={variables['--text-secondary']} />
+                </View>
+              ) : null
+            }
+            getItemLayout={getItemLayout}
+            initialNumToRender={INITIAL_RENDER_COUNT}
+            maxToRenderPerBatch={MAX_RENDER_PER_BATCH}
+            windowSize={WINDOW_SIZE}
+            removeClippedSubviews={true}
+            updateCellsBatchingPeriod={100}
+            disableVirtualization={false} // Ensure virtualization is enabled
+          />
+        ) : (
+          <FlatList
+            key="albums-list"
+            data={albums}
+            keyExtractor={item => item.title}
+            numColumns={2}
+            contentContainerStyle={styles.albumGrid}
             renderItem={({ item }) => (
-              <PhotoTile
-                uri={item.uri}
-                selected={item.id === selectedId}
-                onPress={() => handleSelect(item.id)}
+              <AlbumItem
+                album={item}
+                onPress={() => handleAlbumSelect(item)}
                 styles={styles}
-                variables={variables}
               />
             )}
-            nestedScrollEnabled
-            removeClippedSubviews
-            ListHeaderComponent={() => (
-              <View>
-                <Header onCancel={onCancel} styles={styles} variables={variables} />
-                <AlbumTabs
-                  albums={albums}
-                  active={activeAlbum}
-                  onSelect={setActiveAlbum}
-                  styles={styles}
-                                  />
-              </View>
-            )}
-            ListFooterComponent={() => <View style={{ height: ITEM_SIZE }} />}
+            ListEmptyComponent={
+              !loading && !error ? (
+                <View style={styles.centered}>
+                  <Text style={styles.errorText}>No albums found</Text>
+                </View>
+              ) : null
+            }
           />
-          {selectedId && (
-            <FloatingActions onConfirm={confirm} onClear={clearSelection} styles={styles} variables={variables} />
-          )}
+        )}
+      </View>
+
+      {/* Floating Confirm Button */}
+      {selectedId && (
+        <View style={styles.floatingButtonContainer}>
+          <TouchableOpacity 
+            style={styles.confirmButton}
+            onPress={handleConfirm}
+          >
+            <Text style={styles.buttonText}>Confirmar selección</Text>
+          </TouchableOpacity>
         </View>
       )}
     </View>
   );
 };
 
-// --- Sub-components ------------------------------------------
-const Header = memo(({ onCancel, styles, variables }: HeaderProps) => (
-  <View style={styles.header}>
-    <IconButton
-      name="arrow-back"
-      onPress={onCancel}
-      accessibilityLabel={ACCESSIBILITY.backButton}
-      variables={variables}
+const AlbumItem = memo(({ album, onPress, styles }: { album: AlbumWithCover, onPress: () => void, styles: Styles }) => (
+  <TouchableOpacity style={styles.albumItem} onPress={onPress}>
+    {album.coverUri ? (
+      <Image 
+        source={{ uri: album.coverUri }} 
+        style={styles.albumCover}
+        resizeMode="cover"
+      />
+    ) : (
+      <View style={[styles.albumCover, { backgroundColor: '#e1e1e1', justifyContent: 'center', alignItems: 'center' }]}>
+        <Ionicons name="images" size={40} color="#888" />
+      </View>
+    )}
+    <Text style={styles.albumTitle} numberOfLines={1}>{album.title}</Text>
+    <Text style={styles.albumCount}>{album.count} photos</Text>
+  </TouchableOpacity>
+));
+
+interface PhotoItemProps {
+  uri: string;
+  selected: boolean;
+  onPress: () => void;
+  styles: Styles;
+  itemSize: number;
+}
+
+const PhotoItem = memo(({ uri, selected, onPress, styles, itemSize }: PhotoItemProps) => (
+  <TouchableOpacity 
+    style={[styles.photoItem, { width: itemSize, height: itemSize }]} 
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <Image 
+      source={{ uri }} 
+      style={[styles.photo, { width: itemSize, height: itemSize }]} 
+      resizeMode="cover"
     />
-    <Text style={styles.headerTitle}>{ACCESSIBILITY.headerLabel}</Text>
-    <View style={{ width: 40 }} />
-  </View>
-));
-
-const AlbumTabs = memo(
-  ({
-    albums,
-    active,
-    onSelect,
-    styles,
-  }: AlbumTabsProps) => (
-    <View style={styles.tabContainer}>
-      {albums.map((album) => (
-        <TouchableOpacity
-          key={album.title}
-          style={[
-            styles.tabButton,
-            active?.title === album.title && styles.tabActive,
-          ]}
-          onPress={() => onSelect(album)}
-          accessibilityLabel={`Ver álbum ${album.title}`}>
-          <Text style={styles.tabText}>{album.title}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  )
-);
-
-const PhotoTile = memo(
-  ({
-    uri,
-    selected,
-    onPress,
-    styles,
-    variables,
-  }: PhotoTileProps) => (
-    <TouchableOpacity
-      style={styles.photoContainer}
-      onPress={onPress}
-      accessibilityLabel={selected ? "Deseleccionar foto" : "Seleccionar foto"}>
-      <Image source={{ uri }} style={styles.photo} />
-      {selected && (
+    {selected && (
+      <View style={styles.selectionOverlay}>
         <View style={styles.selectionBadge}>
-          <Ionicons name="checkmark-circle" size={32} color={variables['--text-color']} />
+          <Ionicons name="checkmark-circle" size={32} color="white" />
         </View>
-      )}
-    </TouchableOpacity>
-  )
-);
+        <Text style={styles.selectionText}>Tap again to confirm</Text>
+      </View>
+    )}
+  </TouchableOpacity>
+));
 
-const FloatingActions = memo(
-  ({ onConfirm, onClear, styles, variables }: FloatingActionsProps) => (
-    <View style={styles.floatingContainer}>
-      <IconButton
-        name="close-circle"
-        onPress={onClear}
-        variables={variables}
-        accessibilityLabel={ACCESSIBILITY.clearButton}
-      />
-      <IconButton
-        name="checkmark-circle"
-        onPress={onConfirm}
-        variables={variables}
-        accessibilityLabel={ACCESSIBILITY.confirmButton}
-      />
-    </View>
-  )
-);
+interface LoadingViewProps {
+  styles: Styles;
+}
 
-const IconButton = memo(
-  ({
-    name,
-    onPress,
-    variables,
-    accessibilityLabel,
-  }: IconButtonProps) => (
-    <TouchableOpacity
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}>
-      <Ionicons name={name} size={28} color={variables['--text-color']} />
-    </TouchableOpacity>
-  )
-);
-
-const LoadingIndicator = memo(({ styles }: LoadingIndicatorProps) => (
+const LoadingView = memo(({ styles }: LoadingViewProps) => (
   <View style={styles.centered}>
-    <ActivityIndicator size="large" color="#2E7D32" />
-    <Text style={styles.loadingText}>Cargando fotos...</Text>
+    <ActivityIndicator size="large" />
+    <Text style={styles.loadingText}>Cargando...</Text>
   </View>
 ));
 
-const ErrorState = memo(
-  ({ message, onRetry, styles }: ErrorStateProps) => (
-    <View style={styles.centered}>
-      <Text style={styles.errorText}>{message}</Text>
-      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-        <Text style={styles.retryText}>Reintentar</Text>
-      </TouchableOpacity>
-    </View>
-  )
-);
+interface ErrorViewProps {
+  message: string;
+  onRetry: () => void;
+  styles: Styles;
+}
 
-export default CameraImagePicker;
+const ErrorView = memo(({ message, onRetry, styles }: ErrorViewProps) => (
+  <View style={styles.centered}>
+    <Ionicons name="warning" size={48} color="#ff5555" style={{ marginBottom: 16 }} />
+    <Text style={styles.errorText}>{message}</Text>
+    <TouchableOpacity 
+      onPress={onRetry}
+      style={[styles.confirmButton, { marginTop: 20, paddingHorizontal: 24 }]}
+    >
+      <Text style={styles.buttonText}>Intentar de nuevo</Text>
+    </TouchableOpacity>
+  </View>
+));
+
+export default memo(CameraImagePicker);

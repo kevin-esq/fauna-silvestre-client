@@ -7,6 +7,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { ThemeProvider } from '../presentation/contexts/theme-context';
 import { PublicationProvider } from '../presentation/contexts/publication-context';
 import { LoadingProvider } from '../presentation/contexts/loading-context';
+import { CatalogProvider } from '../presentation/contexts/catalog-context';
 
 export default function App() {
   return (
@@ -15,9 +16,11 @@ export default function App() {
         <NavigationProvider>
           <ThemeProvider>
             <LoadingProvider>
-              <PublicationProvider>
-                <AppNavigator />
-              </PublicationProvider>
+              <CatalogProvider>
+                <PublicationProvider>
+                  <AppNavigator />
+                </PublicationProvider>
+              </CatalogProvider>
             </LoadingProvider>
           </ThemeProvider>
         </NavigationProvider>

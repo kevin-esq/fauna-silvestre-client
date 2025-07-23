@@ -14,15 +14,15 @@ import { useTheme } from '../../contexts/theme-context';
 import { themeVariables } from '../../contexts/theme-context';
 
 // --- TIPOS ---
-interface StatusTab {
+export interface StatusTab {
   label: string;
-  value: PublicationStatus | 'all';
+  value: PublicationStatus | 'pending' | 'accepted' | 'rejected';
 }
 
 interface StatusTabsProps {
   statuses: readonly StatusTab[];
-  active: PublicationStatus | 'all';
-  onSelect: (status: PublicationStatus | 'all') => void;
+  active: PublicationStatus | 'pending' | 'accepted' | 'rejected';
+  onSelect: (status: PublicationStatus | 'pending' | 'accepted' | 'rejected') => void;
   theme?: ReturnType<typeof useTheme>['theme'];
 }
 
