@@ -16,6 +16,11 @@ export interface PublicationResponse {
     location: string;
 }
 
+export interface CountsResponse {
+    users: number;
+    records: number;
+}
+
 export type PublicationStatus = 'rejected' | 'pending' | 'accepted';
 
 export interface PublicationsModel {

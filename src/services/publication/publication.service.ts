@@ -1,6 +1,6 @@
 import { PublicationRepository } from '../../data/repositories/publication.repository';
 import { IPublicationRepository } from '../../domain/interfaces/publication.repository.interface';
-import { PublicationData, PublicationsModel, PublicationResponse } from '../../domain/models/publication.models';
+import { PublicationData, PublicationsModel, PublicationResponse, CountsResponse } from '../../domain/models/publication.models';
 import { apiService } from '../http/api.service';
 import { ConsoleLogger } from '../logging/console-logger';
 
@@ -53,6 +53,10 @@ class PublicationService {
 
   rejectPublication(publicationId: string): Promise<void> {
     return this.publicationRepository.rejectPublication(publicationId);
+  }
+
+  getCounts(): Promise<CountsResponse> {
+    return this.publicationRepository.getCounts();
   }
 }
 
