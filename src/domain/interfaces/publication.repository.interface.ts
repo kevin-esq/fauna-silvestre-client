@@ -1,4 +1,4 @@
-import {PublicationData, PublicationResponse, PublicationsModel} from "../models/publication.models";
+import {CountsResponse, PublicationData, PublicationResponse, PublicationsModel} from "../models/publication.models";
 
 export interface IPublicationRepository {
     createPublication(data: PublicationData): Promise<void>;
@@ -13,4 +13,5 @@ export interface IPublicationRepository {
     getAllRejectedPublications(page: number, limit: number): Promise<PublicationResponse[]>;
     acceptPublication(publicationId: string): Promise<void>;
     rejectPublication(publicationId: string): Promise<void>;
+    getCounts(): Promise<CountsResponse>;
 }
