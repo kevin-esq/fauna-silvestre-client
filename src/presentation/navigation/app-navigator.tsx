@@ -18,7 +18,7 @@ import SplashScreen from '../screens/home/splash-screen';
 // Publication screens
 import PublicationScreen from '../screens/publication/publication-screen';
 import PublicationDetailsScreen from '../screens/publication/publication-details-screen';
-import AnimalDetailsScreen from '../screens/publication/animal-details-screen';
+import AnimalDetailsScreen from '../screens/catalog/animal-details-screen';
 import PublicationFormScreen from '../screens/publication/publication-form-screen';
 
 // Admin screens
@@ -143,7 +143,7 @@ const UserDrawer = () => {
                 component={AnimalDetailsScreen}
                 options={{
                     title: 'Detalles del Animal',
-                    headerShown: false,
+                    headerShown: true,
                     drawerItemStyle: { display: 'none' },
                 }}
             />

@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
 import { useAuth } from './auth-context';
 import { useLoading } from './loading-context';
-import { PublicationsModel, PublicationResponse } from '../../domain/models/publication.models';
+import { PublicationsModel, PublicationResponse, CountsResponse } from '../../domain/models/publication.models';
 import { publicationService } from '../../services/publication/publication.service';
 
 type PublicationStatus = 'pending' | 'accepted' | 'rejected';
@@ -22,6 +22,10 @@ interface State {
   pending: PublicationState;
   accepted: PublicationState;
   rejected: PublicationState;
+  counts: {
+    users: number;
+    records: number;
+  };
   error: string | null;
 }
 
@@ -41,6 +45,8 @@ type Action =
       payload: PublicationResponse[];
       hasMore: boolean;
     }
+    | { type: 'FETCH_COUNTS_START' }
+    | { type: 'FETCH_COUNTS_SUCCESS'; payload: CountsResponse }
   | { type: 'OPERATION_FAILURE'; payload: string }
   | { type: 'RESET' };
 
@@ -50,6 +56,7 @@ export interface PublicationContextType {
     loadAll: () => Promise<void>;
     loadStatus: (status: PublicationStatus) => Promise<void>;
     loadMoreStatus: (status: PublicationStatus) => Promise<void>;
+    loadCounts: () => Promise<void>;
     approve: (recordId: string) => Promise<void>;
     reject: (recordId: string) => Promise<void>;
     reset: () => void;
@@ -66,6 +73,7 @@ const initialState: State = {
   pending: { publications: [], isLoading: false, page: INITIAL_PAGE, hasMore: true },
   accepted: { publications: [], isLoading: false, page: INITIAL_PAGE, hasMore: true },
   rejected: { publications: [], isLoading: false, page: INITIAL_PAGE, hasMore: true },
+  counts: { users: 0, records: 0 },
   error: null,
 };
 
@@ -117,6 +125,19 @@ const publicationsReducer = (state: State, action: Action): State => {
         },
       };
     }
+
+    case 'FETCH_COUNTS_START':
+      return {
+        ...state,
+        counts: { users: 0, records: 0 },
+        error: null,
+      };
+
+    case 'FETCH_COUNTS_SUCCESS':
+      return {
+        ...state,
+        counts: action.payload,
+        };
       
     case 'OPERATION_FAILURE':
       return {
@@ -237,6 +258,23 @@ export const PublicationProvider = ({ children }: { children: React.ReactNode })
     }
   }, [user, state, handleError]);
 
+  const loadCounts = useCallback(async () => {
+    dispatch({ type: 'FETCH_COUNTS_START' });
+
+    try {
+      const counts = await publicationService.getCounts();
+      dispatch({
+        type: 'FETCH_COUNTS_SUCCESS',
+        payload: {
+          users: counts.users,
+          records: counts.records,
+        },
+      });
+    } catch (e) {
+      handleError(e, 'Error al cargar los conteos de publicaciones.');
+    }
+  }, [handleError]);
+
   const approve = useCallback(async (recordId: string) => {
     if (!recordId) {
       dispatch({ type: 'RESET' });
@@ -282,6 +320,7 @@ export const PublicationProvider = ({ children }: { children: React.ReactNode })
       loadAll,
       loadStatus,
       loadMoreStatus,
+      loadCounts,
       approve,
       reject,
       reset,
@@ -291,6 +330,7 @@ export const PublicationProvider = ({ children }: { children: React.ReactNode })
     loadAll,
     loadStatus,
     loadMoreStatus,
+    loadCounts,
     approve,
     reject,
     reset
