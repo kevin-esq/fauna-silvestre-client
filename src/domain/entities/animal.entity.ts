@@ -7,6 +7,7 @@ export default class Animal {
     reproduction: string;
     distribution: string;
     category: string;
+    habits: string;
     map: string;
     image: string;
 
@@ -19,6 +20,7 @@ export default class Animal {
         reproduction: string,
         distribution: string,
         category: string,
+        habits: string,
         map: string,
         image: string
     ) {
@@ -30,6 +32,7 @@ export default class Animal {
         this.reproduction = reproduction;
         this.distribution = distribution;
         this.category = category;
+        this.habits = habits;
         this.map = map;
         this.image = image;
     }

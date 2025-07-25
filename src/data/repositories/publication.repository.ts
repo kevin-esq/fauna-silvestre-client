@@ -3,6 +3,7 @@ import { BaseRepository } from "./base.repository";
 import { ILogger } from "../../shared/types/ILogger";
 import { IPublicationRepository } from "../../domain/interfaces/publication.repository.interface";
 import {
+    CountsResponse,
     PublicationData,
     PublicationResponse,
     PublicationsModel,
@@ -162,6 +163,16 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
             this.ensureSuccessStatus(response);
         } catch (error) {
             throw this.handleHttpError(error, 'Error al rechazar la publicación');
+        }
+    }
+
+    async getCounts(): Promise<CountsResponse> {
+        try {
+            const response = await this.api.get<CountsResponse>('/Users/counts');
+            this.ensureSuccessStatus(response);
+            return response.data;
+        } catch (error) {
+            throw this.handleHttpError(error, 'Error al obtener los conteos de publicaciones');
         }
     }
 }
