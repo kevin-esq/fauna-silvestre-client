@@ -21,7 +21,7 @@ export const createStyles = (vars: Record<string, string>) => {
     headerContainer: {
       backgroundColor: vars['--background'],
       paddingHorizontal: 20,
-      paddingTop: 50,
+      paddingTop: 20,
       paddingBottom: 20,
       borderBottomLeftRadius: 24,
       borderBottomRightRadius: 24,
@@ -188,4 +188,3 @@ export const createStyles = (vars: Record<string, string>) => {
     },
   });
 };
-

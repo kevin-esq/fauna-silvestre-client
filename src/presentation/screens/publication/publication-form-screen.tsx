@@ -104,7 +104,7 @@ const PublicationFormScreen: React.FC = () => {
 
       await publicationService.createPublication(data);
       Alert.alert('✅ Publicación creada', 'Gracias por tu contribución.');
-      navigate('Home');
+      navigate('HomeTabs');
     } catch (error) {
       console.error('Error al publicar:', error);
       Alert.alert('❌ Error', 'Ocurrió un problema al crear la publicación. Intenta de nuevo.');
