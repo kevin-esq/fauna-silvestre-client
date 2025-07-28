@@ -1,4 +1,5 @@
 export default class Animal {
+    catalogId: string;
     specie: string;
     commonNoun: string;
     habitat: string;
@@ -12,6 +13,7 @@ export default class Animal {
     image: string;
 
     constructor(
+        catalogId: string,
         specie: string,
         commonNoun: string,
         habitat: string,
@@ -24,6 +26,7 @@ export default class Animal {
         map: string,
         image: string
     ) {
+        this.catalogId = catalogId;
         this.specie = specie;
         this.commonNoun = commonNoun;
         this.habitat = habitat;
