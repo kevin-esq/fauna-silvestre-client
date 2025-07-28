@@ -10,7 +10,7 @@ export type RootStackParamList = {
     Register: undefined;
     ForgotPassword: undefined;
 
-    // Drawer (principal)
+    // Tabs (principal)
     AdminHome: undefined;
     Home: undefined;
     Publications: undefined;
@@ -24,6 +24,8 @@ export type RootStackParamList = {
     CameraGallery: undefined;
     ImagePreview: { imageUri: string, location?: Location };
     PublicationForm: { imageUri: string, location?: Location };
+
+    HomeTabs: undefined;
 };
 
 // Tipos para los props de cada pantalla, basados en el RootStackParamList
@@ -31,3 +33,5 @@ export type PublicationDetailsScreenProps = NativeStackScreenProps<RootStackPara
 export type AnimalDetailsScreenProps = NativeStackScreenProps<RootStackParamList, 'AnimalDetails'>;
 export type ImagePreviewScreenProps = NativeStackScreenProps<RootStackParamList, 'ImagePreview'>;
 export type PublicationFormScreenProps = NativeStackScreenProps<RootStackParamList, 'PublicationForm'>;
+export type HomeTabsProps = NativeStackScreenProps<RootStackParamList, 'HomeTabs'>;
+

@@ -8,23 +8,26 @@ import { ThemeProvider } from '../presentation/contexts/theme-context';
 import { PublicationProvider } from '../presentation/contexts/publication-context';
 import { LoadingProvider } from '../presentation/contexts/loading-context';
 import { CatalogProvider } from '../presentation/contexts/catalog-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function App() {
   return (
-    <NavigationContainer ref={navigationRef}>
-      <AuthProvider>
-        <NavigationProvider>
-          <ThemeProvider>
-            <LoadingProvider>
-              <CatalogProvider>
-                <PublicationProvider>
-                  <AppNavigator />
-                </PublicationProvider>
-              </CatalogProvider>
-            </LoadingProvider>
-          </ThemeProvider>
-        </NavigationProvider>
-      </AuthProvider>
-    </NavigationContainer>
+    <SafeAreaProvider>
+      <NavigationContainer ref={navigationRef}>
+        <AuthProvider>
+          <NavigationProvider>
+            <ThemeProvider>
+              <LoadingProvider>
+                <CatalogProvider>
+                  <PublicationProvider>
+                    <AppNavigator />
+                  </PublicationProvider>
+                </CatalogProvider>
+              </LoadingProvider>
+            </ThemeProvider>
+          </NavigationProvider>
+        </AuthProvider>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }

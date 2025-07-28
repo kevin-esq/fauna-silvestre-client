@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">FspClientApp</string>
+    <string name="app_name">Fauna Silvestre</string>
+    <string name="google_maps_api_key">AIzaSyDRkZWcsFsGYG1YckEqydeu9hfNcs6lPSk</string>
 </resources>

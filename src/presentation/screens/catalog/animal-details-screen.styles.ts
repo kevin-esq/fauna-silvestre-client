@@ -3,17 +3,17 @@ import { StyleSheet, Dimensions } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-export const createStyles = (theme: any) => StyleSheet.create({
+export const createStyles = (variables: Record<string, string>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: variables['--background'],
   },
   
   // Tarjeta principal
   card: {
     margin: 16,
     marginTop: 20, // Espacio para el status bar
-    backgroundColor: theme.colors.surface,
+    backgroundColor: variables['--surface'],
     borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: {
@@ -71,7 +71,7 @@ export const createStyles = (theme: any) => StyleSheet.create({
     position: 'absolute',
     top: 16,
     right: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: variables['--background'],
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -149,13 +149,13 @@ export const createStyles = (theme: any) => StyleSheet.create({
 
   separator: {
     height: 1,
-    backgroundColor: theme.colors.border,
+    backgroundColor: variables['--border'],
     marginBottom: 16,
   },
 
   // Botón expandir
   expandButton: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: variables['--primary-color'],
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -164,7 +164,7 @@ export const createStyles = (theme: any) => StyleSheet.create({
   },
 
   expandButtonText: {
-    color: theme.colors.textOnPrimary,
+    color: variables['--text-on-primary'],
     fontSize: 14,
     fontWeight: '600',
   },
@@ -176,9 +176,9 @@ export const createStyles = (theme: any) => StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: theme.colors.surfaceVariant,
+    backgroundColor: variables['--surface-variant'],
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    borderTopColor: variables['--border'],
   },
 
   actionButton: {
