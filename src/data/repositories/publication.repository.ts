@@ -56,9 +56,9 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
     async getAllPublications(): Promise<PublicationsModel[]> {
         try {
             const [accepted, rejected, pending] = await Promise.all([
-                this.api.get<PublicationResponse[]>('/Animal/all-records/Accepted?page=1&size=10'),
-                this.api.get<PublicationResponse[]>('/Animal/all-records/Rejected?page=1&size=10'),
-                this.api.get<PublicationResponse[]>('/Animal/all-records/Pending?page=1&size=10')
+                this.api.get<PublicationResponse[]>('/Admin/all-records/Accepted?page=1&size=10'),
+                this.api.get<PublicationResponse[]>('/Admin/all-records/Rejected?page=1&size=10'),
+                this.api.get<PublicationResponse[]>('/Admin/all-records/Pending?page=1&size=10')
             ]);
 
             this.ensureSuccessStatus(accepted);
@@ -97,8 +97,7 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
 
     async getAllPendingPublications(page: number, limit: number): Promise<PublicationResponse[]> {
         try {
-            console.log(`[getAllPendingPublications] page=${page}&size=${limit}`);
-            const response = await this.api.get<PublicationResponse[]>(`/Animal/all-records/Pending?page=${page}&size=${limit}`);
+            const response = await this.api.get<PublicationResponse[]>(`/Admin/all-records/Pending?page=${page}&size=${limit}`);
             this.ensureSuccessStatus(response);
             return response.data;
         } catch (error) {
@@ -119,7 +118,7 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
     async getAllAcceptedPublications(page: number, limit: number): Promise<PublicationResponse[]> {
         try {
             console.log(`[getAllAcceptedPublications] page=${page}&size=${limit}`);
-            const response = await this.api.get<PublicationResponse[]>(`/Animal/all-records/Accepted?page=${page}&size=${limit}`);
+            const response = await this.api.get<PublicationResponse[]>(`/Admin/all-records/Accepted?page=${page}&size=${limit}`);
             this.ensureSuccessStatus(response);
             return response.data;
         } catch (error) {
@@ -130,7 +129,7 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
     async getAllRejectedPublications(page: number, limit: number): Promise<PublicationResponse[]> {
         try {
             console.log(`[getAllRejectedPublications] page=${page}&size=${limit}`);
-            const response = await this.api.get<PublicationResponse[]>(`/Animal/all-records/Rejected?page=${page}&size=${limit}`);
+            const response = await this.api.get<PublicationResponse[]>(`/Admin/all-records/Rejected?page=${page}&size=${limit}`);
             this.ensureSuccessStatus(response);
             return response.data;
         } catch (error) {
@@ -150,7 +149,7 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
 
     async acceptPublication(publicationId: string): Promise<void> {
         try {
-            const response = await this.api.patch(`/Animal/process-record/${publicationId}?status=Accepted`);
+            const response = await this.api.patch(`/Admin/process-record/${publicationId}?status=Accepted`);
             this.ensureSuccessStatus(response);
         } catch (error) {
             throw this.handleHttpError(error, 'Error al aceptar la publicación');
@@ -159,7 +158,7 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
 
     async rejectPublication(publicationId: string): Promise<void> {
         try {
-            const response = await this.api.patch(`/Animal/process-record/${publicationId}?status=Rejected`);
+            const response = await this.api.patch(`/Admin/process-record/${publicationId}?status=Rejected`);
             this.ensureSuccessStatus(response);
         } catch (error) {
             throw this.handleHttpError(error, 'Error al rechazar la publicación');

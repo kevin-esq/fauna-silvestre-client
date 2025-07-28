@@ -158,7 +158,7 @@ const publicationsReducer = (state: State, action: Action): State => {
 };
 
 export const PublicationProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const { showLoading, hideLoading } = useLoading();
   const [state, dispatch] = useReducer(publicationsReducer, initialState);
 
@@ -168,7 +168,7 @@ export const PublicationProvider = ({ children }: { children: React.ReactNode })
   }, []);
 
   const loadAll = useCallback(async () => {
-    if (!user) {
+    if (!user || !isAuthenticated || isLoading) {
       dispatch({ type: 'RESET' });
       return;
     }
@@ -183,10 +183,10 @@ export const PublicationProvider = ({ children }: { children: React.ReactNode })
     } catch (e) {
       handleError(e, 'Error al cargar publicaciones.');
     }
-  }, [user, handleError]);
+  }, [user, isAuthenticated, isLoading, handleError]);
 
   const loadStatus = useCallback(async (status: PublicationStatus) => {
-    if (!user) {
+    if (!user || !isAuthenticated || isLoading) {
       dispatch({ type: 'RESET' });
       return;
     }
@@ -218,11 +218,11 @@ export const PublicationProvider = ({ children }: { children: React.ReactNode })
     } catch (e) {
       handleError(e, `Error al cargar publicaciones ${status}.`);
     }
-  }, [user, handleError]);
+  }, [user, isAuthenticated, isLoading, handleError]);
 
   const loadMoreStatus = useCallback(async (status: PublicationStatus) => {
     const currentState = state[status];
-    if (!user || currentState.isLoading || !currentState.hasMore) {
+    if (!user || !isAuthenticated || isLoading || currentState.isLoading || !currentState.hasMore) {
       dispatch({ type: 'RESET' });
       return;
     }
@@ -256,7 +256,7 @@ export const PublicationProvider = ({ children }: { children: React.ReactNode })
     } catch (e) {
       handleError(e, 'Error al cargar más publicaciones.');
     }
-  }, [user, state, handleError]);
+  }, [user, state, isAuthenticated, isLoading, handleError]);
 
   const loadCounts = useCallback(async () => {
     dispatch({ type: 'FETCH_COUNTS_START' });

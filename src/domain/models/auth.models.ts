@@ -41,21 +41,9 @@ export interface UserResponse {
  * @interface
  */
 export interface AuthResponse {
-    /** Token de acceso JWT (válido por 15 minutos) */
     accessToken: string;
-    /** Token de refresco (válido por 7 días) */
     refreshToken: string;
-    /** Datos del usuario autenticado */
-    user: {
-        /** ID único del usuario */
-        id: string;
-        /** Nombre de usuario */
-        username: string;
-        /** Email verificado */
-        email: string;
-        /** Roles del usuario */
-        roles: ('user' | 'admin' | 'moderator')[];
-    };
+    error?: string;
 }
 
 /**
@@ -63,21 +51,7 @@ export interface AuthResponse {
  * @interface
  */
 export interface RefreshTokenPayload {
-    /** Token de refresco */
     refreshToken: string;
-}
-
-/**
- * Datos para recuperación de contraseña
- * @interface
- */
-export interface PasswordRecovery {
-    /** Email asociado a la cuenta */
-    email: string;
-    /** Token temporal de recuperación */
-    token?: string;
-    /** Nueva contraseña (solo para el paso de reset) */
-    newPassword?: string;
 }
 
 /**
@@ -85,20 +59,11 @@ export interface PasswordRecovery {
  * @interface
  */
 export interface AuthError {
-    /** Código de error único */
     code:
         | 'invalid_credentials'
         | 'email_not_verified'
         | 'account_locked'
         | 'token_expired'
         | 'validation_error';
-    /** Mensaje legible para humanos */
     message: string;
-    /** Detalles adicionales del error */
-    details?: {
-        /** Campo específico con error */
-        field?: string;
-        /** Restricciones de validación */
-        constraints?: Record<string, string>;
-    };
 }

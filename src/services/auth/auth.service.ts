@@ -5,7 +5,7 @@ import { ILogger } from '../../shared/types/ILogger';
 import { ConsoleLogger } from '../logging/console-logger';
 import { AuthError } from '../../shared/types/custom-errors';
 import User from '../../domain/entities/user.entity';
-import { Credentials, UserData } from '../../domain/models/auth.models';
+import { Credentials, UserData, AuthResponse } from '../../domain/models/auth.models';
 import { decodeJwt } from '../../shared/utils/jwt';
 import { UserModel } from '../../data/models/UserModel';
 import { AuthErrorMapper } from './auth-error.mapper';
@@ -34,10 +34,11 @@ class AuthService {
 
   async signIn(credentials: Credentials): Promise<User> {
     try {
-      const response = await this.api.post('/Authentication/LogIn', credentials);
+      const response = await this.api.post<AuthResponse>('/Authentication/LogIn', credentials);
       if (response.status !== 200) {
         throw AuthErrorMapper.map(response.data.error);
       }
+      
       const { accessToken, refreshToken } = response.data;
   
       if (!accessToken || !refreshToken) {
