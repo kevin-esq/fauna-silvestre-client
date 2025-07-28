@@ -7,17 +7,13 @@ import { useCatalog } from '../../contexts/catalog-context';
 import AnimalCard from '../../components/animal/animal-card.component'; // ya tienes este componente
 import { createStyles } from './catalog-animals-screen.styles';
 import Animal from '../../../domain/entities/animal.entity';
-
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../../navigation/navigation.types';
 import { AnimalModel } from '../../../domain/models/animal.models';
-
-const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+import { useNavigationActions } from '../../navigation/navigation-provider';
+import { Theme } from '../../contexts/theme-context';
 
 const PAGE_SIZE = 10;
 
-const EmptyList = React.memo(({ searchQuery, theme }: { searchQuery: string; theme: any }) => {
+const EmptyList = React.memo(({ searchQuery, theme }: { searchQuery: string; theme: Theme }) => {
   const styles = createStyles(themeVariables(theme));
   const message = searchQuery ? 'Sin resultados' : 'No hay animales en el catálogo.';
 
@@ -32,6 +28,7 @@ const CatalogAnimalsScreen = () => {
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
+  const { navigate } = useNavigationActions();
 
   const { catalog, isLoading, fetchCatalog } = useCatalog();
 
@@ -70,19 +67,19 @@ const CatalogAnimalsScreen = () => {
 const renderAnimalItem = useCallback(({ item }: { item: Animal }) => {
   const mappedAnimal: AnimalModel = {
     id: item.specie,
-    commonName: item.commonNoun,        // ✅ debe ser commonName
-    scientificName: item.specie,        // ✅ debe ser scientificName
+    commonName: item.commonNoun,
+    scientificName: item.specie,
     status: 'catalogado',
     statusColor: '#4caf50',
     image: item.image,
   };
 
   const handlePress = () => {
-    navigation.navigate('AnimalDetails', { animal: item }); // 👈 este sí es un Animal completo
+    navigate('AnimalDetails', { animal: item });
   };
 
   return <AnimalCard animal={mappedAnimal} onPress={handlePress} />;
-}, [navigation]);
+}, [navigate]);
 
   if (isLoading && catalog.length === 0) {
     return <LoadingIndicator theme={theme} text="Cargando animales..." />;

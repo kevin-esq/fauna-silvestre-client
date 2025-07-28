@@ -7,7 +7,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import favicon from '../../../assets/favicon.png';
+import icon from '../../../assets/icon.png';
 
 interface AuthContainerProps {
   children: React.ReactNode;
@@ -29,7 +29,7 @@ const AuthContainer: React.FC<AuthContainerProps> = ({ title, subtitle, children
         keyboardShouldPersistTaps="handled"
       >
         <Image
-          source={favicon}
+          source={icon}
           style={styles.logo}
         />
         <Text style={styles.title}>{title}</Text>

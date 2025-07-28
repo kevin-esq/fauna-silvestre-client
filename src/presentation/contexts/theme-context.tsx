@@ -104,7 +104,7 @@ export interface Theme {
   };
 }
 
-interface ThemeContextType {
+export interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   isDark: boolean;

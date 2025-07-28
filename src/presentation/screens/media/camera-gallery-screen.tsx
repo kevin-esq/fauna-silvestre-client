@@ -64,7 +64,7 @@ const Loading = ({ styles }: LoadingProps) => (
 
 export const CameraGalleryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const { navigate, goBack } = useNavigationActions();
+  const { navigate } = useNavigationActions();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const { showLoading, hideLoading } = useLoading();
@@ -170,7 +170,7 @@ export const CameraGalleryScreen: React.FC = () => {
         )}
 
         <TopControls
-          onBack={() => goBack()}
+          onBack={() => navigate('HomeTabs')}
           onToggleFlash={toggleFlashMode}
           onFlip={flipCamera}
           flashMode={flashMode}

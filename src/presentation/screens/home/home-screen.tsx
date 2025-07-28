@@ -7,25 +7,18 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import 'moment/locale/es';
 import Location from 'react-native-get-location';
 import moment from 'moment';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FloatingActionButton from '../../components/ui/floating-action-button.component';
 import { Platform } from 'react-native';
 import Geocoding from 'react-native-geocoding';
 import { useAuth } from '../../contexts/auth-context';
 import { useTheme, themeVariables } from '../../contexts/theme-context';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { RootStackParamList } from '../../navigation/navigation.types';
-import { StackNavigationProp } from '@react-navigation/stack';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
-  RefreshControl,
   SafeAreaView,
   Alert,
 } from 'react-native';
-import Feather from 'react-native-vector-icons/Feather';
-import axios from 'axios';
 import { useCatalog } from '../../contexts/catalog-context';
 import AnimalCard from '../../components/animal/animal-card.component';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
@@ -49,8 +42,7 @@ const HomeScreen: React.FC = React.memo(() => {
   const [currentTime, setCurrentTime] = useState(moment().format('h:mm A'));
   const [locationInfo, setLocationInfo] = useState<LocationInfo>({ city: null, country: null });
   const [loadingLocation, setLoadingLocation] = useState(true);
-  const [loadingAnimals, setLoadingAnimals] = useState(true);
-  const { catalog, isLoading: isCatalogLoading, fetchCatalog } = useCatalog();
+  const { catalog, isLoading: isCatalogLoading } = useCatalog();
   
   // Estados para filtrado
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -79,14 +71,14 @@ const HomeScreen: React.FC = React.memo(() => {
     const timer = setInterval(() => setCurrentTime(moment().format('h:mm A')), 60000);
     actions.loadCounts();
     return () => clearInterval(timer);
-  }, [actions.loadCounts]);
+  }, [actions]);
 
   useEffect(() => {
     console.log('Counts updated:', state.counts);
     setTotalPublications(state.counts.records);
     setTotalEspecies(state.counts.users);
     setTotalPublications(state.counts.records);
-  }, [state.counts.users, state.counts.records]);
+  }, [state.counts]);
   
   useEffect(() => {
     const fetchLocation = async () => {
