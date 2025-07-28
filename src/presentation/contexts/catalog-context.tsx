@@ -11,7 +11,6 @@ import Animal from "../../domain/entities/animal.entity";
 import { catalogService } from "../../services/catalog/catalog.service";
 import { useAuth } from "./auth-context";
 
-// 1. Define State and Actions
 interface State {
     isLoading: boolean;
     error: string | null;
@@ -29,7 +28,6 @@ interface CatalogContextType extends State {
     reset: () => void;
 }
 
-// 2. Initial State and Reducer
 const initialState: State = {
     isLoading: false,
     error: null,
@@ -51,12 +49,9 @@ const catalogReducer = (state: State, action: Action): State => {
     }
 };
 
-// 3. Create Context
 const CatalogContext = createContext<CatalogContextType | undefined>(
     undefined
 );
-
-// 4. Create Provider Component
 export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     const { user } = useAuth();
     const [state, dispatch] = useReducer(catalogReducer, initialState);
@@ -101,7 +96,6 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
-// 5. Create custom hook for easy access
 export const useCatalog = () => {
     const context = useContext(CatalogContext);
     if (context === undefined) {

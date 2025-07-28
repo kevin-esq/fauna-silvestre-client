@@ -1,60 +1,64 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosInstance,
+  InternalAxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+} from 'axios';
 import { authService } from '../auth/auth.service';
-import { ISecureStorage, secureStorageService } from '../storage/secure-storage.service';
+import {
+  ISecureStorage,
+  secureStorageService,
+} from '../storage/secure-storage.service';
 import { ILogger } from '../../shared/types/ILogger';
 import { ConsoleLogger } from '../logging/console-logger';
 import { ApiError, NetworkError } from '../../shared/types/custom-errors';
-import appJson from '../../../app.json';
+import { extra } from '../../../app.json';
 
-interface CustomInternalAxiosRequestConfig extends InternalAxiosRequestConfig {
+interface CustomConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
+  _pendingKey?: string;
 }
-
-const { extra } = appJson as { extra: Record<string, string> };
 
 class ApiService {
   private static instance: ApiService;
   public readonly client: AxiosInstance;
   private onUnauthorizedCallback: (() => void) | null = null;
   private isRefreshing = false;
-
   private failedQueue: Array<{
     resolve: (token: string) => void;
     reject: (error: Error) => void;
   }> = [];
-
-  private readonly PUBLIC_API_URL: string;
-  private readonly PUBLIC_API_TIMEOUT: number;
+  private readonly pending = new Map<string, AbortController>();
 
   private constructor(
     private readonly storageService: ISecureStorage,
-    private readonly logger: ILogger
+    private readonly logger: ILogger,
   ) {
     const apiUrl = extra?.PUBLIC_API_URL;
     if (typeof apiUrl !== 'string' || !apiUrl) {
-      throw new Error('PUBLIC_API_URL no está configurado o no es una cadena de texto en app.json.');
+      throw new Error('PUBLIC_API_URL no está configurado en app.json');
     }
-    this.PUBLIC_API_URL = apiUrl;
-
-    const apiTimeout = extra?.PUBLIC_API_TIMEOUT;
-    this.PUBLIC_API_TIMEOUT = typeof apiTimeout === 'string' ? Number(apiTimeout) : 15000;
-
-    this.logger.info(`[ApiService] API URL: ${this.PUBLIC_API_URL}`);
-    this.logger.info(`[ApiService] API Timeout: ${this.PUBLIC_API_TIMEOUT}`);
+    const timeout =
+      typeof extra?.PUBLIC_API_TIMEOUT === 'string'
+        ? Number(extra.PUBLIC_API_TIMEOUT)
+        : 15000;
 
     this.client = axios.create({
-      baseURL: this.PUBLIC_API_URL,
-      timeout: this.PUBLIC_API_TIMEOUT,
+      baseURL: apiUrl,
+      timeout,
       headers: { 'Content-Type': 'application/json' },
     });
 
+    this.logger.info(`[ApiService] URL: ${apiUrl}, Timeout: ${timeout}`);
     this.setupInterceptors();
   }
 
   public static getInstance(): ApiService {
     if (!ApiService.instance) {
-      const logger = new ConsoleLogger('info');
-      ApiService.instance = new ApiService(secureStorageService, logger);
+      ApiService.instance = new ApiService(
+        secureStorageService,
+        new ConsoleLogger('info'),
+      );
     }
     return ApiService.instance;
   }
@@ -64,85 +68,102 @@ class ApiService {
   }
 
   private setupInterceptors(): void {
-    this.client.interceptors.request.use(
-      this.requestInterceptor.bind(this),
-      (error) => Promise.reject(error)
+    this.client.interceptors.request.use(this.onRequest.bind(this), err =>
+      Promise.reject(err),
     );
-
     this.client.interceptors.response.use(
-      (response) => response,
-      this.responseErrorInterceptor.bind(this)
+      this.onResponse.bind(this),
+      this.onError.bind(this),
     );
   }
 
-  private async requestInterceptor(config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> {
-    if (!config.headers?.Authorization) {
-      const token = await this.storageService.getValueFor('auth_access_token');
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-        this.logger.debug('[ApiService] Token injected.');
-      }
+  private onRequest(config: CustomConfig): CustomConfig {
+    const key = this.makeKey(config);
+    // si ya existe una petición igual, la cancelamos
+    if (this.pending.has(key)) {
+      this.pending.get(key)!.abort();
     }
+    const controller = new AbortController();
+    this.pending.set(key, controller);
+    config.signal = controller.signal;
+    config._pendingKey = key;
     return config;
   }
 
-  private async responseErrorInterceptor(error: unknown): Promise<unknown> {
-    if (!axios.isAxiosError(error)) {
-      this.logger.error('[ApiService] Non-Axios error', error instanceof Error ? error : new Error(String(error)));
-      return Promise.reject(new ApiError('Ocurrió un error inesperado.'));
+  private onResponse<T = unknown>(
+    response: AxiosResponse<T>,
+  ): AxiosResponse<T> {
+    const key = response.config._pendingKey as string | undefined;
+    if (key) {
+      this.pending.delete(key);
+    }
+    return response;
+  }
+
+  private async onError(error: unknown): Promise<unknown> {
+    if (axios.isAxiosError(error) && error.config) {
+      const cfg = error.config as CustomConfig;
+      const key = cfg._pendingKey;
+      if (key) this.pending.delete(key);
+
+      if (error.name === 'CanceledError' || axios.isCancel(error)) {
+        // petición duplicada cancelada, rechazar silenciosamente
+        return Promise.reject(error);
+      }
+
+      return this.handleAuthErrors(error);
     }
 
-    const { response, request, config } = error;
+    return Promise.reject(new ApiError('Ocurrió un error inesperado.'));
+  }
+
+  private async handleAuthErrors<T>(
+    error: AxiosError<T>,
+  ): Promise<AxiosResponse<T> | never> {
+    const { response, config } = error;
     const method = config?.method?.toUpperCase() ?? 'UNKNOWN';
     const url = config?.url ?? 'UNKNOWN_URL';
 
     if (response) {
-      this.logger.error(`[ApiService] API Error: ${method} ${url}`, error, {
+      this.logger.error(`[ApiService] Error ${method} ${url}`, error, {
         status: response.status,
         data: response.data,
       });
 
       if (response.status === 401) {
-        const originalRequest = error.config as CustomInternalAxiosRequestConfig;
-
-        if (!originalRequest || originalRequest._retry) {
+        const original = config as CustomConfig;
+        if (original._retry) {
           return Promise.reject(error);
         }
 
         if (this.isRefreshing) {
-          return new Promise<string>((resolve, reject) => {
-            this.failedQueue.push({ resolve, reject });
-          })
-            .then((token) => {
-              if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${token}`;
-              }
-              return this.client(originalRequest);
-            })
-            .catch((err) => Promise.reject(err));
+          return new Promise<string>((resolve, reject) =>
+            this.failedQueue.push({ resolve, reject }),
+          ).then(token => {
+            if (original.headers)
+              original.headers.Authorization = `Bearer ${token}`;
+            return this.client(original);
+          });
         }
 
-        originalRequest._retry = true;
+        original._retry = true;
         this.isRefreshing = true;
 
         try {
           const newToken = await authService.refreshToken();
           this.processFailedQueue(null, newToken);
-
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          if (original.headers) {
+            original.headers.Authorization = `Bearer ${newToken}`;
           }
-
-          return this.client(originalRequest);
+          return this.client(original);
         } catch (refreshError) {
-          const refreshErr = refreshError instanceof Error
-            ? refreshError
-            : new Error('Unknown refresh error');
-
-          this.processFailedQueue(refreshErr, null);
+          const err =
+            refreshError instanceof Error
+              ? refreshError
+              : new Error('Error al renovar token');
+          this.processFailedQueue(err, null);
           this.onUnauthorizedCallback?.();
-
-          return Promise.reject(refreshErr);
+          return Promise.reject(err);
         } finally {
           this.isRefreshing = false;
         }
@@ -152,34 +173,47 @@ class ApiService {
         this.logger.warn(`[ApiService] Client Error: ${response.status}`);
       }
 
-      return Promise.reject(
-        new ApiError(response.data?.message ?? 'Ocurrió un error de API.', response.status)
-      );
+      const errorMessage =
+        response.data &&
+        typeof response.data === 'object' &&
+        'message' in response.data &&
+        typeof (response.data as Record<string, unknown>).message === 'string'
+          ? (response.data as Record<string, { message: string }>).message
+          : 'Error de API';
+
+      return Promise.reject(new ApiError(errorMessage as string, response.status));
     }
 
-    if (request) {
-      this.logger.error(`[ApiService] Network Error: No response for ${method} ${url}`, error);
-      return Promise.reject(
-        new NetworkError('No se recibió respuesta del servidor. Verifique su conexión a internet.')
-      );
+    if (error.request) {
+      this.logger.error(`[ApiService] Network Error: no response`, error);
+      return Promise.reject(new NetworkError('Sin respuesta del servidor.'));
     }
 
-    this.logger.error(`[ApiService] Request Setup Error: ${method} ${url}`, error);
-    return Promise.reject(new ApiError('Ocurrió un error inesperado.'));
+    this.logger.error(`[ApiService] Setup Error`, error);
+    return Promise.reject(new ApiError('Error inesperado.'));
   }
 
-  private processFailedQueue(error: Error | null, token: string | null = null): void {
+  private processFailedQueue(
+    error: Error | null,
+    token: string | null = null,
+  ): void {
     this.failedQueue.forEach(({ resolve, reject }) => {
       if (error) {
         reject(error);
       } else if (token) {
         resolve(token);
       } else {
-        reject(new Error('No se pudo renovar el token y no se proporcionó uno nuevo.'));
+        reject(new Error('Sin token nuevo'));
       }
     });
-
     this.failedQueue = [];
+  }
+
+  private makeKey(config: InternalAxiosRequestConfig): string {
+    const { method, baseURL, url, params, data } = config;
+    return `${method}:${baseURL || ''}${url}?${JSON.stringify(
+      params,
+    )}|${JSON.stringify(data)}`;
   }
 }
 
