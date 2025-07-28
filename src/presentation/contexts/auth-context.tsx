@@ -7,7 +7,7 @@ import { Credentials, UserData } from '../../domain/models/auth.models';
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  isLoading: boolean; // To show splash screen during initial auth check
+  isLoading: boolean;
   signIn: (credentials: Credentials) => Promise<void>;
   signOut: () => Promise<void>;
   registerUser: (userData: UserData) => Promise<void>;

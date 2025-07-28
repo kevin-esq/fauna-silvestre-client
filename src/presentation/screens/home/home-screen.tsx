@@ -12,7 +12,7 @@ import { Platform } from 'react-native';
 import Geocoding from 'react-native-geocoding';
 import { useAuth } from '../../contexts/auth-context';
 import { useTheme, themeVariables } from '../../contexts/theme-context';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -39,7 +39,6 @@ const HomeScreen: React.FC = React.memo(() => {
   const [totalEspecies, setTotalEspecies] = useState(0);
   const [totalPublications, setTotalPublications] = useState<number>(0);
   const variables = useMemo(() => themeVariables(theme), [theme]);
-  const [currentTime, setCurrentTime] = useState(moment().format('h:mm A'));
   const [locationInfo, setLocationInfo] = useState<LocationInfo>({ city: null, country: null });
   const [loadingLocation, setLoadingLocation] = useState(true);
   const { catalog, isLoading: isCatalogLoading } = useCatalog();
@@ -67,11 +66,14 @@ const HomeScreen: React.FC = React.memo(() => {
     return showAllAnimals ? filteredAnimals : filteredAnimals.slice(0, 5);
   }, [filteredAnimals, showAllAnimals]);
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(moment().format('h:mm A')), 60000);
+  const hasLoaded = useRef(false);
+
+useEffect(() => {
+  if (!hasLoaded.current) {
     actions.loadCounts();
-    return () => clearInterval(timer);
-  }, [actions]);
+    hasLoaded.current = true;
+  }
+}, [actions]);
 
   useEffect(() => {
     console.log('Counts updated:', state.counts);
@@ -163,7 +165,7 @@ const HomeScreen: React.FC = React.memo(() => {
 
           <View style={styles.timeAndLocationContainer}>
             <Ionicons name="time-outline" size={16} color={variables['--text-secondary']} />
-            <Text style={styles.timeAndLocationText}>{currentTime}</Text>
+            <Text style={styles.timeAndLocationText}>{moment().format('h:mm A')}</Text>
             <View style={styles.separator} />
             <Ionicons name="location-outline" size={16} color={variables['--text-secondary']} />
             {loadingLocation ? (
