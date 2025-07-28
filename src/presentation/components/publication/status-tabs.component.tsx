@@ -97,6 +97,7 @@ const getTabTextStyle = (
 // --- ESTILOS ESTÁTICOS ---
 const styles = StyleSheet.create({
   container: {
+    alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 16,
     width: '100%',
@@ -106,8 +107,7 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   tabButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderRadius: 25,
     borderWidth: 1,
     height: 40,

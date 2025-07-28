@@ -2,8 +2,8 @@
   "name": "FspClientApp",
   "displayName": "FspClientApp",
   "extra": {
-      "PUBLIC_BASE_URL": "https://fa9feb20c5fc.ngrok-free.app",
-      "PUBLIC_API_URL": "https://fa9feb20c5fc.ngrok-free.app/api",
+      "PUBLIC_BASE_URL": "https://6d1a2cbcbfba.ngrok-free.app",
+      "PUBLIC_API_URL": "https://6d1a2cbcbfba.ngrok-free.app/api",
       "PUBLIC_API_TIMEOUT": "15000"
     }
 }

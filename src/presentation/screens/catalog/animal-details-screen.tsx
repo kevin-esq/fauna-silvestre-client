@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -6,23 +6,20 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-  Dimensions,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { useTheme } from "../../contexts/theme-context";
-import { useNavigationActions } from "../../navigation/navigation-provider";
+import { useTheme, themeVariables } from "../../contexts/theme-context";
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { RootStackParamList } from "../../navigation/navigation.types";
-import { AnimalModel } from "../../../domain/models/animal.models";
 import { createStyles } from "./animal-details-screen.styles";
 
 type Props = DrawerScreenProps<RootStackParamList, 'AnimalDetails'>;
 
 const AnimalDetailsScreen: React.FC<Props> = ({ route }) => {
   const { animal } = route.params;
-  const navigation = useNavigationActions();
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const variables = useMemo(() => themeVariables(theme), [theme]);
+  const styles = createStyles(variables);
   const [expanded, setExpanded] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
