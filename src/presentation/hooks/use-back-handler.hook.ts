@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { BackHandler } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-const useDrawerBackHandler = () => {
+const useBackHandler = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -19,4 +19,4 @@ const useDrawerBackHandler = () => {
   }, [navigation]);
 };
 
-export default useDrawerBackHandler;
+export default useBackHandler;

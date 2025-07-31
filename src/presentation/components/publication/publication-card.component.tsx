@@ -1,13 +1,9 @@
-// PublicationCard.tsx
-
 import React from 'react';
 import { View, Text, Image, StyleSheet, Button } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import AnimatedPressable from '../ui/animated-pressable.component';
 import { PublicationResponse, PublicationStatus } from '../../../domain/models/publication.models';
 import { useTheme, themeVariables } from '../../contexts/theme-context';
-
-// --- CONSTANTES DE CONFIGURACIÓN ---
 
 const STATUS_CONFIG = {
   rejected: { icon: 'times-circle', colorKey: '--error', label: 'Rechazada' },
@@ -19,8 +15,6 @@ const ANIMAL_STATE_CONFIG = {
   ALIVE: { icon: 'heartbeat', colorKey: '--success', label: 'Vivo' },
   DEAD: { icon: 'ambulance', colorKey: '--error', label: 'Muerto' },
 } as const;
-
-// --- COMPONENTE StatusRow ---
 
 interface StatusRowProps {
   icon: React.ComponentProps<typeof FontAwesome>['name'];
@@ -56,8 +50,6 @@ const getStatusRowStyles = (color: string) =>
       fontSize: 14,
     },
   });
-
-// --- COMPONENTE PublicationImage ---
 
 interface PublicationImageProps {
   uri?: string;
@@ -112,8 +104,6 @@ const getImageStyles = (vars: Record<string, string>, viewMode: 'card' | 'presen
     },
   });
 
-// --- COMPONENTE PublicationContent ---
-
 interface PublicationContentProps {
   publication: PublicationResponse;
   status: PublicationStatus;
@@ -162,8 +152,6 @@ const getContentStyles = () =>
     },
   });
 
-// --- COMPONENTE ReviewButtons ---
-
 interface ReviewButtonsProps {
   actions: {
     onApprove: () => void;
@@ -196,8 +184,6 @@ const getReviewButtonStyles = () =>
       paddingTop: 12,
     },
   });
-
-// --- COMPONENTE PRINCIPAL ---
 
 interface PublicationCardProps {
   publication: PublicationResponse;
@@ -251,4 +237,4 @@ const getMainCardStyles = (vars: Record<string, string>) =>
     },
   });
 
-export default PublicationCard;
+export default React.memo(PublicationCard);
