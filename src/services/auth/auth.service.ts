@@ -1,6 +1,6 @@
 import { AxiosInstance } from 'axios';
 import { apiService } from '../http/api.service';
-import { ISecureStorage, secureStorageService } from '../storage/secure-storage.service';
+import { getSecureStorageService } from '../storage/secure-storage.service';
 import { ILogger } from '../../shared/types/ILogger';
 import { ConsoleLogger } from '../logging/console-logger';
 import { AuthError } from '../../shared/types/custom-errors';
@@ -18,7 +18,6 @@ class AuthService {
 
   private constructor(
     private readonly api: AxiosInstance,
-    private readonly storage: ISecureStorage,
     private readonly logger: ILogger
   ) {
     apiService.setOnUnauthorizedCallback(this.signOut.bind(this));
@@ -27,13 +26,14 @@ class AuthService {
   public static getInstance(): AuthService {
     if (!AuthService.instance) {
       const logger = new ConsoleLogger('info');
-      AuthService.instance = new AuthService(apiService.client, secureStorageService, logger);
+      AuthService.instance = new AuthService(apiService.client, logger);
     }
     return AuthService.instance;
   }
 
   async signIn(credentials: Credentials): Promise<User> {
     try {
+      const storage = await getSecureStorageService();
       const response = await this.api.post<AuthResponse>('/Authentication/LogIn', credentials);
       if (response.status !== 200) {
         throw AuthErrorMapper.map(response.data.error);
@@ -45,8 +45,8 @@ class AuthService {
         throw new AuthError('Login response missing access or refresh token.');
       }
   
-      await this.storage.save(ACCESS_TOKEN_KEY, accessToken);
-      await this.storage.save(REFRESH_TOKEN_KEY, refreshToken);
+      await storage.save(ACCESS_TOKEN_KEY, accessToken);
+      await storage.save(REFRESH_TOKEN_KEY, refreshToken);
   
       const user = await this.getUserFromToken(accessToken);
       if (!user) throw new AuthError('No se pudo decodificar el token.');
@@ -61,7 +61,8 @@ class AuthService {
 
   async refreshToken(): Promise<string> {
     this.logger.info('[AuthService] Attempting to refresh token.');
-    const refreshToken = await this.storage.getValueFor(REFRESH_TOKEN_KEY);
+    const storage = await getSecureStorageService();
+    const refreshToken = await storage.getValueFor(REFRESH_TOKEN_KEY);
 
     if (!refreshToken) {
       this.logger.warn('[AuthService] No refresh token available. Signing out.');
@@ -77,8 +78,8 @@ class AuthService {
         throw new Error('Invalid token response from server.');
       }
 
-      await this.storage.save(ACCESS_TOKEN_KEY, newAccessToken);
-      await this.storage.save(REFRESH_TOKEN_KEY, newRefreshToken);
+      await storage.save(ACCESS_TOKEN_KEY, newAccessToken);
+      await storage.save(REFRESH_TOKEN_KEY, newRefreshToken);
 
       this.logger.info('[AuthService] Token refreshed successfully.');
       return newAccessToken;
@@ -92,7 +93,8 @@ class AuthService {
   async signOut(): Promise<void> {
     try {
       this.logger.info('[AuthService] Signing out user.');
-      await this.storage.clear();
+      const storage = await getSecureStorageService();
+      await storage.clear();
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error('[AuthService] signOut failed', err);
@@ -113,8 +115,10 @@ class AuthService {
 
   async checkAuthStatus(): Promise<User | null> {
     try {
-      const token = await this.storage.getValueFor(ACCESS_TOKEN_KEY);
-      if (!token) {
+      const storage = await getSecureStorageService();
+      const token = await storage.getValueFor(ACCESS_TOKEN_KEY);
+      const refreshToken = await storage.getValueFor(REFRESH_TOKEN_KEY);
+      if (!token || !refreshToken) {
         this.logger.info('[AuthService] No auth token found.');
         return null;
       }
@@ -204,7 +208,8 @@ class AuthService {
   }
 
   private async getUserResponseFromApi(): Promise<UserModel | null> {
-    const token = await this.storage.getValueFor(ACCESS_TOKEN_KEY);
+    const storage = await getSecureStorageService();
+    const token = await storage.getValueFor(ACCESS_TOKEN_KEY);
     if (!token) return null;
 
     const { data } = await this.api.get('/Users/user-information', {

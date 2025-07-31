@@ -5,10 +5,6 @@ import axios, {
   AxiosError,
 } from 'axios';
 import { authService } from '../auth/auth.service';
-import {
-  ISecureStorage,
-  secureStorageService,
-} from '../storage/secure-storage.service';
 import { ILogger } from '../../shared/types/ILogger';
 import { ConsoleLogger } from '../logging/console-logger';
 import { ApiError, NetworkError } from '../../shared/types/custom-errors';
@@ -31,7 +27,6 @@ class ApiService {
   private readonly pending = new Map<string, AbortController>();
 
   private constructor(
-    private readonly storageService: ISecureStorage,
     private readonly logger: ILogger,
   ) {
     const apiUrl = extra?.PUBLIC_API_URL;
@@ -56,7 +51,6 @@ class ApiService {
   public static getInstance(): ApiService {
     if (!ApiService.instance) {
       ApiService.instance = new ApiService(
-        secureStorageService,
         new ConsoleLogger('info'),
       );
     }
@@ -79,7 +73,6 @@ class ApiService {
 
   private onRequest(config: CustomConfig): CustomConfig {
     const key = this.makeKey(config);
-    // si ya existe una petición igual, la cancelamos
     if (this.pending.has(key)) {
       this.pending.get(key)!.abort();
     }
@@ -107,7 +100,6 @@ class ApiService {
       if (key) this.pending.delete(key);
 
       if (error.name === 'CanceledError' || axios.isCancel(error)) {
-        // petición duplicada cancelada, rechazar silenciosamente
         return Promise.reject(error);
       }
 
@@ -152,6 +144,7 @@ class ApiService {
         try {
           const newToken = await authService.refreshToken();
           this.processFailedQueue(null, newToken);
+          console.log('Token renovado:', newToken);
           if (original.headers) {
             original.headers.Authorization = `Bearer ${newToken}`;
           }

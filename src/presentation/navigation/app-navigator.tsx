@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createMaterialTopTabNavigator, MaterialTopTabScreenProps, MaterialTopTabNavigationOptions } from '@react-navigation/material-top-tabs';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
@@ -126,17 +126,38 @@ const AuthStack = () => (
 );
 
 export default function AppNavigator(): React.JSX.Element {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, signOut } = useAuth();
 
-  const navigateToAuth = useCallback(() => {
-    if (isLoading) return <SplashScreen />;
-    if (!isAuthenticated) return <AuthStack />;
-    return user?.role === 'Admin' ? <AdminRootStack /> : <UserRootStack />;
-  }, [isLoading, isAuthenticated, user?.role]);
 
-  useEffect(() => {
-    navigateToAuth();
-  }, [navigateToAuth]);
+  console.log('user', user);
 
-  return navigateToAuth();
+  if (isLoading) {
+    return <SplashScreen />;
+  }
+
+  if (isAuthenticated && !user) {
+    console.log('isAuthenticated', isAuthenticated);
+    console.log('user', user);
+    return <AuthStack />; 
+  }
+
+  const getRoleStack = () => {
+    const validRoles = ['Admin', 'User']; 
+    
+    if (!user?.role || !validRoles.includes(user.role)) {
+      signOut();
+      return <AuthStack />;
+    }
+
+    const roleStacks: Record<string, React.JSX.Element | undefined | null> = {
+      'Admin': <AdminRootStack />,
+      'User': <UserRootStack />,
+      undefined: <AuthStack />,
+      null: <AuthStack />,
+    };
+
+    return roleStacks[user.role] || <AuthStack />;
+  };
+
+  return !isAuthenticated ? <AuthStack /> : getRoleStack();
 }
