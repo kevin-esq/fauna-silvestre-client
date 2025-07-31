@@ -1,16 +1,31 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import { View, FlatList, Text, RefreshControl } from 'react-native';
-import { Theme, useTheme } from '../../contexts/theme-context';
-import useDrawerBackHandler from '../../hooks/use-drawer-back-handler.hook';
-import PublicationCard from '../../components/publication/publication-card.component';
-import StatusTabs from '../../components/publication/status-tabs.component';
-import SearchBar from '../../components/ui/search-bar.component';
-import LoadingIndicator from '../../components/ui/loading-indicator.component';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import debounce from 'lodash.debounce';
+
+import { useAuth } from '../../contexts/auth-context';
+import { useTheme, themeVariables } from '../../contexts/theme-context';
 import { usePublications } from '../../contexts/publication-context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
+
+import useBackHandler from '../../hooks/use-back-handler.hook';
+
+import StatusTabs from '../../components/publication/status-tabs.component';
+import PublicationCard from '../../components/publication/publication-card.component';
+import SearchBar from '../../components/ui/search-bar.component';
+import LoadingIndicator from '../../components/ui/loading-indicator.component';
+
+import {
+  PublicationResponse,
+  PublicationStatus,
+} from '../../../domain/models/publication.models';
 import { createStyles } from './publication-screen.styles';
-import { PublicationResponse } from '../../../domain/models/publication.models';
-import { themeVariables } from '../../contexts/theme-context';
 
 const STATUS_OPTIONS = [
   { label: 'Pendientes', value: 'pending' },
@@ -18,119 +33,143 @@ const STATUS_OPTIONS = [
   { label: 'Rechazados', value: 'rejected' },
 ] as const;
 
-type StatusValue = typeof STATUS_OPTIONS[number]['value'];
+const EmptyList = React.memo(
+  ({
+    searchQuery,
+    theme,
+  }: {
+    searchQuery: string;
+    theme: ReturnType<typeof useTheme>['theme'];
+  }) => {
+    const styles = createStyles(themeVariables(theme));
+    const message = searchQuery ? 'Sin resultados' : 'No hay publicaciones.';
 
-const PAGE_SIZE = 5;
-
-const EmptyList = React.memo(({ searchQuery, theme }: { searchQuery: string; theme: Theme }) => {
-  const styles = createStyles(themeVariables(theme));
-  const message = searchQuery ? 'Sin resultados' : 'No hay publicaciones.';
-  
-  return (
-    <View style={styles.centered}>
-      <Text style={[styles.emptyText, { color: theme.colors.text }]}>
-        {message}
-      </Text>
-    </View>
-  );
-});
+    return (
+      <View style={styles.centered}>
+        <Text style={[styles.emptyText, { color: theme.colors.text }]}>
+          {message}
+        </Text>
+      </View>
+    );
+  },
+);
 
 const PublicationScreen = () => {
+  const { user, isAuthenticated } = useAuth();
+  const isAdmin = isAuthenticated && user?.role === 'Admin';
+
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
   const { navigate } = useNavigationActions();
-  
+
   const {
     state,
     actions: { loadStatus, loadMoreStatus },
   } = usePublications();
 
-  const [selectedStatus, setSelectedStatus] = useState<StatusValue>('pending');
+  const [selectedStatus, setSelectedStatus] = useState<PublicationStatus>(() =>
+    isAdmin ? 'accepted' : 'pending',
+  );
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [publications, setPublications] = useState<PublicationResponse[]>([]);
 
-  useDrawerBackHandler();
+  useBackHandler();
 
-  // Memoized selectors
-  const statusState = useMemo(() => state[selectedStatus], [state, selectedStatus]);
-  const publications = useMemo(() => statusState.publications, [statusState]);
+  const statusState = useMemo(
+    () => state[selectedStatus],
+    [state, selectedStatus],
+  );
   const isLoading = useMemo(() => statusState.isLoading, [statusState]);
   const hasMore = useMemo(() => statusState.hasMore, [statusState]);
 
-  // Debounce search
+  const prevQuery = useRef<string>('');
+  const prevStatus = useRef<PublicationStatus>(selectedStatus);
+
+  const debouncedSetSearch = useMemo(
+    () =>
+      debounce(
+        (value: string) => setSearchQuery(value.trim().toLowerCase()),
+        300,
+      ),
+    [],
+  );
+
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setSearchQuery(searchInput.trim().toLowerCase());
-    }, 300);
+    debouncedSetSearch(searchInput);
+    return () => debouncedSetSearch.cancel();
+  }, [searchInput, debouncedSetSearch]);
 
-    timeoutRef.current = handler;
-    
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [searchInput]);
-
-  // Filter publications
-  const filteredPublications = useMemo(() => {
-    if (!searchQuery) return publications;
-    
-    return publications.filter(pub => {
-      const normalizedQuery = searchQuery.toLowerCase();
-      return (
-        pub.commonNoun.toLowerCase().includes(normalizedQuery) ||
-        pub.description.toLowerCase().includes(normalizedQuery)
-      );
-    });
-  }, [publications, searchQuery]);
-
-  // Load publications on status change
   const loadPublications = useCallback(async () => {
-    try {
-      await loadStatus(selectedStatus);
-    } catch (error) {
-      console.error('Error loading publications:', error);
-    }
-  }, [selectedStatus, loadStatus]);
+    await loadStatus(selectedStatus, searchQuery);
+    console.log('Publications loaded');
+    console.log(state);
+  }, [loadStatus, selectedStatus, searchQuery]);
 
   useEffect(() => {
-    loadPublications();
-  }, [loadPublications]);
+    const shouldLoad =
+      selectedStatus !== prevStatus.current ||
+      searchQuery !== prevQuery.current;
 
-  // Handle refresh
-  const handleRefresh = useCallback(() => {
-    loadPublications();
-  }, [loadPublications]);
+    const loadCached = async () => {
+      try {
+        const cached = await AsyncStorage.getItem(`cached_${selectedStatus}`);
+        if (cached && shouldLoad) {
+          setPublications(JSON.parse(cached));
+        }
+        await loadPublications();
+      } catch (e) {
+        console.warn('Error loading from cache', e);
+      }
+    };
+    loadCached();
+    prevQuery.current = searchQuery;
+    prevStatus.current = selectedStatus;
+  }, [selectedStatus, loadPublications, searchQuery]);
 
-  // Handle load more
+  useEffect(() => {
+    if (!state[selectedStatus].isLoading) {
+      setPublications(state[selectedStatus].publications);
+    }
+  }, [state, selectedStatus]);
+
+  useEffect(() => {
+    if (publications.length > 0) {
+      AsyncStorage.setItem(
+        `cached_${selectedStatus}`,
+        JSON.stringify(publications),
+      );
+    }
+  }, [publications, selectedStatus]);
+
   const handleLoadMore = useCallback(() => {
     if (!isLoading && hasMore) {
       loadMoreStatus(selectedStatus);
     }
   }, [isLoading, hasMore, loadMoreStatus, selectedStatus]);
 
-  // Handle publication press
-  const handlePublicationPress = useCallback((item: PublicationResponse) => {
-    navigate('PublicationDetails', { 
-      publication: item, 
-      status: selectedStatus 
-    });
-  }, [navigate, selectedStatus]);
-
-  // Render publication item
-  const renderPublicationItem = useCallback(
-    ({ item }: { item: PublicationResponse }) => (
-      <PublicationCard 
-        publication={item} 
-        onPress={() => handlePublicationPress(item)} 
-        status={selectedStatus} 
-      />
-    ), 
-    [handlePublicationPress, selectedStatus]
+  const handlePublicationPress = useCallback(
+    (item: PublicationResponse) => {
+      navigate('PublicationDetails', {
+        publication: item,
+        status: selectedStatus,
+      });
+    },
+    [navigate, selectedStatus],
   );
 
-  // Render footer
+  const renderPublicationItem = useCallback(
+    ({ item }: { item: PublicationResponse }) => (
+      <PublicationCard
+        publication={item}
+        onPress={() => handlePublicationPress(item)}
+        status={selectedStatus}
+      />
+    ),
+    [handlePublicationPress, selectedStatus],
+  );
+
   const renderFooter = useCallback(() => {
     if (isLoading && publications.length > 0) {
       return <LoadingIndicator theme={theme} text="Cargando más..." />;
@@ -138,51 +177,51 @@ const PublicationScreen = () => {
     return null;
   }, [isLoading, publications.length, theme]);
 
-  // Initial loading
   if (isLoading && publications.length === 0) {
     return <LoadingIndicator theme={theme} text="Cargando publicaciones..." />;
   }
 
+  const visibleStatusOptions = isAdmin
+    ? STATUS_OPTIONS.filter(option => option.value !== 'pending')
+    : STATUS_OPTIONS;
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <StatusTabs
-        statuses={STATUS_OPTIONS}
+        statuses={visibleStatusOptions}
         active={selectedStatus}
         onSelect={setSelectedStatus}
         theme={theme}
       />
-      
+
       <SearchBar
         value={searchInput}
         onChangeText={setSearchInput}
         placeholder="Buscar por nombre o descripción..."
         theme={theme}
       />
-      
+
       <FlatList
-        data={filteredPublications}
+        data={publications}
         renderItem={renderPublicationItem}
-        keyExtractor={(item) => item.recordId.toString()}
-        contentContainerStyle={styles.list}
+        keyExtractor={item => item.recordId.toString()}
         refreshControl={
           <RefreshControl
-            refreshing={isLoading && searchQuery === ''}
-            onRefresh={handleRefresh}
+            refreshing={isLoading}
+            onRefresh={loadPublications}
             colors={[variables['--primary']]}
-            tintColor={variables['--primary']}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyList 
-            searchQuery={searchQuery} 
-            theme={theme} 
           />
         }
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
-        initialNumToRender={PAGE_SIZE}
-        windowSize={11}
+        removeClippedSubviews={true}
+        initialNumToRender={5}
+        windowSize={10}
+        maxToRenderPerBatch={5}
+        updateCellsBatchingPeriod={50}
       />
     </View>
   );

@@ -78,22 +78,6 @@ export const createStyles = (
       borderRadius: 20,
       padding: 6,
     },
-    modalContainer: {
-      flex: 1,
-      backgroundColor: 'black',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    fullImage: {
-      width,
-      height: height * 0.85,
-    },
-    closeButton: {
-      position: 'absolute',
-      top: 40,
-      right: 20,
-      zIndex: 2,
-    },
     card: {
       backgroundColor: vars['--background-variant'],
       borderRadius: 16,
@@ -152,5 +136,60 @@ export const createStyles = (
       color: 'white',
       fontSize: 16,
       fontWeight: '600',
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    
+    titleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    modalContainer: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.9)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    
+    pinchZoomContainer: {
+      width: '100%',
+      height: '100%',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    
+    fullImage: {
+      width: width,
+      height: height,
+    },
+    
+    closeButton: {
+      position: 'absolute',
+      top: insets.top + 20,
+      right: 20,
+      zIndex: 10,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      borderRadius: 15,
+      width: 30,
+      height: 30,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    
+    fullImagePlaceholder: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    
+    fullPlaceholderText: {
+      color: 'white',
+      fontSize: 16,
+      marginTop: 10,
     },
   });

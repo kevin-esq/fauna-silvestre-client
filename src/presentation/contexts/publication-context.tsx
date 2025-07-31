@@ -1,9 +1,26 @@
-// publication-context.tsx
-import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useCallback,
+  useMemo,
+} from 'react';
+
 import { useAuth } from './auth-context';
-import { useLoading } from './loading-context';
-import { PublicationsModel, PublicationResponse, CountsResponse } from '../../domain/models/publication.models';
+
+import {
+  PublicationResponse,
+  CountsResponse,
+} from '../../domain/models/publication.models';
+
 import { publicationService } from '../../services/publication/publication.service';
+import {
+  createTable,
+  getDBConnection,
+  loadPublications,
+  savePublications,
+  clearStatus,
+} from '../../services/data/db.service';
 
 type PublicationStatus = 'pending' | 'accepted' | 'rejected';
 
@@ -15,10 +32,6 @@ interface PublicationState {
 }
 
 interface State {
-  all: {
-    publications: PublicationsModel[];
-    isLoading: boolean;
-  };
   pending: PublicationState;
   accepted: PublicationState;
   rejected: PublicationState;
@@ -30,31 +43,26 @@ interface State {
 }
 
 type Action =
-  | { type: 'FETCH_ALL_START' }
-  | { type: 'FETCH_ALL_SUCCESS'; payload: PublicationsModel[] }
   | { type: 'FETCH_STATUS_START'; status: PublicationStatus }
-  | { 
-      type: 'FETCH_STATUS_SUCCESS'; 
-      status: PublicationStatus; 
+  | {
+      type: 'FETCH_STATUS_SUCCESS';
+      status: PublicationStatus;
       payload: PublicationResponse[];
       hasMore: boolean;
+      resetPage?: boolean;
     }
-  | { 
-      type: 'FETCH_STATUS_MORE_SUCCESS'; 
-      status: PublicationStatus; 
-      payload: PublicationResponse[];
-      hasMore: boolean;
-    }
-    | { type: 'FETCH_COUNTS_START' }
-    | { type: 'FETCH_COUNTS_SUCCESS'; payload: CountsResponse }
+  | { type: 'FETCH_COUNTS_START' }
+  | { type: 'FETCH_COUNTS_SUCCESS'; payload: CountsResponse }
   | { type: 'OPERATION_FAILURE'; payload: string }
   | { type: 'RESET' };
 
 export interface PublicationContextType {
   state: State;
   actions: {
-    loadAll: () => Promise<void>;
-    loadStatus: (status: PublicationStatus) => Promise<void>;
+    loadStatus: (
+      status: PublicationStatus,
+      searchQuery?: string,
+    ) => Promise<void>;
     loadMoreStatus: (status: PublicationStatus) => Promise<void>;
     loadCounts: () => Promise<void>;
     approve: (recordId: string) => Promise<void>;
@@ -68,285 +76,234 @@ const PublicationContext = createContext<PublicationContextType | null>(null);
 const PAGE_SIZE = 5;
 const INITIAL_PAGE = 1;
 
+const initialPublicationState: PublicationState = {
+  publications: [],
+  isLoading: false,
+  page: INITIAL_PAGE,
+  hasMore: true,
+};
 const initialState: State = {
-  all: { publications: [], isLoading: false },
-  pending: { publications: [], isLoading: false, page: INITIAL_PAGE, hasMore: true },
-  accepted: { publications: [], isLoading: false, page: INITIAL_PAGE, hasMore: true },
-  rejected: { publications: [], isLoading: false, page: INITIAL_PAGE, hasMore: true },
+  pending: initialPublicationState,
+  accepted: initialPublicationState,
+  rejected: initialPublicationState,
   counts: { users: 0, records: 0 },
   error: null,
 };
 
-const publicationsReducer = (state: State, action: Action): State => {
+function publicationsReducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'FETCH_ALL_START':
-      return {
-        ...state,
-        all: { ...state.all, isLoading: true },
-        error: null,
-      };
-      
-    case 'FETCH_ALL_SUCCESS':
-      return {
-        ...state,
-        all: { publications: action.payload, isLoading: false },
-      };
-      
     case 'FETCH_STATUS_START':
       return {
         ...state,
-        [action.status]: {
-          ...state[action.status],
-          isLoading: true,
-        },
+        [action.status]: { ...state[action.status], isLoading: true },
         error: null,
       };
-      
-    case 'FETCH_STATUS_SUCCESS':
+    case 'FETCH_STATUS_SUCCESS': {
+      const curr = state[action.status];
+      const nextPage = action.resetPage ? INITIAL_PAGE : curr.page + 1;
+      const newList = action.resetPage
+        ? action.payload
+        : [...curr.publications, ...action.payload];
       return {
         ...state,
         [action.status]: {
-          publications: action.payload,
+          publications: newList,
           isLoading: false,
-          page: INITIAL_PAGE,
-          hasMore: action.hasMore,
-        },
-      };
-      
-    case 'FETCH_STATUS_MORE_SUCCESS': {
-      const currentState = state[action.status];
-      return {
-        ...state,
-        [action.status]: {
-          publications: [...currentState.publications, ...action.payload],
-          isLoading: false,
-          page: currentState.page + 1,
+          page: nextPage,
           hasMore: action.hasMore,
         },
       };
     }
-
     case 'FETCH_COUNTS_START':
-      return {
-        ...state,
-        counts: { users: 0, records: 0 },
-        error: null,
-      };
-
+      return { ...state, counts: { users: 0, records: 0 }, error: null };
     case 'FETCH_COUNTS_SUCCESS':
-      return {
-        ...state,
-        counts: action.payload,
-        };
-      
+      return { ...state, counts: action.payload };
     case 'OPERATION_FAILURE':
       return {
         ...state,
-        all: { ...state.all, isLoading: false },
+        error: action.payload,
         pending: { ...state.pending, isLoading: false },
         accepted: { ...state.accepted, isLoading: false },
         rejected: { ...state.rejected, isLoading: false },
-        error: action.payload,
       };
-      
     case 'RESET':
       return initialState;
-      
     default:
       return state;
   }
-};
+}
 
-export const PublicationProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const { showLoading, hideLoading } = useLoading();
-  const [state, dispatch] = useReducer(publicationsReducer, initialState);
+export const PublicationProvider = React.memo(
+  ({ children }: { children: React.ReactNode }) => {
+    const { user, isAuthenticated, isLoading } = useAuth();
+    const [state, dispatch] = useReducer(publicationsReducer, initialState);
 
-  const handleError = useCallback((e: unknown, fallback: string) => {
-    const message = e instanceof Error ? e.message : fallback;
-    dispatch({ type: 'OPERATION_FAILURE', payload: message });
-  }, []);
+    const handleError = useCallback((error: unknown, fallback: string) => {
+      const message = error instanceof Error ? error.message : fallback;
+      dispatch({ type: 'OPERATION_FAILURE', payload: message });
+    }, []);
 
-  const loadAll = useCallback(async () => {
-    if (!user || !isAuthenticated || isLoading) {
-      dispatch({ type: 'RESET' });
-      return;
-    }
-    dispatch({ type: 'FETCH_ALL_START' });
+    const fetchPublications = useCallback(
+      async (status: PublicationStatus, page: number, size: number) => {
+        const isAdmin = user?.role === 'Admin';
+        console.log('[isAdmin] ', isAdmin);
+        const db = await getDBConnection();
+        console.log('[db] ', db);
+        await createTable(db);
+        console.log('[createTable] ', db);
 
-    try {
-      const publications = user.role === 'Admin'
-        ? await publicationService.getAllPublications()
-        : await publicationService.getUserPublications();
-      
-      dispatch({ type: 'FETCH_ALL_SUCCESS', payload: publications });
-    } catch (e) {
-      handleError(e, 'Error al cargar publicaciones.');
-    }
-  }, [user, isAuthenticated, isLoading, handleError]);
+        const offset = (page - 1) * size;
+        const cached = await loadPublications(db, status, size, offset);
+        console.log('[cached] ', cached);
+        if (cached.length > 0) {
+          return cached;
+        }
 
-  const loadStatus = useCallback(async (status: PublicationStatus) => {
-    if (!user || !isAuthenticated || isLoading) {
-      dispatch({ type: 'RESET' });
-      return;
-    }
-    dispatch({ type: 'FETCH_STATUS_START', status });
+        const remote = await publicationService.getPublicationsByStatus(
+          status,
+          page,
+          size,
+          isAdmin,
+        );
+        console.log('[remote] ', remote);
+        await clearStatus(db, status);
+        await savePublications(db, remote, status);
+        console.log('[savePublications] ', remote);
+        return remote;
+      },
+      [user],
+    );
 
-    try {
-      let publications: PublicationResponse[] = [];
-      
-      switch (status) {
-        case 'pending':
-          publications = user.role === 'Admin' ? await publicationService.getAllPendingPublications(INITIAL_PAGE, PAGE_SIZE) : await publicationService.getUserPendingPublications(INITIAL_PAGE, PAGE_SIZE);
-          break;
-        case 'accepted':
-          publications = user.role === 'Admin' ? await publicationService.getAllAcceptedPublications(INITIAL_PAGE, PAGE_SIZE) : await publicationService.getUserAcceptedPublications(INITIAL_PAGE, PAGE_SIZE);
-          break;
-        case 'rejected':
-          publications = user.role === 'Admin' ? await publicationService.getAllRejectedPublications(INITIAL_PAGE, PAGE_SIZE) : await publicationService.getUserRejectedPublications(INITIAL_PAGE, PAGE_SIZE);
-          break;
+    const loadStatus = useCallback(
+      async (status: PublicationStatus, searchQuery?: string) => {
+        dispatch({ type: 'FETCH_STATUS_START', status });
+        try {
+          console.log('[status] ', status);
+          console.log('[searchQuery] ', searchQuery);
+          const all = await fetchPublications(status, INITIAL_PAGE, PAGE_SIZE);
+          console.log('[all] ', all);
+          requestAnimationFrame(() => {
+            const filtered = searchQuery
+              ? all.filter(
+                  (p: PublicationResponse) =>
+                    p.commonNoun
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase()) ||
+                    p.description
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase()),
+                )
+              : all;
+            const pageData = filtered.slice(0, PAGE_SIZE);
+            dispatch({
+              type: 'FETCH_STATUS_SUCCESS',
+              status,
+              payload: pageData,
+              hasMore: filtered.length > PAGE_SIZE,
+              resetPage: true,
+            });
+          });
+        } catch (err) {
+          handleError(err, `Error cargando ${status}`);
+        }
+      },
+      [fetchPublications, handleError],
+    );
+
+    const loadMore = useCallback(async (status: PublicationStatus) => {
+      const curr = state[status];
+      if (!user || !isAuthenticated || isLoading || curr.isLoading || !curr.hasMore) return;
+    
+      dispatch({ type: 'FETCH_STATUS_START', status });
+      try {
+        const isAdmin = user?.role === 'Admin';
+        const db = await getDBConnection();
+        const nextPage = curr.page + 1;
+        const remote = await publicationService.getPublicationsByStatus(status, nextPage, PAGE_SIZE, isAdmin);
+    
+        await savePublications(db, remote, status);
+    
+        const all = await loadPublications(db, status, nextPage, 0);
+    
+        requestAnimationFrame(() => {
+          const payload = all.slice(PAGE_SIZE, nextPage * PAGE_SIZE);
+          dispatch({
+            type: 'FETCH_STATUS_SUCCESS',
+            status,
+            payload,
+            hasMore: remote.length === PAGE_SIZE,
+          });
+        });
+      } catch (err) {
+        handleError(err, `Error cargando más ${status}`);
       }
-      
-      const hasMore = publications.length === PAGE_SIZE;
-      
-      dispatch({ 
-        type: 'FETCH_STATUS_SUCCESS', 
-        status, 
-        payload: publications,
-        hasMore
-      });
-    } catch (e) {
-      handleError(e, `Error al cargar publicaciones ${status}.`);
-    }
-  }, [user, isAuthenticated, isLoading, handleError]);
+    }, [state, user, isAuthenticated, isLoading, handleError]);
+    
 
-  const loadMoreStatus = useCallback(async (status: PublicationStatus) => {
-    const currentState = state[status];
-    if (!user || !isAuthenticated || isLoading || currentState.isLoading || !currentState.hasMore) {
-      dispatch({ type: 'RESET' });
-      return;
-    }
-
-    dispatch({ type: 'FETCH_STATUS_START', status });
-
-    try {
-      let publications: PublicationResponse[] = [];
-      const nextPage = currentState.page + 1;
-      
-      switch (status) {
-        case 'pending':
-          publications = user.role === 'Admin' ? await publicationService.getAllPendingPublications(nextPage, PAGE_SIZE) : await publicationService.getUserPendingPublications(nextPage, PAGE_SIZE);
-          break;
-        case 'accepted':
-          publications = user.role === 'Admin' ? await publicationService.getAllAcceptedPublications(nextPage, PAGE_SIZE) : await publicationService.getUserAcceptedPublications(nextPage, PAGE_SIZE);
-          break;
-        case 'rejected':
-          publications = user.role === 'Admin' ? await publicationService.getAllRejectedPublications(nextPage, PAGE_SIZE) : await publicationService.getUserRejectedPublications(nextPage, PAGE_SIZE);
-          break;
+    const loadCounts = useCallback(async () => {
+      dispatch({ type: 'FETCH_COUNTS_START' });
+      try {
+        const counts = await publicationService.getCounts();
+        dispatch({ type: 'FETCH_COUNTS_SUCCESS', payload: counts });
+      } catch (err) {
+        handleError(err, 'Error al cargar counts');
       }
-      
-      const hasMore = publications.length === PAGE_SIZE;
-      
-      dispatch({ 
-        type: 'FETCH_STATUS_MORE_SUCCESS', 
-        status, 
-        payload: publications,
-        hasMore
-      });
-    } catch (e) {
-      handleError(e, 'Error al cargar más publicaciones.');
-    }
-  }, [user, state, isAuthenticated, isLoading, handleError]);
+    }, [handleError]);
 
-  const loadCounts = useCallback(async () => {
-    dispatch({ type: 'FETCH_COUNTS_START' });
+    const approve = useCallback(
+      async (id: string) => {
+        if (!id) return;
+        try {
+          await publicationService.acceptPublication(id);
+          await Promise.all([loadStatus('pending'), loadStatus('accepted')]);
+        } catch (err) {
+          handleError(err, 'Error al aprobar');
+        }
+      },
+      [loadStatus, handleError],
+    );
 
-    try {
-      const counts = await publicationService.getCounts();
-      dispatch({
-        type: 'FETCH_COUNTS_SUCCESS',
-        payload: {
-          users: counts.users,
-          records: counts.records,
-        },
-      });
-    } catch (e) {
-      handleError(e, 'Error al cargar los conteos de publicaciones.');
-    }
-  }, [handleError]);
+    const reject = useCallback(
+      async (id: string) => {
+        if (!id) return;
+        try {
+          await publicationService.rejectPublication(id);
+          await loadStatus('pending');
+        } catch (err) {
+          handleError(err, 'Error al rechazar');
+        }
+      },
+      [loadStatus, handleError],
+    );
 
-  const approve = useCallback(async (recordId: string) => {
-    if (!recordId) {
-      dispatch({ type: 'RESET' });
-      return;
-    }
-    showLoading();
+    const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
 
-    try {
-      await publicationService.acceptPublication(recordId);
-      await Promise.allSettled([
-        loadStatus('pending'),
-        loadAll()
-      ]);
-    } catch (e) {
-      handleError(e, 'Error al aprobar la publicación.');
-    } finally {
-      hideLoading();
-    }
-  }, [loadStatus, loadAll, handleError, showLoading, hideLoading]);
+    const actions = useMemo(
+      () => ({
+        loadStatus,
+        loadMoreStatus: loadMore,
+        loadCounts,
+        approve,
+        reject,
+        reset,
+      }),
+      [loadStatus, loadMore, loadCounts, approve, reject, reset],
+    );
+    const contextValue = useMemo(() => ({ state, actions }), [state, actions]);
 
-  const reject = useCallback(async (recordId: string) => {
-    if (!recordId) {
-      dispatch({ type: 'RESET' });
-      return;
-    }
-    showLoading();
-
-    try {
-      await publicationService.rejectPublication(recordId);
-      await loadStatus('pending');
-    } catch (e) {
-      handleError(e, 'Error al rechazar la publicación.');
-    } finally {
-      hideLoading();
-    }
-  }, [loadStatus, handleError, showLoading, hideLoading]);
-
-  const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
-
-  const contextValue = useMemo<PublicationContextType>(() => ({
-    state,
-    actions: {
-      loadAll,
-      loadStatus,
-      loadMoreStatus,
-      loadCounts,
-      approve,
-      reject,
-      reset,
-    },
-  }), [
-    state,
-    loadAll,
-    loadStatus,
-    loadMoreStatus,
-    loadCounts,
-    approve,
-    reject,
-    reset
-  ]);
-
-  return (
-    <PublicationContext.Provider value={contextValue}>
-      {children}
-    </PublicationContext.Provider>
-  );
-};
+    return (
+      <PublicationContext.Provider value={contextValue}>
+        {children}
+      </PublicationContext.Provider>
+    );
+  },
+);
 
 export const usePublications = (): PublicationContextType => {
   const context = useContext(PublicationContext);
-  if (!context) {
-    throw new Error('usePublications must be used within a PublicationProvider');
-  }
+  if (!context)
+    throw new Error(
+      'usePublications must be used within a PublicationProvider',
+    );
   return context;
 };
