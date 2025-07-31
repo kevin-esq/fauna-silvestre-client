@@ -1,4 +1,3 @@
-// PublicationDetailsScreen.tsx
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
@@ -24,6 +23,7 @@ import type {
 } from '../../../domain/models/publication.models';
 import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import ImageViewer from 'react-native-image-zoom-viewer';
 
 const { width, height } = Dimensions.get('window');
 
@@ -58,7 +58,7 @@ export default function PublicationDetailsScreen({
     };
   };
 }) {
-  const { navigate } = useNavigationActions();
+  const { goBack } = useNavigationActions();
   const { theme } = useTheme();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -79,7 +79,7 @@ export default function PublicationDetailsScreen({
       const backHandler = BackHandler.addEventListener(
         'hardwareBackPress',
         () => {
-          navigate('HomeTabs');
+          goBack();
           return true;
         },
       );
@@ -87,18 +87,27 @@ export default function PublicationDetailsScreen({
       return () => {
         backHandler.remove();
       };
-    }, [navigate]),
+    }, [goBack]),
   );
 
+  const handleModify = useCallback((section: string) => {
+    console.log(`Modificar sección: ${section}`);
+  }, []);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      accessibilityLabel="Detalles de publicación"
+    >
       {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity
-          onPress={() => navigate('HomeTabs')}
+          onPress={() => goBack()}
           style={styles.backButton}
           accessibilityLabel="Volver"
           accessibilityRole="button"
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
         >
           <Ionicons name="arrow-back" size={22} color="white" />
           <Text style={styles.backButtonText}>Volver</Text>
@@ -109,8 +118,11 @@ export default function PublicationDetailsScreen({
             name={statusConfig.icon}
             size={20}
             color={statusConfig.color}
+            accessibilityLabel={`Estado: ${statusConfig.label}`}
           />
-          <Text style={styles.headerTitle}>{publication.commonNoun}</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">
+            {publication.commonNoun}
+          </Text>
         </View>
       </View>
 
@@ -119,6 +131,11 @@ export default function PublicationDetailsScreen({
         activeOpacity={0.8}
         onPress={toggleImageExpand}
         style={styles.imageCard}
+        accessibilityLabel={
+          publication.img
+            ? 'Ver imagen en tamaño completo'
+            : 'Imagen no disponible'
+        }
       >
         {publication.img ? (
           <>
@@ -126,6 +143,7 @@ export default function PublicationDetailsScreen({
               source={{ uri: publication.img }}
               style={styles.image}
               resizeMode="cover"
+              accessibilityIgnoresInvertColors
             />
             <View style={styles.zoomIcon}>
               <MaterialIcons name="zoom-in" size={24} color="white" />
@@ -143,41 +161,45 @@ export default function PublicationDetailsScreen({
         )}
       </TouchableOpacity>
 
-      <Modal visible={isImageExpanded} transparent animationType="fade">
-        <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={toggleImageExpand}
-          >
-            <Ionicons name="close" size={30} color="#fff" />
-          </TouchableOpacity>
-          <Image
-            source={{ uri: publication.img }}
-            style={styles.fullImage}
-            resizeMode="contain"
-          />
-        </View>
+      <Modal visible={isImageExpanded} transparent={true} animationType="fade">
+        <ImageViewer
+          imageUrls={[{ url: publication.img }]}
+          enableImageZoom={true}
+          enableSwipeDown={true}
+          onSwipeDown={toggleImageExpand}
+          onCancel={toggleImageExpand}
+          renderHeader={() => (
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={toggleImageExpand}
+              accessibilityLabel="Cerrar vista de imagen"
+            >
+              <Ionicons name="close" size={30} color="#fff" />
+            </TouchableOpacity>
+          )}
+          backgroundColor="rgba(0,0,0,0.9)"
+        />
       </Modal>
 
-      {/* Descripción */}
+      {/* Componentes de información */}
       <InfoCard
         title="Descripción"
         content={publication.description}
         isAdmin={user?.role === 'Admin'}
+        onModify={() => handleModify('Descripción')}
         insets={insets}
       />
 
-      {/* Estado */}
       <InfoCard
         title="Estado"
         content={statusConfig.label}
         titleColor={statusConfig.color}
         borderColor={statusConfig.color}
         isAdmin={user?.role === 'Admin'}
+        onModify={() => handleModify('Estado')}
         insets={insets}
       />
 
-      {/* Estado del animal */}
       <InfoCard
         title="Estado del Animal"
         content={publication.animalState === 'ALIVE' ? 'Vivo' : 'Muerto'}
@@ -195,12 +217,13 @@ export default function PublicationDetailsScreen({
           publication.animalState === 'ALIVE' ? theme.colors.success : '#D32F2F'
         }
         isAdmin={user?.role === 'Admin'}
+        onModify={() => handleModify('Estado del Animal')}
         insets={insets}
       />
 
-      {/* Usuario */}
+      {/* Usuario (solo admin) */}
       {user?.role === 'Admin' && (
-        <TouchableOpacity
+        <View
           style={[
             styles.card,
             {
@@ -214,14 +237,16 @@ export default function PublicationDetailsScreen({
           <View style={styles.userProfilePicture}>
             <FontAwesome name="user" size={16} color={theme.colors.primary} />
           </View>
-          <View>
-            <Text style={styles.cardTitle}>Usuario</Text>
+          <View style={{ flex: 1 }}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Usuario</Text>
+            </View>
             <Text style={styles.cardText}>{'Sin información'}</Text>
           </View>
-        </TouchableOpacity>
+        </View>
       )}
 
-      {/* Rechazo */}
+      {/* Motivo de rechazo */}
       {status === 'rejected' && reason && (
         <View style={[styles.card, styles.rejectionCard]}>
           <Text style={styles.rejectionTitle}>Motivo de rechazo</Text>
@@ -241,6 +266,7 @@ export default function PublicationDetailsScreen({
             />
           }
           content={publication.location}
+          isAdmin={user?.role === 'Admin'}
           insets={insets}
         />
       )}
@@ -248,7 +274,9 @@ export default function PublicationDetailsScreen({
       {/* Mapa */}
       {publication.location && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Ubicación en Mapa</Text>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Ubicación en Mapa</Text>
+          </View>
           <LocationMap location={publication.location} />
         </View>
       )}
@@ -256,53 +284,78 @@ export default function PublicationDetailsScreen({
   );
 }
 
-function InfoCard({
-  title,
-  content,
-  icon,
-  isAdmin = false,
-  titleColor,
-  borderColor,
-  insets,
-}: {
+type InfoCardProps = {
   title: string;
   content: string;
   icon?: React.ReactNode;
   isAdmin?: boolean;
   titleColor?: string;
   borderColor?: string;
+  onModify?: () => void;
   insets: EdgeInsets;
-}) {
-  const { theme } = useTheme();
-  const styles = useMemo(
-    () => createStyles(themeVariables(theme), width, height, insets),
-    [theme, insets],
-  );
+};
 
-  return (
-    <View
-      style={[
-        styles.card,
-        borderColor ? { borderLeftColor: borderColor, borderLeftWidth: 5 } : {},
-      ]}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        {icon}
-        <Text
-          style={[styles.cardTitle, titleColor ? { color: titleColor } : {}]}
-        >
-          {title}
-        </Text>
+const InfoCard = React.memo(
+  ({
+    title,
+    content,
+    icon,
+    isAdmin = false,
+    titleColor,
+    borderColor,
+    onModify,
+    insets,
+  }: InfoCardProps) => {
+    const { theme } = useTheme();
+    const styles = useMemo(
+      () => createStyles(themeVariables(theme), width, height, insets),
+      [theme, insets],
+    );
+
+    return (
+      <View
+        style={[
+          styles.card,
+          borderColor
+            ? {
+                borderLeftColor: borderColor,
+                borderLeftWidth: 5,
+              }
+            : {},
+        ]}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.titleContainer}>
+            {icon}
+            <Text
+              style={[
+                styles.cardTitle,
+                titleColor ? { color: titleColor } : {},
+              ]}
+              accessibilityRole="header"
+            >
+              {title}
+            </Text>
+          </View>
+
+          {isAdmin && onModify && (
+            <TouchableOpacity
+              onPress={onModify}
+              accessibilityLabel={`Modificar ${title.toLowerCase()}`}
+              accessibilityRole="button"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <MaterialIcons
+                name="edit"
+                size={20}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <Text style={styles.cardText}>{content}</Text>
       </View>
-      <Text style={styles.cardText}>{content}</Text>
-      {isAdmin && (
-        <TouchableOpacity
-          style={styles.modifyButton}
-          onPress={() => console.log('Modificar')}
-        >
-          <Text style={styles.modifyButtonText}>Modificar</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-}
+    );
+  },
+);

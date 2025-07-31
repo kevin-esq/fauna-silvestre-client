@@ -1,5 +1,5 @@
 // TopTabsNavigationBar.tsx
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -18,6 +18,51 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import favicon from '../../../assets/favicon.png';
 import { Theme } from '../../contexts/theme-context';
 import { themeVariables } from '../../contexts/theme-context';
+
+type TabButtonProps = {
+  routeKey: string;
+  routeName: string;
+  isFocused: boolean;
+  tabBarIcon?: MaterialTopTabBarProps['descriptors'][string]['options']['tabBarIcon'];
+  onPress: (routeKey: string, routeName: string) => void;
+  tabWidth: number;
+  activeColor: string;
+  inactiveColor: string;
+  styles: ReturnType<typeof createStyles>;
+};
+
+const TabButton = React.memo(({
+  routeKey,
+  routeName,
+  isFocused,
+  tabBarIcon,
+  onPress,
+  tabWidth,
+  activeColor,
+  inactiveColor,
+  styles,
+}: TabButtonProps) => {
+  const handlePress = useCallback(() => {
+    onPress(routeKey, routeName);
+  }, [onPress, routeKey, routeName]);
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      style={[styles.tabButton, { width: tabWidth }]}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityState={{ selected: isFocused }}
+      accessibilityLabel={`${routeName} tab`}
+      testID={`tab-${routeName}`}
+    >
+      {tabBarIcon?.({
+        focused: isFocused,
+        color: isFocused ? activeColor : inactiveColor,
+      })}
+    </TouchableOpacity>
+  );
+});
 
 export default function TopTabsNavigationBar({
   state,
@@ -42,20 +87,44 @@ export default function TopTabsNavigationBar({
     transform: [{ translateX: withTiming(position.value * tabWidth) }],
   }));
 
-  useEffect(() => {
-    position.value = state.index;
-  }, [state.index, position]);
-
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(insets, variables), [insets, variables]);
 
+  position.value = state.index;
 
+  const currentRouteRef = useRef(state.routes[state.index].key);
+
+  useEffect(() => {
+    currentRouteRef.current = state.routes[state.index].key;
+  }, [state.index, state.routes]);
+
+  const handleTabPress = useCallback((routeKey: string, routeName: string) => {
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: routeKey,
+      canPreventDefault: true,
+    });
+    
+    if (currentRouteRef.current !== routeKey && !event.defaultPrevented) {
+      navigation.navigate(routeName);
+    }
+  }, [navigation]);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessibilityRole="header">
       <View style={styles.headerOuter}>
-        <Image source={favicon} style={styles.headerIcon} />
-        <Text numberOfLines={1} ellipsizeMode="tail" style={styles.headerText}>
+        <Image 
+          source={favicon} 
+          style={styles.headerIcon} 
+          accessibilityIgnoresInvertColors
+          accessibilityLabel="App logo"
+        />
+        <Text 
+          numberOfLines={1} 
+          ellipsizeMode="tail" 
+          style={styles.headerText}
+          accessibilityRole="text"
+        >
           Fauna Silvestre
         </Text>
       </View>
@@ -63,91 +132,79 @@ export default function TopTabsNavigationBar({
       <View style={[styles.tabsContainer, { width: availableWidth }]}>
         {state.routes.map((route, index) => {
           const descriptor = descriptors[route.key];
-          const { tabBarIcon } = descriptor.options;
           const isFocused = state.index === index;
 
-          const onPress = (): void => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
-            }
-          };
-
           return (
-            <TouchableOpacity
+            <TabButton
               key={route.key}
-              onPress={onPress}
-              style={[styles.tabButton, { width: tabWidth }]}
-              activeOpacity={0.7}
-              testID={`tab-${route.name}`}
-            >
-              {tabBarIcon?.({
-                focused: isFocused,
-                color: isFocused ? styles.activeLabel.color : styles.label.color,
-              })}
-            </TouchableOpacity>
+              routeKey={route.key}
+              routeName={route.name}
+              isFocused={isFocused}
+              tabBarIcon={descriptor.options.tabBarIcon}
+              onPress={handleTabPress}
+              tabWidth={tabWidth}
+              activeColor={variables['--primary']}
+              inactiveColor={variables['--text-secondary']}
+              styles={styles}
+            />
           );
         })}
 
         <Animated.View
-          style={[styles.indicator, { width: tabWidth }, animatedIndicatorStyle]}
+          style={[
+            styles.indicator, 
+            { 
+              width: tabWidth,
+              backgroundColor: variables['--primary'],
+            }, 
+            animatedIndicatorStyle
+          ]}
         />
       </View>
     </View>
   );
 }
 
-const createStyles = (insets: { top: number; left: number; right: number }, variables: ReturnType<typeof themeVariables>) =>
-  StyleSheet.create({
-    container: {
-      paddingTop: insets.top,
-      paddingHorizontal: 16,
-      backgroundColor: variables['--background'],
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: variables['--border'],
-    },
-    headerOuter: {
-      marginTop: 16,
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 4,
-    },
-    headerIcon: {
-      width: 32,
-      height: 32,
-      marginRight: 12,
-    },
-    headerText: {
-      fontSize: 26,
-      fontWeight: 'bold',
-      color: variables['--primary'],
-      flexShrink: 1,
-    },
-    tabsContainer: {
-      flexDirection: 'row',
-      alignSelf: 'center',
-    },
-    tabButton: {
-      alignItems: 'center',
-      paddingVertical: 12,
-    },
-    label: {
-      fontSize: 14,
-      color: variables['--text-secondary'],
-      fontWeight: '600',
-    },
-    activeLabel: {
-      color: variables['--primary'],
-      fontWeight: 'bold',
-    },
-    indicator: {
-      position: 'absolute',
-      height: 4,
-      backgroundColor: variables['--primary'],
-      bottom: -1,
-    },
-  });
+const createStyles = (
+  insets: { top: number; left: number; right: number }, 
+  variables: ReturnType<typeof themeVariables>
+) => StyleSheet.create({
+  container: {
+    paddingTop: insets.top,
+    paddingHorizontal: 16,
+    backgroundColor: variables['--background'],
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: variables['--border'],
+  },
+  headerOuter: {
+    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  headerIcon: {
+    width: 32,
+    height: 32,
+    marginRight: 12,
+  },
+  headerText: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: variables['--primary'],
+    flexShrink: 1,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    position: 'relative',
+  },
+  tabButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  indicator: {
+    position: 'absolute',
+    height: 4,
+    bottom: -1,
+  },
+});
