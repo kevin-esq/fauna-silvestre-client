@@ -6,3 +6,13 @@ export interface AnimalModel {
     statusColor: string;
     image: string;
 }
+
+export interface ParsedLocation {
+  latitude: number;
+  longitude: number;
+}
+
+export interface LocationResponse {
+  catalogId: number;
+  cords: ParsedLocation[];
+}

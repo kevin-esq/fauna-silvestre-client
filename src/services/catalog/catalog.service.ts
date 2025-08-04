@@ -3,6 +3,7 @@ import Animal from "../../domain/entities/animal.entity";
 import { apiService } from "../../services/http/api.service";
 import { CatalogRepository } from "../../data/repositories/catalog.repository";
 import { ConsoleLogger } from "../logging/console-logger";
+import { LocationResponse } from "../../domain/models/animal.models";
 
 class CatalogService {
     constructor(private catalogRepository: ICatalogRepository) { }
@@ -25,6 +26,10 @@ class CatalogService {
 
     async deleteCatalog(id: string): Promise<void> {
         return this.catalogRepository.deleteCatalog(id);
+    }
+
+    async getLocations(catalogId: string): Promise<LocationResponse> {
+        return this.catalogRepository.getLocations(catalogId);
     }
 }
 
