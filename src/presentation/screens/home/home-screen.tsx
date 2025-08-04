@@ -22,6 +22,9 @@ import {
 import { useCatalog } from '../../contexts/catalog-context';
 import AnimalCard from '../../components/animal/animal-card.component';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
+import { BackHandler } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 moment.locale('es');
 
@@ -42,7 +45,7 @@ const HomeScreen: React.FC = React.memo(() => {
   const [locationInfo, setLocationInfo] = useState<LocationInfo>({ city: null, country: null });
   const [loadingLocation, setLoadingLocation] = useState(true);
   const { catalog, isLoading: isCatalogLoading } = useCatalog();
-  
+
   // Estados para filtrado
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showAllAnimals, setShowAllAnimals] = useState(false);
@@ -68,12 +71,12 @@ const HomeScreen: React.FC = React.memo(() => {
 
   const hasLoaded = useRef(false);
 
-useEffect(() => {
-  if (!hasLoaded.current) {
-    actions.loadCounts();
-    hasLoaded.current = true;
-  }
-}, [actions]);
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      actions.loadCounts();
+      hasLoaded.current = true;
+    }
+  }, [actions]);
 
   useEffect(() => {
     console.log('Counts updated:', state.counts);
@@ -81,9 +84,9 @@ useEffect(() => {
     setTotalEspecies(state.counts.users);
     setTotalPublications(state.counts.records);
   }, [state.counts]);
-  
+
   useEffect(() => {
-    const fetchLocation = async () => {
+    const fetchCatalogLocation = async () => {
       setLoadingLocation(true);
       try {
         const permissionType = Platform.select({
@@ -119,7 +122,7 @@ useEffect(() => {
       }
     };
 
-    fetchLocation();
+    fetchCatalogLocation();
   }, []);
 
   const handleLogout = () => {
@@ -142,6 +145,20 @@ useEffect(() => {
     setShowAllAnimals(!showAllAnimals);
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        return true; // bloquea el botón "atrás"
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress
+      );
+
+      return () => backHandler.remove(); // ✅ esta es la forma correcta ahora
+    }, [])
+  );
 
 
   return (
@@ -198,9 +215,9 @@ useEffect(() => {
         </View>
 
         <View style={styles.imageSection}>
-          
-            <Text style={styles.sectionTitle}>Catálogo de Animales</Text>          
-          
+
+          <Text style={styles.sectionTitle}>Catálogo de Animales</Text>
+
 
           {/* Filtro por categoría */}
           <View style={styles.filterContainer}>
@@ -209,7 +226,7 @@ useEffect(() => {
               selectedValue={selectedCategory}
               onValueChange={setSelectedCategory}
               placeholder="Filtrar por categoría..."
-              theme={theme}  
+              theme={theme}
             />
           </View>
 
@@ -222,7 +239,7 @@ useEffect(() => {
               }
             </Text>
             {filteredAnimals.length > 5 && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.toggleButton}
                 onPress={handleToggleShowAll}
               >

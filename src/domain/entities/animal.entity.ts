@@ -1,3 +1,6 @@
+import { LocationResponse } from "../models/animal.models";
+
+
 export default class Animal {
     catalogId: string;
     specie: string;
@@ -8,9 +11,17 @@ export default class Animal {
     reproduction: string;
     distribution: string;
     category: string;
-    habits: string;
-    map: string;
+    habits: string;  
     image: string;
+    map: [ // <-- esta parte debe existir
+      {
+        cords: [
+          { latitude: 19.4326, longitude: -99.1332 },
+          { latitude: 20.6597, longitude: -103.3496 }
+        ]
+      }
+    ]
+
 
     constructor(
         catalogId: string,
@@ -23,8 +34,15 @@ export default class Animal {
         distribution: string,
         category: string,
         habits: string,
-        map: string,
-        image: string
+        image: string,
+        map: [ // <-- esta parte debe existir
+      {
+        cords: [
+          { latitude: 19.4326, longitude: -99.1332 },
+          { latitude: 20.6597, longitude: -103.3496 }
+        ]
+      }
+    ]
     ) {
         this.catalogId = catalogId;
         this.specie = specie;
@@ -36,7 +54,7 @@ export default class Animal {
         this.distribution = distribution;
         this.category = category;
         this.habits = habits;
-        this.map = map;
         this.image = image;
+        this.map = map;
     }
 }
