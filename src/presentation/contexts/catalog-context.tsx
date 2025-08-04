@@ -10,21 +10,27 @@ import React, {
 import Animal from "../../domain/entities/animal.entity";
 import { catalogService } from "../../services/catalog/catalog.service";
 import { useAuth } from "./auth-context";
+import { LocationResponse } from "../../domain/models/animal.models";
 
 interface State {
     isLoading: boolean;
     error: string | null;
     catalog: Animal[];
+    catalogLocations: LocationResponse | null;
 }
 
 type Action =
     | { type: "FETCH_ALL_START" }
     | { type: "FETCH_ALL_SUCCESS"; payload: Animal[] }
     | { type: "FETCH_ALL_FAILURE"; payload: string }
-    | { type: "RESET" };
+    | { type: "RESET" }
+    | { type: "FETCH_LOCATIONS_SUCCESS", payload: LocationResponse }; // Acción para actualizar las ubicaciones
+
 
 interface CatalogContextType extends State {
     fetchCatalog: () => Promise<void>;
+    fetchCatalogLocations: (catalogId: string) => Promise<void>; // Nueva función para obtener las ubicaciones
+    catalogLocations: LocationResponse | null;
     reset: () => void;
 }
 
@@ -32,6 +38,7 @@ const initialState: State = {
     isLoading: false,
     error: null,
     catalog: [],
+    catalogLocations: null, // Inicialmente no hay ubicaciones
 };
 
 const catalogReducer = (state: State, action: Action): State => {
@@ -44,14 +51,15 @@ const catalogReducer = (state: State, action: Action): State => {
             return { ...state, isLoading: false, error: action.payload };
         case "RESET":
             return initialState;
+        case "FETCH_LOCATIONS_SUCCESS":
+            return { ...state, catalogLocations: action.payload };
         default:
             return state;
     }
 };
 
-const CatalogContext = createContext<CatalogContextType | undefined>(
-    undefined
-);
+const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
+
 export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     const { user } = useAuth();
     const [state, dispatch] = useReducer(catalogReducer, initialState);
@@ -59,19 +67,27 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     const fetchCatalog = useCallback(async () => {
         if (!user) {
             dispatch({ type: "RESET" });
-            return; 
+            return;
         }
         dispatch({ type: "FETCH_ALL_START" });
         try {
             const data = await catalogService.getAllCatalogs(1, 10);
-            console.log("[CatalogContext] Catalog", data);
             dispatch({ type: "FETCH_ALL_SUCCESS", payload: data });
         } catch (error) {
-            const errorMessage =
-                error instanceof Error ? error.message : "An unknown error occurred";
+            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
             dispatch({ type: "FETCH_ALL_FAILURE", payload: errorMessage });
         }
     }, [user]);
+
+    const fetchCatalogLocations = useCallback(async (catalogId: string) => {
+        try {
+            const data = await catalogService.getLocations(catalogId); 
+            console.log("✅ Datos de ubicaciones recibidos:", data); // 👈 AQUI
+            dispatch({ type: "FETCH_LOCATIONS_SUCCESS", payload: data });
+        } catch (error) {
+            console.error('Error fetching catalog locations:', error);
+        }
+    }, []);
 
     useEffect(() => {
         fetchCatalog();
@@ -82,12 +98,9 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     const contextValue = useMemo<CatalogContextType>(() => ({
         ...state,
         fetchCatalog,
+        fetchCatalogLocations,
         reset,
-    }), [
-        state,
-        fetchCatalog,
-        reset
-    ]);
+    }), [state, fetchCatalog, fetchCatalogLocations, reset]);
 
     return (
         <CatalogContext.Provider value={contextValue}>

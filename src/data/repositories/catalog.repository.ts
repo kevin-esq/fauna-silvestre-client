@@ -3,7 +3,12 @@ import { BaseRepository } from "./base.repository";
 import { ILogger } from "../../shared/types/ILogger";
 import { ICatalogRepository } from "../../domain/interfaces/catalog.repository.interface";
 import Animal from "../../domain/entities/animal.entity";
+import { LocationResponse, ParsedLocation } from "../../domain/models/animal.models"; // Importamos el tipo de respuesta de ubicación
+import { apiService } from '../../services/http/api.service'; // Ajusta ruta según tu estructura
+import { ConsoleLogger } from '../../services/logging/console-logger';
 
+
+const logger = new ConsoleLogger('info');
 export class CatalogRepository extends BaseRepository implements ICatalogRepository {
     constructor(api: AxiosInstance, logger: ILogger) {
         super(api, logger);
@@ -57,4 +62,42 @@ export class CatalogRepository extends BaseRepository implements ICatalogReposit
             throw this.handleHttpError(error, `Error al eliminar el animal con ID ${id}`);
         }
     }
+
+
+    async getLocations(catalogId: string): Promise<LocationResponse> {
+        try {
+            const response = await this.api.get<{ catalogId: number; cords: { location: string }[] }>(
+                `/Animal/map/${catalogId}`
+            );
+
+            this.ensureSuccessStatus(response);
+
+            console.log('Coords raw:', response.data.cords);  // DEBUG
+
+            const parsedCords: ParsedLocation[] = response.data.cords
+                .map((item) => {
+                    const [latStr, lonStr] = item.location.split(',');
+                    const latitude = parseFloat(latStr);
+                    const longitude = parseFloat(lonStr);
+
+                    // Para debug solo comentamos filtro:
+                    // if (isNaN(latitude) || isNaN(longitude)) return null;
+
+                    return { latitude, longitude };
+                })
+            //.filter(Boolean) as ParsedLocation[]; // comentado temporalmente
+
+            console.log('Coords parsed:', parsedCords); // DEBUG
+
+            return {
+                catalogId: response.data.catalogId,
+                cords: parsedCords,
+            };
+        } catch (error) {
+            throw this.handleHttpError(error, `Error al obtener ubicaciones del catálogo con ID ${catalogId}`);
+        }
+    }
+
 }
+
+export const catalogRepository = new CatalogRepository(apiService.client, logger);

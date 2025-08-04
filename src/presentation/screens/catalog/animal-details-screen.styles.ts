@@ -1,18 +1,18 @@
-
 import { StyleSheet, Dimensions } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-export const createStyles = (variables: Record<string, string>) => StyleSheet.create({
+export const createStyles = (variables: Record<string, string>, inset: { top: number; bottom: number }) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: variables['--background'],
+    paddingBottom: inset.bottom + 16,
   },
   
   // Tarjeta principal
   card: {
     margin: 16,
-    marginTop: 20, // Espacio para el status bar
+    marginTop: 8, // Reducido porque ya tenemos padding en el header
     backgroundColor: variables['--surface'],
     borderRadius: 16,
     shadowColor: '#000',
@@ -28,14 +28,22 @@ export const createStyles = (variables: Record<string, string>) => StyleSheet.cr
 
   // Header de la tarjeta
   cardHeader: {
-    height: 200,
+    height: 250,
     position: 'relative',
+    overflow: 'hidden',
   },
 
   cardImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+
+  // Estilo específico para imágenes verticales
+  imageTopAligned: {
+    height: '190%',
+    top: 0,
+    position: 'absolute',
   },
 
   imageOverlay: {
@@ -45,6 +53,24 @@ export const createStyles = (variables: Record<string, string>) => StyleSheet.cr
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: variables['--primary'],
+    borderRadius: 32,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    alignSelf: 'flex-start',
+    elevation: 2,
+  },
+  
+  backButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 
   cardHeaderContent: {
@@ -155,7 +181,7 @@ export const createStyles = (variables: Record<string, string>) => StyleSheet.cr
 
   // Botón expandir
   expandButton: {
-    backgroundColor: variables['--primary-color'],
+    backgroundColor: variables['--primary-button'],
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -164,7 +190,7 @@ export const createStyles = (variables: Record<string, string>) => StyleSheet.cr
   },
 
   expandButtonText: {
-    color: variables['--text-on-primary'],
+    color: variables['--primary-button-text'],
     fontSize: 14,
     fontWeight: '600',
   },
@@ -257,5 +283,80 @@ export const createStyles = (variables: Record<string, string>) => StyleSheet.cr
     fontStyle: 'italic',
     color: '#E5E7EB',
     textAlign: 'center',
+  },
+
+  // Estilos del modal del mapa - Consistente con modal de imagen
+  mapModalHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+
+  mapModalCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 1001,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 25,
+    padding: 10,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  mapModalHeaderContent: {
+    alignItems: 'center',
+    marginTop: 60,
+  },
+
+  mapModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+
+  mapModalSubtitle: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: '#E5E7EB',
+    textAlign: 'center',
+  },
+
+  mapInfoPanel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 40,
+  },
+
+  mapInfoContent: {
+    gap: 12,
+  },
+
+  mapInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  mapInfoText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    flex: 1,
+    lineHeight: 20,
   },
 });
