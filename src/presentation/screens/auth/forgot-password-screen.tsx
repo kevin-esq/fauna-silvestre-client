@@ -10,7 +10,7 @@ import CodeInput from '../../components/auth/code-input.component';
 import ErrorMessage from '../../components/auth/error-message.component';
 import CustomButton from '../../components/ui/custom-button.component';
 import { createStyles } from './forgot-password-screen.styles';
-import { useTheme, Theme, themeVariables } from '../../contexts/theme-context';
+import { useTheme, Theme, themeVariables } from '../../contexts/theme.context';
 
 type StepProps = {
   theme: Theme;

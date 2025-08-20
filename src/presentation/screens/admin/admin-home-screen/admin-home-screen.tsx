@@ -1,13 +1,8 @@
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import moment from 'moment';
-import 'moment/locale/es';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Animated,
-  FlatList,
   Image,
   RefreshControl,
   SafeAreaView,
@@ -15,33 +10,35 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { getAllUsers, UserModel } from '../../../../shared/utils/fakeData';
-import FloatingActionButton from '../../../components/ui/floating-action-button.component';
-import { useAuth } from '../../../contexts/auth-context';
-import { useTheme, themeVariables } from '../../../contexts/theme-context';
-import { createStyles } from './admin-home-screen.styles';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import moment from 'moment';
+import 'moment/locale/es';
+
+// Contextos y Hooks
+import { useAuth } from '../../../contexts/auth.context';
+import { useTheme } from '../../../contexts/theme.context';
+import { useNavigationActions } from '../../../navigation/navigation-provider';
+import { usePublications } from '@/presentation/contexts/publication.context';
 import { useLocationInfo } from '../../../hooks/use-location-info';
 import { useCurrentTime } from '../../../hooks/use-current-time.hook';
 import { useLoadData } from '../../../hooks/use-load-data.hook';
-import { useNavigationActions } from '../../../navigation/navigation-provider';
-import Config from 'react-native-config';
+
+// Componentes y Modelos
+import FloatingActionButton from '../../../components/ui/floating-action-button.component';
+import { getAllUsers, UserModel } from '../../../../shared/utils/fakeData';
+import { useStyles } from './admin-home-screen.styles';
 
 moment.locale('es');
 
-// --- Sub-components ---
-
-const AdminHeader: React.FC = React.memo(() => {
-  const { theme } = useTheme();
+/**
+ * Componente de cabecera para el administrador
+ */
+const AdminHeader = React.memo(({ styles }: { styles: ReturnType<typeof useStyles> }) => {
   const { user, signOut } = useAuth();
-  const variables = useMemo(() => themeVariables(theme), [theme]);
-  const styles = useMemo(() => createStyles(variables), [variables]);
 
-  const {
-    city,
-    country,
-    loading: locLoading,
-  } = useLocationInfo(Config.GOOGLE_MAPS_API_KEY);
-
+  const { state: statePub } = usePublications();
+  const { city, state, loading: locLoading } = useLocationInfo();
   const time = useCurrentTime();
   useLoadData();
 
@@ -56,230 +53,340 @@ const AdminHeader: React.FC = React.memo(() => {
     <View style={styles.headerContainer}>
       <View style={styles.headerTopRow}>
         <View>
-          <Text style={styles.greeting}>Hola, {user?.name || 'Admin'}</Text>
-          <Text style={styles.subGreeting}>Qué bueno verte de nuevo.</Text>
+          <Text style={styles.greeting}>Hola, {user?.name || 'Administrador'}</Text>
+          <Text style={styles.subGreeting}>Panel de control</Text>
         </View>
         <TouchableOpacity
           onPress={handleSignOut}
           accessibilityLabel="Cerrar sesión"
-          accessibilityHint="Cierra sesión de la aplicación"
-          accessibilityRole="button"
+          accessibilityHint="Cierra la sesión actual"
           style={styles.logoutButton}
           activeOpacity={0.7}
         >
-          <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
           <Ionicons
             name="log-out-outline"
             size={24}
-            color={variables['--text-secondary']}
+            color={styles.logoutButtonText.color}
           />
         </TouchableOpacity>
       </View>
-      <View style={styles.timeAndLocationContainer}>
-        <Ionicons
-          name="time-outline"
-          size={16}
-          color={variables['--text-secondary']}
-        />
-        <Text style={styles.timeAndLocationText}>{time}</Text>
-        <View style={styles.separator} />
-        <Ionicons
-          name="location-outline"
-          size={16}
-          color={variables['--text-secondary']}
-        />
-        {locLoading ? (
-          <ActivityIndicator
-            size="small"
-            color={variables['--text-secondary']}
-            style={styles.activityIndicator}
-          />
-        ) : (
-          <Text style={styles.timeAndLocationText}>
-            {city}, {country}
-          </Text>
-        )}
+
+      <View style={styles.infoCard}>
+        <View style={styles.infoRow}>
+          <Ionicons name="newspaper-outline" size={24} style={styles.infoIcon} />
+          <Text style={styles.infoText}>Publicaciones: </Text>
+          {statePub.counts.loading ? (
+            <ActivityIndicator size="small" style={styles.activityIndicator} />
+          ) : (
+            <Text style={styles.infoValue}>{statePub.counts.records}</Text>
+          )}
+        </View>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="people-outline" size={24} style={styles.infoIcon} />
+          <Text style={styles.infoText}>Usuarios: </Text>
+          {statePub.counts.loading ? (
+            <ActivityIndicator size="small" style={styles.activityIndicator} />
+          ) : (
+            <Text style={styles.infoValue}>{statePub.counts.users}</Text>
+          )}
+        </View>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="time-outline" size={24} style={styles.infoIcon} />
+          <Text style={styles.infoText}>{time}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="location-outline" size={24} style={styles.infoIcon} />
+          {locLoading ? (
+            <ActivityIndicator size="small" style={styles.activityIndicator} />
+          ) : (
+            <Text style={styles.infoText}>{city}, {state}</Text>
+          )}
+        </View>
       </View>
     </View>
   );
 });
 
-const CardButton: React.FC<{
+/**
+ * Botón de acción rápida
+ */
+const QuickActionButton = React.memo(({ 
+  icon, 
+  label, 
+  onPress,
+  styles 
+}: {
   icon: string;
   label: string;
   onPress: () => void;
-}> = React.memo(({ icon, label, onPress }) => {
-  const { theme } = useTheme();
-  const variables = useMemo(() => themeVariables(theme), [theme]);
-  const styles = useMemo(() => createStyles(variables), [variables]);
+  styles: ReturnType<typeof useStyles>;
+}) => {
+  const [isPressed, setIsPressed] = useState(false);
 
   return (
     <TouchableOpacity
       accessibilityRole="button"
-      style={styles.cardButton}
+      accessibilityLabel={label}
+      style={[
+        styles.quickActionButton,
+        isPressed && styles.quickActionButtonPressed
+      ]}
       onPress={onPress}
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
+      activeOpacity={0.8}
     >
-      <Ionicons name={icon} size={22} color={variables['--primary']} />
-      <Text accessibilityLabel={label} style={styles.cardButtonText}>
-        {label}
-      </Text>
-      <Ionicons
-        name="arrow-forward"
-        size={16}
-        color={variables['--text-secondary']}
-        style={styles.buttonIcon}
+      <View style={styles.quickActionContent}>
+        <View style={styles.quickActionIconContainer}>
+          <Ionicons name={icon} size={24} color={styles.quickActionIcon.color} />
+        </View>
+        <Text style={styles.quickActionText}>{label}</Text>
+      </View>
+      <Ionicons 
+        name="chevron-forward" 
+        size={20} 
+        color={styles.quickActionChevron.color} 
       />
     </TouchableOpacity>
   );
 });
 
-const UserItem: React.FC<{ item: UserModel }> = React.memo(({ item }) => {
-  const { theme } = useTheme();
-  const variables = useMemo(() => themeVariables(theme), [theme]);
-  const styles = useMemo(() => createStyles(variables), [variables]);
+/**
+ * Componente de usuario para la lista
+ */
+const UserListItem = React.memo(({ user, styles }: { user: UserModel, styles: ReturnType<typeof useStyles> }) => {
+  const [isPressed, setIsPressed] = useState(false);
 
   return (
-    <TouchableOpacity accessibilityRole="button" style={styles.userCard}>
-      <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={`Usuario: ${user.name}. Email: ${user.email}`}
+      style={[
+        styles.userListItem,
+        isPressed && styles.userListItemPressed
+      ]}
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
+      activeOpacity={0.8}
+    >
+      <Image
+        source={{ uri: user.avatarUrl }}
+        style={styles.userAvatar}
+        accessibilityIgnoresInvertColors
+      />
       <View style={styles.userInfo}>
-        <Text accessibilityLabel={item.name} style={styles.userName}>
-          {item.name}
-        </Text>
-        <Text accessibilityLabel={item.email} style={styles.userEmail}>
-          {item.email}
-        </Text>
+        <Text style={styles.userName} numberOfLines={1}>{user.name}</Text>
+        <Text style={styles.userEmail} numberOfLines={1}>{user.email}</Text>
       </View>
-      <Ionicons
-        name="chevron-forward"
-        size={24}
-        color={variables['--text-secondary']}
+      <Ionicons 
+        name="chevron-forward" 
+        size={20} 
+        color={styles.userChevron.color} 
       />
     </TouchableOpacity>
   );
 });
 
-// --- Main Component ---
-
-const AdminHomeScreen: React.FC = () => {
-  const { theme } = useTheme();
-  const { navigateAndReset } = useNavigationActions();
-  const variables = useMemo(() => themeVariables(theme), [theme]);
-  const styles = useMemo(() => createStyles(variables), [variables]);
-
-  const [users, setUsers] = useState<UserModel[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  //const progress = useDrawerProgress();
-  //const animatedStyle = useAnimatedStyle(() => ({
-  //  transform: [{ scale: progress.value * 0.1 + 0.9 }],
-  //}));
-
-  const fetchUsers = useCallback(async () => {
-    try {
-      const fetchedUsers = getAllUsers();
-      setUsers(fetchedUsers);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error(error.message);
-      }
-      setUsers([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchUsers();
-  }, [fetchUsers]);
-
-  const ListHeader = (
-    <>
-      <AdminHeader />
-      <View style={styles.cardButtonContainer}>
-        <CardButton
-          icon="newspaper-outline"
-          label="Revisar Publicaciones"
-          onPress={() => navigateAndReset('ReviewPublication')}
-        />
-        <CardButton
-          icon="shield-checkmark-outline"
-          label="Ver Publicaciones Aceptadas"
-          onPress={() => navigateAndReset('ViewPublications')}
-        />
-        <CardButton
-          icon="people-outline"
-          label="Gestionar Usuarios"
-          onPress={() => {
-            // TODO: implementar navegación a Gestión de Usuarios
-          }}
-        />
-      </View>
-      <Text style={styles.listHeader}>Usuarios Recientes</Text>
-    </>
-  );
-
-  const renderEmptyComponent = () => (
-    <View style={styles.emptyListContainer}>
+/**
+ * Componente para lista vacía
+ */
+const EmptyList = React.memo(({ styles }: { styles: ReturnType<typeof useStyles> }) => {
+  return (
+    <View style={styles.emptyContainer}>
       <MaterialCommunityIcons
         name="account-group-outline"
         size={80}
-        color={variables['--text-secondary']}
+        color={styles.emptyIcon.color}
       />
-      <Text style={styles.emptyListText}>No hay usuarios para mostrar.</Text>
+      <Text style={styles.emptyTitle}>No hay usuarios</Text>
+      <Text style={styles.emptySubtitle}>Cuando se registren nuevos usuarios aparecerán aquí</Text>
     </View>
   );
+});
 
-  if (loading) {
-    return (
-      <View style={styles.centeredContainer}>
-        <ActivityIndicator size="large" color={variables['--primary']} />
-        <Text style={styles.loadingText}>
-          Cargando panel de administración...
-        </Text>
+/**
+ * Componente de carga
+ */
+const LoadingIndicator = React.memo(({ styles }: { styles: ReturnType<typeof useStyles> }) => {
+  return (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={styles.loadingIndicator.color} />
+      <Text style={styles.loadingText}>Cargando datos...</Text>
+    </View>
+  );
+});
+
+/**
+ * Componente de error
+ */
+const ErrorMessage = React.memo(({ 
+  error, 
+  onRetry,
+  styles 
+}: {
+  error: string;
+  onRetry: () => void;
+  styles: ReturnType<typeof useStyles>;
+}) => {
+  return (
+    <View style={styles.errorContainer}>
+      <MaterialCommunityIcons
+        name="alert-circle-outline"
+        size={50}
+        color={styles.errorIcon.color}
+      />
+      <Text style={styles.errorText}>{error}</Text>
+      <TouchableOpacity 
+        onPress={onRetry} 
+        style={styles.retryButton}
+        accessibilityLabel="Reintentar"
+      >
+        <Text style={styles.retryButtonText}>Reintentar</Text>
+      </TouchableOpacity>
+    </View>
+  );
+});
+
+// ==================== Pantalla Principal ====================
+
+const AdminHomeScreen: React.FC = () => {
+  const { navigateAndReset } = useNavigationActions();
+  const { theme, isDark } = useTheme();
+  const styles = useStyles(theme, isDark);
+
+  // Estado de la pantalla
+  const [state, setState] = useState<{
+    users: UserModel[];
+    loading: boolean;
+    refreshing: boolean;
+    error: string | null;
+  }>({
+    users: [],
+    loading: true,
+    refreshing: false,
+    error: null,
+  });
+
+  // Cargar usuarios
+  const loadUsers = useCallback(async (isRefreshing = false) => {
+    try {
+      setState(prev => ({ 
+        ...prev, 
+        loading: !isRefreshing, 
+        refreshing: isRefreshing,
+        error: null 
+      }));
+      
+      const users = getAllUsers();
+      setState(prev => ({
+        ...prev,
+        users,
+        loading: false,
+        refreshing: false,
+      }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        refreshing: false,
+        error: error instanceof Error ? error.message : 'Error al cargar usuarios',
+      }));
+    }
+  }, []);
+
+  // Efecto inicial
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  // Manejar refresh
+  const handleRefresh = useCallback(() => {
+    loadUsers(true);
+  }, [loadUsers]);
+
+  // Cabecera de la lista
+  const ListHeader = useMemo(() => (
+    <>
+      <AdminHeader styles={styles} />
+      
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Acciones rápidas</Text>
+        <Text style={styles.sectionSubtitle}>Gestiona el contenido de la aplicación</Text>
+        
+        <View style={styles.quickActions}>
+          <QuickActionButton
+            icon="newspaper-outline"
+            label="Revisar publicaciones"
+            onPress={() => navigateAndReset('ReviewPublication')}
+            styles={styles}
+          />
+          <QuickActionButton
+            icon="shield-checkmark-outline"
+            label="Publicaciones aceptadas"
+            onPress={() => navigateAndReset('Publications')}
+            styles={styles}
+          />
+          <QuickActionButton
+            icon="people-outline"
+            label="Gestionar usuarios"
+            onPress={() => console.log('Gestionar usuarios')}
+            styles={styles}
+          />
+        </View>
       </View>
-    );
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Usuarios recientes</Text>
+          <TouchableOpacity>
+            <Text style={styles.seeAll}>Ver todos</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.sectionSubtitle}>Últimos 5 usuarios registrados</Text>
+      </View>
+    </>
+  ), [navigateAndReset, styles]);
+
+  // Mostrar estado de carga
+  if (state.loading) {
+    return <LoadingIndicator styles={styles} />;
+  }
+
+  // Mostrar error
+  if (state.error) {
+    return <ErrorMessage error={state.error} onRetry={loadUsers} styles={styles} />;
   }
 
   return (
-    <Animated.View style={[{ flex: 1 }]}>
-      <SafeAreaView style={styles.container}>
-        <FlatList<UserModel>
-          data={users}
-          renderItem={({ item }) => <UserItem item={item} />}
-          keyExtractor={item => item.id}
-          ListHeaderComponent={ListHeader}
-          ListEmptyComponent={renderEmptyComponent}
-          contentContainerStyle={styles.listContentContainer}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[variables['--primary']]}
-              tintColor={variables['--primary']}
-            />
-          }
-        />
-        <FloatingActionButton
-          icon={
-            <Ionicons
-              name="camera-outline"
-              size={50}
-              color={variables['--text-on-primary']}
-            />
-          }
-          onPress={() => navigateAndReset('AddPublication')}
-          accessibilityLabel="Agregar nueva publicación"
-        />
-      </SafeAreaView>
-    </Animated.View>
+    <SafeAreaView style={styles.container}>
+      <Animated.FlatList
+        data={state.users.slice(0, 5)}
+        renderItem={({ item }) => <UserListItem user={item} styles={styles} />}
+        keyExtractor={item => item.id}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={<EmptyList styles={styles} />}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={state.refreshing}
+            onRefresh={handleRefresh}
+            colors={[styles.refreshControl.color]}
+            tintColor={styles.refreshControl.color}
+          />
+        }
+      />
+      
+      <FloatingActionButton
+        icon={<Ionicons name="camera-outline" size={24} color={styles.fabIcon.color} />}
+        onPress={() => navigateAndReset('AddPublication')}
+        accessibilityLabel="Crear nueva publicación"
+        style={styles.fab}
+      />
+    </SafeAreaView>
   );
 };
 

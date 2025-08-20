@@ -1,6 +1,8 @@
+import { PublicationStatus } from "@/services/publication/publication.service";
 
 export interface PublicationData {
     commonNoun: string,
+    catalogId: number,
     animalState: number,
     description: string,
     location: string,
@@ -20,8 +22,6 @@ export interface CountsResponse {
     users: number;
     records: number;
 }
-
-export type PublicationStatus = 'rejected' | 'pending' | 'accepted';
 
 export interface PublicationsModel {
     recordId: number;

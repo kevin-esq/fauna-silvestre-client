@@ -1,102 +1,113 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   FlatList,
   Text,
   RefreshControl,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { useTheme, themeVariables } from '../../contexts/theme-context';
+import { useTheme, themeVariables } from '../../contexts/theme.context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicationResponse } from '../../../domain/models/publication.models';
-import { usePublications } from '../../contexts/publication-context';
+import { usePublications } from '../../contexts/publication.context';
 
 import PublicationCard from '../../components/publication/publication-card.component';
 import SearchBar from '../../components/ui/search-bar.component';
-import LoadingIndicator from '../../components/ui/loading-indicator.component';
 import RejectionModal from '../../components/publication/rejection-modal.component';
 import { createStyles } from './review-publications-screen.styles';
 
 const PAGE_SIZE = 5;
 
 const ReviewPublicationsScreen: React.FC = () => {
+  const isMounted = useRef<boolean>(false);
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
   const insets = useSafeAreaInsets();
-  const { state: { pending, error }, actions: { loadStatus, approve, reject } } = usePublications();
-
+  
+  const { 
+    state: { pending, error }, 
+    actions: { loadStatus, approve, reject, loadMoreStatus } 
+  } = usePublications();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [paginatedData, setPaginatedData] = useState<PublicationResponse[]>([]);
-  const [hasMore, setHasMore] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const loadPendingPublications = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await loadStatus('pending');
-    } catch {
-      Alert.alert('Error', 'No se pudieron cargar publicaciones pendientes.');
-    } finally {
-      setRefreshing(false);
-    }
-  }, [loadStatus]);
-
-  useEffect(() => {
-    loadPendingPublications();
-  }, [loadPendingPublications]);
-
-  const filtered = useMemo(() => {
+  const filteredPublications = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
-    return pending.publications.filter((pub) =>
-      query
-        ? pub.commonNoun.toLowerCase().includes(query) ||
-          pub.description.toLowerCase().includes(query)
-        : true
+    if (!query) return pending.publications;
+    
+    return pending.publications.filter((pub) => 
+      pub.commonNoun.toLowerCase().includes(query) ||
+      pub.description.toLowerCase().includes(query)
     );
   }, [pending.publications, searchQuery]);
 
+  const loadPendingPublications = useCallback(async () => {
+    try {
+      setIsRefreshing(true);
+      await loadStatus('pending', searchQuery);
+    } catch (error: unknown) {
+      console.error('Error loading pending publications:', error);
+      Alert.alert('Error', 'No se pudieron cargar publicaciones pendientes.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [loadStatus, searchQuery]);
+
   useEffect(() => {
-    setPaginatedData(filtered.slice(0, PAGE_SIZE));
-    setHasMore(filtered.length > PAGE_SIZE);
-  }, [filtered]);  
+    if (!isMounted.current) {
+      loadPendingPublications();
+    }
+  }, []);
 
-  const loadMore = useCallback(() => {
-    if (isLoading || !hasMore) return;
+  const handleLoadMore = useCallback(async () => {
+    if (isLoadingMore || !pending.hasMore || filteredPublications.length < PAGE_SIZE) return;
+    
+    try {
+      setIsLoadingMore(true);
+      await loadMoreStatus('pending', searchQuery);
+    } catch (error: unknown) {
+      console.error('Error loading more:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, pending.hasMore, filteredPublications.length, loadMoreStatus, searchQuery]);
 
-    setIsLoading(true);
-    setTimeout(() => {
-      const currentLength = paginatedData.length;
-      const newItems = filtered.slice(currentLength, currentLength + PAGE_SIZE);
+  const handleApprove = useCallback((id: string) => {
+    Alert.alert(
+      'Aprobar publicación',
+      '¿Confirmas aprobación?',
+      [
+        { 
+          text: 'Cancelar', 
+          style: 'cancel',
+          onPress: () => console.log('Cancel pressed') 
+        },
+        { 
+          text: 'Aprobar', 
+          onPress: () => approve(id),
+          style: 'default'
+        },
+      ],
+      { cancelable: true }
+    );
+  }, [approve]);
 
-      if (newItems.length > 0) {
-        setPaginatedData((prev) => [...prev, ...newItems]);
-      }
-
-      if (currentLength + newItems.length >= filtered.length) {
-        setHasMore(false);
-      }
-      setIsLoading(false); 
-    }, 250);                    
-  }, [filtered, hasMore, isLoading, paginatedData.length]);
-
-  const handleApprove = useCallback(
-    (id: string) => {
-      Alert.alert('Aprobar publicación', '¿Confirmas aprobación?', [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sí', onPress: () => approve(id) },
-      ]);
-    },
-    [approve]
-  );
-
-  const handleReject = useCallback((id: string) => setCurrentId(id), []);
+  const handleReject = useCallback((id: string) => {
+    setCurrentId(id);
+    setReason('');
+  }, []);
 
   const confirmReject = useCallback(() => {
-    if (!reason.trim()) return;
+    if (!reason.trim()) {
+      Alert.alert('Error', 'Por favor ingresa una razón para el rechazo');
+      return;
+    }
     reject(currentId!);
     setCurrentId(null);
     setReason('');
@@ -117,70 +128,100 @@ const ReviewPublicationsScreen: React.FC = () => {
     [handleApprove, handleReject]
   );
 
-  const renderFooter = () =>
-    isLoading ? <LoadingIndicator theme={theme} text="Cargando más..." /> : null;
+  const renderFooter = () => {
+    if (!isLoadingMore) return null;
+    
+    return (
+      <View style={styles.footer}>
+        <ActivityIndicator 
+          size="small" 
+          color={theme.colors.primary} 
+        />
+        <Text style={[styles.loadingText, { color: theme.colors.text }]}>
+          Cargando más publicaciones...
+        </Text>
+      </View>
+    );
+  };
 
   const renderEmptyComponent = () => (
     <View style={styles.centered}>
       <Text style={[styles.emptyText, { color: theme.colors.text }]}> 
         {searchQuery ? 'Sin resultados' : 'No hay publicaciones pendientes.'}
       </Text>
+      {error && (
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>
+          {error}
+        </Text>
+      )}
     </View>
   );
 
   const renderResultCount = () => (
-    <Text style={[styles.resultText, { color: theme.colors.textSecondary }]}> 
-      {filtered.length} resultado{filtered.length !== 1 && 's'}
-    </Text>
+    <View style={styles.resultsContainer}>
+      <Text style={[styles.resultText, { color: theme.colors.textSecondary }]}> 
+        {filteredPublications.length} {filteredPublications.length === 1 ? 'resultado' : 'resultados'}
+      </Text>
+    </View>
   );
 
-  const showInitialLoading = pending.isLoading && !refreshing && pending.publications.length === 0;
-
-  if (showInitialLoading) {
+  // Estado de carga inicial
+  if (pending.isLoading && !isRefreshing && pending.publications.length === 0) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
-        <LoadingIndicator theme={theme} text="Cargando publicaciones..." />
+        <ActivityIndicator 
+          size="large" 
+          color={theme.colors.primary} 
+        />
+        <Text style={[styles.loadingText, { color: theme.colors.text }]}>
+          Cargando publicaciones...
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
+    <View style={[
+      styles.container, 
+      { 
+        paddingTop: insets.top, 
+        backgroundColor: theme.colors.background 
+      }
+    ]}>
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}
         placeholder="Buscar publicaciones..."
         theme={theme}
+        onClear={() => setSearchQuery('')}
       />
 
-      {filtered.length > 0 && renderResultCount()}
-
-      {error && (
-        <Text style={[styles.errorText, { color: theme.colors.error }]}> {error} </Text>
-      )}
+      {filteredPublications.length > 0 && renderResultCount()}
 
       <FlatList
-        data={paginatedData}
+        data={filteredPublications}
         keyExtractor={(item) => item.recordId.toString()}
         renderItem={renderPublicationItem}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => loadStatus('pending')}
+            refreshing={isRefreshing}
+            onRefresh={loadPendingPublications}
             colors={[theme.colors.primary]}
             tintColor={theme.colors.primary}
+            progressBackgroundColor={theme.colors.background}
           />
         }
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={renderEmptyComponent}
         removeClippedSubviews
-        updateCellsBatchingPeriod={50}
-        windowSize={11}
         initialNumToRender={PAGE_SIZE}
         maxToRenderPerBatch={PAGE_SIZE}
+        windowSize={21}
+        updateCellsBatchingPeriod={100}
+        keyboardShouldPersistTaps="handled"
       />
 
       <RejectionModal
@@ -198,4 +239,4 @@ const ReviewPublicationsScreen: React.FC = () => {
   );
 };
 
-export default ReviewPublicationsScreen;
+export default React.memo(ReviewPublicationsScreen);

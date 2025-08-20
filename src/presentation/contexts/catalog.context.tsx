@@ -3,13 +3,12 @@ import React, {
     useContext,
     useReducer,
     ReactNode,
-    useEffect,
     useCallback,
     useMemo,
 } from "react";
 import Animal from "../../domain/entities/animal.entity";
 import { catalogService } from "../../services/catalog/catalog.service";
-import { useAuth } from "./auth-context";
+import { useAuth } from "./auth.context";
 import { LocationResponse } from "../../domain/models/animal.models";
 
 interface State {
@@ -24,12 +23,12 @@ type Action =
     | { type: "FETCH_ALL_SUCCESS"; payload: Animal[] }
     | { type: "FETCH_ALL_FAILURE"; payload: string }
     | { type: "RESET" }
-    | { type: "FETCH_LOCATIONS_SUCCESS", payload: LocationResponse }; // Acción para actualizar las ubicaciones
+    | { type: "FETCH_LOCATIONS_SUCCESS", payload: LocationResponse };
 
 
 interface CatalogContextType extends State {
     fetchCatalog: () => Promise<void>;
-    fetchCatalogLocations: (catalogId: string) => Promise<void>; // Nueva función para obtener las ubicaciones
+    fetchCatalogLocations: (catalogId: string) => Promise<void>;
     catalogLocations: LocationResponse | null;
     reset: () => void;
 }
@@ -38,7 +37,7 @@ const initialState: State = {
     isLoading: false,
     error: null,
     catalog: [],
-    catalogLocations: null, // Inicialmente no hay ubicaciones
+    catalogLocations: null,
 };
 
 const catalogReducer = (state: State, action: Action): State => {
@@ -82,16 +81,12 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     const fetchCatalogLocations = useCallback(async (catalogId: string) => {
         try {
             const data = await catalogService.getLocations(catalogId); 
-            console.log("✅ Datos de ubicaciones recibidos:", data); // 👈 AQUI
+            console.log("✅ Datos de ubicaciones recibidos:", data); 
             dispatch({ type: "FETCH_LOCATIONS_SUCCESS", payload: data });
         } catch (error) {
             console.error('Error fetching catalog locations:', error);
         }
     }, []);
-
-    useEffect(() => {
-        fetchCatalog();
-    }, [fetchCatalog, user]);
 
     const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
 

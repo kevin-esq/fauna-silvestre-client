@@ -3,6 +3,7 @@ import { StorageError } from '../../shared/types/custom-errors';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { ILogger } from '../logging/ILogger';
 import { IKeyManager, CryptoService, KeychainKeyManager } from './crypto‑storage.service';
+import { INDEX_KEY } from './storage-keys';
 
 export interface ISecureStorage {
   save(key: string, value: string): Promise<void>;
@@ -15,7 +16,7 @@ export interface ISecureStorage {
 export class SecureStorageService implements ISecureStorage {
   private static instance: SecureStorageService;
   private encryptionKey!: string;
-  private readonly indexKey = '__secure_storage_index__';
+  private readonly indexKey = INDEX_KEY;
 
   private constructor(
     private logger: ILogger,

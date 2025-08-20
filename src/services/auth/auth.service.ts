@@ -1,234 +1,316 @@
-import { AxiosInstance } from 'axios';
-import { apiService } from '../http/api.service';
-import { getSecureStorageService } from '../storage/secure-storage.service';
+// src/services/auth/auth.service.ts
+import { AxiosInstance, AxiosResponse } from 'axios';
+import { IAuthService } from './interfaces/auth-service.interface';
+import { ITokenService } from './interfaces/token-service.interface';
 import { ILogger } from '../../shared/types/ILogger';
-import { ConsoleLogger } from '../logging/console-logger';
 import { AuthError } from '../../shared/types/custom-errors';
 import User from '../../domain/entities/user.entity';
 import { Credentials, UserData, AuthResponse } from '../../domain/models/auth.models';
-import { decodeJwt } from '../../shared/utils/jwt';
-import { UserModel } from '../../data/models/UserModel';
 import { AuthErrorMapper } from './auth-error.mapper';
+import { authEventEmitter, AuthEvents } from './auth.events';
+import { USER_KEY } from '../storage/storage-keys';
+import { getSecureStorageService } from '../storage/secure-storage.service';
 
-const ACCESS_TOKEN_KEY = 'auth_access_token';
-const REFRESH_TOKEN_KEY = 'auth_refresh_token';
-
-class AuthService {
+export class AuthService implements IAuthService {
   private static instance: AuthService;
+  private onUnauthorizedCallback: (() => void) | null = null;
+  private readonly handleUserSignedOut = this._handleUserSignedOut.bind(this);
 
   private constructor(
     private readonly api: AxiosInstance,
+    private readonly tokenService: ITokenService,
     private readonly logger: ILogger
   ) {
-    apiService.setOnUnauthorizedCallback(this.signOut.bind(this));
+    this.initializeEventListeners();
   }
 
-  public static getInstance(): AuthService {
+  private initializeEventListeners(): void {
+    this.setOnUnauthorizedCallback(this.handleUnauthorized.bind(this));
+    authEventEmitter.on(AuthEvents.USER_SIGNED_IN, this.handleUserSignedIn.bind(this));
+    authEventEmitter.on(AuthEvents.USER_SIGNED_OUT, this.handleUserSignedOut);
+  }
+
+  public static getInstance(
+    api?: AxiosInstance,
+    tokenService?: ITokenService,
+    logger?: ILogger
+  ): AuthService {
     if (!AuthService.instance) {
-      const logger = new ConsoleLogger('info');
-      AuthService.instance = new AuthService(apiService.client, logger);
+      if (!api || !tokenService || !logger) {
+        throw new Error('AuthService dependencies are required for first initialization');
+      }
+      AuthService.instance = new AuthService(api, tokenService, logger);
     }
     return AuthService.instance;
   }
 
-  async signIn(credentials: Credentials): Promise<User> {
+  setOnUnauthorizedCallback(callback: () => void): void {
+    this.onUnauthorizedCallback = callback;
+  }
+
+  triggerLogout(): void {
+    authEventEmitter.emit(AuthEvents.USER_SIGNED_OUT);
+  }
+
+  private async _handleUserSignedOut(): Promise<void> {
     try {
-      const storage = await getSecureStorageService();
-      const response = await this.api.post<AuthResponse>('/Authentication/LogIn', credentials);
-      if (response.status !== 200) {
-        throw AuthErrorMapper.map(response.data.error);
+      await this.tokenService.clearTokens();
+      this.logger.info('[AuthService] User signed out successfully');
+      
+      if (this.onUnauthorizedCallback) {
+        this.onUnauthorizedCallback();
+      }
+    } catch (error) {
+      this.logger.error('[AuthService] Error handling user sign out', error as Error);
+    }
+  }
+
+  private handleUserSignedIn(): void {
+    this.logger.info('[AuthService] User signed in');
+    // Remove listener after first execution to prevent memory leaks
+    authEventEmitter.off(AuthEvents.USER_SIGNED_IN, this.handleUserSignedIn.bind(this));
+  }
+
+  async hydrate(): Promise<User | null> {
+    try {
+      const accessToken = await this.tokenService.getAccessToken();
+      const refreshToken = await this.tokenService.getRefreshToken();
+      
+      if (!accessToken || !refreshToken) {
+        this.logger.info('[AuthService] No credentials found on hydration');
+        return null;
       }
       
-      const { accessToken, refreshToken } = response.data;
-  
-      if (!accessToken || !refreshToken) {
-        throw new AuthError('Login response missing access or refresh token.');
-      }
-  
-      await storage.save(ACCESS_TOKEN_KEY, accessToken);
-      await storage.save(REFRESH_TOKEN_KEY, refreshToken);
-  
-      const user = await this.getUserFromToken(accessToken);
-      if (!user) throw new AuthError('No se pudo decodificar el token.');
-  
-      this.logger.info(`[AuthService] User ${user.id} signed in successfully.`);
-      return user;
+      return await this.validateAndRefreshToken(accessToken, refreshToken);
     } catch (error) {
-      this.logger.error('[AuthService] signIn failed', error as Error, { username: credentials.UserName });
+      this.logger.error('[AuthService] Hydration failed', error as Error);
+      return null;
+    }
+  }
+
+  private async validateAndRefreshToken(
+    accessToken: string,
+    refreshToken: string
+  ): Promise<User | null> {
+    try {
+      if (this.tokenService.isTokenExpired(accessToken)) {
+        this.logger.info('[AuthService] Access token expired, refreshing');
+        const newToken = await this.refreshToken(refreshToken);
+        return await this.tokenService.getUserFromToken(newToken);
+      }
+      
+      return await this.tokenService.getUserFromToken(accessToken);
+    } catch (error) {
+      this.logger.warn('[AuthService] Token validation failed, signing out', error as Error);
+      await this.signOut();
+      return null;
+    }
+  }
+
+  async signIn(credentials: Credentials, rememberMe = false): Promise<User> {
+    try {
+      this.validateCredentials(credentials);
+      
+      const response = await this.performSignIn(credentials);
+      const { accessToken, refreshToken } = this.extractTokensFromResponse(response);
+      
+      await this.tokenService.saveTokens(accessToken, refreshToken);
+      
+      this.logger.info('[AuthService] User signed in successfully');
+      authEventEmitter.emit(AuthEvents.USER_SIGNED_IN);
+      
+      if (rememberMe) {
+        return await this.loadAndReturnStoredUser();
+      }
+      
+      return await this.tokenService.getUserFromToken(accessToken);
+    } catch (error) {
+      this.logger.error('[AuthService] Sign in failed', error as Error);
       throw AuthErrorMapper.map(error);
     }
   }
 
-  async refreshToken(): Promise<string> {
-    this.logger.info('[AuthService] Attempting to refresh token.');
-    const storage = await getSecureStorageService();
-    const refreshToken = await storage.getValueFor(REFRESH_TOKEN_KEY);
+  private validateCredentials(credentials: Credentials): void {
+    if (!credentials.UserName || !credentials.Password) {
+      throw new AuthError('Username and password are required');
+    }
+  }
 
+  private async performSignIn(credentials: Credentials): Promise<AxiosResponse<AuthResponse>> {
+    console.log(credentials);
+    console.log(this.api);
+    const response = await this.api.post<AuthResponse>('/Authentication/LogIn', credentials);
+    console.log(response);
+    
+    if (response.status !== 200) {
+      throw AuthErrorMapper.map(response.data.error);
+    }
+    
+    return response;
+  }
+
+  private extractTokensFromResponse(response: AxiosResponse<AuthResponse>): {
+    accessToken: string;
+    refreshToken: string;
+  } {
+    const { accessToken, refreshToken } = response.data;
+    
+    if (!accessToken || !refreshToken) {
+      throw new AuthError('Invalid login response: missing tokens');
+    }
+    
+    return { accessToken, refreshToken };
+  }
+
+  private async loadAndReturnStoredUser(): Promise<User> {
+    await this.loadUserData();
+    const storage = await getSecureStorageService();
+    const userData = await storage.getValueFor(USER_KEY);
+    
+    if (!userData) {
+      throw new AuthError('Failed to load user data');
+    }
+    
+    try {
+      return JSON.parse(userData) as User;
+    } catch (error) {
+      this.logger.error('[AuthService] Error parsing stored user data', error as Error);
+      throw new AuthError('Invalid stored user data');
+    }
+  }
+
+  async refreshToken(refreshToken: string): Promise<string> {
     if (!refreshToken) {
-      this.logger.warn('[AuthService] No refresh token available. Signing out.');
-      await this.signOut();
-      throw new AuthError('No refresh token available.');
+      throw new AuthError('Refresh token is required');
     }
 
     try {
-      const { data } = await this.api.post('/Authentication/refresh-token', { refreshToken });
-      const { accessToken: newAccessToken, refreshToken: newRefreshToken } = data;
-
-      if (!newAccessToken || !newRefreshToken) {
-        throw new Error('Invalid token response from server.');
+      const response = await this.api.post('/Authentication/refresh-token', { refreshToken });
+      const { accessToken: newAccess, refreshToken: newRefresh } = response.data;
+      
+      if (!newAccess || !newRefresh) {
+        throw new AuthError('Refresh response missing tokens');
       }
-
-      await storage.save(ACCESS_TOKEN_KEY, newAccessToken);
-      await storage.save(REFRESH_TOKEN_KEY, newRefreshToken);
-
-      this.logger.info('[AuthService] Token refreshed successfully.');
-      return newAccessToken;
+      
+      await this.tokenService.saveTokens(newAccess, newRefresh);
+      this.logger.info('[AuthService] Token refreshed successfully');
+      
+      return newAccess;
     } catch (error) {
-      this.logger.error('[AuthService] Failed to refresh token. Signing out.', error as Error);
+      this.logger.error('[AuthService] Token refresh failed', error as Error);
       await this.signOut();
-      throw new AuthError('Session expired. Please sign in again.');
+      throw new AuthError('Session expired');
     }
   }
 
   async signOut(): Promise<void> {
     try {
-      this.logger.info('[AuthService] Signing out user.');
-      const storage = await getSecureStorageService();
-      await storage.clear();
+      await this.tokenService.clearTokens();
+      this.logger.info('[AuthService] User signed out successfully');
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('[AuthService] signOut failed', err);
-      // Never throws to ensure sign-out always completes
+      this.logger.error('[AuthService] Sign out failed', error as Error);
     }
   }
 
   async register(userData: UserData): Promise<void> {
     try {
-      this.logger.info(`[AuthService] Registering new user: ${userData.email}`);
+      this.validateUserData(userData);
+      
       await this.api.post('/Users/Register', userData);
-      this.logger.info(`[AuthService] User ${userData.email} registered successfully.`);
+      this.logger.info('[AuthService] Registration successful');
     } catch (error) {
-      this.logger.error('[AuthService] register failed', error as Error, { username: userData.userName });
+      this.logger.error('[AuthService] Registration failed', error as Error);
       throw AuthErrorMapper.map(error);
     }
   }
 
-  async checkAuthStatus(): Promise<User | null> {
-    try {
-      const storage = await getSecureStorageService();
-      const token = await storage.getValueFor(ACCESS_TOKEN_KEY);
-      const refreshToken = await storage.getValueFor(REFRESH_TOKEN_KEY);
-      if (!token || !refreshToken) {
-        this.logger.info('[AuthService] No auth token found.');
-        return null;
-      }
-
-      const user = await this.getUserFromToken(token);
-      if (user) {
-        this.logger.info(`[AuthService] User ${user.id} is authenticated.`);
-        return user;
-      }
-
-      this.logger.warn('[AuthService] Invalid auth token found.');
-      await this.signOut();
-      return null;
-    } catch (error) {
-      this.logger.error('[AuthService] checkAuthStatus failed', error as Error);
-      return null;
+  private validateUserData(userData: UserData): void {
+    if (!userData.userName || !userData.password) {
+      throw new AuthError('Username and password are required for registration');
+    }
+    
+    if (userData.password.length < 8) {
+      throw new AuthError('Password must be at least 8 characters long');
     }
   }
 
   async sendResetCode(email: string): Promise<boolean> {
+    if (!email) {
+      throw new AuthError('Email is required');
+    }
+
     try {
-      this.logger.info(`[AuthService] Sending password reset code to: ${email}`);
-      const { data } = await this.api.get(`/Authentication/Code?email=${email.toLowerCase()}`);
-      const success = data.error !== true;
-      this.logger.info(`[AuthService] Reset code ${success ? 'sent' : 'failed'} to: ${email}`);
-      return success;
+      await this.api.post('/Users/send-reset-code', { email });
+      this.logger.info('[AuthService] Reset code sent successfully');
+      return true;
     } catch (error) {
-      this.logger.error('[AuthService] sendResetCode failed', error as Error, { email });
+      this.logger.error('[AuthService] Send reset code failed', error as Error);
       throw AuthErrorMapper.map(error);
     }
   }
 
   async verifyResetCode(email: string, code: string): Promise<string> {
+    if (!email || !code) {
+      throw new AuthError('Email and code are required');
+    }
+
     try {
-      this.logger.info(`[AuthService] Verifying reset code for: ${email}`);
-      const { data } = await this.api.get(`/Authentication/verify-code?email=${email.toLowerCase()}&code=${code}`);
-      const isValid = data.error !== true && data.message !== 'Expired code';
-      this.logger.info(`[AuthService] Reset code verified for: ${email}`);
-      return isValid ? data.message : 'INVALID';
+      const { data } = await this.api.post('/Users/verify-reset-code', { email, code });
+      
+      if (!data.token) {
+        throw new AuthError('Invalid verification response');
+      }
+      
+      return data.token;
     } catch (error) {
-      this.logger.error('[AuthService] verifyResetCode failed', error as Error, { email });
+      this.logger.error('[AuthService] Verify reset code failed', error as Error);
       throw AuthErrorMapper.map(error);
     }
   }
 
   async changePassword(email: string, password: string, token: string): Promise<void> {
+    if (!email || !password || !token) {
+      throw new AuthError('Email, password, and token are required');
+    }
+
+    if (password.length < 8) {
+      throw new AuthError('Password must be at least 8 characters long');
+    }
+
     try {
-      this.logger.info(`[AuthService] Changing password for: ${email}`);
-      await this.api.post(
-        '/Authentication/change-password',
-        { Email: email, Password: password },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      this.logger.info(`[AuthService] Password changed successfully for: ${email}`);
+      await this.api.post('/Users/change-password', { email, password, token });
+      this.logger.info('[AuthService] Password changed successfully');
     } catch (error) {
-      this.logger.error('[AuthService] changePassword failed', error as Error, { email });
+      this.logger.error('[AuthService] Change password failed', error as Error);
       throw AuthErrorMapper.map(error);
     }
   }
 
-  private async getUserFromToken(token: string): Promise<User | null> {
-    try {
-      const userApi = await this.getUserResponseFromApi();
-      if (!userApi) {
-        this.logger.warn('Could not get user from API response.');
-        return null;
-      }
+  async checkAuthStatus(): Promise<User | null> {
+    return this.hydrate();
+  }
 
-      const rawPayload = decodeJwt(token);
-      return new User(
-        rawPayload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'],
-        userApi.userName,
-        userApi.name,
-        userApi.lastName,
-        userApi.locality,
-        userApi.gender,
-        userApi.age,
-        userApi.email,
-        token,
-        rawPayload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
-      );
+  async loadUserData(): Promise<void> {
+    try {
+      const accessToken = await this.tokenService.getAccessToken();
+      const user = await this.tokenService.getUserFromToken(accessToken);
+      
+      const storage = await getSecureStorageService();
+      await storage.save(USER_KEY, JSON.stringify(user));
+      
+      this.logger.info('[AuthService] User data loaded successfully');
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('Failed to decode token:', err);
-      return null;
+      this.logger.error('[AuthService] Load user data failed', error as Error);
+      throw new AuthError('Failed to load user data');
     }
   }
 
-  private async getUserResponseFromApi(): Promise<UserModel | null> {
-    const storage = await getSecureStorageService();
-    const token = await storage.getValueFor(ACCESS_TOKEN_KEY);
-    if (!token) return null;
-
-    const { data } = await this.api.get('/Users/user-information', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    return {
-      userName: data.userName,
-      name: data.name,
-      lastName: data.lastName,
-      locality: data.locality,
-      gender: data.gender,
-      age: data.age,
-      email: data.email,
-    };
+  private async handleUnauthorized(): Promise<void> {
+    try {
+      await this.signOut();
+      authEventEmitter.emit(AuthEvents.USER_SIGNED_OUT);
+    } catch (error) {
+      this.logger.error('[AuthService] Error handling unauthorized', error as Error);
+    }
   }
-
 }
-
-export const authService = AuthService.getInstance();

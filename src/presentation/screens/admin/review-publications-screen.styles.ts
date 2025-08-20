@@ -36,4 +36,25 @@ export const createStyles = (vars: Record<string, string>) => StyleSheet.create(
     fontSize: 14,
     color: vars['--text-secondary'],
   },
+  listContent: {
+    paddingBottom: 20,
+    paddingTop: 10,
+    width: '95%',
+    alignSelf: 'center',
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    marginLeft: 8,
+    color: vars['--text-secondary'],
+  },
+  resultsContainer: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
 });

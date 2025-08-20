@@ -11,7 +11,7 @@ import {
 import { NavigationProp, useNavigation, useRoute } from "@react-navigation/native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { createStyles } from "./image-preview-screen.styles";
-import { useTheme, themeVariables } from "../../contexts/theme-context";
+import { useTheme, themeVariables } from "../../contexts/theme.context";
 import { useMemo } from "react";
 import { RootStackParamList } from "../../navigation/navigation.types";
 import type { Location } from 'react-native-get-location';

@@ -11,10 +11,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { useTheme, themeVariables } from "../../contexts/theme-context";
-import { DrawerScreenProps } from '@react-navigation/drawer';
-import { RootStackParamList } from "../../navigation/navigation.types";
+import { useTheme, themeVariables } from "../../contexts/theme.context";
 import { createStyles } from "./animal-details-screen.styles";
+import { useRoute } from "@react-navigation/native";
+import Animal from "../../../domain/entities/animal.entity";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CatalogMap from '../../components/ui/catalog-map.component';
 import { LatLng } from "react-native-maps";
@@ -25,10 +25,10 @@ import { BackHandler } from 'react-native';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { Dimensions } from 'react-native';
 
-type Props = DrawerScreenProps<RootStackParamList, 'AnimalDetails'>;
 
-const AnimalDetailsScreen: React.FC<Props> = ({ route }) => {
-  const { animal } = route.params;
+const AnimalDetailsScreen: React.FC = () => {
+  const route = useRoute();
+  const { animal } = route.params as { animal: Animal };
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const insets = useSafeAreaInsets();

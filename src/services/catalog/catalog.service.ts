@@ -1,6 +1,6 @@
 import { ICatalogRepository } from "../../domain/interfaces/catalog.repository.interface";
 import Animal from "../../domain/entities/animal.entity";
-import { apiService } from "../../services/http/api.service";
+import { ApiService } from "../../services/http/api.service";
 import { CatalogRepository } from "../../data/repositories/catalog.repository";
 import { ConsoleLogger } from "../logging/console-logger";
 import { LocationResponse } from "../../domain/models/animal.models";
@@ -33,5 +33,5 @@ class CatalogService {
     }
 }
 
-const catalogRepository = new CatalogRepository(apiService.client, new ConsoleLogger('debug'));
+const catalogRepository = new CatalogRepository(ApiService.getInstance().client, new ConsoleLogger('debug'));
 export const catalogService = new CatalogService(catalogRepository);

@@ -1,10 +1,8 @@
-// TopTabsNavigationBar.tsx
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   TouchableOpacity,
   Text,
-  StyleSheet,
   useWindowDimensions,
   Image,
 } from 'react-native';
@@ -15,9 +13,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import favicon from '../../../assets/favicon.png';
-import { Theme } from '../../contexts/theme-context';
-import { themeVariables } from '../../contexts/theme-context';
+import favicon from '@/assets/favicon.png';
+import { Theme } from '@/presentation/contexts/theme.context';
+import { themeVariables } from '@/presentation/contexts/theme.context';
+import { createStyles } from './top-tabs-navigation-bar.component.styles';
 
 type TabButtonProps = {
   routeKey: string;
@@ -125,7 +124,7 @@ export default function TopTabsNavigationBar({
           style={styles.headerText}
           accessibilityRole="text"
         >
-          Fauna Silvestre
+          k'aaxil ba'alilche'
         </Text>
       </View>
 
@@ -164,47 +163,3 @@ export default function TopTabsNavigationBar({
     </View>
   );
 }
-
-const createStyles = (
-  insets: { top: number; left: number; right: number }, 
-  variables: ReturnType<typeof themeVariables>
-) => StyleSheet.create({
-  container: {
-    paddingTop: insets.top,
-    paddingHorizontal: 16,
-    backgroundColor: variables['--background'],
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: variables['--border'],
-  },
-  headerOuter: {
-    marginTop: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  headerIcon: {
-    width: 32,
-    height: 32,
-    marginRight: 12,
-  },
-  headerText: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: variables['--primary'],
-    flexShrink: 1,
-  },
-  tabsContainer: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    position: 'relative',
-  },
-  tabButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  indicator: {
-    position: 'absolute',
-    height: 4,
-    bottom: -1,
-  },
-});

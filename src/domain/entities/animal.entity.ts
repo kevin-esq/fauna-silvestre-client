@@ -1,4 +1,3 @@
-import { LocationResponse } from "../models/animal.models";
 
 
 export default class Animal {

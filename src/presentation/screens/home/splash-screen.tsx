@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, ActivityIndicator, Text, Image, Animated } from 'react-native';
-import { useTheme, themeVariables } from '../../contexts/theme-context';
+import { useTheme, themeVariables } from '../../contexts/theme.context';
 import { createStyles } from './splash-screen.styles';
 import SplashIcon from '../../../assets/splash-icon.png';
 

@@ -10,7 +10,7 @@ import {
   Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { Theme, themeVariables } from '../../contexts/theme-context';
+import { Theme, themeVariables } from '../../contexts/theme.context';
 
 interface AnimalSearchableDropdownProps<T extends string> {
   options: readonly T[];

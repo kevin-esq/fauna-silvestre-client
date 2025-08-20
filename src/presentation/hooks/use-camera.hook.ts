@@ -1,8 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Camera, useCameraDevices, PhotoFile, TakePhotoOptions } from 'react-native-vision-camera';
-import cameraService from '../../services/camera/camera.service';
-import { PermissionStatus } from '../../services/camera/camera.service';
 import { AppState } from 'react-native';
+import { useRequestPermissions } from '../hooks/use-request-permissions.hook';
 
 export type CameraPosition = 0 | 1;
 
@@ -12,29 +11,24 @@ export function useCamera() {
   const [isCapturing, setCapturing] = useState(false);
   const [cameraPosition, setCameraPosition] = useState<CameraPosition>(0);
   const [flashMode, setFlashMode] = useState<'on' | 'off' | 'auto'>('off');
-  const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>('not-determined');
+  const { hasPermissions, checkPermissions } = useRequestPermissions();
 
   const devices = useCameraDevices();
   const device = devices[cameraPosition];
 
-  const checkPermissions = useCallback(async () => {
-    const status = await cameraService.getCameraPermission();
-    setPermissionStatus(status);
-  }, []);
-
   useEffect(() => {
-    checkPermissions();
+    checkPermissions(['camera']);
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
-        checkPermissions();
+        checkPermissions(['camera']);
       }
     });
     return () => subscription.remove();
   }, [checkPermissions]);
 
   useEffect(() => {
-    setCameraReady(permissionStatus === 'granted' && !!device);
-  }, [permissionStatus, device]);
+    setCameraReady(hasPermissions && !!device);
+  }, [hasPermissions, device]);
 
   const takePhoto = useCallback(async (options?: TakePhotoOptions): Promise<PhotoFile | undefined> => {
     if (!cameraRef.current || !isCameraReady) {
@@ -76,7 +70,7 @@ export function useCamera() {
     device,
     isCameraReady,
     isCapturing,
-    permissionStatus,
+    hasPermissions,
     cameraPosition,
     flashMode,
     takePhoto,

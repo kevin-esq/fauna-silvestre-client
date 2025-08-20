@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 import { LoadingModal } from '../components/common/loading-modal.component';
-import { useTheme } from '../contexts/theme-context';
+import { useTheme } from './theme.context';
 
 interface LoadingContextType {
   showLoading: () => void;

@@ -1,4 +1,4 @@
-import { AxiosInstance } from 'axios';
+import { AxiosInstance } from "axios";
 import { BaseRepository } from "./base.repository";
 import { ILogger } from "../../shared/types/ILogger";
 import { IPublicationRepository } from "../../domain/interfaces/publication.repository.interface";
@@ -23,7 +23,6 @@ export class PublicationRepository extends BaseRepository implements IPublicatio
     async createPublication(publication: PublicationData): Promise<void> {
         try {
             const response = await this.api.post('/Animal/NewRecord', publication);
-
             this.ensureSuccessStatus(response);
         } catch (error) {
             console.log(error);
