@@ -13,10 +13,10 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigationActions } from '../../navigation/navigation-provider';
-import { themeVariables, useTheme } from '../../contexts/theme-context';
+import { themeVariables, useTheme } from '../../contexts/theme.context';
 import LocationMap from '../../components/ui/location-map.component';
 import { createStyles } from './publication-details-screen.styles';
-import { useAuth } from '../../contexts/auth-context';
+import { useAuth } from '../../contexts/auth.context';
 import type {
   PublicationResponse,
   PublicationStatus,
@@ -24,6 +24,7 @@ import type {
 import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ImageViewer from 'react-native-image-zoom-viewer';
+import { useRoute } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -45,19 +46,13 @@ const STATUS_CONFIG = {
   },
 } as const;
 
-export default function PublicationDetailsScreen({
-  route: {
-    params: { publication, status, reason },
-  },
-}: {
-  route: {
-    params: {
-      publication: PublicationResponse;
-      status: PublicationStatus;
-      reason?: string;
-    };
+export default function PublicationDetailsScreen() {
+  const route = useRoute();
+  const { publication, status, reason } = route.params as {
+    publication: PublicationResponse;
+    status: PublicationStatus;
+    reason?: string | undefined;
   };
-}) {
   const { goBack } = useNavigationActions();
   const { theme } = useTheme();
   const { user } = useAuth();

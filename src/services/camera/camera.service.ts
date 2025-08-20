@@ -24,14 +24,6 @@ class CameraService {
     return status;
   }
 
-  public async getMicrophonePermission(): Promise<PermissionStatus> {
-    let status = await Camera.getMicrophonePermissionStatus();
-    if (status === 'not-determined') {
-      status = await Camera.requestMicrophonePermission();
-    }
-    return status;
-  }
-
   public async getLocationPermission(): Promise<boolean> {
     const permission = Platform.select({
       android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,

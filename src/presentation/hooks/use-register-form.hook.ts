@@ -1,6 +1,6 @@
 import { useReducer, useCallback, useRef } from 'react';
-import { useAuth } from '../contexts/auth-context';
-import { useLoading } from '../contexts/loading-context';
+import { useAuth } from '../contexts/auth.context';
+import { useLoading } from '../contexts/loading.context';
 import { useNavigationActions } from '../navigation/navigation-provider';
 import { RegisterState } from '../../domain/types/register-state';
 import { UserData } from '../../domain/models/auth.models';

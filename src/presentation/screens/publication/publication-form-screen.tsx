@@ -16,10 +16,10 @@ import { useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
-import { useLoading } from '../../contexts/loading-context';
+import { useLoading } from '../../contexts/loading.context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { publicationService } from '../../../services/publication/publication.service';
-import { useTheme, themeVariables } from '../../contexts/theme-context';
+import { useTheme, themeVariables } from '../../contexts/theme.context';
 import { createStyles } from './publication-form-screen.styles';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PublicationData } from '../../../domain/models/publication.models';
@@ -97,6 +97,7 @@ const PublicationFormScreen: React.FC = () => {
       const data: PublicationData = {
         description: description.trim(),
         commonNoun: animal,
+        catalogId: animalOptions.indexOf(animal) + 1,
         animalState: animalState,
         location: `${location?.latitude},${location?.longitude}`,
         img: base64Image

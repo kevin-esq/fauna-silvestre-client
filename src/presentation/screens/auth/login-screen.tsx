@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import useDoubleBackExit from '../../hooks/use-double-back-exit.hook';
 import { useLoginForm } from '../../hooks/use-login-form.hook';
-import { useTheme, themeVariables } from '../../contexts/theme-context';
+import { useTheme, themeVariables } from '../../contexts/theme.context';
 
 import AuthContainer from '../../components/auth/auth-container.component';
 import AuthTextInput from '../../components/auth/auth-text-input.component';
@@ -30,14 +30,14 @@ const LoginScreen = () => {
     password,
     setPassword,
     error,
+    rememberMe,
+    setRememberMe,
     handleLogin,
   } = useLoginForm();
 
   const { theme } = useTheme();
   const variables = themeVariables(theme);
   const styles = createStyles(variables);
-
-  const [rememberMe, setRememberMe] = useState(false);
 
   return (
     <AuthContainer title="¡Hola! 👋" subtitle="Inicia sesión para continuar" variables={variables}>

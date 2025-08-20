@@ -16,7 +16,7 @@ export type RootStackParamList = {
     Publications: undefined;
     ReviewPublication: undefined;
     ViewPublications: undefined;
-    PublicationDetails: { publication: PublicationResponse, status: PublicationStatus, reason?: string };
+    PublicationDetails: { publication: PublicationResponse, status: PublicationStatus, reason?: string | undefined };
     AnimalDetails: { animal: Animal };
     AddPublication: undefined;
 

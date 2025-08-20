@@ -1,6 +1,7 @@
 export interface AnimalModel {
     id: string;
     commonName: string;
+    catalogId: number;
     scientificName: string;
     status: string;
     statusColor: string;

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { useAuth } from '../contexts/auth-context';
-import { useLoading } from '../contexts/loading-context';
+import { useAuth } from '../contexts/auth.context';
+import { useLoading } from '../contexts/loading.context';
 import { useNavigationActions } from '../navigation/navigation-provider';
 
 export enum ResetStep {

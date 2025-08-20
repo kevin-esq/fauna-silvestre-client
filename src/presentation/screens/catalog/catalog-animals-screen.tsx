@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, FlatList, Text, RefreshControl } from 'react-native';
-import { useTheme, themeVariables } from '../../contexts/theme-context';
+import { useTheme, themeVariables } from '../../contexts/theme.context';
 import SearchBar from '../../components/ui/search-bar.component';
 import LoadingIndicator from '../../components/ui/loading-indicator.component';
-import { useCatalog } from '../../contexts/catalog-context';
+import { useCatalog } from '../../contexts/catalog.context';
 import AnimalCard from '../../components/animal/animal-card.component'; // ya tienes este componente
 import { createStyles } from './catalog-animals-screen.styles';
 import Animal from '../../../domain/entities/animal.entity';
 import { AnimalModel } from '../../../domain/models/animal.models';
 import { useNavigationActions } from '../../navigation/navigation-provider';
-import { Theme } from '../../contexts/theme-context';
+import { Theme } from '../../contexts/theme.context';
 
 const PAGE_SIZE = 10;
 
@@ -68,6 +68,7 @@ const renderAnimalItem = useCallback(({ item }: { item: Animal }) => {
   const mappedAnimal: AnimalModel = {
     id: item.specie,
     commonName: item.commonNoun,
+    catalogId: Number(item.catalogId),
     scientificName: item.specie,
     status: 'catalogado',
     statusColor: '#4caf50',
@@ -92,6 +93,7 @@ const renderAnimalItem = useCallback(({ item }: { item: Animal }) => {
         onChangeText={setSearchInput}
         placeholder="Buscar por nombre o especie..."
         theme={theme}
+        onClear={() => setSearchInput('')}
       />
 
       <FlatList

@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, Button } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import AnimatedPressable from '../ui/animated-pressable.component';
-import { PublicationResponse, PublicationStatus } from '../../../domain/models/publication.models';
-import { useTheme, themeVariables } from '../../contexts/theme-context';
+import AnimatedPressable from '@/presentation/components/ui/animated-pressable.component';
+import { PublicationResponse, PublicationStatus } from '@/domain/models/publication.models';
+import { useTheme, themeVariables } from '@/presentation/contexts/theme.context';
 
 const STATUS_CONFIG = {
   rejected: { icon: 'times-circle', colorKey: '--error', label: 'Rechazada' },

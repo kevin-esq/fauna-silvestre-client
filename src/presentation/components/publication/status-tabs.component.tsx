@@ -9,20 +9,20 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { PublicationStatus } from '../../../domain/models/publication.models';
-import { useTheme } from '../../contexts/theme-context';
-import { themeVariables } from '../../contexts/theme-context';
+import { useTheme } from '../../contexts/theme.context';
+import { themeVariables } from '../../contexts/theme.context';
+import { PublicationStatus } from '@/services/publication/publication.service';
 
 // --- TIPOS ---
 export interface StatusTab {
   label: string;
-  value: PublicationStatus | 'pending' | 'accepted' | 'rejected';
+  value: PublicationStatus;
 }
 
 interface StatusTabsProps {
   statuses: readonly StatusTab[];
-  active: PublicationStatus | 'pending' | 'accepted' | 'rejected';
-  onSelect: (status: PublicationStatus | 'pending' | 'accepted' | 'rejected') => void;
+  active: PublicationStatus;
+  onSelect: (status: PublicationStatus) => void;
   theme?: ReturnType<typeof useTheme>['theme'];
 }
 

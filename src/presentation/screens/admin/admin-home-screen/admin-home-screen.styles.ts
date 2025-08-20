@@ -1,35 +1,26 @@
-import { StyleSheet } from 'react-native';
+import { themeVariables, Theme, ThemeVariablesType } from "@/presentation/contexts/theme.context";
+import { StyleSheet } from "react-native";
 
-export const createStyles = (vars: Record<string, string>) => {
+export const useStyles = (theme: Theme, isDark?: boolean) => {
+  const vars = themeVariables(theme);
+  
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: vars['--background-alt'],
-    },
-    centeredContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-      backgroundColor: vars['--background-alt'],
-    },
-    loadingText: {
-      marginTop: 10,
-      fontSize: 16,
-      color: vars['--text-secondary'],
-    },
-    headerContainer: {
       backgroundColor: vars['--background'],
-      paddingHorizontal: 20,
-      paddingTop: 20,
-      paddingBottom: 20,
-      borderBottomLeftRadius: 24,
-      borderBottomRightRadius: 24,
+    },
+    
+    // Header
+    headerContainer: {
+      padding: 20,
+      paddingBottom: 10,
+      marginBottom: 10,
     },
     headerTopRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+      marginBottom: 15,
     },
     greeting: {
       fontSize: 24,
@@ -37,104 +28,142 @@ export const createStyles = (vars: Record<string, string>) => {
       color: vars['--text'],
     },
     subGreeting: {
-      fontSize: 18,
+      fontSize: 16,
       color: vars['--text-secondary'],
       marginTop: 4,
     },
     logoutButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: vars['--background-alt'],
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 20,
+      padding: 8,
     },
     logoutButtonText: {
       color: vars['--text-secondary'],
-      marginLeft: 6,
-      fontWeight: '600',
     },
-    timeAndLocationContainer: {
+    
+    // Info Card
+    infoCard: {
+      backgroundColor: vars['--surface'],
+      borderRadius: 12,
+      padding: 16,
+      ...shadowStyle(vars, isDark),
+    },
+    infoRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 16,
-      paddingTop: 12,
-      borderTopWidth: 1,
-      borderColor: vars['--border-color'],
+      marginVertical: 6,
     },
-    timeAndLocationText: {
-      color: vars['--text-secondary'],
-      fontSize: 14,
-      marginLeft: 8,
+    infoIcon: {
+      color: vars['--text'],
+      marginRight: 12,
+      width: 24,
     },
-    separator: {
-      height: '60%',
-      width: 1,
-      backgroundColor: vars['--border-color'],
-      marginHorizontal: 12,
+    infoText: {
+      fontSize: 16,
+      color: vars['--text'],
+    },
+    infoValue: {
+      fontSize: 16,
+      color: vars['--primary'],
+      fontWeight: 'bold',
+      marginLeft: 4,
     },
     activityIndicator: {
       marginLeft: 8,
+      color: vars['--text-secondary'],
     },
-
-    statsContainer: {
+    
+    // Secciones
+    section: {
+      marginTop: 20,
+      paddingHorizontal: 20,
+    },
+    sectionHeader: {
       flexDirection: 'row',
-      justifyContent: 'space-around',
-      marginHorizontal: 15,
-      marginTop: 25,
-    },
-    statBox: {
-      backgroundColor: vars['--card-background'],
-      borderRadius: 16,
-      padding: 16,
+      justifyContent: 'space-between',
       alignItems: 'center',
-      justifyContent: 'center',
-      minWidth: 100,
-      marginHorizontal: 5,
-      elevation: 4,
-      shadowColor: vars['--shadow-color'],
-      shadowOpacity: 0.1,
-      shadowRadius: 10,
     },
-    statValue: {
-      fontSize: 24,
+    sectionTitle: {
+      fontSize: 20,
       fontWeight: 'bold',
       color: vars['--text'],
+      marginBottom: 4,
     },
-    statLabel: {
+    sectionSubtitle: {
       fontSize: 14,
       color: vars['--text-secondary'],
-      marginTop: 4,
-    },
-
-    listHeader: {
-      fontSize: 22,
-      fontWeight: 'bold',
-      color: vars['--text'],
-      paddingHorizontal: 20,
-      marginTop: 24,
       marginBottom: 12,
     },
-    listContentContainer: {
-      paddingHorizontal: 20,
-      paddingBottom: 120,
+    seeAll: {
+      color: vars['--primary'],
+      fontSize: 14,
+      fontWeight: '500',
     },
-    userCard: {
-      backgroundColor: vars['--background'],
+    
+    // Quick Actions
+    quickActions: {
+      marginTop: 8,
+    },
+    quickActionButton: {
+      backgroundColor: vars['--surface'],
       borderRadius: 12,
       padding: 16,
       marginBottom: 12,
       flexDirection: 'row',
       alignItems: 'center',
-      elevation: 2,
-      shadowColor: vars['--shadow-color'],
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
+      justifyContent: 'space-between',
+      ...shadowStyle(vars, isDark),
     },
-    avatar: {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
+    quickActionButtonPressed: {
+      opacity: 0.9,
+      transform: [{ scale: 0.98 }],
+    },
+    quickActionContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    quickActionIconContainer: {
+      backgroundColor: vars['--primary-light'] + '30',
+      borderRadius: 10,
+      width: 40,
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 16,
+    },
+    quickActionIcon: {
+      color: vars['--primary'],
+    },
+    quickActionText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: vars['--text'],
+      flexShrink: 1,
+    },
+    quickActionChevron: {
+      color: vars['--text-secondary'],
+    },
+    
+    // User List
+    listContent: {
+      paddingBottom: 100,
+    },
+    userListItem: {
+      backgroundColor: vars['--surface'],
+      borderRadius: 12,
+      padding: 16,
+      marginHorizontal: 20,
+      marginBottom: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      ...shadowStyle(vars, isDark),
+    },
+    userListItemPressed: {
+      opacity: 0.9,
+      transform: [{ scale: 0.98 }],
+    },
+    userAvatar: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       marginRight: 16,
     },
     userInfo: {
@@ -142,49 +171,113 @@ export const createStyles = (vars: Record<string, string>) => {
     },
     userName: {
       fontSize: 16,
-      fontWeight: 'bold',
+      fontWeight: '600',
       color: vars['--text'],
+      marginBottom: 4,
     },
     userEmail: {
       fontSize: 14,
       color: vars['--text-secondary'],
-      marginTop: 2,
     },
-
-    cardButtonText: {
+    userChevron: {
+      color: vars['--text-secondary'],
+    },
+    
+    // Empty State
+    emptyContainer: {
+      alignItems: 'center',
+      padding: 40,
+    },
+    emptyIcon: {
+      color: vars['--text-secondary'],
+      opacity: 0.5,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      color: vars['--text'],
+      fontWeight: '600',
+      marginTop: 16,
+    },
+    emptySubtitle: {
+      fontSize: 14,
+      color: vars['--text-secondary'],
+      marginTop: 8,
+      textAlign: 'center',
+    },
+    
+    // Loading State
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingIndicator: {
       color: vars['--primary'],
+    },
+    loadingText: {
+      marginTop: 16,
+      fontSize: 16,
+      color: vars['--text'],
+    },
+    
+    // Error State
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 40,
+    },
+    errorIcon: {
+      color: vars['--error'],
+    },
+    errorText: {
+      fontSize: 16,
+      color: vars['--text'],
+      marginTop: 16,
+      textAlign: 'center',
+    },
+    retryButton: {
+      backgroundColor: vars['--primary'],
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
+      marginTop: 20,
+    },
+    retryButtonText: {
+      color: vars['--text-on-primary'],
+      fontSize: 16,
       fontWeight: '600',
     },
-
-    buttonIcon: {
-      marginLeft: 8,
-    },
-    cardButtonContainer: {
-      paddingHorizontal: 20,
-      marginTop: 10,
-    },
-    cardButton: {
-      backgroundColor: vars['--background'],
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 12,
-      flexDirection: 'row',
+    
+    // FAB
+    fab: {
+      position: 'absolute',
+      bottom: 30,
+      right: 20,
+      backgroundColor: vars['--primary'],
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      justifyContent: 'center',
       alignItems: 'center',
-      elevation: 2,
-      shadowColor: vars['--shadow-color'],
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
+      ...shadowStyle(vars, isDark, 8),
     },
-    emptyListContainer: {
-      alignItems: 'center',
-      marginTop: 50,
-      paddingHorizontal: 20,
+    fabIcon: {
+      color: vars['--text-on-primary'],
     },
-    emptyListText: {
-      fontSize: 16,
-      color: vars['--text-secondary'],
-      textAlign: 'center',
-      marginTop: 16,
+    
+    // Refresh Control
+    refreshControl: {
+      color: vars['--primary'],
     },
   });
 };
+
+// Función auxiliar para sombras consistentes
+const shadowStyle = (vars: ThemeVariablesType, isDark?: boolean, elevation = 4) => ({
+  elevation,
+  shadowColor: vars['--shadow'],
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: isDark ? 0.3 : 0.1,
+  shadowRadius: isDark ? 6 : 4,
+});

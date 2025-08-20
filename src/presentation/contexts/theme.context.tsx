@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { secureStorageService } from '../../services/storage/secure-storage.service';
+import { SecureStorageService } from '../../services/storage/secure-storage.service';
+import { THEME_KEY } from '../../services/storage/storage-keys';
 
 interface ThemeColors {
   // Colores principales
@@ -9,7 +10,7 @@ interface ThemeColors {
   secondary: string;
   secondaryLight: string;
   secondaryDark: string;
-  tertiary: string; // Color adicional para acentos naturales
+  tertiary: string;
 
   // Fondo y superficies
   background: string;
@@ -276,10 +277,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setTheme] = useState<Theme>(lightTheme);
   const [isDark, setIsDark] = useState(false);
 
-  // Efecto para cargar el tema guardado (si existe)
+  // Efecto para cargar el tema guardado
   useEffect(() => {
     const loadTheme = async () => {
-      const savedTheme = await secureStorageService.getValueFor('theme');
+      const secureStorageService = await SecureStorageService.getInstance();
+      const savedTheme = await secureStorageService.getValueFor(THEME_KEY);
       if (savedTheme === 'dark') {
         setIsDark(true);
         setTheme(darkTheme);
@@ -297,7 +299,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsDark(newIsDark);
     setTheme(newIsDark ? darkTheme : lightTheme);
     try {
-      await secureStorageService.save('theme', newIsDark ? 'dark' : 'light');
+      const secureStorageService = await SecureStorageService.getInstance();
+      await secureStorageService.save(THEME_KEY, newIsDark ? 'dark' : 'light');
     } catch (e) {
       console.error('Error saving theme:', e);
     }
@@ -401,3 +404,5 @@ export const themeVariables = (theme: Theme) => ({
   '--shadow-medium': theme.shadows.medium,
   '--shadow-large': theme.shadows.large,
 });
+
+export type ThemeVariablesType = ReturnType<typeof themeVariables>;

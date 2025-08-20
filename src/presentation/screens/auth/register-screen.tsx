@@ -3,8 +3,8 @@ import { Text } from 'react-native';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { useRegisterForm } from '../../hooks/use-register-form.hook';
 import { genderOptions, locationOptions } from '../../../shared/constants/registerOptions';
-import { useTheme } from '../../contexts/theme-context';
-import { themeVariables } from '../../contexts/theme-context';
+import { useTheme } from '../../contexts/theme.context';
+import { themeVariables } from '../../contexts/theme.context';
 
 // Reusable Components
 import AuthContainer from '../../components/auth/auth-container.component';

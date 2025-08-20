@@ -1,17 +1,13 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { request, PERMISSIONS } from 'react-native-permissions';
 import { createStyles } from './home-screen.styles';
 import { useNavigationActions } from '../../navigation/navigation-provider';
-import { usePublications } from '../../contexts/publication-context';
+import { usePublications } from '../../contexts/publication.context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import 'moment/locale/es';
-import Location from 'react-native-get-location';
 import moment from 'moment';
 import FloatingActionButton from '../../components/ui/floating-action-button.component';
-import { Platform } from 'react-native';
-import Geocoding from 'react-native-geocoding';
-import { useAuth } from '../../contexts/auth-context';
-import { useTheme, themeVariables } from '../../contexts/theme-context';
+import { useAuth } from '../../contexts/auth.context';
+import { useTheme, themeVariables } from '../../contexts/theme.context';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,19 +15,16 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
-import { useCatalog } from '../../contexts/catalog-context';
+import { useCatalog } from '../../contexts/catalog.context';
 import AnimalCard from '../../components/animal/animal-card.component';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
 import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
+import { useLocationInfo } from '../../hooks/use-location-info';
+import { AnimalModel } from '@/domain/models/animal.models';
 
 moment.locale('es');
-
-interface LocationInfo {
-  city: string | null;
-  country: string | null;
-}
 
 const HomeScreen: React.FC = React.memo(() => {
   const { theme } = useTheme();
@@ -42,21 +35,17 @@ const HomeScreen: React.FC = React.memo(() => {
   const [totalEspecies, setTotalEspecies] = useState(0);
   const [totalPublications, setTotalPublications] = useState<number>(0);
   const variables = useMemo(() => themeVariables(theme), [theme]);
-  const [locationInfo, setLocationInfo] = useState<LocationInfo>({ city: null, country: null });
-  const [loadingLocation, setLoadingLocation] = useState(true);
   const { catalog, isLoading: isCatalogLoading } = useCatalog();
+  const { city, state: stateLoc, country, loading: locLoading } = useLocationInfo();
 
-  // Estados para filtrado
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showAllAnimals, setShowAllAnimals] = useState(false);
 
-  // Obtener categorías únicas del catálogo
   const categories = useMemo(() => {
     const uniqueCategories = [...new Set(catalog.map(animal => animal.category))].filter(Boolean);
     return ['Todas las categorías', ...uniqueCategories] as const;
   }, [catalog]);
 
-  // Filtrar animales por categoría
   const filteredAnimals = useMemo(() => {
     if (!selectedCategory || selectedCategory === 'Todas las categorías') {
       return catalog;
@@ -64,7 +53,6 @@ const HomeScreen: React.FC = React.memo(() => {
     return catalog.filter(animal => animal.category === selectedCategory);
   }, [catalog, selectedCategory]);
 
-  // Determinar cuántos animales mostrar
   const animalsToShow = useMemo(() => {
     return showAllAnimals ? filteredAnimals : filteredAnimals.slice(0, 5);
   }, [filteredAnimals, showAllAnimals]);
@@ -79,51 +67,10 @@ const HomeScreen: React.FC = React.memo(() => {
   }, [actions]);
 
   useEffect(() => {
-    console.log('Counts updated:', state.counts);
     setTotalPublications(state.counts.records);
     setTotalEspecies(state.counts.users);
     setTotalPublications(state.counts.records);
   }, [state.counts]);
-
-  useEffect(() => {
-    const fetchCatalogLocation = async () => {
-      setLoadingLocation(true);
-      try {
-        const permissionType = Platform.select({
-          android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-          ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
-        });
-
-        if (!permissionType) return;
-
-        const permission = await request(permissionType);
-        if (permission !== 'granted') throw new Error('Permiso de ubicación denegado');
-
-        const location = await Location.getCurrentPosition({
-          enableHighAccuracy: true,
-          timeout: 15000,
-        });
-
-        Geocoding.init('AIzaSyDP5t-v593J7Zwu68eO5CIrBzu_xV4b8VQ');
-
-        const response = await Geocoding.from(location.latitude, location.longitude);
-        if (!response.results?.length) throw new Error('No se encontraron resultados');
-
-        const address = response.results[0];
-        const city = address.address_components.find(c => c.types.includes('locality'))?.long_name;
-        const country = address.address_components.find(c => c.types.includes('country'))?.long_name;
-
-        setLocationInfo({ city: city || 'N/A', country: country || 'N/A' });
-      } catch (error: unknown) {
-        if (error instanceof Error) console.error(error.message);
-        setLocationInfo({ city: 'Ubicación no disponible', country: '' });
-      } finally {
-        setLoadingLocation(false);
-      }
-    };
-
-    fetchCatalogLocation();
-  }, []);
 
   const handleLogout = () => {
     Alert.alert(
@@ -148,7 +95,7 @@ const HomeScreen: React.FC = React.memo(() => {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        return true; // bloquea el botón "atrás"
+        return true;
       };
 
       const backHandler = BackHandler.addEventListener(
@@ -156,7 +103,7 @@ const HomeScreen: React.FC = React.memo(() => {
         onBackPress
       );
 
-      return () => backHandler.remove(); // ✅ esta es la forma correcta ahora
+      return () => backHandler.remove();
     }, [])
   );
 
@@ -185,7 +132,7 @@ const HomeScreen: React.FC = React.memo(() => {
             <Text style={styles.timeAndLocationText}>{moment().format('h:mm A')}</Text>
             <View style={styles.separator} />
             <Ionicons name="location-outline" size={16} color={variables['--text-secondary']} />
-            {loadingLocation ? (
+            {locLoading ? (
               <ActivityIndicator
                 size="small"
                 color={variables['--text-secondary']}
@@ -193,7 +140,7 @@ const HomeScreen: React.FC = React.memo(() => {
               />
             ) : (
               <Text style={styles.timeAndLocationText}>
-                {locationInfo.city}, {locationInfo.country}
+                {city}, {stateLoc}, {country}
               </Text>
             )}
           </View>
@@ -218,8 +165,6 @@ const HomeScreen: React.FC = React.memo(() => {
 
           <Text style={styles.sectionTitle}>Catálogo de Animales</Text>
 
-
-          {/* Filtro por categoría */}
           <View style={styles.filterContainer}>
             <AnimalSearchableDropdown
               options={categories}
@@ -230,7 +175,6 @@ const HomeScreen: React.FC = React.memo(() => {
             />
           </View>
 
-          {/* Información de resultados */}
           <View style={styles.resultsInfo}>
             <Text style={styles.resultsText}>
               {selectedCategory && selectedCategory !== 'Todas las categorías'
@@ -271,14 +215,14 @@ const HomeScreen: React.FC = React.memo(() => {
               data={animalsToShow}
               keyExtractor={(item) => item.specie}
               renderItem={({ item }) => {
-                const mappedAnimal = {
+                const mappedAnimal: AnimalModel = {
                   id: item.specie,
                   commonName: item.commonNoun,
                   scientificName: item.specie,
                   status: 'catalogado',
                   statusColor: '#4caf50',
                   image: item.image,
-                  category: item.category,
+                  catalogId: Number(item.catalogId),
                 };
 
                 return (

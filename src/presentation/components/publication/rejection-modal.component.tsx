@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { themeVariables, Theme } from "../../contexts/theme-context";
+import { themeVariables, Theme } from "../../contexts/theme.context";
 
 interface RejectionModalProps {
   visible: boolean;

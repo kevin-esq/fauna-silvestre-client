@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Album, PhotoIdentifier, CameraRoll } from '@react-native-camera-roll/camera-roll';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { Theme, themeVariables } from '../../contexts/theme-context';
+import { Theme, themeVariables } from '../../contexts/theme.context';
 import { createStyles } from './custom-image-picker-screen.styles';
 import type { StyleProp, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { Location } from 'react-native-get-location';

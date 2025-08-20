@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { useTheme } from '../../contexts/theme-context';
+import { useTheme } from '../../contexts/theme.context';
 
 interface LocationMapProps {
   location: string;

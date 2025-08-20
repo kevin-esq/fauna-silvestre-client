@@ -3,8 +3,8 @@ import { BaseRepository } from "./base.repository";
 import { ILogger } from "../../shared/types/ILogger";
 import { ICatalogRepository } from "../../domain/interfaces/catalog.repository.interface";
 import Animal from "../../domain/entities/animal.entity";
-import { LocationResponse, ParsedLocation } from "../../domain/models/animal.models"; // Importamos el tipo de respuesta de ubicación
-import { apiService } from '../../services/http/api.service'; // Ajusta ruta según tu estructura
+import { LocationResponse, ParsedLocation } from "../../domain/models/animal.models";
+import { ApiService } from '../../services/http/api.service';
 import { ConsoleLogger } from '../../services/logging/console-logger';
 
 
@@ -100,4 +100,4 @@ export class CatalogRepository extends BaseRepository implements ICatalogReposit
 
 }
 
-export const catalogRepository = new CatalogRepository(apiService.client, logger);
+export const catalogRepository = new CatalogRepository(ApiService.getInstance().client, logger);
