@@ -9,7 +9,7 @@ export function useLoadData() {
   const loadData = useCallback(() => {
     fetchCatalog();
     actionsPub.loadCounts();
-  }, [fetchCatalog]);
+  }, [fetchCatalog, actionsPub]);
 
   useEffect(() => {
     loadData();

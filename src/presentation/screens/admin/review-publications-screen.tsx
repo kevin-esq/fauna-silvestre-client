@@ -22,6 +22,7 @@ import PublicationCard from '../../components/publication/publication-card.compo
 import SearchBar from '../../components/ui/search-bar.component';
 import RejectionModal from '../../components/publication/rejection-modal.component';
 import { createStyles } from './review-publications-screen.styles';
+import { PublicationStatus } from '@/services/publication/publication.service';
 
 const PAGE_SIZE = 5;
 
@@ -57,20 +58,20 @@ const ReviewPublicationsScreen: React.FC = () => {
   const loadPendingPublications = useCallback(async () => {
     try {
       setIsRefreshing(true);
-      await loadStatus('pending', searchQuery);
+      await loadStatus(PublicationStatus.PENDING);
     } catch (error: unknown) {
       console.error('Error loading pending publications:', error);
       Alert.alert('Error', 'No se pudieron cargar publicaciones pendientes.');
     } finally {
       setIsRefreshing(false);
     }
-  }, [loadStatus, searchQuery]);
+  }, [loadStatus]);
 
   useEffect(() => {
     if (!isMounted.current) {
       loadPendingPublications();
     }
-  }, []);
+  }, [loadPendingPublications]);
 
   const handleLoadMore = useCallback(async () => {
     if (
@@ -82,7 +83,7 @@ const ReviewPublicationsScreen: React.FC = () => {
 
     try {
       setIsLoadingMore(true);
-      await loadMoreStatus('pending', searchQuery);
+      await loadMoreStatus(PublicationStatus.PENDING, searchQuery);
     } catch (error: unknown) {
       console.error('Error loading more:', error);
     } finally {
