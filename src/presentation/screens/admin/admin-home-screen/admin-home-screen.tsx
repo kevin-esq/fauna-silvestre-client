@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -34,221 +34,271 @@ moment.locale('es');
 /**
  * Componente de cabecera para el administrador
  */
-const AdminHeader = React.memo(({ styles }: { styles: ReturnType<typeof useStyles> }) => {
-  const { user, signOut } = useAuth();
+const AdminHeader = React.memo(
+  ({ styles }: { styles: ReturnType<typeof useStyles> }) => {
+    const { user, signOut } = useAuth();
 
-  const { state: statePub } = usePublications();
-  const { city, state, loading: locLoading } = useLocationInfo();
-  const time = useCurrentTime();
-  useLoadData();
+    const { state: statePub } = usePublications();
+    const { city, state, loading: locLoading } = useLocationInfo();
+    const time = useCurrentTime();
+    useLoadData();
 
-  const handleSignOut = () => {
-    Alert.alert('Confirmar salida', '¿Estás seguro que deseas cerrar sesión?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salir', onPress: () => signOut() },
-    ]);
-  };
+    const handleSignOut = () => {
+      Alert.alert(
+        'Confirmar salida',
+        '¿Estás seguro que deseas cerrar sesión?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Salir', onPress: () => signOut() }
+        ]
+      );
+    };
 
-  return (
-    <View style={styles.headerContainer}>
-      <View style={styles.headerTopRow}>
-        <View>
-          <Text style={styles.greeting}>Hola, {user?.name || 'Administrador'}</Text>
-          <Text style={styles.subGreeting}>Panel de control</Text>
+    return (
+      <View style={styles.headerContainer}>
+        <View style={styles.headerTopRow}>
+          <View>
+            <Text style={styles.greeting}>
+              Hola, {user?.name || 'Administrador'}
+            </Text>
+            <Text style={styles.subGreeting}>Panel de control</Text>
+          </View>
+          <TouchableOpacity
+            onPress={handleSignOut}
+            accessibilityLabel="Cerrar sesión"
+            accessibilityHint="Cierra la sesión actual"
+            style={styles.logoutButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="log-out-outline"
+              size={24}
+              color={styles.logoutButtonText.color}
+            />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          onPress={handleSignOut}
-          accessibilityLabel="Cerrar sesión"
-          accessibilityHint="Cierra la sesión actual"
-          style={styles.logoutButton}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="log-out-outline"
-            size={24}
-            color={styles.logoutButtonText.color}
-          />
-        </TouchableOpacity>
+
+        <View style={styles.infoCard}>
+          <View style={styles.infoRow}>
+            <Ionicons
+              name="newspaper-outline"
+              size={24}
+              style={styles.infoIcon}
+            />
+            <Text style={styles.infoText}>Publicaciones: </Text>
+            {statePub.counts.loading ? (
+              <ActivityIndicator
+                size="small"
+                style={styles.activityIndicator}
+              />
+            ) : (
+              <Text style={styles.infoValue}>{statePub.counts.records}</Text>
+            )}
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="people-outline" size={24} style={styles.infoIcon} />
+            <Text style={styles.infoText}>Usuarios: </Text>
+            {statePub.counts.loading ? (
+              <ActivityIndicator
+                size="small"
+                style={styles.activityIndicator}
+              />
+            ) : (
+              <Text style={styles.infoValue}>{statePub.counts.users}</Text>
+            )}
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="time-outline" size={24} style={styles.infoIcon} />
+            <Text style={styles.infoText}>{time}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons
+              name="location-outline"
+              size={24}
+              style={styles.infoIcon}
+            />
+            {locLoading ? (
+              <ActivityIndicator
+                size="small"
+                style={styles.activityIndicator}
+              />
+            ) : (
+              <Text style={styles.infoText}>
+                {city}, {state}
+              </Text>
+            )}
+          </View>
+        </View>
       </View>
-
-      <View style={styles.infoCard}>
-        <View style={styles.infoRow}>
-          <Ionicons name="newspaper-outline" size={24} style={styles.infoIcon} />
-          <Text style={styles.infoText}>Publicaciones: </Text>
-          {statePub.counts.loading ? (
-            <ActivityIndicator size="small" style={styles.activityIndicator} />
-          ) : (
-            <Text style={styles.infoValue}>{statePub.counts.records}</Text>
-          )}
-        </View>
-
-        <View style={styles.infoRow}>
-          <Ionicons name="people-outline" size={24} style={styles.infoIcon} />
-          <Text style={styles.infoText}>Usuarios: </Text>
-          {statePub.counts.loading ? (
-            <ActivityIndicator size="small" style={styles.activityIndicator} />
-          ) : (
-            <Text style={styles.infoValue}>{statePub.counts.users}</Text>
-          )}
-        </View>
-
-        <View style={styles.infoRow}>
-          <Ionicons name="time-outline" size={24} style={styles.infoIcon} />
-          <Text style={styles.infoText}>{time}</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Ionicons name="location-outline" size={24} style={styles.infoIcon} />
-          {locLoading ? (
-            <ActivityIndicator size="small" style={styles.activityIndicator} />
-          ) : (
-            <Text style={styles.infoText}>{city}, {state}</Text>
-          )}
-        </View>
-      </View>
-    </View>
-  );
-});
+    );
+  }
+);
 
 /**
  * Botón de acción rápida
  */
-const QuickActionButton = React.memo(({ 
-  icon, 
-  label, 
-  onPress,
-  styles 
-}: {
-  icon: string;
-  label: string;
-  onPress: () => void;
-  styles: ReturnType<typeof useStyles>;
-}) => {
-  const [isPressed, setIsPressed] = useState(false);
+const QuickActionButton = React.memo(
+  ({
+    icon,
+    label,
+    onPress,
+    styles
+  }: {
+    icon: string;
+    label: string;
+    onPress: () => void;
+    styles: ReturnType<typeof useStyles>;
+  }) => {
+    const [isPressed, setIsPressed] = useState(false);
 
-  return (
-    <TouchableOpacity
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={[
-        styles.quickActionButton,
-        isPressed && styles.quickActionButtonPressed
-      ]}
-      onPress={onPress}
-      onPressIn={() => setIsPressed(true)}
-      onPressOut={() => setIsPressed(false)}
-      activeOpacity={0.8}
-    >
-      <View style={styles.quickActionContent}>
-        <View style={styles.quickActionIconContainer}>
-          <Ionicons name={icon} size={24} color={styles.quickActionIcon.color} />
+    return (
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={[
+          styles.quickActionButton,
+          isPressed && styles.quickActionButtonPressed
+        ]}
+        onPress={onPress}
+        onPressIn={() => setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.quickActionContent}>
+          <View style={styles.quickActionIconContainer}>
+            <Ionicons
+              name={icon}
+              size={24}
+              color={styles.quickActionIcon.color}
+            />
+          </View>
+          <Text style={styles.quickActionText}>{label}</Text>
         </View>
-        <Text style={styles.quickActionText}>{label}</Text>
-      </View>
-      <Ionicons 
-        name="chevron-forward" 
-        size={20} 
-        color={styles.quickActionChevron.color} 
-      />
-    </TouchableOpacity>
-  );
-});
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={styles.quickActionChevron.color}
+        />
+      </TouchableOpacity>
+    );
+  }
+);
 
 /**
  * Componente de usuario para la lista
  */
-const UserListItem = React.memo(({ user, styles }: { user: UserModel, styles: ReturnType<typeof useStyles> }) => {
-  const [isPressed, setIsPressed] = useState(false);
+const UserListItem = React.memo(
+  ({
+    user,
+    styles
+  }: {
+    user: UserModel;
+    styles: ReturnType<typeof useStyles>;
+  }) => {
+    const [isPressed, setIsPressed] = useState(false);
 
-  return (
-    <TouchableOpacity
-      accessibilityRole="button"
-      accessibilityLabel={`Usuario: ${user.name}. Email: ${user.email}`}
-      style={[
-        styles.userListItem,
-        isPressed && styles.userListItemPressed
-      ]}
-      onPressIn={() => setIsPressed(true)}
-      onPressOut={() => setIsPressed(false)}
-      activeOpacity={0.8}
-    >
-      <Image
-        source={{ uri: user.avatarUrl }}
-        style={styles.userAvatar}
-        accessibilityIgnoresInvertColors
-      />
-      <View style={styles.userInfo}>
-        <Text style={styles.userName} numberOfLines={1}>{user.name}</Text>
-        <Text style={styles.userEmail} numberOfLines={1}>{user.email}</Text>
-      </View>
-      <Ionicons 
-        name="chevron-forward" 
-        size={20} 
-        color={styles.userChevron.color} 
-      />
-    </TouchableOpacity>
-  );
-});
+    return (
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={`Usuario: ${user.name}. Email: ${user.email}`}
+        style={[styles.userListItem, isPressed && styles.userListItemPressed]}
+        onPressIn={() => setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
+        activeOpacity={0.8}
+      >
+        <Image
+          source={{ uri: user.avatarUrl }}
+          style={styles.userAvatar}
+          accessibilityIgnoresInvertColors
+        />
+        <View style={styles.userInfo}>
+          <Text style={styles.userName} numberOfLines={1}>
+            {user.name}
+          </Text>
+          <Text style={styles.userEmail} numberOfLines={1}>
+            {user.email}
+          </Text>
+        </View>
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={styles.userChevron.color}
+        />
+      </TouchableOpacity>
+    );
+  }
+);
 
 /**
  * Componente para lista vacía
  */
-const EmptyList = React.memo(({ styles }: { styles: ReturnType<typeof useStyles> }) => {
-  return (
-    <View style={styles.emptyContainer}>
-      <MaterialCommunityIcons
-        name="account-group-outline"
-        size={80}
-        color={styles.emptyIcon.color}
-      />
-      <Text style={styles.emptyTitle}>No hay usuarios</Text>
-      <Text style={styles.emptySubtitle}>Cuando se registren nuevos usuarios aparecerán aquí</Text>
-    </View>
-  );
-});
+const EmptyList = React.memo(
+  ({ styles }: { styles: ReturnType<typeof useStyles> }) => {
+    return (
+      <View style={styles.emptyContainer}>
+        <MaterialCommunityIcons
+          name="account-group-outline"
+          size={80}
+          color={styles.emptyIcon.color}
+        />
+        <Text style={styles.emptyTitle}>No hay usuarios</Text>
+        <Text style={styles.emptySubtitle}>
+          Cuando se registren nuevos usuarios aparecerán aquí
+        </Text>
+      </View>
+    );
+  }
+);
 
 /**
  * Componente de carga
  */
-const LoadingIndicator = React.memo(({ styles }: { styles: ReturnType<typeof useStyles> }) => {
-  return (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={styles.loadingIndicator.color} />
-      <Text style={styles.loadingText}>Cargando datos...</Text>
-    </View>
-  );
-});
+const LoadingIndicator = React.memo(
+  ({ styles }: { styles: ReturnType<typeof useStyles> }) => {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={styles.loadingIndicator.color} />
+        <Text style={styles.loadingText}>Cargando datos...</Text>
+      </View>
+    );
+  }
+);
 
 /**
  * Componente de error
  */
-const ErrorMessage = React.memo(({ 
-  error, 
-  onRetry,
-  styles 
-}: {
-  error: string;
-  onRetry: () => void;
-  styles: ReturnType<typeof useStyles>;
-}) => {
-  return (
-    <View style={styles.errorContainer}>
-      <MaterialCommunityIcons
-        name="alert-circle-outline"
-        size={50}
-        color={styles.errorIcon.color}
-      />
-      <Text style={styles.errorText}>{error}</Text>
-      <TouchableOpacity 
-        onPress={onRetry} 
-        style={styles.retryButton}
-        accessibilityLabel="Reintentar"
-      >
-        <Text style={styles.retryButtonText}>Reintentar</Text>
-      </TouchableOpacity>
-    </View>
-  );
-});
+const ErrorMessage = React.memo(
+  ({
+    error,
+    onRetry,
+    styles
+  }: {
+    error: string;
+    onRetry: () => void;
+    styles: ReturnType<typeof useStyles>;
+  }) => {
+    return (
+      <View style={styles.errorContainer}>
+        <MaterialCommunityIcons
+          name="alert-circle-outline"
+          size={50}
+          color={styles.errorIcon.color}
+        />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          onPress={onRetry}
+          style={styles.retryButton}
+          accessibilityLabel="Reintentar"
+        >
+          <Text style={styles.retryButtonText}>Reintentar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+);
 
 // ==================== Pantalla Principal ====================
 
@@ -267,32 +317,33 @@ const AdminHomeScreen: React.FC = () => {
     users: [],
     loading: true,
     refreshing: false,
-    error: null,
+    error: null
   });
 
   // Cargar usuarios
   const loadUsers = useCallback(async (isRefreshing = false) => {
     try {
-      setState(prev => ({ 
-        ...prev, 
-        loading: !isRefreshing, 
+      setState(prev => ({
+        ...prev,
+        loading: !isRefreshing,
         refreshing: isRefreshing,
-        error: null 
+        error: null
       }));
-      
+
       const users = getAllUsers();
       setState(prev => ({
         ...prev,
         users,
         loading: false,
-        refreshing: false,
+        refreshing: false
       }));
     } catch (error) {
       setState(prev => ({
         ...prev,
         loading: false,
         refreshing: false,
-        error: error instanceof Error ? error.message : 'Error al cargar usuarios',
+        error:
+          error instanceof Error ? error.message : 'Error al cargar usuarios'
       }));
     }
   }, []);
@@ -308,47 +359,54 @@ const AdminHomeScreen: React.FC = () => {
   }, [loadUsers]);
 
   // Cabecera de la lista
-  const ListHeader = useMemo(() => (
-    <>
-      <AdminHeader styles={styles} />
-      
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Acciones rápidas</Text>
-        <Text style={styles.sectionSubtitle}>Gestiona el contenido de la aplicación</Text>
-        
-        <View style={styles.quickActions}>
-          <QuickActionButton
-            icon="newspaper-outline"
-            label="Revisar publicaciones"
-            onPress={() => navigateAndReset('ReviewPublication')}
-            styles={styles}
-          />
-          <QuickActionButton
-            icon="shield-checkmark-outline"
-            label="Publicaciones aceptadas"
-            onPress={() => navigateAndReset('Publications')}
-            styles={styles}
-          />
-          <QuickActionButton
-            icon="people-outline"
-            label="Gestionar usuarios"
-            onPress={() => console.log('Gestionar usuarios')}
-            styles={styles}
-          />
-        </View>
-      </View>
+  const ListHeader = useMemo(
+    () => (
+      <>
+        <AdminHeader styles={styles} />
 
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Usuarios recientes</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAll}>Ver todos</Text>
-          </TouchableOpacity>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Acciones rápidas</Text>
+          <Text style={styles.sectionSubtitle}>
+            Gestiona el contenido de la aplicación
+          </Text>
+
+          <View style={styles.quickActions}>
+            <QuickActionButton
+              icon="newspaper-outline"
+              label="Revisar publicaciones"
+              onPress={() => navigateAndReset('ReviewPublication')}
+              styles={styles}
+            />
+            <QuickActionButton
+              icon="shield-checkmark-outline"
+              label="Publicaciones aceptadas"
+              onPress={() => navigateAndReset('Publications')}
+              styles={styles}
+            />
+            <QuickActionButton
+              icon="people-outline"
+              label="Gestionar usuarios"
+              onPress={() => console.log('Gestionar usuarios')}
+              styles={styles}
+            />
+          </View>
         </View>
-        <Text style={styles.sectionSubtitle}>Últimos 5 usuarios registrados</Text>
-      </View>
-    </>
-  ), [navigateAndReset, styles]);
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Usuarios recientes</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAll}>Ver todos</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.sectionSubtitle}>
+            Últimos 5 usuarios registrados
+          </Text>
+        </View>
+      </>
+    ),
+    [navigateAndReset, styles]
+  );
 
   // Mostrar estado de carga
   if (state.loading) {
@@ -357,7 +415,9 @@ const AdminHomeScreen: React.FC = () => {
 
   // Mostrar error
   if (state.error) {
-    return <ErrorMessage error={state.error} onRetry={loadUsers} styles={styles} />;
+    return (
+      <ErrorMessage error={state.error} onRetry={loadUsers} styles={styles} />
+    );
   }
 
   return (
@@ -379,9 +439,15 @@ const AdminHomeScreen: React.FC = () => {
           />
         }
       />
-      
+
       <FloatingActionButton
-        icon={<Ionicons name="camera-outline" size={24} color={styles.fabIcon.color} />}
+        icon={
+          <Ionicons
+            name="camera-outline"
+            size={24}
+            color={styles.fabIcon.color}
+          />
+        }
         onPress={() => navigateAndReset('AddPublication')}
         accessibilityLabel="Crear nueva publicación"
         style={styles.fab}

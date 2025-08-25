@@ -5,10 +5,10 @@
  * @interface
  */
 export interface Credentials {
-    /** Nombre de usuario o email (formato válido requerido) */
-    UserName: string;
-    /** Contraseña (mínimo 8 caracteres, 1 mayúscula, 1 número) */
-    Password: string;
+  /** Nombre de usuario o email (formato válido requerido) */
+  UserName: string;
+  /** Contraseña (mínimo 8 caracteres, 1 mayúscula, 1 número) */
+  Password: string;
 }
 
 /**
@@ -16,24 +16,24 @@ export interface Credentials {
  * @interface
  */
 export interface UserData {
-    userName: string;
-    name: string;
-    lastName: string;
-    locality: string;
-    gender: number;
-    age: number;
-    email: string;
-    password: string;
+  userName: string;
+  name: string;
+  lastName: string;
+  locality: string;
+  gender: number;
+  age: number;
+  email: string;
+  password: string;
 }
 
 export interface UserResponse {
-    userName: string;
-    name: string;
-    lastName: string;
-    locality: string;
-    gender: string;
-    age: number;
-    email: string;
+  userName: string;
+  name: string;
+  lastName: string;
+  locality: string;
+  gender: string;
+  age: number;
+  email: string;
 }
 
 /**
@@ -41,9 +41,9 @@ export interface UserResponse {
  * @interface
  */
 export interface AuthResponse {
-    accessToken: string;
-    refreshToken: string;
-    error?: string;
+  accessToken: string;
+  refreshToken: string;
+  error?: string;
 }
 
 /**
@@ -51,7 +51,7 @@ export interface AuthResponse {
  * @interface
  */
 export interface RefreshTokenPayload {
-    refreshToken: string;
+  refreshToken: string;
 }
 
 /**
@@ -59,11 +59,11 @@ export interface RefreshTokenPayload {
  * @interface
  */
 export interface AuthError {
-    code:
-        | 'invalid_credentials'
-        | 'email_not_verified'
-        | 'account_locked'
-        | 'token_expired'
-        | 'validation_error';
-    message: string;
+  code:
+    | 'invalid_credentials'
+    | 'email_not_verified'
+    | 'account_locked'
+    | 'token_expired'
+    | 'validation_error';
+  message: string;
 }

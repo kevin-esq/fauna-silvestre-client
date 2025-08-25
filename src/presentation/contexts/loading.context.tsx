@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useMemo,
+  ReactNode
+} from 'react';
 import { LoadingModal } from '../components/common/loading-modal.component';
 import { useTheme } from './theme.context';
 
@@ -17,11 +23,14 @@ export const LoadingProvider = ({ children }: { children: ReactNode }) => {
   const showLoading = () => setIsLoading(true);
   const hideLoading = () => setIsLoading(false);
 
-  const value = useMemo(() => ({
-    isLoading,
-    showLoading,
-    hideLoading,
-  }), [isLoading]);
+  const value = useMemo(
+    () => ({
+      isLoading,
+      showLoading,
+      hideLoading
+    }),
+    [isLoading]
+  );
 
   return (
     <LoadingContext.Provider value={value}>

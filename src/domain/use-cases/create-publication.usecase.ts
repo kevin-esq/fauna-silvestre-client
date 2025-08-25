@@ -1,9 +1,9 @@
 // usecases/create-publication.usecase.ts
-import { PublicationData } from "../models/publication.models";
-import {publicationService} from "../../services/publication/publication.service";
+import { PublicationData } from '../models/publication.models';
+import { publicationService } from '../../services/publication/publication.service';
 
 export default async function createPublicationUseCase(
-    publicationData: PublicationData,
+  publicationData: PublicationData
 ): Promise<void> {
-    await publicationService.addPublication(publicationData);
+  await publicationService.addPublication(publicationData);
 }

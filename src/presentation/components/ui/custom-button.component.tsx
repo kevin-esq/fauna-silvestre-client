@@ -1,5 +1,12 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, StyleProp, ViewStyle, TextStyle } from 'react-native';
+import {
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  StyleProp,
+  ViewStyle,
+  TextStyle
+} from 'react-native';
 interface CustomButtonProps {
   title: string;
   onPress: () => void;
@@ -17,7 +24,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   textStyle,
   disabled,
   variant = 'primary',
-  variables,
+  variables
 }) => {
   const styles = createStyles(variables);
 
@@ -25,52 +32,49 @@ const CustomButton: React.FC<CustomButtonProps> = ({
     styles.button,
     variant === 'primary' ? styles.primaryButton : styles.secondaryButton,
     style,
-    disabled && styles.disabledButton,
+    disabled && styles.disabledButton
   ];
 
   const textStyleFinal = [
     styles.text,
     variant === 'primary' ? styles.primaryText : styles.secondaryText,
-    textStyle,
+    textStyle
   ];
 
   return (
-    <TouchableOpacity 
-      style={buttonStyle}
-      onPress={onPress}
-      disabled={disabled}
-    >
+    <TouchableOpacity style={buttonStyle} onPress={onPress} disabled={disabled}>
       <Text style={textStyleFinal}>{title}</Text>
     </TouchableOpacity>
   );
 };
 
-const createStyles = (variables: Record<string, string> | undefined) => StyleSheet.create({
-  button: {
-    padding: 15,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  primaryButton: {
-    backgroundColor: variables?.['--primary'],
-  },
-  secondaryButton: {
-    backgroundColor: variables?.['--secondary'],
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  primaryText: {
-    color: variables?.['--text-on-primary'],
-  },
-  secondaryText: {
-    color: variables?.['--text-on-secondary'],
-  },
-});
+const createStyles = (variables: Record<string, string> | undefined) =>
+  StyleSheet.create({
+    button: {
+      padding: 15,
+      borderRadius: 5,
+      alignItems: 'center',
+      marginVertical: 10
+    },
+    primaryButton: {
+      backgroundColor: variables?.['--primary']
+    },
+    secondaryButton: {
+      backgroundColor: variables?.['--secondary']
+    },
+    disabledButton: {
+      opacity: 0.5
+    },
+    text: {
+      fontSize: 16,
+      fontWeight: 'bold'
+    },
+    primaryText: {
+      color: variables?.['--text-on-primary']
+    },
+    secondaryText: {
+      color: variables?.['--text-on-secondary']
+    }
+  });
 
 export default CustomButton;

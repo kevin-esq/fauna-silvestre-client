@@ -1,16 +1,27 @@
 export default class User {
-  id: string
-  UserName: string
-  name: string
-  lastName: string
-  locality: string
-  gender: string
-  age: number
-  email: string
-  token: string
-  role: string
+  id: string;
+  UserName: string;
+  name: string;
+  lastName: string;
+  locality: string;
+  gender: string;
+  age: number;
+  email: string;
+  token: string;
+  role: string;
 
-  constructor(id: string, UserName: string, name: string, lastName: string, locality: string, gender: string, age: number, email: string, token: string, role: string) {
+  constructor(
+    id: string,
+    UserName: string,
+    name: string,
+    lastName: string,
+    locality: string,
+    gender: string,
+    age: number,
+    email: string,
+    token: string,
+    role: string
+  ) {
     this.id = id;
     this.UserName = UserName;
     this.name = name;
@@ -20,6 +31,6 @@ export default class User {
     this.age = age;
     this.email = email;
     this.token = token;
-    this.role = role
+    this.role = role;
   }
 }

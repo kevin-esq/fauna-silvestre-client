@@ -1,5 +1,10 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { Camera, useCameraDevices, PhotoFile, TakePhotoOptions } from 'react-native-vision-camera';
+import {
+  Camera,
+  useCameraDevices,
+  PhotoFile,
+  TakePhotoOptions
+} from 'react-native-vision-camera';
 import { AppState } from 'react-native';
 import { useRequestPermissions } from '../hooks/use-request-permissions.hook';
 
@@ -18,7 +23,7 @@ export function useCamera() {
 
   useEffect(() => {
     checkPermissions(['camera']);
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'active') {
         checkPermissions(['camera']);
       }
@@ -30,35 +35,38 @@ export function useCamera() {
     setCameraReady(hasPermissions && !!device);
   }, [hasPermissions, device]);
 
-  const takePhoto = useCallback(async (options?: TakePhotoOptions): Promise<PhotoFile | undefined> => {
-    if (!cameraRef.current || !isCameraReady) {
-      console.log('Camera not ready or no permission');
-      return;
-    }
-    setCapturing(true);
-    try {
-      const photo = await cameraRef.current.takePhoto({
-        flash: flashMode,
-        ...options,
-      });
-      return photo;
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name === 'CameraRuntimeError') {
-        console.error('Camera runtime error:', e.message);
-      } else {
-        console.error('Failed to take photo with an unexpected error:', e);
+  const takePhoto = useCallback(
+    async (options?: TakePhotoOptions): Promise<PhotoFile | undefined> => {
+      if (!cameraRef.current || !isCameraReady) {
+        console.log('Camera not ready or no permission');
+        return;
       }
-    } finally {
-      setCapturing(false);
-    }
-  }, [cameraRef, isCameraReady, flashMode]);
+      setCapturing(true);
+      try {
+        const photo = await cameraRef.current.takePhoto({
+          flash: flashMode,
+          ...options
+        });
+        return photo;
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name === 'CameraRuntimeError') {
+          console.error('Camera runtime error:', e.message);
+        } else {
+          console.error('Failed to take photo with an unexpected error:', e);
+        }
+      } finally {
+        setCapturing(false);
+      }
+    },
+    [cameraRef, isCameraReady, flashMode]
+  );
 
   const flipCamera = useCallback(() => {
-    setCameraPosition((prev) => (prev === 0 ? 1 : 0));
+    setCameraPosition(prev => (prev === 0 ? 1 : 0));
   }, []);
 
   const toggleFlashMode = useCallback(() => {
-    setFlashMode((prev) => {
+    setFlashMode(prev => {
       if (prev === 'off') return 'on';
       if (prev === 'on') return 'auto';
       return 'off';
@@ -76,7 +84,6 @@ export function useCamera() {
     takePhoto,
     flipCamera,
     toggleFlashMode,
-    checkPermissions,
+    checkPermissions
   };
 }
-

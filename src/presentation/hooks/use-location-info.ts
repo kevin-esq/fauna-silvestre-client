@@ -17,18 +17,13 @@ const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
 async function reverseGeocode(lat: number, lon: number): Promise<LocationInfo> {
   const url = `${NOMINATIM_BASE}/reverse?lat=${lat}&lon=${lon}&format=json`;
   const res = await fetch(url, {
-    headers: { 'User-Agent': 'FaunaSilvestre/1.0 (fauna-silvestre-client)' },
+    headers: { 'User-Agent': 'FaunaSilvestre/1.0 (fauna-silvestre-client)' }
   });
   if (!res.ok) throw new Error(`Reverse geocode failed: ${res.status}`);
   const data = await res.json();
   const addr = data.address ?? {};
 
-  const city =
-    addr.city ||
-    addr.town ||
-    addr.village ||
-    addr.hamlet ||
-    'N/A';
+  const city = addr.city || addr.town || addr.village || addr.hamlet || 'N/A';
 
   const country = addr.country || 'N/A';
 
@@ -38,7 +33,11 @@ async function reverseGeocode(lat: number, lon: number): Promise<LocationInfo> {
 }
 
 export function useLocationInfo(): UseLocationInfoResult {
-  const [info, setInfo] = useState<LocationInfo>({ city: '', state: '', country: '' });
+  const [info, setInfo] = useState<LocationInfo>({
+    city: '',
+    state: '',
+    country: ''
+  });
   const [loading, setLoading] = useState<boolean>(true);
   const { requestPermissions, checkPermissions } = useRequestPermissions();
   const didRequestRef = useRef(false);
@@ -54,13 +53,17 @@ export function useLocationInfo(): UseLocationInfoResult {
 
       const loc = await Location.getCurrentPosition({
         enableHighAccuracy: true,
-        timeout: 15_000,
+        timeout: 15_000
       });
       const result = await reverseGeocode(loc.latitude, loc.longitude);
       setInfo(result);
     } catch (err) {
       console.error('Error al obtener ubicación:', err);
-      setInfo({ city: 'Ubicación no disponible', state: 'Ubicación no disponible', country: 'Ubicación no disponible' });
+      setInfo({
+        city: 'Ubicación no disponible',
+        state: 'Ubicación no disponible',
+        country: 'Ubicación no disponible'
+      });
     } finally {
       setLoading(false);
     }

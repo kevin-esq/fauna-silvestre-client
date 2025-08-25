@@ -15,10 +15,22 @@ export const LoadingModal = ({ visible, theme }: Props) => {
       visible={visible}
       onRequestClose={() => {}}
     >
-      <View style={[styles.modalBackground, { backgroundColor: theme?.colors?.shadow }]}>
-        <View style={[styles.activityIndicatorWrapper, { backgroundColor: theme?.colors?.surface }]}>
+      <View
+        style={[
+          styles.modalBackground,
+          { backgroundColor: theme?.colors?.shadow }
+        ]}
+      >
+        <View
+          style={[
+            styles.activityIndicatorWrapper,
+            { backgroundColor: theme?.colors?.surface }
+          ]}
+        >
           <ActivityIndicator size="large" color={theme?.colors?.primary} />
-          <Text style={[styles.loadingText, { color: theme?.colors?.text }]}>Cargando...</Text>
+          <Text style={[styles.loadingText, { color: theme?.colors?.text }]}>
+            Cargando...
+          </Text>
         </View>
       </View>
     </Modal>
@@ -30,7 +42,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     flexDirection: 'column',
-    justifyContent: 'space-around',
+    justifyContent: 'space-around'
   },
   activityIndicatorWrapper: {
     height: 120,
@@ -38,9 +50,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    justifyContent: 'space-around'
   },
   loadingText: {
-    marginTop: 8,
-  },
+    marginTop: 8
+  }
 });

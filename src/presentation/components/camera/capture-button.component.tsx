@@ -1,5 +1,5 @@
-import React from "react";
-import { TouchableOpacity, View, StyleSheet } from "react-native";
+import React from 'react';
+import { TouchableOpacity, View, StyleSheet } from 'react-native';
 
 type Props = {
   onPress: () => void;
@@ -10,17 +10,18 @@ type Props = {
 export const CaptureButton: React.FC<Props> = ({
   onPress,
   disabled,
-  isActive,
+  isActive
 }) => (
   <TouchableOpacity
     onPress={onPress}
     disabled={disabled}
     activeOpacity={0.8}
-    style={styles.captureButton}>
+    style={styles.captureButton}
+  >
     <View
       style={[
         styles.captureButtonInner,
-        isActive && styles.captureButtonActive,
+        isActive && styles.captureButtonActive
       ]}
     />
   </TouchableOpacity>
@@ -32,18 +33,18 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 35,
     borderWidth: 3,
-    borderColor: "rgba(255,255,255,0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.2)",
+    borderColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)'
   },
   captureButtonInner: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff'
   },
   captureButtonActive: {
-    backgroundColor: "#007AFF",
-  },
+    backgroundColor: '#007AFF'
+  }
 });

@@ -7,7 +7,7 @@ import { useNavigationActions } from '../navigation/navigation-provider';
 export enum ResetStep {
   EMAIL = 'EMAIL',
   CODE = 'CODE',
-  PASSWORD = 'PASSWORD',
+  PASSWORD = 'PASSWORD'
 }
 
 export const useForgotPassword = () => {
@@ -50,7 +50,10 @@ export const useForgotPassword = () => {
     }
     showLoading();
     try {
-      const tokenValid = await auth.verifyResetCode(email.toLowerCase(), verificationCode);
+      const tokenValid = await auth.verifyResetCode(
+        email.toLowerCase(),
+        verificationCode
+      );
       if (tokenValid === 'INVALID') {
         setError('Código inválido o expirado');
         setToken('');
@@ -90,18 +93,31 @@ export const useForgotPassword = () => {
     } finally {
       hideLoading();
     }
-  }, [newPassword, confirmPassword, token, email, auth, showLoading, hideLoading, navigate]);
+  }, [
+    newPassword,
+    confirmPassword,
+    token,
+    email,
+    auth,
+    showLoading,
+    hideLoading,
+    navigate
+  ]);
 
   return {
     currentStep,
-    email, setEmail,
-    verificationCode, setVerificationCode,
-    newPassword, setNewPassword,
-    confirmPassword, setConfirmPassword,
+    email,
+    setEmail,
+    verificationCode,
+    setVerificationCode,
+    newPassword,
+    setNewPassword,
+    confirmPassword,
+    setConfirmPassword,
     message,
     error,
     sendResetPasswordEmail,
     verifyResetCode,
-    handlePasswordReset,
+    handlePasswordReset
   };
 };

@@ -1,11 +1,17 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef
+} from 'react';
 import {
   View,
   FlatList,
   Text,
   RefreshControl,
   Alert,
-  ActivityIndicator,
+  ActivityIndicator
 } from 'react-native';
 import { useTheme, themeVariables } from '../../contexts/theme.context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,12 +31,12 @@ const ReviewPublicationsScreen: React.FC = () => {
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
   const insets = useSafeAreaInsets();
-  
-  const { 
-    state: { pending, error }, 
-    actions: { loadStatus, approve, reject, loadMoreStatus } 
+
+  const {
+    state: { pending, error },
+    actions: { loadStatus, approve, reject, loadMoreStatus }
   } = usePublications();
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
@@ -40,10 +46,11 @@ const ReviewPublicationsScreen: React.FC = () => {
   const filteredPublications = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return pending.publications;
-    
-    return pending.publications.filter((pub) => 
-      pub.commonNoun.toLowerCase().includes(query) ||
-      pub.description.toLowerCase().includes(query)
+
+    return pending.publications.filter(
+      pub =>
+        pub.commonNoun.toLowerCase().includes(query) ||
+        pub.description.toLowerCase().includes(query)
     );
   }, [pending.publications, searchQuery]);
 
@@ -66,8 +73,13 @@ const ReviewPublicationsScreen: React.FC = () => {
   }, []);
 
   const handleLoadMore = useCallback(async () => {
-    if (isLoadingMore || !pending.hasMore || filteredPublications.length < PAGE_SIZE) return;
-    
+    if (
+      isLoadingMore ||
+      !pending.hasMore ||
+      filteredPublications.length < PAGE_SIZE
+    )
+      return;
+
     try {
       setIsLoadingMore(true);
       await loadMoreStatus('pending', searchQuery);
@@ -76,27 +88,36 @@ const ReviewPublicationsScreen: React.FC = () => {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, pending.hasMore, filteredPublications.length, loadMoreStatus, searchQuery]);
+  }, [
+    isLoadingMore,
+    pending.hasMore,
+    filteredPublications.length,
+    loadMoreStatus,
+    searchQuery
+  ]);
 
-  const handleApprove = useCallback((id: string) => {
-    Alert.alert(
-      'Aprobar publicación',
-      '¿Confirmas aprobación?',
-      [
-        { 
-          text: 'Cancelar', 
-          style: 'cancel',
-          onPress: () => console.log('Cancel pressed') 
-        },
-        { 
-          text: 'Aprobar', 
-          onPress: () => approve(id),
-          style: 'default'
-        },
-      ],
-      { cancelable: true }
-    );
-  }, [approve]);
+  const handleApprove = useCallback(
+    (id: string) => {
+      Alert.alert(
+        'Aprobar publicación',
+        '¿Confirmas aprobación?',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+            onPress: () => console.log('Cancel pressed')
+          },
+          {
+            text: 'Aprobar',
+            onPress: () => approve(id),
+            style: 'default'
+          }
+        ],
+        { cancelable: true }
+      );
+    },
+    [approve]
+  );
 
   const handleReject = useCallback((id: string) => {
     setCurrentId(id);
@@ -120,7 +141,7 @@ const ReviewPublicationsScreen: React.FC = () => {
         status="pending"
         reviewActions={{
           onApprove: () => handleApprove(item.recordId.toString()),
-          onReject: () => handleReject(item.recordId.toString()),
+          onReject: () => handleReject(item.recordId.toString())
         }}
         viewMode="presentation"
       />
@@ -130,13 +151,10 @@ const ReviewPublicationsScreen: React.FC = () => {
 
   const renderFooter = () => {
     if (!isLoadingMore) return null;
-    
+
     return (
       <View style={styles.footer}>
-        <ActivityIndicator 
-          size="small" 
-          color={theme.colors.primary} 
-        />
+        <ActivityIndicator size="small" color={theme.colors.primary} />
         <Text style={[styles.loadingText, { color: theme.colors.text }]}>
           Cargando más publicaciones...
         </Text>
@@ -146,7 +164,7 @@ const ReviewPublicationsScreen: React.FC = () => {
 
   const renderEmptyComponent = () => (
     <View style={styles.centered}>
-      <Text style={[styles.emptyText, { color: theme.colors.text }]}> 
+      <Text style={[styles.emptyText, { color: theme.colors.text }]}>
         {searchQuery ? 'Sin resultados' : 'No hay publicaciones pendientes.'}
       </Text>
       {error && (
@@ -159,8 +177,9 @@ const ReviewPublicationsScreen: React.FC = () => {
 
   const renderResultCount = () => (
     <View style={styles.resultsContainer}>
-      <Text style={[styles.resultText, { color: theme.colors.textSecondary }]}> 
-        {filteredPublications.length} {filteredPublications.length === 1 ? 'resultado' : 'resultados'}
+      <Text style={[styles.resultText, { color: theme.colors.textSecondary }]}>
+        {filteredPublications.length}{' '}
+        {filteredPublications.length === 1 ? 'resultado' : 'resultados'}
       </Text>
     </View>
   );
@@ -168,11 +187,10 @@ const ReviewPublicationsScreen: React.FC = () => {
   // Estado de carga inicial
   if (pending.isLoading && !isRefreshing && pending.publications.length === 0) {
     return (
-      <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator 
-          size="large" 
-          color={theme.colors.primary} 
-        />
+      <View
+        style={[styles.centered, { backgroundColor: theme.colors.background }]}
+      >
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={[styles.loadingText, { color: theme.colors.text }]}>
           Cargando publicaciones...
         </Text>
@@ -181,13 +199,15 @@ const ReviewPublicationsScreen: React.FC = () => {
   }
 
   return (
-    <View style={[
-      styles.container, 
-      { 
-        paddingTop: insets.top, 
-        backgroundColor: theme.colors.background 
-      }
-    ]}>
+    <View
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+          backgroundColor: theme.colors.background
+        }
+      ]}
+    >
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}
@@ -200,7 +220,7 @@ const ReviewPublicationsScreen: React.FC = () => {
 
       <FlatList
         data={filteredPublications}
-        keyExtractor={(item) => item.recordId.toString()}
+        keyExtractor={item => item.recordId.toString()}
         renderItem={renderPublicationItem}
         contentContainerStyle={styles.listContent}
         refreshControl={

@@ -1,5 +1,5 @@
 // data/mappers/UserMapper.ts
-import User  from '../../domain/entities/user.entity';
+import User from '../../domain/entities/user.entity';
 import { UserModel } from '../models/UserModel';
 
 /**
@@ -14,7 +14,18 @@ export class UserMapper {
    * @returns {User} Entidad de dominio
    */
   static toDomain(data: UserModel): User {
-    return new User("", data.userName, data.name, data.lastName, data.locality, data.gender, data.age, data.email, "", "");
+    return new User(
+      '',
+      data.userName,
+      data.name,
+      data.lastName,
+      data.locality,
+      data.gender,
+      data.age,
+      data.email,
+      '',
+      ''
+    );
   }
 
   /**
@@ -31,7 +42,7 @@ export class UserMapper {
       locality: entity.locality,
       gender: entity.gender,
       age: entity.age,
-      email: entity.email,
+      email: entity.email
     };
   }
 }

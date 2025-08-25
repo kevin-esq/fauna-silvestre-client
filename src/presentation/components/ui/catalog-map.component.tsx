@@ -1,6 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, LatLng, Callout, Region } from 'react-native-maps';
+import MapView, {
+  Marker,
+  PROVIDER_GOOGLE,
+  LatLng,
+  Callout,
+  Region
+} from 'react-native-maps';
 
 interface Props {
   locations: LatLng[];
@@ -18,7 +24,7 @@ const CatalogMap: React.FC<Props> = ({ locations }) => {
       latitude,
       longitude,
       latitudeDelta: 0.2, // Ajusta el zoom inicial
-      longitudeDelta: 0.2,
+      longitudeDelta: 0.2
     };
   };
 
@@ -28,7 +34,7 @@ const CatalogMap: React.FC<Props> = ({ locations }) => {
       setTimeout(() => {
         mapRef.current?.fitToCoordinates(locations, {
           edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-          animated: true,
+          animated: true
         });
       }, 500); // Esperamos un poco para asegurar que el mapa esté montado
     }
@@ -65,8 +71,8 @@ const styles = StyleSheet.create({
   center: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
+    alignItems: 'center'
+  }
 });
 
 export default CatalogMap;

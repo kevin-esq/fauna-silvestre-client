@@ -1,4 +1,7 @@
-import SQLite, { SQLiteDatabase, Transaction } from 'react-native-sqlite-storage';
+import SQLite, {
+  SQLiteDatabase,
+  Transaction
+} from 'react-native-sqlite-storage';
 import { PublicationResponse } from '../../domain/models/publication.models';
 import { Platform } from 'react-native';
 import {
@@ -7,7 +10,7 @@ import {
   unlink,
   writeFile,
   exists,
-  mkdir,
+  mkdir
 } from 'react-native-fs';
 
 const CONFIG = {
@@ -21,7 +24,7 @@ const CONFIG = {
   CACHE_TTL: 7 * 24 * 60 * 60 * 1000,
   IMAGE_QUALITY: 0.8,
   CONCURRENT_OPERATIONS: 3,
-  VACUUM_THRESHOLD: 1000,
+  VACUUM_THRESHOLD: 1000
 } as const;
 
 SQLite.enablePromise(true);
@@ -61,7 +64,7 @@ class DatabasePool {
         return connection;
       }
     }
-  
+
     if (this.connections.size >= this.maxConnections) {
       // Buscar la primera conexión válida
       for (const [connKey, conn] of this.connections.entries()) {
@@ -72,12 +75,12 @@ class DatabasePool {
       }
       throw new Error('No hay conexiones disponibles');
     }
-  
+
     const db = await SQLite.openDatabase({
       name: CONFIG.DB_NAME,
-      location: 'default',
+      location: 'default'
     });
-  
+
     this.connections.set(key, db);
     return db;
   }
@@ -101,31 +104,31 @@ class FileSystemManager {
       return this.cacheDir;
     }
 
-    const baseDir = Platform.OS === 'android' 
-      ? CachesDirectoryPath 
-      : DocumentDirectoryPath;
-    
+    const baseDir =
+      Platform.OS === 'android' ? CachesDirectoryPath : DocumentDirectoryPath;
+
     this.cacheDir = `${baseDir}/publication_images`;
-    
+
     if (!(await exists(this.cacheDir))) {
       await mkdir(this.cacheDir, { NSURLIsExcludedFromBackupKey: true });
     }
-    
+
     return this.cacheDir;
   }
 
   async calculateCacheSize(): Promise<number> {
     const now = Date.now();
-    if (now - this.lastCacheSizeCheck < 60000) { // Cache por 1 minuto
+    if (now - this.lastCacheSizeCheck < 60000) {
+      // Cache por 1 minuto
       return this.cacheSizeCache;
     }
 
-    try { 
+    try {
       const totalSize = 0;
       // Simulamos el cálculo (en producción usarías readdir + stat)
       this.cacheSizeCache = totalSize;
       this.lastCacheSizeCheck = now;
-      
+
       return totalSize;
     } catch (error) {
       console.warn('Error calculating cache size:', error);
@@ -147,12 +150,10 @@ class FileSystemManager {
   }
 
   async optimizeImage(
-    base64: string, 
+    base64: string,
     options: ImageProcessingOptions = {}
   ): Promise<string> {
-    const {
-      maxSize = CONFIG.MAX_BASE64_SIZE,
-    } = options;
+    const { maxSize = CONFIG.MAX_BASE64_SIZE } = options;
 
     if (!base64 || base64.length <= maxSize) {
       return base64;
@@ -201,7 +202,7 @@ export const createTables = async (db: SQLiteDatabase): Promise<void> => {
       accessCount INTEGER DEFAULT 0,
       lastAccessed INTEGER DEFAULT (strftime('%s', 'now'))
     )`,
-    
+
     // Tabla de metadatos de cache
     `CREATE TABLE IF NOT EXISTS ${CONFIG.CACHE_TABLE} (
       key TEXT PRIMARY KEY,
@@ -211,17 +212,17 @@ export const createTables = async (db: SQLiteDatabase): Promise<void> => {
       status TEXT,
       createdAt INTEGER DEFAULT (strftime('%s', 'now'))
     )`,
-    
+
     // Índices para optimización
     `CREATE INDEX IF NOT EXISTS idx_status_created 
      ON ${CONFIG.TABLE_NAME}(status, createdAt DESC)`,
-    
+
     `CREATE INDEX IF NOT EXISTS idx_status_accessed 
      ON ${CONFIG.TABLE_NAME}(status, lastAccessed DESC)`,
-    
+
     `CREATE INDEX IF NOT EXISTS idx_search_text 
      ON ${CONFIG.TABLE_NAME}(commonNoun, description)`,
-    
+
     // Triggers para mantener metadatos actualizados
     `CREATE TRIGGER IF NOT EXISTS update_timestamp 
      AFTER UPDATE ON ${CONFIG.TABLE_NAME}
@@ -229,15 +230,17 @@ export const createTables = async (db: SQLiteDatabase): Promise<void> => {
        UPDATE ${CONFIG.TABLE_NAME} 
        SET updatedAt = strftime('%s', 'now') 
        WHERE recordId = NEW.recordId;
-     END`,
+     END`
   ];
 
   return new Promise<void>((resolve, reject) => {
     db.transaction(
       (tx: Transaction) => {
         queries.forEach(query => {
-          tx.executeSql(query, [], 
-            () => {}, 
+          tx.executeSql(
+            query,
+            [],
+            () => {},
             (_, error) => {
               console.error('Table creation error:', error);
               return false;
@@ -245,7 +248,7 @@ export const createTables = async (db: SQLiteDatabase): Promise<void> => {
           );
         });
       },
-      (error) => {
+      error => {
         console.error('Transaction error creating tables:', error);
         reject(error);
       },
@@ -263,13 +266,13 @@ export const clearStatus = async (
   options: { keepRecent?: boolean; maxAge?: number } = {}
 ): Promise<{ deletedRecords: number; deletedFiles: number }> => {
   const { keepRecent = false, maxAge = CONFIG.CACHE_TTL } = options;
-  
+
   return new Promise((resolve, reject) => {
     db.transaction(
       (tx: Transaction) => {
         let whereClause = 'WHERE status = ?';
         const params = [status];
-        
+
         if (keepRecent) {
           const cutoffTime = Math.floor((Date.now() - maxAge) / 1000);
           whereClause += ' AND createdAt < ?';
@@ -281,7 +284,8 @@ export const clearStatus = async (
           `SELECT imgPath, COUNT(*) as count FROM ${CONFIG.TABLE_NAME} ${whereClause}`,
           params,
           async (_, result) => {
-            const paths = result.rows.raw()
+            const paths = result.rows
+              .raw()
               .map(row => row.imgPath)
               .filter(Boolean);
 
@@ -299,8 +303,9 @@ export const clearStatus = async (
               return false;
             });
 
-            const deletedFiles = (await Promise.all(deletePromises))
-              .filter(Boolean).length;
+            const deletedFiles = (await Promise.all(deletePromises)).filter(
+              Boolean
+            ).length;
 
             // Eliminar registros de BD
             tx.executeSql(
@@ -312,10 +317,12 @@ export const clearStatus = async (
                   `DELETE FROM ${CONFIG.CACHE_TABLE} WHERE status = ?`,
                   [status],
                   () => {
-                    console.log(`Cleared cache for status ${status}: ${deleteResult.rowsAffected} records, ${deletedFiles} files`);
+                    console.log(
+                      `Cleared cache for status ${status}: ${deleteResult.rowsAffected} records, ${deletedFiles} files`
+                    );
                     resolve({
                       deletedRecords: deleteResult.rowsAffected,
-                      deletedFiles,
+                      deletedFiles
                     });
                   }
                 );
@@ -332,7 +339,7 @@ export const clearStatus = async (
           }
         );
       },
-      (error) => {
+      error => {
         console.error('Clear status transaction error:', error);
         reject(error);
       }
@@ -341,31 +348,31 @@ export const clearStatus = async (
 };
 
 const saveImageToFile = async (
-  base64: string, 
+  base64: string,
   options: ImageProcessingOptions = {}
 ): Promise<string> => {
   if (!base64 || typeof base64 !== 'string') return '';
-  
+
   try {
     // Optimizar imagen si es necesario
     const optimizedBase64 = await fsManager.optimizeImage(base64, options);
-    
+
     const cacheDir = await fsManager.getCacheDir();
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 10000);
     const filename = `img_${timestamp}_${random}.jpg`;
     const path = `${cacheDir}/${filename}`;
-    
+
     const base64Data = optimizedBase64.startsWith('data:')
       ? optimizedBase64.split(',')[1]
       : optimizedBase64;
-    
+
     await writeFile(path, base64Data, 'base64');
-    
+
     // Actualizar metadatos de cache
     const cacheKey = `img_${timestamp}`;
     await updateCacheMetadata(cacheKey, optimizedBase64.length, 'active');
-    
+
     return `file://${path}`;
   } catch (error) {
     console.error('Image save error:', error);
@@ -380,7 +387,7 @@ const updateCacheMetadata = async (
 ): Promise<void> => {
   try {
     const db = await getDBConnection();
-    
+
     await new Promise<void>((resolve, reject) => {
       db.transaction((tx: Transaction) => {
         tx.executeSql(
@@ -405,8 +412,8 @@ export const savePublications = async (
   db: SQLiteDatabase,
   items: PublicationResponse[],
   status: string,
-  options: { 
-    upsert?: boolean; 
+  options: {
+    upsert?: boolean;
     processImages?: boolean;
     batchSize?: number;
   } = {}
@@ -418,43 +425,49 @@ export const savePublications = async (
   const {
     upsert = true,
     processImages = true,
-    batchSize = CONFIG.BATCH_SIZE,
+    batchSize = CONFIG.BATCH_SIZE
   } = options;
 
-  console.log(`Saving ${items.length} publications to cache for status ${status}`);
+  console.log(
+    `Saving ${items.length} publications to cache for status ${status}`
+  );
 
   let savedCount = 0;
   let errorCount = 0;
 
   // Procesar imágenes en paralelo con límite de concurrencia
   const processedItems = await Promise.all(
-    items.map(async (item) => {
+    items.map(async item => {
       try {
         let imgPath = '';
         let imgBase64 = item.img || '';
 
-        if (processImages && imgBase64 && imgBase64.length > CONFIG.MAX_BASE64_SIZE) {
+        if (
+          processImages &&
+          imgBase64 &&
+          imgBase64.length > CONFIG.MAX_BASE64_SIZE
+        ) {
           imgPath = await saveImageToFile(imgBase64, {
             maxSize: CONFIG.MAX_BASE64_SIZE,
-            quality: CONFIG.IMAGE_QUALITY,
+            quality: CONFIG.IMAGE_QUALITY
           });
           imgBase64 = ''; // Limpiar base64 después de guardar archivo
         }
 
-        return { 
-          ...item, 
-          img: imgBase64, 
+        return {
+          ...item,
+          img: imgBase64,
           imgPath,
-          processedAt: Date.now(),
+          processedAt: Date.now()
         };
       } catch (error) {
         console.error('Error processing item:', item.recordId, error);
         errorCount++;
-        return { 
-          ...item, 
-          img: '', 
+        return {
+          ...item,
+          img: '',
           imgPath: '',
-          processedAt: Date.now(),
+          processedAt: Date.now()
         };
       }
     })
@@ -463,12 +476,12 @@ export const savePublications = async (
   // Guardar en lotes para mejor rendimiento
   for (let i = 0; i < processedItems.length; i += batchSize) {
     const batch = processedItems.slice(i, i + batchSize);
-    
+
     try {
       await new Promise<void>((resolve, reject) => {
         db.transaction(
           (tx: Transaction) => {
-            const query = upsert 
+            const query = upsert
               ? `INSERT OR REPLACE INTO ${CONFIG.TABLE_NAME} 
                  (recordId, commonNoun, description, animalState, location, status, img, imgPath, author, accessCount, lastAccessed) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT accessCount FROM ${CONFIG.TABLE_NAME} WHERE recordId = ?), 0), strftime('%s', 'now'))`
@@ -485,7 +498,7 @@ export const savePublications = async (
                 item.location || '',
                 status,
                 item.img || '',
-                item.imgPath || '',
+                item.imgPath || ''
               ];
 
               if (upsert) {
@@ -493,7 +506,7 @@ export const savePublications = async (
               }
 
               tx.executeSql(
-                query, 
+                query,
                 params,
                 () => {
                   savedCount++;
@@ -506,12 +519,14 @@ export const savePublications = async (
               );
             });
           },
-          (error) => {
+          error => {
             console.error('Batch transaction error:', error);
             reject(error);
           },
           () => {
-            console.log(`Successfully saved batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(processedItems.length/batchSize)}`);
+            console.log(
+              `Successfully saved batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(processedItems.length / batchSize)}`
+            );
             resolve();
           }
         );
@@ -522,7 +537,9 @@ export const savePublications = async (
     }
   }
 
-  console.log(`Completed saving: ${savedCount} successful, ${errorCount} errors`);
+  console.log(
+    `Completed saving: ${savedCount} successful, ${errorCount} errors`
+  );
   return { saved: savedCount, errors: errorCount };
 };
 
@@ -537,11 +554,7 @@ export const loadPublications = async (
     includeStats?: boolean;
   } = {}
 ): Promise<PublicationResponse[]> => {
-  const {
-    orderBy = 'created',
-    searchQuery,
-    includeStats = false,
-  } = options;
+  const { orderBy = 'created', searchQuery, includeStats = false } = options;
 
   return new Promise((resolve, reject) => {
     db.transaction((tx: Transaction) => {
@@ -579,11 +592,12 @@ export const loadPublications = async (
       }
 
       // Agregar ordenamiento
-      const orderColumn = {
-        created: 'createdAt',
-        accessed: 'lastAccessed', 
-        updated: 'updatedAt'
-      }[orderBy] || 'createdAt';
+      const orderColumn =
+        {
+          created: 'createdAt',
+          accessed: 'lastAccessed',
+          updated: 'updatedAt'
+        }[orderBy] || 'createdAt';
 
       query += ` ORDER BY ${orderColumn} DESC LIMIT ? OFFSET ?`;
       params.push(limit.toString(), offset.toString());
@@ -593,7 +607,7 @@ export const loadPublications = async (
         params,
         (_, result) => {
           const data = result.rows.raw();
-          
+
           // Actualizar contador de acceso para cada registro
           if (includeStats && data.length > 0) {
             const updateQuery = `
@@ -602,11 +616,13 @@ export const loadPublications = async (
               WHERE recordId IN (${data.map(() => '?').join(',')})
             `;
             const recordIds = data.map(item => item.recordId);
-            
+
             tx.executeSql(updateQuery, recordIds);
           }
 
-          console.log(`Loaded ${data.length} publications from DB for status ${status}`);
+          console.log(
+            `Loaded ${data.length} publications from DB for status ${status}`
+          );
           resolve(data);
         },
         (_, error) => {
@@ -634,7 +650,7 @@ export const optimizeDatabase = async (
         [],
         (_, result) => {
           const stats = result.rows.item(0);
-          
+
           // Ejecutar VACUUM si es necesario
           if (stats.totalRecords > CONFIG.VACUUM_THRESHOLD) {
             tx.executeSql('VACUUM');
@@ -652,7 +668,7 @@ export const optimizeDatabase = async (
             totalRecords: stats.totalRecords,
             cacheSize: stats.totalSize || 0,
             lastVacuum: Date.now(),
-            fragmentationLevel: 0, // Calcular si es necesario
+            fragmentationLevel: 0 // Calcular si es necesario
           });
         },
         (_, error) => {
@@ -683,7 +699,7 @@ export const getDatabaseStats = async (
             totalRecords: row.totalRecords,
             cacheSize: row.cacheSize || 0,
             lastVacuum: 0, // Implementar tracking si es necesario
-            fragmentationLevel: 0,
+            fragmentationLevel: 0
           });
         },
         (_, error) => {
@@ -711,7 +727,7 @@ export const performMaintenance = async (
   const {
     cleanOldFiles = true,
     optimizeDb = true,
-    maxAge = CONFIG.CACHE_TTL,
+    maxAge = CONFIG.CACHE_TTL
   } = options;
 
   let filesDeleted = 0;
@@ -748,13 +764,15 @@ export const performMaintenance = async (
     }
 
     const cacheSize = await fsManager.calculateCacheSize();
-    
-    console.log(`Maintenance completed: ${filesDeleted} files, ${recordsDeleted} records deleted`);
-    
+
+    console.log(
+      `Maintenance completed: ${filesDeleted} files, ${recordsDeleted} records deleted`
+    );
+
     return {
       filesDeleted,
       recordsDeleted,
-      cacheSize,
+      cacheSize
     };
   } catch (error) {
     console.error('Maintenance error:', error);

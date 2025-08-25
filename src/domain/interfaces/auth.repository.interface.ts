@@ -1,5 +1,5 @@
 // domain/interfaces/IAuthRepository.ts
-import {Credentials, UserData} from "../models/auth.models";
+import { Credentials, UserData } from '../models/auth.models';
 import { HttpError, NetworkError } from '../../shared/types/errors';
 
 /**

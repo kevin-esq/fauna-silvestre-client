@@ -2,7 +2,11 @@ import { ConsoleLogger } from '../logging/console-logger';
 import { StorageError } from '../../shared/types/custom-errors';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { ILogger } from '../logging/ILogger';
-import { IKeyManager, CryptoService, KeychainKeyManager } from './crypto‑storage.service';
+import {
+  IKeyManager,
+  CryptoService,
+  KeychainKeyManager
+} from './crypto‑storage.service';
 import { INDEX_KEY } from './storage-keys';
 
 export interface ISecureStorage {
@@ -48,7 +52,10 @@ export class SecureStorageService implements ISecureStorage {
   public async save(key: string, value: string): Promise<void> {
     if (!value) throw new StorageError('No se puede guardar valor vacío');
     try {
-      const encrypted = await this.cryptoService.encrypt(value, this.encryptionKey);
+      const encrypted = await this.cryptoService.encrypt(
+        value,
+        this.encryptionKey
+      );
       await EncryptedStorage.setItem(key, encrypted);
       const keys = await this.getStoredKeys();
       keys.add(key);
@@ -64,7 +71,10 @@ export class SecureStorageService implements ISecureStorage {
     try {
       const raw = await EncryptedStorage.getItem(key);
       if (!raw) return null;
-      const decrypted = await this.cryptoService.decrypt(raw, this.encryptionKey);
+      const decrypted = await this.cryptoService.decrypt(
+        raw,
+        this.encryptionKey
+      );
       this.logger.debug(`Obtenido y desencriptado key: ${key}`);
       return decrypted;
     } catch (e) {
@@ -111,8 +121,14 @@ export class SecureStorageService implements ISecureStorage {
 
       for (const [k, raw] of Object.entries(backup)) {
         try {
-          const plain = await this.cryptoService.decrypt(raw, this.encryptionKey);
-          const reenc = await this.cryptoService.encrypt(plain, this.encryptionKey);
+          const plain = await this.cryptoService.decrypt(
+            raw,
+            this.encryptionKey
+          );
+          const reenc = await this.cryptoService.encrypt(
+            plain,
+            this.encryptionKey
+          );
           await EncryptedStorage.setItem(k, reenc);
         } catch {
           this.logger.warn(`No se pudo re‑encriptar ${k}, eliminando`);
@@ -131,9 +147,10 @@ export class SecureStorageService implements ISecureStorage {
 
 let instance: SecureStorageService | null = null;
 
-export const getSecureStorageService = async (): Promise<SecureStorageService> => {
-  if (!instance) {
-    instance = await SecureStorageService.getInstance();
-  }
-  return instance;
-};
+export const getSecureStorageService =
+  async (): Promise<SecureStorageService> => {
+    if (!instance) {
+      instance = await SecureStorageService.getInstance();
+    }
+    return instance;
+  };

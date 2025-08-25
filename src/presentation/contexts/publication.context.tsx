@@ -5,23 +5,23 @@ import React, {
   useCallback,
   useMemo,
   useRef,
-  useEffect,
+  useEffect
 } from 'react';
 import { useAuth } from '@/presentation/contexts/auth.context';
 import {
   PublicationResponse,
-  CountsResponse,
+  CountsResponse
 } from '@/domain/models/publication.models';
 import {
   publicationService,
-  PublicationStatus,
+  PublicationStatus
 } from '@/services/publication/publication.service';
 import {
   createTable,
   getDBConnection,
   loadPublications,
   savePublications,
-  clearStatus,
+  clearStatus
 } from '@/services/data/db.service';
 import { SQLiteDatabase } from 'react-native-sqlite-storage';
 
@@ -32,7 +32,7 @@ const CONFIG = {
   MAX_RETRIES: 3,
   PREFETCH_THRESHOLD: 0.8,
   BATCH_SIZE: 5,
-  DEBOUNCE_DELAY: 300,
+  DEBOUNCE_DELAY: 300
 } as const;
 
 interface PublicationState {
@@ -119,15 +119,15 @@ export interface PublicationContextType {
   readonly actions: {
     readonly loadStatus: (
       status: PublicationStatus,
-      options?: LoadOptions,
+      options?: LoadOptions
     ) => Promise<void>;
     readonly loadMoreStatus: (
       status: PublicationStatus,
-      searchQuery?: string,
+      searchQuery?: string
     ) => Promise<void>;
     readonly filterPublications: (
       status: PublicationStatus,
-      searchQuery: string,
+      searchQuery: string
     ) => void;
     readonly loadCounts: (forceRefresh?: boolean) => Promise<void>;
     readonly approve: (recordId: string) => Promise<boolean>;
@@ -174,7 +174,7 @@ const createInitialPublicationState = (): PublicationState => ({
   hasMore: true,
   currentSearchQuery: '',
   pageSize: CONFIG.DEFAULT_PAGE_SIZE,
-  retryCount: 0,
+  retryCount: 0
 });
 
 const initialState: State = {
@@ -184,10 +184,10 @@ const initialState: State = {
   counts: {
     users: 0,
     records: 0,
-    loading: false,
+    loading: false
   },
   error: null,
-  isOnline: true,
+  isOnline: true
 };
 
 function publicationsReducer(state: State, action: Action): State {
@@ -202,9 +202,9 @@ function publicationsReducer(state: State, action: Action): State {
           ...state[action.status],
           isLoading: true,
           isLoadingMore: false,
-          error: undefined,
+          error: undefined
         },
-        error: null,
+        error: null
       };
 
     case 'FETCH_MORE_START':
@@ -212,8 +212,8 @@ function publicationsReducer(state: State, action: Action): State {
         ...state,
         [action.status]: {
           ...state[action.status],
-          isLoadingMore: true,
-        },
+          isLoadingMore: true
+        }
       };
 
     case 'FETCH_STATUS_SUCCESS': {
@@ -241,8 +241,8 @@ function publicationsReducer(state: State, action: Action): State {
           lastSynced: action.lastSynced,
           currentSearchQuery: action.searchQuery,
           retryCount: 0,
-          error: undefined,
-        },
+          error: undefined
+        }
       };
     }
 
@@ -250,12 +250,23 @@ function publicationsReducer(state: State, action: Action): State {
       const currentState = state[action.status];
       const searchQuery = currentState.currentSearchQuery;
 
+      if (action.payload.length === 0) {
+        return {
+          ...state,
+          [action.status]: {
+            ...currentState,
+            isLoadingMore: false,
+            hasMore: false
+          }
+        };
+      }
+
       let newFiltered: PublicationResponse[];
       if (searchQuery) {
         const filtered = action.payload.filter(
           p =>
             p.commonNoun?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+            p.description?.toLowerCase().includes(searchQuery.toLowerCase())
         );
         newFiltered = [...currentState.filteredPublications, ...filtered];
       } else {
@@ -271,8 +282,8 @@ function publicationsReducer(state: State, action: Action): State {
           isLoadingMore: false,
           page: currentState.page + 1,
           hasMore: action.hasMore,
-          retryCount: 0,
-        },
+          retryCount: 0
+        }
       };
     }
 
@@ -284,7 +295,7 @@ function publicationsReducer(state: State, action: Action): State {
         ? currentState.publications.filter(
             pub =>
               pub.commonNoun?.toLowerCase().includes(searchQuery) ||
-              pub.description?.toLowerCase().includes(searchQuery),
+              pub.description?.toLowerCase().includes(searchQuery)
           )
         : currentState.publications;
 
@@ -296,8 +307,8 @@ function publicationsReducer(state: State, action: Action): State {
           currentSearchQuery: action.searchQuery,
           hasMore:
             filtered.length < currentState.publications.length ||
-            currentState.hasMore,
-        },
+            currentState.hasMore
+        }
       };
     }
 
@@ -306,11 +317,11 @@ function publicationsReducer(state: State, action: Action): State {
       const currentState = state[fromStatus];
 
       const updatedPublications = currentState.publications.filter(
-        pub => pub.recordId.toString() !== recordId,
+        pub => pub.recordId.toString() !== recordId
       );
 
       const updatedFiltered = currentState.filteredPublications.filter(
-        pub => pub.recordId.toString() !== recordId,
+        pub => pub.recordId.toString() !== recordId
       );
 
       return {
@@ -318,8 +329,8 @@ function publicationsReducer(state: State, action: Action): State {
         [fromStatus]: {
           ...currentState,
           publications: updatedPublications,
-          filteredPublications: updatedFiltered,
-        },
+          filteredPublications: updatedFiltered
+        }
       };
     }
 
@@ -334,9 +345,9 @@ function publicationsReducer(state: State, action: Action): State {
           publications: [...currentState.publications, publication],
           filteredPublications: [
             ...currentState.filteredPublications,
-            publication,
-          ],
-        },
+            publication
+          ]
+        }
       };
     }
 
@@ -346,8 +357,8 @@ function publicationsReducer(state: State, action: Action): State {
         counts: {
           ...state.counts,
           loading: true,
-          error: undefined,
-        },
+          error: undefined
+        }
       };
 
     case 'FETCH_COUNTS_SUCCESS':
@@ -358,14 +369,14 @@ function publicationsReducer(state: State, action: Action): State {
           records: action.payload.records,
           loading: false,
           lastUpdated: Date.now(),
-          error: undefined,
-        },
+          error: undefined
+        }
       };
 
     case 'OPERATION_FAILURE': {
       const baseState = {
         ...state,
-        error: action.payload,
+        error: action.payload
       };
 
       if (action.status) {
@@ -378,8 +389,8 @@ function publicationsReducer(state: State, action: Action): State {
             error: action.payload,
             retryCount: action.retryable
               ? state[action.status].retryCount + 1
-              : 0,
-          },
+              : 0
+          }
         };
       }
 
@@ -388,8 +399,8 @@ function publicationsReducer(state: State, action: Action): State {
         counts: {
           ...state.counts,
           loading: false,
-          error: action.payload,
-        },
+          error: action.payload
+        }
       };
     }
 
@@ -398,14 +409,14 @@ function publicationsReducer(state: State, action: Action): State {
         ...state,
         [action.status]: {
           ...state[action.status],
-          retryCount: state[action.status].retryCount + 1,
-        },
+          retryCount: state[action.status].retryCount + 1
+        }
       };
 
     case 'RESET_STATUS':
       return {
         ...state,
-        [action.status]: createInitialPublicationState(),
+        [action.status]: createInitialPublicationState()
       };
 
     case 'RESET_ALL':
@@ -447,7 +458,7 @@ export const PublicationProvider = React.memo(
         error: unknown,
         fallback: string,
         status?: PublicationStatus,
-        retryable = false,
+        retryable = false
       ) => {
         const message = error instanceof Error ? error.message : fallback;
         console.error(`[PublicationContext] ${fallback}:`, error);
@@ -465,7 +476,7 @@ export const PublicationProvider = React.memo(
           if (currentCount >= maxRetries) {
             console.warn(`Max retries reached for ${status}, not retrying`);
             retryable = false;
-            retryCountersRef.current.set(status, 0); // Reset counter
+            retryCountersRef.current.set(status, 0);
           } else {
             retryCountersRef.current.set(status, currentCount + 1);
           }
@@ -477,10 +488,10 @@ export const PublicationProvider = React.memo(
             ? 'Error de conexión. Verifica tu internet.'
             : message,
           status,
-          retryable,
+          retryable
         });
       },
-      [],
+      []
     );
 
     const cancelPreviousRequest = useCallback((key: string) => {
@@ -499,7 +510,7 @@ export const PublicationProvider = React.memo(
         status: PublicationStatus,
         page: number,
         size: number,
-        options: LoadOptions = {},
+        options: LoadOptions = {}
       ): Promise<SyncResult> => {
         const { searchQuery, forceRefresh = false, useCache = true } = options;
         const isAdmin = user?.role === 'Admin';
@@ -526,7 +537,7 @@ export const PublicationProvider = React.memo(
 
               if (cached.length > 0) {
                 console.log(
-                  `[Cache Hit] ${cached.length} publications for ${status}`,
+                  `[Cache Hit] ${cached.length} publications for ${status}`
                 );
 
                 const currentState = state[status];
@@ -541,14 +552,14 @@ export const PublicationProvider = React.memo(
                     setTimeout(() => {
                       syncPublications(status, page, size, {
                         ...options,
-                        forceRefresh: true,
+                        forceRefresh: true
                       })
                         .catch(err =>
-                          console.warn('Background refresh failed:', err),
+                          console.warn('Background refresh failed:', err)
                         )
                         .finally(() => {
                           backgroundRefreshRef.current.delete(
-                            `refresh-${status}`,
+                            `refresh-${status}`
                           );
                         });
                     }, 5000);
@@ -559,13 +570,13 @@ export const PublicationProvider = React.memo(
                   publications: cached,
                   filtered: cached,
                   source: 'cache',
-                  hasMore: cached.length === size,
+                  hasMore: cached.length >= size
                 };
               }
             } catch (cacheError) {
               console.warn(
                 'Cache access failed, falling back to remote:',
-                cacheError,
+                cacheError
               );
             } finally {
               abortControllersRef.current.delete(requestKey);
@@ -576,13 +587,13 @@ export const PublicationProvider = React.memo(
           const remote = await publicationService.getPublicationsByStatus({
             status,
             page,
-            limit: size,
-            forAdmin: isAdmin,
+            size,
+            forAdmin: isAdmin
           });
 
           const loadTime = Date.now() - startTime;
           console.log(
-            `[Remote Load] ${remote.length} publications in ${loadTime}ms`,
+            `[Remote Load] ${remote.length} publications in ${loadTime}ms`
           );
 
           if (!searchQuery && remote.length > 0) {
@@ -593,7 +604,7 @@ export const PublicationProvider = React.memo(
                 }
                 await savePublications(db, remote, status);
                 console.log(
-                  `[Cache Update] ${remote.length} publications saved`,
+                  `[Cache Update] ${remote.length} publications saved`
                 );
               })
               .catch(err => console.warn('Cache save failed:', err));
@@ -603,38 +614,42 @@ export const PublicationProvider = React.memo(
             publications: remote,
             filtered: remote,
             source: 'remote',
-            hasMore: remote.length === size,
+            hasMore: remote.length >= size
           };
-        }  catch (err) {
-          if (err instanceof Error && err.message.includes('Failed to load publications')) {
+        } catch (err) {
+          if (
+            err instanceof Error &&
+            err.message.includes('Failed to load publications')
+          ) {
             throw new Error('Error de base de datos local');
           }
-          
+
           if (useCache && !searchQuery) {
             try {
               const db = await getDB();
               const cached = await loadPublications(db, status, size, 0);
               if (cached.length > 0) {
-                console.log(`[Cache Fallback] Using cached data due to network error`);
+                console.log(
+                  `[Cache Fallback] Using cached data due to network error`
+                );
                 return {
                   publications: cached,
                   filtered: cached,
                   source: 'cache',
-                  hasMore: false,
+                  hasMore: false
                 };
               }
             } catch (cacheError) {
               console.warn('Cache fallback also failed:', cacheError);
             }
           }
-          
+
           throw err;
-        }
-        finally {
+        } finally {
           abortControllersRef.current.delete(requestKey);
         }
       },
-      [user, state, getDB, cancelPreviousRequest],
+      [user, state, getDB, cancelPreviousRequest]
     );
 
     const prefetchNextPage = useCallback(
@@ -652,7 +667,7 @@ export const PublicationProvider = React.memo(
             status,
             state[status].page + 1,
             state[status].pageSize,
-            { useCache: false },
+            { useCache: false }
           );
           console.log(`[Prefetch] Next page for ${status} loaded`);
         } catch (error) {
@@ -661,25 +676,27 @@ export const PublicationProvider = React.memo(
           prefetchingRef.current.delete(prefetchKey);
         }
       },
-      [state, syncPublications],
+      [state, syncPublications]
     );
 
     const loadStatus = useCallback(
       async (status: PublicationStatus, options: LoadOptions = {}) => {
         const { searchQuery = '', forceRefresh = false } = options;
-        
+
         const loadKey = `load-${status}-${searchQuery}`;
         if (abortControllersRef.current.has(loadKey)) {
           console.log(`Load already in progress for ${loadKey}`);
           return;
         }
-    
-        console.log(`[LoadStatus] ${status} - Query: "${searchQuery}" - Force: ${forceRefresh}`);
+
+        console.log(
+          `[LoadStatus] ${status} - Query: "${searchQuery}" - Force: ${forceRefresh}`
+        );
         dispatch({ type: 'FETCH_STATUS_START', status });
-    
+
         const controller = new AbortController();
         abortControllersRef.current.set(loadKey, controller);
-    
+
         try {
           const result = await syncPublications(
             status,
@@ -687,9 +704,9 @@ export const PublicationProvider = React.memo(
             state[status].pageSize,
             { searchQuery, forceRefresh, useCache: !searchQuery }
           );
-    
+
           retryCountersRef.current.set(status, 0);
-    
+
           dispatch({
             type: 'FETCH_STATUS_SUCCESS',
             status,
@@ -698,9 +715,8 @@ export const PublicationProvider = React.memo(
             hasMore: result.hasMore,
             resetPage: true,
             searchQuery,
-            lastSynced: Date.now(),
+            lastSynced: Date.now()
           });
-    
         } catch (err) {
           handleError(err, `Error loading ${status}`, status, true);
         } finally {
@@ -713,7 +729,21 @@ export const PublicationProvider = React.memo(
     const loadMore = useCallback(
       async (status: PublicationStatus, searchQuery = '') => {
         const currentState = state[status];
-        if (!currentState.hasMore || currentState.isLoadingMore) return;
+        console.log('🔍 LoadMore Debug:', {
+          hasMore: currentState.hasMore,
+          isLoadingMore: currentState.isLoadingMore,
+          currentPage: currentState.page,
+          totalPublications: currentState.publications.length,
+          canLoadMore: currentState.hasMore && !currentState.isLoadingMore
+        });
+
+        if (!currentState.hasMore || currentState.isLoadingMore) {
+          console.log('❌ Cannot load more:', {
+            hasMore: currentState.hasMore,
+            isLoadingMore: currentState.isLoadingMore
+          });
+          return;
+        }
 
         dispatch({ type: 'FETCH_MORE_START', status });
 
@@ -722,20 +752,20 @@ export const PublicationProvider = React.memo(
             status,
             currentState.page,
             currentState.pageSize,
-            { searchQuery, useCache: !searchQuery },
+            { searchQuery, useCache: !searchQuery }
           );
 
           dispatch({
             type: 'FETCH_MORE_SUCCESS',
             status,
             payload: result.publications,
-            hasMore: result.hasMore,
+            hasMore: result.hasMore
           });
         } catch (err) {
           handleError(err, `Error loading more ${status}`, status, true);
         }
       },
-      [state, syncPublications, handleError],
+      [state, syncPublications, handleError]
     );
 
     const filterPublications = useCallback(
@@ -749,14 +779,14 @@ export const PublicationProvider = React.memo(
           dispatch({
             type: 'FILTER_PUBLICATIONS',
             status,
-            searchQuery,
+            searchQuery
           });
           debounceTimersRef.current.delete(status);
         }, CONFIG.DEBOUNCE_DELAY);
 
         debounceTimersRef.current.set(status, newTimerId);
       },
-      [],
+      []
     );
 
     const loadCounts = useCallback(
@@ -779,7 +809,7 @@ export const PublicationProvider = React.memo(
           handleError(err, 'Error loading counts');
         }
       },
-      [state, handleError],
+      [state, handleError]
     );
 
     const updatePublicationStatus = useCallback(
@@ -787,10 +817,10 @@ export const PublicationProvider = React.memo(
         recordId: string,
         fromStatus: PublicationStatus,
         toStatus: PublicationStatus,
-        action: 'accept' | 'reject',
+        action: 'accept' | 'reject'
       ): Promise<boolean> => {
         const publication = state[fromStatus].publications.find(
-          p => p.recordId.toString() === recordId,
+          p => p.recordId.toString() === recordId
         );
 
         if (!publication) {
@@ -801,7 +831,7 @@ export const PublicationProvider = React.memo(
           type: 'UPDATE_PUBLICATION_OPTIMISTIC',
           recordId,
           fromStatus,
-          toStatus,
+          toStatus
         });
 
         try {
@@ -814,7 +844,7 @@ export const PublicationProvider = React.memo(
           const db = await getDB();
           await db.executeSql(
             `UPDATE publications SET status = ? WHERE recordId = ?`,
-            [toStatus, recordId],
+            [toStatus, recordId]
           );
 
           await loadCounts(true);
@@ -826,14 +856,14 @@ export const PublicationProvider = React.memo(
             recordId,
             fromStatus,
             toStatus,
-            publication,
+            publication
           });
 
           handleError(error, `Error ${action}ing publication`);
           return false;
         }
       },
-      [state, getDB, loadCounts, handleError],
+      [state, getDB, loadCounts, handleError]
     );
 
     const approve = useCallback(
@@ -842,9 +872,9 @@ export const PublicationProvider = React.memo(
           recordId,
           PublicationStatus.PENDING,
           PublicationStatus.ACCEPTED,
-          'accept',
+          'accept'
         ),
-      [updatePublicationStatus],
+      [updatePublicationStatus]
     );
 
     const reject = useCallback(
@@ -853,9 +883,9 @@ export const PublicationProvider = React.memo(
           recordId,
           PublicationStatus.PENDING,
           PublicationStatus.REJECTED,
-          'reject',
+          'reject'
         ),
-      [updatePublicationStatus],
+      [updatePublicationStatus]
     );
 
     const retryOperation = useCallback(
@@ -869,7 +899,7 @@ export const PublicationProvider = React.memo(
         dispatch({ type: 'INCREMENT_RETRY', status });
         await loadStatus(status, { forceRefresh: true });
       },
-      [state, loadStatus],
+      [state, loadStatus]
     );
 
     const utils = useMemo(
@@ -886,7 +916,7 @@ export const PublicationProvider = React.memo(
         shouldPrefetch: (status: PublicationStatus) => {
           const currentState = state[status];
           const threshold = Math.floor(
-            currentState.pageSize * CONFIG.PREFETCH_THRESHOLD,
+            currentState.pageSize * CONFIG.PREFETCH_THRESHOLD
           );
           return (
             currentState.filteredPublications.length >= threshold &&
@@ -903,11 +933,11 @@ export const PublicationProvider = React.memo(
             isFiltered: currentState.currentSearchQuery.length > 0,
             lastSync: currentState.lastSynced
               ? new Date(currentState.lastSynced).toLocaleTimeString()
-              : null,
+              : null
           };
-        },
+        }
       }),
-      [state],
+      [state]
     );
 
     const actions = useMemo(
@@ -922,7 +952,7 @@ export const PublicationProvider = React.memo(
           dispatch({ type: 'RESET_STATUS', status }),
         resetAll: () => dispatch({ type: 'RESET_ALL' }),
         retryOperation,
-        prefetchNextPage,
+        prefetchNextPage
       }),
       [
         loadStatus,
@@ -932,13 +962,13 @@ export const PublicationProvider = React.memo(
         approve,
         reject,
         retryOperation,
-        prefetchNextPage,
-      ],
+        prefetchNextPage
+      ]
     );
 
     const contextValue = useMemo(
       () => ({ state, actions, utils }),
-      [state, actions, utils],
+      [state, actions, utils]
     );
 
     useEffect(() => {
@@ -962,7 +992,7 @@ export const PublicationProvider = React.memo(
         {children}
       </PublicationContext.Provider>
     );
-  },
+  }
 );
 
 PublicationProvider.displayName = 'PublicationProvider';
@@ -971,7 +1001,7 @@ export const usePublications = (): PublicationContextType => {
   const context = useContext(PublicationContext);
   if (!context) {
     throw new Error(
-      'usePublications must be used within a PublicationProvider',
+      'usePublications must be used within a PublicationProvider'
     );
   }
   return context;
@@ -997,8 +1027,8 @@ export const usePublicationStatus = (status: PublicationStatus) => {
         actions.filterPublications(status, searchQuery),
       reset: () => actions.resetStatus(status),
       retry: () => actions.retryOperation(status),
-      prefetch: () => actions.prefetchNextPage(status),
+      prefetch: () => actions.prefetchNextPage(status)
     }),
-    [status, state, actions, utils],
+    [status, state, actions, utils]
   );
 };
