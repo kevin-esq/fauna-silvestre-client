@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Switch,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Switch } from 'react-native';
 
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import useDoubleBackExit from '../../hooks/use-double-back-exit.hook';
@@ -32,7 +27,7 @@ const LoginScreen = () => {
     error,
     rememberMe,
     setRememberMe,
-    handleLogin,
+    handleLogin
   } = useLoginForm();
 
   const { theme } = useTheme();
@@ -40,7 +35,11 @@ const LoginScreen = () => {
   const styles = createStyles(variables);
 
   return (
-    <AuthContainer title="¡Hola! 👋" subtitle="Inicia sesión para continuar" variables={variables}>
+    <AuthContainer
+      title="¡Hola! 👋"
+      subtitle="Inicia sesión para continuar"
+      variables={variables}
+    >
       <ErrorMessage message={error} variables={variables} />
 
       <AuthTextInput
@@ -56,8 +55,8 @@ const LoginScreen = () => {
           styles.input,
           {
             color: variables['--text'],
-            borderColor: variables['--border'],
-          },
+            borderColor: variables['--border']
+          }
         ]}
       />
 
@@ -73,8 +72,8 @@ const LoginScreen = () => {
           styles.input,
           {
             color: variables['--text'],
-            borderColor: variables['--border'],
-          },
+            borderColor: variables['--border']
+          }
         ]}
       />
 
@@ -83,8 +82,13 @@ const LoginScreen = () => {
         <Switch
           value={rememberMe}
           onValueChange={setRememberMe}
-          trackColor={{ false: variables['--border'], true: variables['--primary-light'] }}
-          thumbColor={rememberMe ? variables['--primary'] : variables['--text-secondary']}
+          trackColor={{
+            false: variables['--border'],
+            true: variables['--primary-light']
+          }}
+          thumbColor={
+            rememberMe ? variables['--primary'] : variables['--text-secondary']
+          }
         />
       </View>
 
@@ -100,9 +104,7 @@ const LoginScreen = () => {
         onPress={() => navigate('ForgotPassword')}
         style={styles.forgotPassword}
       >
-        <Text style={styles.forgotPasswordText}>
-          ¿Olvidaste tu contraseña?
-        </Text>
+        <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
       </TouchableOpacity>
 
       <Text style={styles.orText}>¿No tienes cuenta?</Text>

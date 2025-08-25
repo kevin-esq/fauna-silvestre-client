@@ -14,7 +14,10 @@ const useBackHandler = () => {
       return false;
     };
 
-    const backHandlerListener = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    const backHandlerListener = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
     return () => backHandlerListener.remove();
   }, [navigation]);
 };

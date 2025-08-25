@@ -7,12 +7,12 @@ import {
   RESULTS,
   PermissionStatus,
   Permission,
-  PERMISSIONS,
+  PERMISSIONS
 } from 'react-native-permissions';
 import { Camera, CameraPermissionStatus } from 'react-native-vision-camera';
 
 const mapCameraPermissionToStandard = (
-  status: CameraPermissionStatus,
+  status: CameraPermissionStatus
 ): PermissionStatus => {
   switch (status) {
     case 'granted':
@@ -29,7 +29,7 @@ const mapCameraPermissionToStandard = (
 };
 
 const getPermissionsByType = (
-  types: ('camera' | 'gallery' | 'location')[],
+  types: ('camera' | 'gallery' | 'location')[]
 ): Permission[] => {
   const permissions: Permission[] = [];
 
@@ -41,16 +41,16 @@ const getPermissionsByType = (
         permissions.push(
           Platform.select({
             android: PERMISSIONS.ANDROID.READ_MEDIA_IMAGES,
-            ios: PERMISSIONS.IOS.PHOTO_LIBRARY,
-          })!,
+            ios: PERMISSIONS.IOS.PHOTO_LIBRARY
+          })!
         );
         break;
       case 'location':
         permissions.push(
           Platform.select({
             android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-            ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
-          })!,
+            ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
+          })!
         );
         break;
     }
@@ -85,7 +85,7 @@ export const useRequestPermissions = () => {
         setPermissionStatus(statusMap);
 
         const allGranted = Object.values(statusMap).every(
-          status => status === RESULTS.GRANTED,
+          status => status === RESULTS.GRANTED
         );
 
         if (!allGranted) {
@@ -94,8 +94,8 @@ export const useRequestPermissions = () => {
             'Necesitas habilitar los permisos solicitados para continuar.',
             [
               { text: 'Cancelar', style: 'cancel' },
-              { text: 'Ir a ajustes', onPress: () => openSettings() },
-            ],
+              { text: 'Ir a ajustes', onPress: () => openSettings() }
+            ]
           );
           setHasPermissions(false);
           return false;
@@ -108,7 +108,7 @@ export const useRequestPermissions = () => {
         return false;
       }
     },
-    [],
+    []
   );
 
   const checkPermissions = useCallback(
@@ -129,7 +129,7 @@ export const useRequestPermissions = () => {
       }
 
       const allGranted = Object.values(statusMap).every(
-        status => status === RESULTS.GRANTED,
+        status => status === RESULTS.GRANTED
       );
 
       setPermissionStatus(statusMap);
@@ -137,13 +137,13 @@ export const useRequestPermissions = () => {
 
       return allGranted;
     },
-    [],
+    []
   );
 
   return {
     hasPermissions,
     permissionStatus,
     requestPermissions,
-    checkPermissions,
+    checkPermissions
   };
 };

@@ -1,160 +1,165 @@
 // publication-form-screen.styles.ts
 import { Platform, StyleSheet } from 'react-native';
 
-export const createStyles = (vars: Record<string, string>, width: number, height: number) => StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: vars["--background"],
-  },
-  container: {
-    flex: 1,
-    backgroundColor: vars["--background"],
-  },
-  scrollContainer: {
-    paddingBottom: 100,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-    backgroundColor: vars["--background"],
-    borderBottomColor: vars["--border"],
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: 4,
-    marginRight: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: vars["--text"],
-  },
-  image: {
-    width: '100%',
-    height: width * 0.7,
-    borderRadius: 14,
-    marginBottom: 16,
-    backgroundColor: vars["--surface-variant"],
-  },
-  expandIconContainer: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: 6,
-    borderRadius: 20,
-  },
-  formContainer: {
-    paddingHorizontal: 16,
-  },
-  label: {
-    fontWeight: '600',
-    marginBottom: 8,
-    color: vars["--text"],
-    fontSize: 16,
-  },
-  textArea: {
-    backgroundColor: vars["--surface"],
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 20,
-    fontSize: 15,
-    color: vars["--text"],
-    height: 120,
-    textAlignVertical: 'top',
-    borderWidth: 1,
-    borderColor: vars["--border"],
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: vars["--border"],
-  },
-  locationText: {
-    marginLeft: 8,
-    color: vars["--text-secondary"],
-    fontSize: 14,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: vars["--background"],
-    borderTopWidth: 1,
-    borderTopColor: vars["--border"],
-    ...Platform.select({
-      ios: {
-        paddingBottom: 30,
-      },
-    }),
-  },
-  cancelButton: {
-    backgroundColor: vars["--surface-variant"],
-    padding: 16,
-    borderRadius: 10,
-    flex: 1,
-    marginRight: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: vars["--border"],
-  },
-  cancelButtonText: {
-    color: vars["--text"],
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  submitButton: {
-    backgroundColor: vars["--primary"],
-    padding: 16,
-    borderRadius: 10,
-    flex: 1,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  submitButtonText: {
-    color: vars["--text-on-primary"],
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  sendIcon: {
-    marginLeft: 8,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalCloseButton: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 10,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    borderRadius: 20,
-    padding: 8,
-  },
-  expandedImage: {
-    width: width,
-    height: height * 0.8,
-  },
-  stateSelectorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: vars["--border"],
-  },
-});
+export const createStyles = (
+  vars: Record<string, string>,
+  width: number,
+  height: number
+) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: vars['--background']
+    },
+    container: {
+      flex: 1,
+      backgroundColor: vars['--background']
+    },
+    scrollContainer: {
+      paddingBottom: 100
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 12,
+      backgroundColor: vars['--background'],
+      borderBottomColor: vars['--border'],
+      borderBottomWidth: 1
+    },
+    backButton: {
+      padding: 4,
+      marginRight: 8
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: vars['--text']
+    },
+    image: {
+      width: '100%',
+      height: width * 0.7,
+      borderRadius: 14,
+      marginBottom: 16,
+      backgroundColor: vars['--surface-variant']
+    },
+    expandIconContainer: {
+      position: 'absolute',
+      bottom: 12,
+      right: 12,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      padding: 6,
+      borderRadius: 20
+    },
+    formContainer: {
+      paddingHorizontal: 16
+    },
+    label: {
+      fontWeight: '600',
+      marginBottom: 8,
+      color: vars['--text'],
+      fontSize: 16
+    },
+    textArea: {
+      backgroundColor: vars['--surface'],
+      padding: 14,
+      borderRadius: 10,
+      marginBottom: 20,
+      fontSize: 15,
+      color: vars['--text'],
+      height: 120,
+      textAlignVertical: 'top',
+      borderWidth: 1,
+      borderColor: vars['--border']
+    },
+    locationContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 10,
+      paddingVertical: 12,
+      borderTopWidth: 1,
+      borderTopColor: vars['--border']
+    },
+    locationText: {
+      marginLeft: 8,
+      color: vars['--text-secondary'],
+      fontSize: 14
+    },
+    footer: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      padding: 16,
+      backgroundColor: vars['--background'],
+      borderTopWidth: 1,
+      borderTopColor: vars['--border'],
+      ...Platform.select({
+        ios: {
+          paddingBottom: 30
+        }
+      })
+    },
+    cancelButton: {
+      backgroundColor: vars['--surface-variant'],
+      padding: 16,
+      borderRadius: 10,
+      flex: 1,
+      marginRight: 12,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: vars['--border']
+    },
+    cancelButtonText: {
+      color: vars['--text'],
+      fontWeight: '600',
+      fontSize: 16
+    },
+    submitButton: {
+      backgroundColor: vars['--primary'],
+      padding: 16,
+      borderRadius: 10,
+      flex: 1,
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'center'
+    },
+    submitButtonText: {
+      color: vars['--text-on-primary'],
+      fontWeight: '600',
+      fontSize: 16
+    },
+    sendIcon: {
+      marginLeft: 8
+    },
+    modalContainer: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.9)',
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+    modalCloseButton: {
+      position: 'absolute',
+      top: 50,
+      right: 20,
+      zIndex: 10,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      borderRadius: 20,
+      padding: 8
+    },
+    expandedImage: {
+      width: width,
+      height: height * 0.8
+    },
+    stateSelectorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 10,
+      paddingVertical: 12,
+      borderTopWidth: 1,
+      borderTopColor: vars['--border']
+    }
+  });

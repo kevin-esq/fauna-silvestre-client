@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   View,
   Image,
@@ -7,22 +7,29 @@ import {
   Animated,
   SafeAreaView,
   StatusBar
-} from "react-native";
-import { NavigationProp, useNavigation, useRoute } from "@react-navigation/native";
-import Ionicons from "react-native-vector-icons/Ionicons";
-import { createStyles } from "./image-preview-screen.styles";
-import { useTheme, themeVariables } from "../../contexts/theme.context";
-import { useMemo } from "react";
-import { RootStackParamList } from "../../navigation/navigation.types";
+} from 'react-native';
+import {
+  NavigationProp,
+  useNavigation,
+  useRoute
+} from '@react-navigation/native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { createStyles } from './image-preview-screen.styles';
+import { useTheme, themeVariables } from '../../contexts/theme.context';
+import { useMemo } from 'react';
+import { RootStackParamList } from '../../navigation/navigation.types';
 import type { Location } from 'react-native-get-location';
 
 const ImagePreviewScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute();
-  const { imageUri, location } = route.params as { imageUri: string; location: Location };
+  const { imageUri, location } = route.params as {
+    imageUri: string;
+    location: Location;
+  };
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
-  const {theme} = useTheme();
+  const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
 
@@ -30,12 +37,12 @@ const ImagePreviewScreen = () => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
-      useNativeDriver: true,
+      useNativeDriver: true
     }).start();
   }, [fadeAnim]);
 
   const handleContinue = () => {
-    navigation.navigate("PublicationForm", { imageUri, location });
+    navigation.navigate('PublicationForm', { imageUri, location });
   };
 
   const handleGoBack = () => {
@@ -46,16 +53,16 @@ const ImagePreviewScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
       <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-        <Image 
-          source={{ uri: imageUri }} 
-          style={styles.image} 
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.image}
           resizeMode="contain"
         />
-        
+
         {/* Header con botón de cerrar */}
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.closeButton} 
+          <TouchableOpacity
+            style={styles.closeButton}
             onPress={handleGoBack}
             activeOpacity={0.7}
           >
@@ -68,28 +75,33 @@ const ImagePreviewScreen = () => {
           <View style={styles.locationContainer}>
             <Ionicons name="location" size={16} color="#fff" />
             <Text style={styles.locationText}>
-              {location ? 
-                `Ubicación: ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}` : 
-                "Ubicación no disponible"}
+              {location
+                ? `Ubicación: ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`
+                : 'Ubicación no disponible'}
             </Text>
           </View>
-          
+
           <View style={styles.actions}>
-            <TouchableOpacity 
-              style={[styles.button, styles.buttonSecondary]} 
+            <TouchableOpacity
+              style={[styles.button, styles.buttonSecondary]}
               onPress={handleGoBack}
               activeOpacity={0.7}
             >
               <Text style={styles.buttonText}>Retomar</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.button, styles.buttonPrimary]} 
+
+            <TouchableOpacity
+              style={[styles.button, styles.buttonPrimary]}
               onPress={handleContinue}
               activeOpacity={0.7}
             >
               <Text style={styles.buttonText}>Continuar</Text>
-              <Ionicons name="arrow-forward" size={20} color="#fff" style={styles.buttonIcon} />
+              <Ionicons
+                name="arrow-forward"
+                size={20}
+                color="#fff"
+                style={styles.buttonIcon}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -99,4 +111,3 @@ const ImagePreviewScreen = () => {
 };
 
 export default ImagePreviewScreen;
-

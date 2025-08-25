@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { View, FlatList, Text, RefreshControl } from 'react-native';
 import { useTheme, themeVariables } from '../../contexts/theme.context';
 import SearchBar from '../../components/ui/search-bar.component';
@@ -13,16 +19,22 @@ import { Theme } from '../../contexts/theme.context';
 
 const PAGE_SIZE = 10;
 
-const EmptyList = React.memo(({ searchQuery, theme }: { searchQuery: string; theme: Theme }) => {
-  const styles = createStyles(themeVariables(theme));
-  const message = searchQuery ? 'Sin resultados' : 'No hay animales en el catálogo.';
+const EmptyList = React.memo(
+  ({ searchQuery, theme }: { searchQuery: string; theme: Theme }) => {
+    const styles = createStyles(themeVariables(theme));
+    const message = searchQuery
+      ? 'Sin resultados'
+      : 'No hay animales en el catálogo.';
 
-  return (
-    <View style={styles.centered}>
-      <Text style={[styles.emptyText, { color: theme.colors.text }]}>{message}</Text>
-    </View>
-  );
-});
+    return (
+      <View style={styles.centered}>
+        <Text style={[styles.emptyText, { color: theme.colors.text }]}>
+          {message}
+        </Text>
+      </View>
+    );
+  }
+);
 
 const CatalogAnimalsScreen = () => {
   const { theme } = useTheme();
@@ -63,31 +75,35 @@ const CatalogAnimalsScreen = () => {
     });
   }, [catalog, searchQuery]);
 
-  
-const renderAnimalItem = useCallback(({ item }: { item: Animal }) => {
-  const mappedAnimal: AnimalModel = {
-    id: item.specie,
-    commonName: item.commonNoun,
-    catalogId: Number(item.catalogId),
-    scientificName: item.specie,
-    status: 'catalogado',
-    statusColor: '#4caf50',
-    image: item.image,
-  };
+  const renderAnimalItem = useCallback(
+    ({ item }: { item: Animal }) => {
+      const mappedAnimal: AnimalModel = {
+        id: item.specie,
+        commonName: item.commonNoun,
+        catalogId: Number(item.catalogId),
+        scientificName: item.specie,
+        status: 'catalogado',
+        statusColor: '#4caf50',
+        image: item.image
+      };
 
-  const handlePress = () => {
-    navigate('AnimalDetails', { animal: item });
-  };
+      const handlePress = () => {
+        navigate('AnimalDetails', { animal: item });
+      };
 
-  return <AnimalCard animal={mappedAnimal} onPress={handlePress} />;
-}, [navigate]);
+      return <AnimalCard animal={mappedAnimal} onPress={handlePress} />;
+    },
+    [navigate]
+  );
 
   if (isLoading && catalog.length === 0) {
     return <LoadingIndicator theme={theme} text="Cargando animales..." />;
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <SearchBar
         value={searchInput}
         onChangeText={setSearchInput}
@@ -99,7 +115,7 @@ const renderAnimalItem = useCallback(({ item }: { item: Animal }) => {
       <FlatList
         data={filteredCatalog}
         renderItem={renderAnimalItem}
-        keyExtractor={(item) => item.specie}
+        keyExtractor={item => item.specie}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl
@@ -109,7 +125,9 @@ const renderAnimalItem = useCallback(({ item }: { item: Animal }) => {
             tintColor={variables['--primary']}
           />
         }
-        ListEmptyComponent={<EmptyList searchQuery={searchQuery} theme={theme} />}
+        ListEmptyComponent={
+          <EmptyList searchQuery={searchQuery} theme={theme} />
+        }
         initialNumToRender={PAGE_SIZE}
         windowSize={11}
       />

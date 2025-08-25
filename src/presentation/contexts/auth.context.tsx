@@ -5,7 +5,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useMemo,
+  useMemo
 } from 'react';
 import { authService } from '../../services/auth/auth.factory';
 import { authEventEmitter, AuthEvents } from '../../services/auth/auth.events';
@@ -13,7 +13,11 @@ import User from '../../domain/entities/user.entity';
 import { Credentials, UserData } from '../../domain/models/auth.models';
 import { useApiStatus } from '@/presentation/contexts/api-status.context';
 import { getSecureStorageService } from '@/services/storage/secure-storage.service';
-import { USER_KEY, ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/services/storage/storage-keys';
+import {
+  USER_KEY,
+  ACCESS_TOKEN_KEY,
+  REFRESH_TOKEN_KEY
+} from '@/services/storage/storage-keys';
 
 interface AuthContextType {
   user: User | null;
@@ -26,7 +30,11 @@ interface AuthContextType {
   registerUser: (userData: UserData) => Promise<void>;
   sendResetPasswordEmail: (email: string) => Promise<boolean>;
   verifyResetCode: (email: string, code: string) => Promise<string>;
-  resetPassword: (token: string, email: string, password: string) => Promise<void>;
+  resetPassword: (
+    token: string,
+    email: string,
+    password: string
+  ) => Promise<void>;
   loadUserData: () => Promise<void>;
 }
 
@@ -39,38 +47,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { setStatus } = useApiStatus();
-  
+
   useEffect(() => {
     const init = async () => {
       try {
-      const storage = await getSecureStorageService();
-      const storedUser = await storage.getValueFor(USER_KEY);
-      const storedAccessToken = await storage.getValueFor(ACCESS_TOKEN_KEY)
-      const storedRefreshToken = await storage.getValueFor(REFRESH_TOKEN_KEY)
-      setStatus('BOOTING');
+        const storage = await getSecureStorageService();
+        const storedUser = await storage.getValueFor(USER_KEY);
+        const storedAccessToken = await storage.getValueFor(ACCESS_TOKEN_KEY);
+        const storedRefreshToken = await storage.getValueFor(REFRESH_TOKEN_KEY);
+        setStatus('BOOTING');
 
-      const user = JSON.parse(storedUser || '{}');
-      if (user && user.role && storedAccessToken && storedRefreshToken){
-        authService.hydrate();
-        setUser(user);
-        setIsAuthenticated(true);
-        setStatus('AUTHENTICATED');
-        setInitializing(false);
-        return;
-      }else{
+        const user = JSON.parse(storedUser || '{}');
+        if (user && user.role && storedAccessToken && storedRefreshToken) {
+          authService.hydrate();
+          setUser(user);
+          setIsAuthenticated(true);
+          setStatus('AUTHENTICATED');
+          setInitializing(false);
+          return;
+        } else {
+          setStatus('UNAUTHENTICATED');
+          setInitializing(false);
+          setUser(null);
+          setIsAuthenticated(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error during initialization:', error);
         setStatus('UNAUTHENTICATED');
         setInitializing(false);
         setUser(null);
         setIsAuthenticated(false);
-        return;
       }
-    } catch (error) {
-      console.error('Error during initialization:', error);
-      setStatus('UNAUTHENTICATED');
-      setInitializing(false);
-      setUser(null);
-      setIsAuthenticated(false);
-    }
     };
     init();
   }, [setStatus]);
@@ -87,23 +95,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [setStatus]);
 
-  const signIn = useCallback(async (credentials: Credentials, rememberMe?: boolean) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      setStatus('AUTHENTICATING');
-      const userEntity = await authService.signIn(credentials, rememberMe);
-      setUser(userEntity);
-      setIsAuthenticated(true);
-      setStatus('AUTHENTICATED');
-    } catch {
-      setError('Error during sign in');
-      setIsAuthenticated(false);
-      setStatus('UNAUTHENTICATED');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setStatus]);
+  const signIn = useCallback(
+    async (credentials: Credentials, rememberMe?: boolean) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        setStatus('AUTHENTICATING');
+        const userEntity = await authService.signIn(credentials, rememberMe);
+        setUser(userEntity);
+        setIsAuthenticated(true);
+        setStatus('AUTHENTICATED');
+      } catch {
+        setError('Error during sign in');
+        setIsAuthenticated(false);
+        setStatus('UNAUTHENTICATED');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [setStatus]
+  );
 
   const signOut = useCallback(async () => {
     setIsLoading(true);
@@ -131,26 +142,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  const loadUserData = useCallback(
-    async () => {
-      try {
-        const storage = await getSecureStorageService();
-        await authService.loadUserData();
-        const user = await storage.getValueFor(USER_KEY);
-        if (user) {
-          setUser(JSON.parse(user));
-          setIsAuthenticated(true);
-        }
-      } catch {
-        setError('Error during sign in');
-        setIsAuthenticated(false);
-        setStatus('UNAUTHENTICATED');
-      } finally {
-        setIsLoading(false);
+  const loadUserData = useCallback(async () => {
+    try {
+      const storage = await getSecureStorageService();
+      await authService.loadUserData();
+      const user = await storage.getValueFor(USER_KEY);
+      if (user) {
+        setUser(JSON.parse(user));
+        setIsAuthenticated(true);
       }
-    },
-    [setStatus],
-  );
+    } catch {
+      setError('Error during sign in');
+      setIsAuthenticated(false);
+      setStatus('UNAUTHENTICATED');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setStatus]);
 
   const contextValue = useMemo(
     () => ({
@@ -162,16 +170,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signIn,
       signOut,
       registerUser,
-      sendResetPasswordEmail: (email: string) => authService.sendResetCode(email),
-      verifyResetCode: (email: string, code: string) => authService.verifyResetCode(email, code),
+      sendResetPasswordEmail: (email: string) =>
+        authService.sendResetCode(email),
+      verifyResetCode: (email: string, code: string) =>
+        authService.verifyResetCode(email, code),
       resetPassword: (token: string, email: string, password: string) =>
         authService.changePassword(email, password, token),
-        loadUserData,
+      loadUserData
     }),
-    [user, isAuthenticated, isLoading, initializing, error, signIn, signOut, registerUser, loadUserData],
+    [
+      user,
+      isAuthenticated,
+      isLoading,
+      initializing,
+      error,
+      signIn,
+      signOut,
+      registerUser,
+      loadUserData
+    ]
   );
 
-  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+  );
 };
 
 export const useAuth = (): AuthContextType => {

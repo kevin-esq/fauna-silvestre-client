@@ -8,17 +8,20 @@ module.exports = {
       {
         root: ['./src'],
         alias: {
-          '@': './src',
-        },
-      },
+          '@': './src'
+        }
+      }
     ],
-    ['module:react-native-dotenv', {
-      moduleName: '@env',
-      path: '.env',
-      blocklist: null,
-      allowlist: null,
-      safe: false,
-      allowUndefined: true,
-    }],
-  ],
+    [
+      'module:react-native-dotenv',
+      {
+        moduleName: '@env',
+        path: '.env',
+        blocklist: null,
+        allowlist: null,
+        safe: false,
+        allowUndefined: true
+      }
+    ]
+  ]
 };

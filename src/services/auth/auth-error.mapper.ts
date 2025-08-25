@@ -28,7 +28,9 @@ export class AuthErrorMapper {
     return new AuthError('Ocurrió un error al iniciar sesión.');
   }
 
-  private static isAxiosError(error: unknown): error is AxiosError<{ error: string }> {
+  private static isAxiosError(
+    error: unknown
+  ): error is AxiosError<{ error: string }> {
     return (error as AxiosError)?.isAxiosError === true;
   }
 }

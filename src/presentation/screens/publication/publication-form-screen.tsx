@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef
+} from 'react';
 import {
   Alert,
   Animated,
@@ -10,7 +16,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -26,12 +32,18 @@ import { PublicationData } from '../../../domain/models/publication.models';
 
 const { width, height } = Dimensions.get('window');
 
-const animalOptions = ['Jaguar', 'Mono aullador', 'Guacamaya', 'Puma', 'Tucán'] as const;
-type AnimalType = typeof animalOptions[number];
+const animalOptions = [
+  'Jaguar',
+  'Mono aullador',
+  'Guacamaya',
+  'Puma',
+  'Tucán'
+] as const;
+type AnimalType = (typeof animalOptions)[number];
 
 enum AnimalState {
   Alive = 1,
-  Dead = 2,
+  Dead = 2
 }
 
 interface PublicationFormScreenProps {
@@ -49,7 +61,10 @@ const PublicationFormScreen: React.FC = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
-  const styles = useMemo(() => createStyles(variables, width, height - 40), [variables]);
+  const styles = useMemo(
+    () => createStyles(variables, width, height - 40),
+    [variables]
+  );
 
   const [formState, setFormState] = useState<{
     description: string;
@@ -60,7 +75,7 @@ const PublicationFormScreen: React.FC = () => {
     description: '',
     animal: animalOptions[0],
     animalState: AnimalState.Alive,
-    isImageExpanded: false,
+    isImageExpanded: false
   });
 
   const { imageUri, location } = route.params as PublicationFormScreenProps;
@@ -69,7 +84,7 @@ const PublicationFormScreen: React.FC = () => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
-      useNativeDriver: true,
+      useNativeDriver: true
     }).start();
   }, [fadeAnim]);
 
@@ -87,7 +102,10 @@ const PublicationFormScreen: React.FC = () => {
     }
 
     if (!description.trim()) {
-      Alert.alert('Descripción requerida', 'Por favor, ingresa una descripción.');
+      Alert.alert(
+        'Descripción requerida',
+        'Por favor, ingresa una descripción.'
+      );
       return;
     }
 
@@ -108,7 +126,10 @@ const PublicationFormScreen: React.FC = () => {
       navigate('HomeTabs');
     } catch (error) {
       console.error('Error al publicar:', error);
-      Alert.alert('❌ Error', 'Ocurrió un problema al crear la publicación. Intenta de nuevo.');
+      Alert.alert(
+        '❌ Error',
+        'Ocurrió un problema al crear la publicación. Intenta de nuevo.'
+      );
     } finally {
       hideLoading();
     }
@@ -117,18 +138,22 @@ const PublicationFormScreen: React.FC = () => {
   async function imageUrlToBase64(url: string): Promise<string> {
     const response = await fetch(url);
     const blob = await response.blob();
-  
+
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
-          const base64 = reader.result.replace(/^data:image\/[a-zA-Z0-9+\/]+;base64,/, '');
+          const base64 = reader.result.replace(
+            /^data:image\/[a-zA-Z0-9+\/]+;base64,/,
+            ''
+          );
           resolve(base64);
         } else {
           reject(new Error('FileReader no devolvió una cadena.'));
         }
       };
-      reader.onerror = () => reject(new Error('Error leyendo blob como data URL'));
+      reader.onerror = () =>
+        reject(new Error('Error leyendo blob como data URL'));
       reader.readAsDataURL(blob);
     });
   }
@@ -152,10 +177,22 @@ const PublicationFormScreen: React.FC = () => {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea}>
-        <Animated.View style={[styles.container, { opacity: fadeAnim }]}>          
-          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-            <ScreenHeader title="Nueva Publicación" onBack={goBack} styles={styles} />
-            <ImagePreview uri={imageUri} isExpanded={formState.isImageExpanded} onToggleExpand={toggleImageExpand} styles={styles} />
+        <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContainer}
+            keyboardShouldPersistTaps="handled"
+          >
+            <ScreenHeader
+              title="Nueva Publicación"
+              onBack={goBack}
+              styles={styles}
+            />
+            <ImagePreview
+              uri={imageUri}
+              isExpanded={formState.isImageExpanded}
+              onToggleExpand={toggleImageExpand}
+              styles={styles}
+            />
             <FormSection
               description={formState.description}
               animal={formState.animal}
@@ -168,16 +205,28 @@ const PublicationFormScreen: React.FC = () => {
               styles={styles}
             />
           </ScrollView>
-          <FooterButtons onCancel={goBack} onSubmit={handleSubmit} styles={styles} />
+          <FooterButtons
+            onCancel={goBack}
+            onSubmit={handleSubmit}
+            styles={styles}
+          />
         </Animated.View>
       </SafeAreaView>
     </SafeAreaProvider>
   );
 };
 
-const ScreenHeader: React.FC<{ title: string; onBack: () => void; styles: ReturnType<typeof createStyles> }> = ({ title, onBack, styles }) => (
+const ScreenHeader: React.FC<{
+  title: string;
+  onBack: () => void;
+  styles: ReturnType<typeof createStyles>;
+}> = ({ title, onBack, styles }) => (
   <View style={styles.header}>
-    <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.8}>
+    <TouchableOpacity
+      onPress={onBack}
+      style={styles.backButton}
+      activeOpacity={0.8}
+    >
       <Ionicons name="arrow-back" size={24} color="#007AFF" />
     </TouchableOpacity>
     <Text style={styles.headerTitle}>{title}</Text>
@@ -200,10 +249,18 @@ const ImagePreview: React.FC<{
     </TouchableOpacity>
     <Modal visible={isExpanded} transparent animationType="fade">
       <View style={styles.modalContainer}>
-        <TouchableOpacity style={styles.modalCloseButton} onPress={onToggleExpand} activeOpacity={0.9}>
+        <TouchableOpacity
+          style={styles.modalCloseButton}
+          onPress={onToggleExpand}
+          activeOpacity={0.9}
+        >
           <Ionicons name="close" size={30} color="white" />
         </TouchableOpacity>
-        <Image source={{ uri }} style={styles.expandedImage} resizeMode="contain" />
+        <Image
+          source={{ uri }}
+          style={styles.expandedImage}
+          resizeMode="contain"
+        />
       </View>
     </Modal>
   </>
@@ -216,11 +273,22 @@ const AnimalStateSelector: React.FC<{
 }> = ({ selected, onSelect, styles }) => {
   const options = [
     { label: '🟢 Vivo', value: AnimalState.Alive },
-    { label: '🔴 Muerto', value: AnimalState.Dead },
+    { label: '🔴 Muerto', value: AnimalState.Dead }
   ];
 
   return (
-    <View style={[styles.stateSelectorContainer, { flexDirection: 'row', borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: '#ccc' }]}>
+    <View
+      style={[
+        styles.stateSelectorContainer,
+        {
+          flexDirection: 'row',
+          borderRadius: 8,
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: '#ccc'
+        }
+      ]}
+    >
       {options.map(({ label, value }, index) => {
         const isSelected = selected === value;
         return (
@@ -234,14 +302,16 @@ const AnimalStateSelector: React.FC<{
               paddingVertical: 12,
               alignItems: 'center',
               borderRightWidth: index === 0 ? 1 : 0,
-              borderRightColor: '#ccc',
+              borderRightColor: '#ccc'
             }}
           >
-            <Text style={{
-              color: isSelected ? 'white' : '#333',
-              fontWeight: isSelected ? 'bold' : 'normal',
-              fontSize: 14,
-            }}>
+            <Text
+              style={{
+                color: isSelected ? 'white' : '#333',
+                fontWeight: isSelected ? 'bold' : 'normal',
+                fontSize: 14
+              }}
+            >
               {label}
             </Text>
           </TouchableOpacity>
@@ -250,7 +320,6 @@ const AnimalStateSelector: React.FC<{
     </View>
   );
 };
-
 
 const FormSection: React.FC<{
   description: string;
@@ -262,40 +331,58 @@ const FormSection: React.FC<{
   location?: { latitude: number; longitude: number };
   styles: ReturnType<typeof createStyles>;
   theme: ReturnType<typeof useTheme>['theme'];
-}> = React.memo(({ description, animal, animalState, onDescriptionChange, onAnimalSelect, onAnimalStateSelect, location, styles, theme }) => (
-  <View style={styles.formContainer}>
-    <Text style={styles.label}>📝 Descripción*</Text>
-    <TextInput
-      style={styles.textArea}
-      placeholder="Describe el avistamiento..."
-      placeholderTextColor="#888"
-      value={description}
-      onChangeText={onDescriptionChange}
-      multiline
-      numberOfLines={4}
-      textAlignVertical="top"
-    />
+}> = React.memo(
+  ({
+    description,
+    animal,
+    animalState,
+    onDescriptionChange,
+    onAnimalSelect,
+    onAnimalStateSelect,
+    location,
+    styles,
+    theme
+  }) => (
+    <View style={styles.formContainer}>
+      <Text style={styles.label}>📝 Descripción*</Text>
+      <TextInput
+        style={styles.textArea}
+        placeholder="Describe el avistamiento..."
+        placeholderTextColor="#888"
+        value={description}
+        onChangeText={onDescriptionChange}
+        multiline
+        numberOfLines={4}
+        textAlignVertical="top"
+      />
 
-    <Text style={styles.label}>🐾 Animal*</Text>
-    <AnimalSearchableDropdown
-      selectedValue={animal}
-      options={animalOptions}
-      onValueChange={onAnimalSelect}
-      placeholder="Selecciona un animal"
-      theme={theme}
-    />
+      <Text style={styles.label}>🐾 Animal*</Text>
+      <AnimalSearchableDropdown
+        selectedValue={animal}
+        options={animalOptions}
+        onValueChange={onAnimalSelect}
+        placeholder="Selecciona un animal"
+        theme={theme}
+      />
 
-    <Text style={styles.label}>📍 Estado del animal*</Text>
-    <AnimalStateSelector selected={animalState} onSelect={onAnimalStateSelect} styles={styles} />
+      <Text style={styles.label}>📍 Estado del animal*</Text>
+      <AnimalStateSelector
+        selected={animalState}
+        onSelect={onAnimalStateSelect}
+        styles={styles}
+      />
 
-    {location && (
-      <View style={styles.locationContainer}>
-        <Ionicons name="location-sharp" size={16} color="#555" />
-        <Text style={styles.locationText}>{`Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`}</Text>
-      </View>
-    )}
-  </View>
-));
+      {location && (
+        <View style={styles.locationContainer}>
+          <Ionicons name="location-sharp" size={16} color="#555" />
+          <Text
+            style={styles.locationText}
+          >{`Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`}</Text>
+        </View>
+      )}
+    </View>
+  )
+);
 
 const FooterButtons: React.FC<{
   onCancel: () => void;
@@ -303,11 +390,19 @@ const FooterButtons: React.FC<{
   styles: ReturnType<typeof createStyles>;
 }> = ({ onCancel, onSubmit, styles }) => (
   <View style={styles.footer}>
-    <TouchableOpacity style={styles.cancelButton} onPress={onCancel} activeOpacity={0.8}>
+    <TouchableOpacity
+      style={styles.cancelButton}
+      onPress={onCancel}
+      activeOpacity={0.8}
+    >
       <Ionicons name="close-circle" size={18} color="#D32F2F" />
       <Text style={styles.cancelButtonText}>Cancelar</Text>
     </TouchableOpacity>
-    <TouchableOpacity style={styles.submitButton} onPress={onSubmit} activeOpacity={0.8}>
+    <TouchableOpacity
+      style={styles.submitButton}
+      onPress={onSubmit}
+      activeOpacity={0.8}
+    >
       <Text style={styles.submitButtonText}>Publicar</Text>
       <Ionicons name="send" size={18} color="white" />
     </TouchableOpacity>

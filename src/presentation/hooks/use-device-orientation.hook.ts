@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
-import Orientation, { OrientationType } from "react-native-orientation-locker";
+import { useEffect, useState } from 'react';
+import Orientation, { OrientationType } from 'react-native-orientation-locker';
 
 export const useDeviceOrientation = () => {
   const [orientation, setOrientation] = useState<OrientationType | null>(null);
 
   useEffect(() => {
     // Obtener la orientación inicial
-    Orientation.getOrientation((current) => {
+    Orientation.getOrientation(current => {
       setOrientation(current);
     });
 

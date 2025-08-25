@@ -9,7 +9,10 @@ interface LocationMapProps {
 
 const LocationMap = ({ location }: LocationMapProps) => {
   const { theme } = useTheme();
-  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [coords, setCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
 
@@ -31,7 +34,7 @@ const LocationMap = ({ location }: LocationMapProps) => {
           {
             ...newCoords,
             latitudeDelta: 0.005,
-            longitudeDelta: 0.005,
+            longitudeDelta: 0.005
           },
           500
         );
@@ -44,8 +47,16 @@ const LocationMap = ({ location }: LocationMapProps) => {
 
   if (error || !coords) {
     return (
-      <View style={[styles.mapContainer, styles.center, { borderColor: theme.colors.border }]}>
-        <Text style={{ color: theme.colors.error }}>{error || 'Error al mostrar el mapa'}</Text>
+      <View
+        style={[
+          styles.mapContainer,
+          styles.center,
+          { borderColor: theme.colors.border }
+        ]}
+      >
+        <Text style={{ color: theme.colors.error }}>
+          {error || 'Error al mostrar el mapa'}
+        </Text>
       </View>
     );
   }
@@ -58,7 +69,7 @@ const LocationMap = ({ location }: LocationMapProps) => {
         initialRegion={{
           ...coords,
           latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
+          longitudeDelta: 0.005
         }}
         provider={PROVIDER_GOOGLE}
         cacheEnabled
@@ -79,16 +90,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     marginBottom: 20,
-    borderWidth: 1,
+    borderWidth: 1
   },
   map: {
     ...StyleSheet.absoluteFillObject,
-    minHeight: 250,
+    minHeight: 250
   },
   center: {
     justifyContent: 'center',
-    alignItems: 'center',
-  },
+    alignItems: 'center'
+  }
 });
 
 export default LocationMap;

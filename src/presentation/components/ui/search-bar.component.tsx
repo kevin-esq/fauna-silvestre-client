@@ -17,7 +17,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   onChangeText,
   placeholder,
   theme,
-  onClear,
+  onClear
 }) => {
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
@@ -52,7 +52,7 @@ const createStyles = (vars: Record<string, string>) =>
     container: {
       position: 'relative',
       marginHorizontal: 16,
-      marginVertical: 12,
+      marginVertical: 12
     },
     searchInput: {
       padding: 12,
@@ -62,7 +62,7 @@ const createStyles = (vars: Record<string, string>) =>
       borderWidth: 1,
       backgroundColor: vars['--surface'],
       color: vars['--text'],
-      borderColor: vars['--border'],
+      borderColor: vars['--border']
     },
     clearButton: {
       position: 'absolute',
@@ -70,8 +70,8 @@ const createStyles = (vars: Record<string, string>) =>
       top: 0,
       bottom: 0,
       justifyContent: 'center',
-      padding: 8,
-    },
+      padding: 8
+    }
   });
 
 export default SearchBar;

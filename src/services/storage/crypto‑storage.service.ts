@@ -27,17 +27,16 @@ export class KeychainKeyManager implements IKeyManager {
 
   async rotateKey(): Promise<string> {
     const newKey = await Aes.randomKey(32);
-    await Keychain.setGenericPassword(
-      this.alias,
-      newKey,
-      {
-        service: this.service,
-        accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-        ...(Platform.OS === 'ios'
-          ? { accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE }
-          : {})
-      }
-    );
+    await Keychain.setGenericPassword(this.alias, newKey, {
+      service: this.service,
+      accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+      ...(Platform.OS === 'ios'
+        ? {
+            accessControl:
+              Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE
+          }
+        : {})
+    });
     this.logger.debug('New encryption key generated and stored');
     return newKey;
   }
@@ -58,4 +57,3 @@ export class CryptoService {
     return text;
   }
 }
-

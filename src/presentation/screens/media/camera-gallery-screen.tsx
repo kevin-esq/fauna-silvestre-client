@@ -9,7 +9,7 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
-  TouchableOpacity,
+  TouchableOpacity
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera } from 'react-native-vision-camera';
@@ -25,7 +25,7 @@ import { useLoading } from '../../contexts/loading.context';
 import { themeVariables, useTheme } from '../../contexts/theme.context';
 import { useGallery } from '../../hooks/use-gallery.hook';
 import Location, {
-  type Location as LocationType,
+  type Location as LocationType
 } from 'react-native-get-location';
 import { createStyles } from './camera-gallery-screen.styles';
 import { useNavigationActions } from '../../navigation/navigation-provider';
@@ -46,7 +46,7 @@ const PermissionMessage = ({
   styles,
   title,
   message,
-  onRequestPermission,
+  onRequestPermission
 }: PermissionMessageProps) => (
   <View style={styles.loadingContainer}>
     <Ionicons
@@ -93,7 +93,7 @@ export const CameraGalleryScreen: React.FC = () => {
     takePhoto,
     flipCamera,
     toggleFlashMode,
-    checkPermissions,
+    checkPermissions
   } = useCamera();
 
   const { openUri } = useGallery();
@@ -104,14 +104,17 @@ export const CameraGalleryScreen: React.FC = () => {
 
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
-  const styles = useMemo(() => createStyles(variables, width), [variables, width]);
+  const styles = useMemo(
+    () => createStyles(variables, width),
+    [variables, width]
+  );
 
   useEffect(() => {
     if (isCameraReady) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: true
       }).start();
     }
   }, [isCameraReady, fadeAnim]);
@@ -123,15 +126,15 @@ export const CameraGalleryScreen: React.FC = () => {
           Animated.timing(pulseAnim, {
             toValue: 1.2,
             duration: 500,
-            useNativeDriver: true,
+            useNativeDriver: true
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
             duration: 500,
-            useNativeDriver: true,
-          }),
+            useNativeDriver: true
+          })
         ]),
-        { iterations: 3 },
+        { iterations: 3 }
       ).start();
     } else {
       pulseAnim.setValue(1);
@@ -148,7 +151,7 @@ export const CameraGalleryScreen: React.FC = () => {
       }
       const location = await Location.getCurrentPosition({
         enableHighAccuracy: true,
-        timeout: 15000,
+        timeout: 15000
       });
       navigate('ImagePreview', { imageUri: `file://${photo.path}`, location });
     } catch (error) {
@@ -222,7 +225,7 @@ export const CameraGalleryScreen: React.FC = () => {
           <View
             style={[
               styles.bottomControls,
-              { paddingBottom: insets.bottom + 20 },
+              { paddingBottom: insets.bottom + 20 }
             ]}
           >
             <GalleryButton
@@ -235,7 +238,7 @@ export const CameraGalleryScreen: React.FC = () => {
                 style={[
                   styles.captureRing,
                   { transform: [{ scale: pulseAnim }] },
-                  isCapturing && { borderColor: '#ff4757' },
+                  isCapturing && { borderColor: '#ff4757' }
                 ]}
               />
               <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
@@ -252,8 +255,8 @@ export const CameraGalleryScreen: React.FC = () => {
             style={[
               styles.thumbnailContainer,
               {
-                bottom: insets.bottom + 100,
-              },
+                bottom: insets.bottom + 100
+              }
             ]}
           >
             <ThumbnailList
@@ -273,7 +276,7 @@ export const CameraGalleryScreen: React.FC = () => {
         modalHeight={Dimensions.get('window').height * 0.85}
         scrollViewProps={{
           scrollEnabled: true,
-          nestedScrollEnabled: true,
+          nestedScrollEnabled: true
         }}
         panGestureEnabled={true}
         withOverlay={true}
