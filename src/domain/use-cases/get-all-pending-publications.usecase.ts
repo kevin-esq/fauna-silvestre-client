@@ -1,10 +1,13 @@
-import {publicationService} from "../../services/publication/publication.service";
-import {PublicationsModel} from "../models/publication.models";
+import { publicationService } from '../../services/publication/publication.service';
+import { PublicationsModel } from '../models/publication.models';
 
 export default async function getAllPendingPublicationsUseCase(
-    page: number,
-    limit: number
+  page: number,
+  limit: number
 ): Promise<PublicationsModel[]> {
-    const response = await publicationService.getAllPendingPublications(page, limit);
-    return response as PublicationsModel[];
+  const response = await publicationService.getAllPendingPublications(
+    page,
+    limit
+  );
+  return response as PublicationsModel[];
 }

@@ -37,7 +37,10 @@ export abstract class BaseRepository {
    * @param context - Contexto de la operación
    * @returns {HttpError | NetworkError} Error procesado
    */
-  protected handleHttpError(error: unknown, context: string): HttpError | NetworkError {
+  protected handleHttpError(
+    error: unknown,
+    context: string
+  ): HttpError | NetworkError {
     if (error instanceof HttpError) {
       this.logger.error(`[${context}] HTTP Error: ${error.message}`, error);
       return error;
@@ -53,12 +56,18 @@ export abstract class BaseRepository {
         return networkError;
       }
 
-      const httpError = new HttpError(message, statusCode, error.response?.data);
+      const httpError = new HttpError(
+        message,
+        statusCode,
+        error.response?.data
+      );
       this.logger.error(`[${context}] API Error`, httpError);
       return httpError;
     }
 
-    const unknownError = new HttpError(`Unknown error in ${context}: ${String(error)}`);
+    const unknownError = new HttpError(
+      `Unknown error in ${context}: ${String(error)}`
+    );
     this.logger.error(`[${context}] Unexpected Error`, unknownError);
     return unknownError;
   }

@@ -1,7 +1,7 @@
-import {publicationService} from "../../services/publication/publication.service";
+import { publicationService } from '../../services/publication/publication.service';
 
 export default async function acceptPublicationUseCase(
-    publicationId: string,
+  publicationId: string
 ): Promise<void> {
-    await publicationService.acceptPublication(publicationId);
+  await publicationService.acceptPublication(publicationId);
 }

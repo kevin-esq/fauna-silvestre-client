@@ -6,14 +6,11 @@ import { ConsoleLogger } from '../logging/console-logger';
 import { ILogger } from '../../shared/types/ILogger';
 
 export class AuthServiceFactory {
-  static create(
-    api?: AxiosInstance,
-    logger?: ILogger
-  ): AuthService {
+  static create(api?: AxiosInstance, logger?: ILogger): AuthService {
     const apiInstance = api || ApiService.getInstance().client;
     const loggerInstance = logger || new ConsoleLogger('info');
     const tokenService = new TokenService(apiInstance, loggerInstance);
-    
+
     return AuthService.getInstance(apiInstance, tokenService, loggerInstance);
   }
 }

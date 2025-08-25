@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import {
   createMaterialTopTabNavigator,
   MaterialTopTabScreenProps,
-  MaterialTopTabNavigationOptions,
+  MaterialTopTabNavigationOptions
 } from '@react-navigation/material-top-tabs';
 import { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs';
 import { Alert } from 'react-native';
@@ -59,13 +59,13 @@ const createScreenOptions = (
   tabBarScrollEnabled: false,
   tabBarIndicatorStyle: {
     backgroundColor: variables['--primary'],
-    height: 3,
+    height: 3
   },
   tabBarLabelStyle: {
     fontWeight: 'bold',
-    textTransform: 'none',
+    textTransform: 'none'
   },
-  tabBarPressColor: variables['--primary'],
+  tabBarPressColor: variables['--primary']
 });
 
 const isValidRole = (role: string | undefined): role is ValidRole => {
@@ -75,7 +75,7 @@ const isValidRole = (role: string | undefined): role is ValidRole => {
 // Custom hooks
 const useRoleValidation = () => {
   const { user, isAuthenticated, initializing, signOut } = useAuth();
-  
+
   const handleInvalidRole = useCallback(async () => {
     try {
       console.warn('Invalid role detected, signing out user');
@@ -132,7 +132,9 @@ const TabsComponent = React.memo<{
   );
 
   const tabBar = useCallback(
-    (props: MaterialTopTabBarProps) => <TopTabsNavigationBar {...props} theme={theme} />,
+    (props: MaterialTopTabBarProps) => (
+      <TopTabsNavigationBar {...props} theme={theme} />
+    ),
     [theme]
   );
 
@@ -152,7 +154,7 @@ const TabsComponent = React.memo<{
           options={{
             title,
             ...(hideInBar && { tabBarItemStyle: { display: 'none' } }),
-            tabBarIcon,
+            tabBarIcon
           }}
         />
       ))}
@@ -165,7 +167,9 @@ TabsComponent.displayName = 'TabsComponent';
 // Memoized tab components
 export const AdminTabs = React.memo(() => {
   const { theme } = useTheme();
-  return <TabsComponent screens={adminTabs} theme={theme} testID="admin-tabs" />;
+  return (
+    <TabsComponent screens={adminTabs} theme={theme} testID="admin-tabs" />
+  );
 });
 
 AdminTabs.displayName = 'AdminTabs';
@@ -182,34 +186,34 @@ const createStackConfigurations = () => {
   const publicationFormStack = createRootStack<RootStackParamList>([
     { name: 'CameraGallery', component: CameraGalleryScreen },
     { name: 'ImagePreview', component: ImagePreviewScreen },
-    { name: 'PublicationForm', component: PublicationFormScreen },
+    { name: 'PublicationForm', component: PublicationFormScreen }
   ]);
 
   const adminRootStack = createRootStack<RootStackParamList>([
     { name: 'HomeTabs', component: AdminTabs },
     { name: 'AddPublication', component: publicationFormStack },
     { name: 'PublicationDetails', component: PublicationDetailsScreen },
-    { name: 'AnimalDetails', component: AnimalDetailsScreen },
+    { name: 'AnimalDetails', component: AnimalDetailsScreen }
   ]);
 
   const userRootStack = createRootStack<RootStackParamList>([
     { name: 'HomeTabs', component: UserTabs },
     { name: 'AddPublication', component: publicationFormStack },
     { name: 'PublicationDetails', component: PublicationDetailsScreen },
-    { name: 'AnimalDetails', component: AnimalDetailsScreen },
+    { name: 'AnimalDetails', component: AnimalDetailsScreen }
   ]);
 
   const authStack = createRootStack<RootStackParamList>([
     { name: 'Login', component: LoginScreen },
     { name: 'Register', component: RegisterScreen },
-    { name: 'ForgotPassword', component: ForgotPasswordScreen },
+    { name: 'ForgotPassword', component: ForgotPasswordScreen }
   ]);
 
   return {
     publicationFormStack,
     adminRootStack,
     userRootStack,
-    authStack,
+    authStack
   };
 };
 
@@ -248,7 +252,7 @@ class NavigationErrorBoundary extends React.Component<
 // Main Navigator Component
 const AppNavigator: React.FC = () => {
   const navigationState = useNavigationState();
-  
+
   const stacks = useMemo(() => createStackConfigurations(), []);
 
   const renderNavigator = useCallback(() => {
@@ -267,11 +271,7 @@ const AppNavigator: React.FC = () => {
     }
   }, [navigationState, stacks]);
 
-  return (
-    <NavigationErrorBoundary>
-      {renderNavigator()}
-    </NavigationErrorBoundary>
-  );
+  return <NavigationErrorBoundary>{renderNavigator()}</NavigationErrorBoundary>;
 };
 
 AppNavigator.displayName = 'AppNavigator';

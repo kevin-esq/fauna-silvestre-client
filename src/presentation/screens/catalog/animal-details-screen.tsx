@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,23 +8,22 @@ import {
   Modal,
   ImageLoadEventData,
   NativeSyntheticEvent
-} from "react-native";
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from "react-native-vector-icons/Ionicons";
-import { useTheme, themeVariables } from "../../contexts/theme.context";
-import { createStyles } from "./animal-details-screen.styles";
-import { useRoute } from "@react-navigation/native";
-import Animal from "../../../domain/entities/animal.entity";
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTheme, themeVariables } from '../../contexts/theme.context';
+import { createStyles } from './animal-details-screen.styles';
+import { useRoute } from '@react-navigation/native';
+import Animal from '../../../domain/entities/animal.entity';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CatalogMap from '../../components/ui/catalog-map.component';
-import { LatLng } from "react-native-maps";
-import { catalogRepository } from "../../../data/repositories/catalog.repository" // Asegúrate que esto esté bien importado
-import { useFocusEffect } from "@react-navigation/native";
-import { useNavigationActions } from "../../navigation/navigation-provider";
+import { LatLng } from 'react-native-maps';
+import { catalogRepository } from '../../../data/repositories/catalog.repository'; // Asegúrate que esto esté bien importado
+import { useFocusEffect } from '@react-navigation/native';
+import { useNavigationActions } from '../../navigation/navigation-provider';
 import { BackHandler } from 'react-native';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { Dimensions } from 'react-native';
-
 
 const AnimalDetailsScreen: React.FC = () => {
   const route = useRoute();
@@ -52,13 +51,12 @@ const AnimalDetailsScreen: React.FC = () => {
         () => {
           navigate('HomeTabs');
           return true;
-        },
+        }
       );
 
       return () => backHandler.remove();
-    }, [navigate]),
+    }, [navigate])
   );
-
 
   useEffect(() => {
     const fetchAnimalMap = async () => {
@@ -66,9 +64,11 @@ const AnimalDetailsScreen: React.FC = () => {
         setLoadingMap(true);
         setMapError(null);
 
-        const response = await catalogRepository.getLocations(String(animal.catalogId));
+        const response = await catalogRepository.getLocations(
+          String(animal.catalogId)
+        );
 
-        console.log('Locations response:', response);  // DEBUG
+        console.log('Locations response:', response); // DEBUG
 
         setAnimalLocations(response.cords);
       } catch (error: unknown) {
@@ -92,15 +92,28 @@ const AnimalDetailsScreen: React.FC = () => {
     setImageAspectRatio(aspectRatio);
   };
 
-
-  const InfoRow = ({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) => (
+  const InfoRow = ({
+    icon,
+    label,
+    value,
+    color
+  }: {
+    icon: string;
+    label: string;
+    value: string;
+    color: string;
+  }) => (
     <View style={styles.infoRow}>
       <View style={styles.iconContainer}>
         <Ionicons name={icon} size={20} color={color} />
       </View>
       <View style={styles.infoContent}>
-        <Text style={[styles.infoLabel, { color: theme.colors.text }]}>{label}:</Text>
-        <Text style={[styles.infoValue, { color: theme.colors.text }]}>{value}</Text>
+        <Text style={[styles.infoLabel, { color: theme.colors.text }]}>
+          {label}:
+        </Text>
+        <Text style={[styles.infoValue, { color: theme.colors.text }]}>
+          {value}
+        </Text>
       </View>
     </View>
   );
@@ -115,9 +128,19 @@ const AnimalDetailsScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: variables['--background'] }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: variables['--background'] }}
+    >
       {/* Aquí el botón Volver dentro del área segura, con algo de padding para que no esté pegado */}
-      <View style={{ paddingHorizontal: 16, paddingBottom: 8, paddingTop: 10, flexDirection: 'row', alignItems: 'center' }}>
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingBottom: 8,
+          paddingTop: 10,
+          flexDirection: 'row',
+          alignItems: 'center'
+        }}
+      >
         <TouchableOpacity
           onPress={() => navigate('HomeTabs')}
           style={styles.backButton}
@@ -227,11 +250,13 @@ const AnimalDetailsScreen: React.FC = () => {
               onPress={() => setIsFavorite(!isFavorite)}
             >
               <Ionicons
-                name={isFavorite ? "heart" : "heart-outline"}
+                name={isFavorite ? 'heart' : 'heart-outline'}
                 size={16}
-                color={isFavorite ? "#EF4444" : theme.colors.text}
+                color={isFavorite ? '#EF4444' : theme.colors.text}
               />
-              <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>
+              <Text
+                style={[styles.actionButtonText, { color: theme.colors.text }]}
+              >
                 Favorito
               </Text>
             </TouchableOpacity>
@@ -240,15 +265,27 @@ const AnimalDetailsScreen: React.FC = () => {
               style={styles.actionButton}
               onPress={() => setShowMapModal(true)}
             >
-              <Ionicons name="map-outline" size={16} color={theme.colors.text} />
-              <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>
+              <Ionicons
+                name="map-outline"
+                size={16}
+                color={theme.colors.text}
+              />
+              <Text
+                style={[styles.actionButtonText, { color: theme.colors.text }]}
+              >
                 Ver mapa
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="save-outline" size={16} color={theme.colors.text} />
-              <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>
+              <Ionicons
+                name="save-outline"
+                size={16}
+                color={theme.colors.text}
+              />
+              <Text
+                style={[styles.actionButtonText, { color: theme.colors.text }]}
+              >
                 Descargar
               </Text>
             </TouchableOpacity>
@@ -276,9 +313,7 @@ const AnimalDetailsScreen: React.FC = () => {
                 >
                   <Ionicons name="close" size={30} color="#FFFFFF" />
                 </TouchableOpacity>
-
                 {/* Imagen con zoom */}
-
                 //@ts-ignore
                 <ImageZoom
                   cropWidth={Dimensions.get('window').width}
@@ -293,11 +328,10 @@ const AnimalDetailsScreen: React.FC = () => {
                     style={{
                       width: Dimensions.get('window').width,
                       height: Dimensions.get('window').height,
-                      resizeMode: 'contain',
+                      resizeMode: 'contain'
                     }}
                   />
                 </ImageZoom>
-
                 {/* Información de la imagen */}
                 <View style={styles.modalInfo}>
                   <Text style={styles.modalTitle}>{animal.commonNoun}</Text>
@@ -308,8 +342,6 @@ const AnimalDetailsScreen: React.FC = () => {
           </View>
         </Modal>
 
-
-
         {/* Modal mapa */}
         <Modal
           visible={showMapModal}
@@ -318,34 +350,40 @@ const AnimalDetailsScreen: React.FC = () => {
         >
           <View style={{ flex: 1 }}>
             {/* Encabezado fijo */}
-            <View style={{
-              backgroundColor: '#1f2937',
-              height: 80,
-              justifyContent: 'center',
-              alignItems: 'center',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 10,
-              paddingTop: 10,
-              paddingBottom: 10,
-            }}>
+            <View
+              style={{
+                backgroundColor: '#1f2937',
+                height: 80,
+                justifyContent: 'center',
+                alignItems: 'center',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 10,
+                paddingTop: 10,
+                paddingBottom: 10
+              }}
+            >
               {/* Textos centrados */}
               <View>
-                <Text style={{
-                  color: '#fff',
-                  fontSize: 20,
-                  fontWeight: 'bold',
-                  textAlign: 'center',
-                }}>
+                <Text
+                  style={{
+                    color: '#fff',
+                    fontSize: 20,
+                    fontWeight: 'bold',
+                    textAlign: 'center'
+                  }}
+                >
                   Ubicaciones de {animal.commonNoun}
                 </Text>
-                <Text style={{
-                  color: '#d1d5db',
-                  fontSize: 14,
-                  textAlign: 'center',
-                }}>
+                <Text
+                  style={{
+                    color: '#d1d5db',
+                    fontSize: 14,
+                    textAlign: 'center'
+                  }}
+                >
                   {animal.specie} • {animalLocations.length} ubicaciones
                 </Text>
               </View>
@@ -356,7 +394,7 @@ const AnimalDetailsScreen: React.FC = () => {
                 style={{
                   position: 'absolute',
                   right: 20,
-                  top: 20,
+                  top: 20
                 }}
               >
                 <Ionicons
@@ -366,7 +404,7 @@ const AnimalDetailsScreen: React.FC = () => {
                   style={{
                     borderRadius: 25,
                     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    padding: 4,
+                    padding: 4
                   }}
                 />
               </TouchableOpacity>
@@ -378,7 +416,6 @@ const AnimalDetailsScreen: React.FC = () => {
             </View>
           </View>
         </Modal>
-
       </ScrollView>
     </SafeAreaView>
   );

@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-  Dimensions,
+  Dimensions
 } from 'react-native';
 import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
@@ -19,7 +19,7 @@ import { createStyles } from './publication-details-screen.styles';
 import { useAuth } from '../../contexts/auth.context';
 import type {
   PublicationResponse,
-  PublicationStatus,
+  PublicationStatus
 } from '../../../domain/models/publication.models';
 import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -32,18 +32,18 @@ const STATUS_CONFIG = {
   rejected: {
     icon: 'times-circle',
     color: '#F44336',
-    label: 'Rechazada',
+    label: 'Rechazada'
   },
   pending: {
     icon: 'hourglass-half',
     color: '#FFC107',
-    label: 'Pendiente',
+    label: 'Pendiente'
   },
   accepted: {
     icon: 'check-circle',
     color: '#4CAF50',
-    label: 'Publicada',
-  },
+    label: 'Publicada'
+  }
 } as const;
 
 export default function PublicationDetailsScreen() {
@@ -61,7 +61,7 @@ export default function PublicationDetailsScreen() {
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(
     () => createStyles(variables, width, height, insets),
-    [variables, insets],
+    [variables, insets]
   );
 
   const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
@@ -76,13 +76,13 @@ export default function PublicationDetailsScreen() {
         () => {
           goBack();
           return true;
-        },
+        }
       );
 
       return () => {
         backHandler.remove();
       };
-    }, [goBack]),
+    }, [goBack])
   );
 
   const handleModify = useCallback((section: string) => {
@@ -225,8 +225,8 @@ export default function PublicationDetailsScreen() {
               flexDirection: 'row',
               alignItems: 'center',
               borderLeftColor: statusConfig.color,
-              borderLeftWidth: 5,
-            },
+              borderLeftWidth: 5
+            }
           ]}
         >
           <View style={styles.userProfilePicture}>
@@ -299,12 +299,12 @@ const InfoCard = React.memo(
     titleColor,
     borderColor,
     onModify,
-    insets,
+    insets
   }: InfoCardProps) => {
     const { theme } = useTheme();
     const styles = useMemo(
       () => createStyles(themeVariables(theme), width, height, insets),
-      [theme, insets],
+      [theme, insets]
     );
 
     return (
@@ -314,9 +314,9 @@ const InfoCard = React.memo(
           borderColor
             ? {
                 borderLeftColor: borderColor,
-                borderLeftWidth: 5,
+                borderLeftWidth: 5
               }
-            : {},
+            : {}
         ]}
       >
         <View style={styles.cardHeader}>
@@ -325,7 +325,7 @@ const InfoCard = React.memo(
             <Text
               style={[
                 styles.cardTitle,
-                titleColor ? { color: titleColor } : {},
+                titleColor ? { color: titleColor } : {}
               ]}
               accessibilityRole="header"
             >
@@ -352,5 +352,5 @@ const InfoCard = React.memo(
         <Text style={styles.cardText}>{content}</Text>
       </View>
     );
-  },
+  }
 );

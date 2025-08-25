@@ -1,19 +1,23 @@
-import React from "react";
-import { View, Text, Image } from "react-native";
-import AnimatedPressable from "../ui/animated-pressable.component";
-import styles from "./animal-card.styles";
+import React from 'react';
+import { View, Text, Image } from 'react-native';
+import AnimatedPressable from '../ui/animated-pressable.component';
+import styles from './animal-card.styles';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { AnimalModel } from "../../../domain/models/animal.models";
+import { AnimalModel } from '../../../domain/models/animal.models';
 
-const AnimalCard = ({ animal, onPress }: { animal: AnimalModel; onPress: () => void }) => {
-  
-
+const AnimalCard = ({
+  animal,
+  onPress
+}: {
+  animal: AnimalModel;
+  onPress: () => void;
+}) => {
   return (
     <AnimatedPressable style={styles.card} onPress={onPress}>
       {/* Contenedor de imagen con mejoras */}
       <View style={styles.imageContainer}>
         <Image source={{ uri: animal.image }} style={styles.image} />
-        <View style={styles.imageOverlay} />       
+        <View style={styles.imageOverlay} />
       </View>
 
       {/* Información del animal */}
@@ -29,8 +33,18 @@ const AnimalCard = ({ animal, onPress }: { animal: AnimalModel; onPress: () => v
 
         {/* Status con diseño mejorado */}
         <View style={styles.statusContainer}>
-          <View style={[styles.statusDot, { backgroundColor: animal.statusColor || "#4CAF50" }]} />
-          <Text style={[styles.statusText, { color: animal.statusColor || "#4CAF50" }]}>
+          <View
+            style={[
+              styles.statusDot,
+              { backgroundColor: animal.statusColor || '#4CAF50' }
+            ]}
+          />
+          <Text
+            style={[
+              styles.statusText,
+              { color: animal.statusColor || '#4CAF50' }
+            ]}
+          >
             {animal.status}
           </Text>
         </View>

@@ -1,4 +1,4 @@
-import { PhotoFile } from "react-native-vision-camera";
+import { PhotoFile } from 'react-native-vision-camera';
 
 export interface Location {
   latitude: number;
@@ -24,7 +24,9 @@ function isMetadata(obj: unknown): obj is PhotoMetadata {
   return typeof obj === 'object' && obj !== null;
 }
 
-export async function metaToLocation(photo: PhotoFile): Promise<Location | null> {
+export async function metaToLocation(
+  photo: PhotoFile
+): Promise<Location | null> {
   const metadata = photo.metadata;
   if (!isMetadata(metadata)) return null;
 
@@ -40,6 +42,6 @@ export async function metaToLocation(photo: PhotoFile): Promise<Location | null>
     latitude: toNumber(metadata.GPSLatitude ?? metadata.latitude) || 0,
     longitude: toNumber(metadata.GPSLongitude ?? metadata.longitude) || 0,
     altitude: toNumber(metadata.GPSAltitude),
-    accuracy: toNumber(metadata.GPSHPositioningError),
+    accuracy: toNumber(metadata.GPSHPositioningError)
   };
 }

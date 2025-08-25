@@ -9,12 +9,7 @@ import FloatingActionButton from '../../components/ui/floating-action-button.com
 import { useAuth } from '../../contexts/auth.context';
 import { useTheme, themeVariables } from '../../contexts/theme.context';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  SafeAreaView,
-  Alert,
-} from 'react-native';
+import { ActivityIndicator, FlatList, SafeAreaView, Alert } from 'react-native';
 import { useCatalog } from '../../contexts/catalog.context';
 import AnimalCard from '../../components/animal/animal-card.component';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
@@ -31,18 +26,25 @@ const HomeScreen: React.FC = React.memo(() => {
   const { user, signOut } = useAuth();
   const styles = createStyles(theme);
   const { navigate } = useNavigationActions();
-  const { state, actions, } = usePublications();
+  const { state, actions } = usePublications();
   const [totalEspecies, setTotalEspecies] = useState(0);
   const [totalPublications, setTotalPublications] = useState<number>(0);
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const { catalog, isLoading: isCatalogLoading } = useCatalog();
-  const { city, state: stateLoc, country, loading: locLoading } = useLocationInfo();
+  const {
+    city,
+    state: stateLoc,
+    country,
+    loading: locLoading
+  } = useLocationInfo();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showAllAnimals, setShowAllAnimals] = useState(false);
 
   const categories = useMemo(() => {
-    const uniqueCategories = [...new Set(catalog.map(animal => animal.category))].filter(Boolean);
+    const uniqueCategories = [
+      ...new Set(catalog.map(animal => animal.category))
+    ].filter(Boolean);
     return ['Todas las categorías', ...uniqueCategories] as const;
   }, [catalog]);
 
@@ -78,7 +80,7 @@ const HomeScreen: React.FC = React.memo(() => {
       '¿Estás seguro de que quieres cerrar sesión?',
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sí, cerrar', onPress: signOut, style: 'destructive' },
+        { text: 'Sí, cerrar', onPress: signOut, style: 'destructive' }
       ],
       { cancelable: true }
     );
@@ -107,14 +109,15 @@ const HomeScreen: React.FC = React.memo(() => {
     }, [])
   );
 
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.headerContainer}>
           <View style={styles.headerTopRow}>
             <View>
-              <Text style={styles.greeting}>¡Hola 👋, {user?.name || 'Usuario'}!</Text>
+              <Text style={styles.greeting}>
+                ¡Hola 👋, {user?.name || 'Usuario'}!
+              </Text>
               <Text style={styles.subGreeting}>Qué bueno verte de nuevo.</Text>
             </View>
             <TouchableOpacity
@@ -122,16 +125,32 @@ const HomeScreen: React.FC = React.memo(() => {
               style={styles.logoutButton}
               onPress={handleLogout}
             >
-              <Ionicons name="log-out-outline" size={24} color={variables['--text-secondary']} />
-              <Text accessibilityLabel="Salir" style={styles.logoutButtonText}>Salir</Text>
+              <Ionicons
+                name="log-out-outline"
+                size={24}
+                color={variables['--text-secondary']}
+              />
+              <Text accessibilityLabel="Salir" style={styles.logoutButtonText}>
+                Salir
+              </Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.timeAndLocationContainer}>
-            <Ionicons name="time-outline" size={16} color={variables['--text-secondary']} />
-            <Text style={styles.timeAndLocationText}>{moment().format('h:mm A')}</Text>
+            <Ionicons
+              name="time-outline"
+              size={16}
+              color={variables['--text-secondary']}
+            />
+            <Text style={styles.timeAndLocationText}>
+              {moment().format('h:mm A')}
+            </Text>
             <View style={styles.separator} />
-            <Ionicons name="location-outline" size={16} color={variables['--text-secondary']} />
+            <Ionicons
+              name="location-outline"
+              size={16}
+              color={variables['--text-secondary']}
+            />
             {locLoading ? (
               <ActivityIndicator
                 size="small"
@@ -162,7 +181,6 @@ const HomeScreen: React.FC = React.memo(() => {
         </View>
 
         <View style={styles.imageSection}>
-
           <Text style={styles.sectionTitle}>Catálogo de Animales</Text>
 
           <View style={styles.filterContainer}>
@@ -179,8 +197,7 @@ const HomeScreen: React.FC = React.memo(() => {
             <Text style={styles.resultsText}>
               {selectedCategory && selectedCategory !== 'Todas las categorías'
                 ? `${filteredAnimals.length} ${filteredAnimals.length === 1 ? 'animal' : 'animales'} en "${selectedCategory}"`
-                : `${catalog.length} ${catalog.length === 1 ? 'animal' : 'animales'} en total`
-              }
+                : `${catalog.length} ${catalog.length === 1 ? 'animal' : 'animales'} en total`}
             </Text>
             {filteredAnimals.length > 5 && (
               <TouchableOpacity
@@ -188,7 +205,9 @@ const HomeScreen: React.FC = React.memo(() => {
                 onPress={handleToggleShowAll}
               >
                 <Text style={styles.toggleButtonText}>
-                  {showAllAnimals ? 'Ver menos' : `Ver todos (${filteredAnimals.length})`}
+                  {showAllAnimals
+                    ? 'Ver menos'
+                    : `Ver todos (${filteredAnimals.length})`}
                 </Text>
               </TouchableOpacity>
             )}
@@ -201,19 +220,24 @@ const HomeScreen: React.FC = React.memo(() => {
             </View>
           ) : animalsToShow.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="search" size={48} color={variables['--text-secondary']} />
-              <Text style={styles.emptyStateTitle}>No se encontraron animales</Text>
+              <Ionicons
+                name="search"
+                size={48}
+                color={variables['--text-secondary']}
+              />
+              <Text style={styles.emptyStateTitle}>
+                No se encontraron animales
+              </Text>
               <Text style={styles.emptyStateText}>
                 {selectedCategory && selectedCategory !== 'Todas las categorías'
                   ? `No hay animales en la categoría "${selectedCategory}"`
-                  : 'No hay animales disponibles en el catálogo'
-                }
+                  : 'No hay animales disponibles en el catálogo'}
               </Text>
             </View>
           ) : (
             <FlatList
               data={animalsToShow}
-              keyExtractor={(item) => item.specie}
+              keyExtractor={item => item.specie}
               renderItem={({ item }) => {
                 const mappedAnimal: AnimalModel = {
                   id: item.specie,
@@ -222,7 +246,7 @@ const HomeScreen: React.FC = React.memo(() => {
                   status: 'catalogado',
                   statusColor: '#4caf50',
                   image: item.image,
-                  catalogId: Number(item.catalogId),
+                  catalogId: Number(item.catalogId)
                 };
 
                 return (
@@ -244,7 +268,13 @@ const HomeScreen: React.FC = React.memo(() => {
 
       <FloatingActionButton
         onPress={handleAddPublication}
-        icon={<Ionicons name="camera-outline" size={24} color={theme.colors.textOnPrimary} />}
+        icon={
+          <Ionicons
+            name="camera-outline"
+            size={24}
+            color={theme.colors.textOnPrimary}
+          />
+        }
       />
     </SafeAreaView>
   );

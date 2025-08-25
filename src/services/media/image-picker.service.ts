@@ -9,7 +9,7 @@ export class ImagePickerService {
   } | null> {
     const result = await ImagePicker.CameraRoll.getPhotos({
       first: 1,
-      assetType: 'Photos',
+      assetType: 'Photos'
     });
 
     if (!result.edges || !result.edges[0]) {
@@ -23,7 +23,7 @@ export class ImagePickerService {
     return {
       uri,
       width,
-      height,
+      height
     };
   }
 }

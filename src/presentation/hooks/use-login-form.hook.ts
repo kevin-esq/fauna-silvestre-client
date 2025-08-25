@@ -28,16 +28,16 @@ export const useLoginForm = () => {
 
   const handleLogin = useCallback(async () => {
     if (!username || !password) {
-        setError("El nombre de usuario y la contraseña son obligatorios.");
-        return;
+      setError('El nombre de usuario y la contraseña son obligatorios.');
+      return;
     }
-    
+
     showLoading();
     setError(null);
 
     const credentials: Credentials = {
       UserName: username.trim(),
-      Password: password,
+      Password: password
     };
 
     try {
@@ -58,6 +58,6 @@ export const useLoginForm = () => {
     error,
     handleLogin,
     rememberMe,
-    setRememberMe,
+    setRememberMe
   };
 };

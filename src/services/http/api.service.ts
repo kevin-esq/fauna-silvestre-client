@@ -2,7 +2,7 @@ import axios, {
   AxiosInstance,
   AxiosResponse,
   AxiosError,
-  InternalAxiosRequestConfig,
+  InternalAxiosRequestConfig
 } from 'axios';
 import axiosRetry from 'axios-retry';
 import { ILogger } from '../../shared/types/ILogger';
@@ -23,7 +23,10 @@ export class ApiService {
   private static instance: ApiService;
   public readonly client: AxiosInstance;
   private isRefreshing = false;
-  private failedQueue: Array<{ resolve: (token: string) => void; reject: (error: Error) => void }> = [];
+  private failedQueue: Array<{
+    resolve: (token: string) => void;
+    reject: (error: Error) => void;
+  }> = [];
   private pending = new Map<string, AbortController>();
   private logger: ILogger;
 
@@ -32,14 +35,15 @@ export class ApiService {
     this.client = axios.create({
       baseURL: PUBLIC_API_URL,
       timeout: Number(PUBLIC_API_TIMEOUT),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' }
     });
 
     axiosRetry(this.client, {
       retries: 2,
       retryDelay: axiosRetry.exponentialDelay,
       retryCondition: err => axiosRetry.isNetworkOrIdempotentRequestError(err),
-      onRetry: (err, attempt) => this.logger.warn(`[ApiService] Retry #${attempt}: ${err}`),
+      onRetry: (err, attempt) =>
+        this.logger.warn(`[ApiService] Retry #${attempt}: ${err}`)
     });
 
     this.setupInterceptors();
@@ -58,12 +62,18 @@ export class ApiService {
 
   private setupInterceptors(): void {
     this.client.interceptors.request.use(this.onRequest.bind(this));
-    this.client.interceptors.response.use(r => this.onResponse(r), e => this.onError(e));
+    this.client.interceptors.response.use(
+      r => this.onResponse(r),
+      e => this.onError(e)
+    );
   }
 
   private async onRequest(config: CustomConfig): Promise<CustomConfig> {
-    const token = await (await getSecureStorageService()).getValueFor(ACCESS_TOKEN_KEY);
-    if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
+    const token = await (
+      await getSecureStorageService()
+    ).getValueFor(ACCESS_TOKEN_KEY);
+    if (token && config.headers)
+      config.headers.Authorization = `Bearer ${token}`;
 
     const key = this.makeKey(config);
     if (this.pending.has(key)) this.pending.get(key)!.abort();
@@ -87,16 +97,18 @@ export class ApiService {
       this.logger.error('Non Axios error', error as Error);
       return Promise.reject(new ApiError('Unexpected non-Axios error'));
     }
-  
+
     if (!error.response) {
       this.logger.error('No response', error as Error);
       return Promise.reject(new NetworkError('No response from server'));
     }
-  
+
     return this.handleAuthErrors(error);
   }
 
-  private async handleAuthErrors<T>(error: AxiosError<T>): Promise<AxiosResponse<T> | never> {
+  private async handleAuthErrors<T>(
+    error: AxiosError<T>
+  ): Promise<AxiosResponse<T> | never> {
     const response = error.response;
     const original = error.config as CustomConfig;
 
@@ -104,16 +116,19 @@ export class ApiService {
       original._retry = true;
 
       if (this.isRefreshing) {
-        return new Promise<string>((resolve, reject) => this.failedQueue.push({ resolve, reject }))
-          .then(token => {
-            original.headers!.Authorization = `Bearer ${token}`;
-            return this.client(original);
-          });
+        return new Promise<string>((resolve, reject) =>
+          this.failedQueue.push({ resolve, reject })
+        ).then(token => {
+          original.headers!.Authorization = `Bearer ${token}`;
+          return this.client(original);
+        });
       }
 
       this.isRefreshing = true;
       try {
-        const refreshToken = await (await getSecureStorageService()).getValueFor(REFRESH_TOKEN_KEY);
+        const refreshToken = await (
+          await getSecureStorageService()
+        ).getValueFor(REFRESH_TOKEN_KEY);
         const newToken = await authService.refreshToken(refreshToken || '');
         this.processFailedQueue(null, newToken);
         original.headers!.Authorization = `Bearer ${newToken}`;
@@ -132,8 +147,17 @@ export class ApiService {
       this.logger.warn(`[ApiService] HTTP ${response.status}`);
     }
 
-    if (response?.data && typeof response.data === 'object' && 'message' in response.data) {
-      return Promise.reject(new ApiError((response.data as { message: string }).message, response.status));
+    if (
+      response?.data &&
+      typeof response.data === 'object' &&
+      'message' in response.data
+    ) {
+      return Promise.reject(
+        new ApiError(
+          (response.data as { message: string }).message,
+          response.status
+        )
+      );
     }
 
     if ((error as AxiosError).request) {
@@ -145,14 +169,18 @@ export class ApiService {
 
   private processFailedQueue(error: Error | null, token: string | null): void {
     this.failedQueue.forEach(({ resolve, reject }) =>
-      error ? reject(error) : token ? resolve(token) : reject(new Error('No token'))
+      error
+        ? reject(error)
+        : token
+          ? resolve(token)
+          : reject(new Error('No token'))
     );
     this.failedQueue = [];
   }
 
   private makeKey(config: InternalAxiosRequestConfig): string {
     return `${config.method}|${config.baseURL}|${config.url}|${JSON.stringify(
-      config.params,
+      config.params
     )}|${JSON.stringify(config.data)}`;
   }
 }
