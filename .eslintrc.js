@@ -13,7 +13,8 @@ module.exports = defineConfig([
       'ios',
       'build',
       'dist',
-      'coverage'
+      'coverage',
+      'metro.config.js'
     ]
   },
   {
