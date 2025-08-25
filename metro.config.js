@@ -1,7 +1,5 @@
 import { getDefaultConfig, mergeConfig } from '@react-native/metro-config';
-import {
-  wrapWithReanimatedMetroConfig
-} from 'react-native-reanimated/metro-config';
+import { wrapWithReanimatedMetroConfig } from 'react-native-reanimated/metro-config';
 
 const config = {};
 
