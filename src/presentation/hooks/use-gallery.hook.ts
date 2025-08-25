@@ -1,7 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
-import { launchImageLibrary, ImagePickerResponse } from 'react-native-image-picker';
+import {
+  launchImageLibrary,
+  ImagePickerResponse
+} from 'react-native-image-picker';
 import { MediaLibraryService } from '../../services/media/media-library.service';
-
 
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -35,11 +37,11 @@ export function useGallery() {
     const response: ImagePickerResponse = await launchImageLibrary({
       mediaType: 'photo',
       quality: 1,
-      selectionLimit: 1,
+      selectionLimit: 1
     });
 
     const asset = response?.assets?.[0];
-    
+
     if (!asset?.uri) return;
 
     const metadata = await MediaLibraryService.extractMetadata(asset.uri);
@@ -53,13 +55,13 @@ export function useGallery() {
         accuracy: parseCoordinate(metadata.accuracy),
         altitudeAccuracy: 0,
         heading: 0,
-        speed: 0,
+        speed: 0
       };
     }
 
     navigation.navigate('ImagePreview', {
       imageUri: asset.uri,
-      location,
+      location
     });
   };
 
@@ -75,13 +77,13 @@ export function useGallery() {
         accuracy: parseCoordinate(metadata.accuracy),
         altitudeAccuracy: 0,
         heading: 0,
-        speed: 0,
+        speed: 0
       };
     }
 
     navigation.navigate('ImagePreview', {
       imageUri: uri,
-      location,
+      location
     });
   };
 

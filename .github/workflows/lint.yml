@@ -2,13 +2,13 @@ name: Lint Codebase
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev]
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
 
 jobs:
   lint:
-    name: Run ESLint
+    name: Run Prettier + ESLint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -21,6 +21,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Run Prettier check
+        run: npx prettier --write .
 
       - name: Run ESLint
         run: npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0

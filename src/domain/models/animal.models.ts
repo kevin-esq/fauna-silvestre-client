@@ -1,11 +1,11 @@
 export interface AnimalModel {
-    id: string;
-    commonName: string;
-    catalogId: number;
-    scientificName: string;
-    status: string;
-    statusColor: string;
-    image: string;
+  id: string;
+  commonName: string;
+  catalogId: number;
+  scientificName: string;
+  status: string;
+  statusColor: string;
+  image: string;
 }
 
 export interface ParsedLocation {

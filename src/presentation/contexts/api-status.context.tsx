@@ -1,6 +1,6 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState } from 'react';
 
-type APIStatus = 
+type APIStatus =
   | 'BOOTING'
   | 'UNAUTHENTICATED'
   | 'AUTHENTICATING'
@@ -14,7 +14,11 @@ type APIStatusContextType = {
 
 const APIStatusContext = createContext<APIStatusContextType | null>(null);
 
-export const APIStatusProvider = ({ children }: { children: React.ReactNode }) => {
+export const APIStatusProvider = ({
+  children
+}: {
+  children: React.ReactNode;
+}) => {
   const [status, setStatus] = useState<APIStatus>('BOOTING');
 
   return (

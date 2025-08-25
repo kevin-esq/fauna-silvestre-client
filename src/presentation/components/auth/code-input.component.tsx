@@ -1,5 +1,11 @@
 import React, { useRef, useMemo } from 'react';
-import { View, TextInput, StyleSheet, NativeSyntheticEvent, TextInputKeyPressEventData } from 'react-native';
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  NativeSyntheticEvent,
+  TextInputKeyPressEventData
+} from 'react-native';
 
 interface CodeInputProps {
   code: string;
@@ -8,7 +14,12 @@ interface CodeInputProps {
   variables: Record<string, string>;
 }
 
-const CodeInput: React.FC<CodeInputProps> = ({ code, setCode, digitCount = 5, variables }) => {
+const CodeInput: React.FC<CodeInputProps> = ({
+  code,
+  setCode,
+  digitCount = 5,
+  variables
+}) => {
   const styles = useMemo(() => createStyles(variables), [variables]);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
@@ -38,7 +49,10 @@ const CodeInput: React.FC<CodeInputProps> = ({ code, setCode, digitCount = 5, va
     }
   };
 
-  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>, index: number) => {
+  const handleKeyPress = (
+    e: NativeSyntheticEvent<TextInputKeyPressEventData>,
+    index: number
+  ) => {
     if (e.nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -49,13 +63,15 @@ const CodeInput: React.FC<CodeInputProps> = ({ code, setCode, digitCount = 5, va
       {Array.from({ length: digitCount }).map((_, index) => (
         <TextInput
           key={index}
-          ref={(ref) => { inputRefs.current[index] = ref; }}
+          ref={ref => {
+            inputRefs.current[index] = ref;
+          }}
           style={styles.codeInput}
           keyboardType="number-pad"
           maxLength={1}
           value={codeDigits[index]?.trim()}
-          onChangeText={(text) => handleTextChange(text, index)}
-          onKeyPress={(e) => handleKeyPress(e, index)}
+          onChangeText={text => handleTextChange(text, index)}
+          onKeyPress={e => handleKeyPress(e, index)}
           selectTextOnFocus
         />
       ))}
@@ -63,25 +79,26 @@ const CodeInput: React.FC<CodeInputProps> = ({ code, setCode, digitCount = 5, va
   );
 };
 
-const createStyles = (variables: Record<string, string>) => StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 24,
-  },
-  codeInput: {
-    width: 50,
-    height: 60,
-    borderWidth: 1,
-    borderColor: variables['--border'],
-    borderRadius: 8,
-    textAlign: 'center',
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: variables['--text'],
-    backgroundColor: variables['--surface-variant'],
-  },
-});
+const createStyles = (variables: Record<string, string>) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      marginBottom: 24
+    },
+    codeInput: {
+      width: 50,
+      height: 60,
+      borderWidth: 1,
+      borderColor: variables['--border'],
+      borderRadius: 8,
+      textAlign: 'center',
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: variables['--text'],
+      backgroundColor: variables['--surface-variant']
+    }
+  });
 
 export default CodeInput;

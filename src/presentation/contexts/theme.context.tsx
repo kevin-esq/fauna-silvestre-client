@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback
+} from 'react';
 import { SecureStorageService } from '../../services/storage/secure-storage.service';
 import { THEME_KEY } from '../../services/storage/storage-keys';
 
@@ -115,13 +121,13 @@ export interface ThemeContextType {
 }
 
 const lightColors: ThemeColors = {
-  primary: '#007A33',         // Verde fuerte (nuevo)
-  primaryLight: '#4CAF50',    // Verde más claro
-  primaryDark: '#004D1C',     // Verde profundo
-  secondary: '#FFD600',       // Amarillo vibrante
-  secondaryLight: '#FFF59D',  // Amarillo claro
-  secondaryDark: '#C7A500',   // Amarillo oscuro
-  tertiary: '#D50000',        // Rojo vivo (logo)
+  primary: '#007A33', // Verde fuerte (nuevo)
+  primaryLight: '#4CAF50', // Verde más claro
+  primaryDark: '#004D1C', // Verde profundo
+  secondary: '#FFD600', // Amarillo vibrante
+  secondaryLight: '#FFF59D', // Amarillo claro
+  secondaryDark: '#C7A500', // Amarillo oscuro
+  tertiary: '#D50000', // Rojo vivo (logo)
 
   background: '#FAFAFA',
   surface: '#FFFFFF',
@@ -158,7 +164,7 @@ const lightColors: ThemeColors = {
   forest: '#007A33',
   earth: '#5D4037',
   water: '#0288D1',
-  leaf: '#43A047',
+  leaf: '#43A047'
 };
 
 const darkColors: ThemeColors = {
@@ -205,7 +211,7 @@ const darkColors: ThemeColors = {
   forest: '#388E3C',
   earth: '#8D6E63',
   water: '#4FC3F7',
-  leaf: '#66BB6A',
+  leaf: '#66BB6A'
 };
 
 const defaultSpacing: ThemeSpacing = {
@@ -214,7 +220,7 @@ const defaultSpacing: ThemeSpacing = {
   medium: 16,
   large: 24,
   xlarge: 32,
-  xxlarge: 48,
+  xxlarge: 48
 };
 
 const defaultTypography: ThemeTypography = {
@@ -223,32 +229,32 @@ const defaultTypography: ThemeTypography = {
     medium: 14,
     large: 16,
     xlarge: 20,
-    xxlarge: 24,
+    xxlarge: 24
   },
   fontWeight: {
     light: '300',
     regular: '400',
     medium: '500',
     bold: '700',
-    black: '900',
+    black: '900'
   },
   fontFamily: {
     primary: '"Roboto", sans-serif',
-    secondary: '"Open Sans", sans-serif',
-  },
+    secondary: '"Open Sans", sans-serif'
+  }
 };
 
 const defaultBorderRadius = {
   small: 4,
   medium: 8,
   large: 12,
-  xlarge: 16,
+  xlarge: 16
 };
 
 const defaultShadows = {
   small: '0 1px 3px rgba(0, 0, 0, 0.12)',
   medium: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  large: '0 10px 15px rgba(0, 0, 0, 0.1)',
+  large: '0 10px 15px rgba(0, 0, 0, 0.1)'
 };
 
 const lightTheme: Theme = {
@@ -256,7 +262,7 @@ const lightTheme: Theme = {
   spacing: defaultSpacing,
   typography: defaultTypography,
   borderRadius: defaultBorderRadius,
-  shadows: defaultShadows,
+  shadows: defaultShadows
 };
 
 const darkTheme: Theme = {
@@ -267,13 +273,15 @@ const darkTheme: Theme = {
   shadows: {
     small: '0 1px 3px rgba(0, 0, 0, 0.3)',
     medium: '0 4px 6px rgba(0, 0, 0, 0.25)',
-    large: '0 10px 15px rgba(0, 0, 0, 0.2)',
-  },
+    large: '0 10px 15px rgba(0, 0, 0, 0.2)'
+  }
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
+  children
+}) => {
   const [theme, setTheme] = useState<Theme>(lightTheme);
   const [isDark, setIsDark] = useState(false);
 
@@ -290,7 +298,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setTheme(lightTheme);
       }
     };
-  
+
     loadTheme();
   }, []);
 
@@ -304,7 +312,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {
       console.error('Error saving theme:', e);
     }
-    
   }, [isDark]);
 
   const value: ThemeContextType = {
@@ -313,13 +320,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isDark,
     toggleTheme,
     colors: isDark ? darkColors : lightColors,
-    spacing: defaultSpacing,
+    spacing: defaultSpacing
   };
 
   return (
-      <ThemeContext.Provider value={value}>
-        {children}
-      </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 };
 
@@ -402,7 +407,7 @@ export const themeVariables = (theme: Theme) => ({
   // Sombras
   '--shadow-small': theme.shadows.small,
   '--shadow-medium': theme.shadows.medium,
-  '--shadow-large': theme.shadows.large,
+  '--shadow-large': theme.shadows.large
 });
 
 export type ThemeVariablesType = ReturnType<typeof themeVariables>;

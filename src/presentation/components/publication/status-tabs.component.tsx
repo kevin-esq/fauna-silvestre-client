@@ -7,7 +7,7 @@ import {
   View,
   StyleProp,
   ViewStyle,
-  TextStyle,
+  TextStyle
 } from 'react-native';
 import { useTheme } from '../../contexts/theme.context';
 import { themeVariables } from '../../contexts/theme.context';
@@ -27,7 +27,12 @@ interface StatusTabsProps {
 }
 
 // --- COMPONENTE ---
-const StatusTabs: React.FC<StatusTabsProps> = ({ statuses, active, onSelect, theme }) => {
+const StatusTabs: React.FC<StatusTabsProps> = ({
+  statuses,
+  active,
+  onSelect,
+  theme
+}) => {
   const { theme: defaultTheme } = useTheme();
   const currentTheme = theme || defaultTheme;
   const vars = themeVariables(currentTheme);
@@ -53,11 +58,13 @@ const StatusTabs: React.FC<StatusTabsProps> = ({ statuses, active, onSelect, the
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
               accessibilityLabel={`Filtrar por ${label}`}
-              style={getTabButtonStyle(vars, isActive, idx === statuses.length - 1)}
+              style={getTabButtonStyle(
+                vars,
+                isActive,
+                idx === statuses.length - 1
+              )}
             >
-              <Text style={getTabTextStyle(vars, isActive)}>
-                {label}
-              </Text>
+              <Text style={getTabTextStyle(vars, isActive)}>{label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -82,7 +89,7 @@ const getTabButtonStyle = (
   shadowRadius: isActive ? 4 : 0,
   elevation: isActive ? 4 : 0,
   marginRight: isLast ? 0 : 12,
-  ...styles.tabButton,
+  ...styles.tabButton
 });
 
 const getTabTextStyle = (
@@ -91,7 +98,7 @@ const getTabTextStyle = (
 ): StyleProp<TextStyle> => ({
   color: isActive ? vars['--text-on-primary'] : vars['--text-secondary'],
   fontWeight: isActive ? '700' : '500',
-  ...styles.tabText,
+  ...styles.tabText
 });
 
 // --- ESTILOS ESTÁTICOS ---
@@ -100,23 +107,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    width: '100%',
+    width: '100%'
   },
   contentContainer: {
     alignItems: 'center',
-    paddingRight: 16,
+    paddingRight: 16
   },
   tabButton: {
     paddingHorizontal: 16,
     borderRadius: 25,
     borderWidth: 1,
     height: 40,
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   tabText: {
     fontSize: 16,
-    textAlign: 'center',
-  },
+    textAlign: 'center'
+  }
 });
 
 export default memo(StatusTabs);

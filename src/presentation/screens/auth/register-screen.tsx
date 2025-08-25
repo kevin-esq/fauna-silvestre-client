@@ -2,7 +2,10 @@ import React from 'react';
 import { Text } from 'react-native';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { useRegisterForm } from '../../hooks/use-register-form.hook';
-import { genderOptions, locationOptions } from '../../../shared/constants/registerOptions';
+import {
+  genderOptions,
+  locationOptions
+} from '../../../shared/constants/registerOptions';
 import { useTheme } from '../../contexts/theme.context';
 import { themeVariables } from '../../contexts/theme.context';
 
@@ -19,15 +22,28 @@ const RegisterScreen = () => {
   const { theme } = useTheme();
   const variables = themeVariables(theme);
   const { state, onChange, handleRegister } = useRegisterForm();
-  const { 
-    username, name, lastName, location, alternativeLocation, 
-    gender, age, email, password, confirmPassword, error 
+  const {
+    username,
+    name,
+    lastName,
+    location,
+    alternativeLocation,
+    gender,
+    age,
+    email,
+    password,
+    confirmPassword,
+    error
   } = state;
-  
+
   const styles = createStyles(variables);
 
   return (
-    <AuthContainer title="Crear Cuenta" subtitle="Completa tus datos para empezar" variables={variables}>
+    <AuthContainer
+      title="Crear Cuenta"
+      subtitle="Completa tus datos para empezar"
+      variables={variables}
+    >
       <ErrorMessage message={error} variables={variables} />
 
       <AuthTextInput
@@ -65,14 +81,14 @@ const RegisterScreen = () => {
           value={alternativeLocation}
           onChangeText={onChange('alternativeLocation')}
           variables={variables}
-          />
+        />
       )}
       <CustomPicker
         iconName="wc"
         selectedValue={gender}
         onValueChange={onChange('gender')}
         options={genderOptions}
-        />
+      />
       <AuthTextInput
         iconName="calendar-today"
         placeholder="Edad (18-65)"
@@ -80,7 +96,7 @@ const RegisterScreen = () => {
         onChangeText={onChange('age')}
         keyboardType="numeric"
         variables={variables}
-              />
+      />
       <AuthTextInput
         iconName="email"
         placeholder="Correo electrónico"
@@ -89,7 +105,7 @@ const RegisterScreen = () => {
         keyboardType="email-address"
         autoCapitalize="none"
         variables={variables}
-              />
+      />
       <AuthTextInput
         iconName="lock-outline"
         placeholder="Contraseña"
@@ -97,7 +113,7 @@ const RegisterScreen = () => {
         onChangeText={onChange('password')}
         secureTextEntry
         variables={variables}
-        />
+      />
       <AuthTextInput
         iconName="lock-reset"
         placeholder="Confirmar contraseña"
@@ -105,9 +121,14 @@ const RegisterScreen = () => {
         onChangeText={onChange('confirmPassword')}
         secureTextEntry
         variables={variables}
-              />
+      />
 
-      <CustomButton title="Registrarse" onPress={handleRegister} style={styles.button} variables={variables} />
+      <CustomButton
+        title="Registrarse"
+        onPress={handleRegister}
+        style={styles.button}
+        variables={variables}
+      />
 
       <Text style={styles.orText}>¿Ya tienes una cuenta?</Text>
       <CustomButton

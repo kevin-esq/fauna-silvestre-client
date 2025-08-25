@@ -1,4 +1,7 @@
-import type { MaterialTopTabNavigationOptions, MaterialTopTabScreenProps } from '@react-navigation/material-top-tabs';
+import type {
+  MaterialTopTabNavigationOptions,
+  MaterialTopTabScreenProps
+} from '@react-navigation/material-top-tabs';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import type { RootStackParamList } from './navigation.types';
 import AdminHomeScreen from '../screens/admin/admin-home-screen/admin-home-screen';
@@ -9,7 +12,9 @@ import { ParamListBase } from '@react-navigation/native';
 
 type TabConfig<ParamList extends ParamListBase> = {
   name: keyof ParamList;
-  component: React.ComponentType<MaterialTopTabScreenProps<ParamList, keyof ParamList>>;
+  component: React.ComponentType<
+    MaterialTopTabScreenProps<ParamList, keyof ParamList>
+  >;
   title: string;
   hideInBar?: boolean;
   tabBarIcon?: MaterialTopTabNavigationOptions['tabBarIcon'];
@@ -22,7 +27,7 @@ export const adminTabs: TabConfig<RootStackParamList>[] = [
     title: 'Inicio',
     tabBarIcon: ({ focused, color }) => (
       <FontAwesome5 name="home" solid={focused} size={24} color={color} />
-    ),
+    )
   },
   {
     name: 'Publications',
@@ -30,16 +35,21 @@ export const adminTabs: TabConfig<RootStackParamList>[] = [
     title: 'Todas las Publicaciones',
     tabBarIcon: ({ focused, color }) => (
       <FontAwesome5 name="book-open" solid={focused} size={24} color={color} />
-    ),
+    )
   },
   {
     name: 'ReviewPublication',
     component: ReviewPublicationsScreen,
     title: 'Revisión de Publicaciones',
     tabBarIcon: ({ focused, color }) => (
-      <FontAwesome5 name="clipboard-check" solid={focused} size={24} color={color} />
-    ),
-  },
+      <FontAwesome5
+        name="clipboard-check"
+        solid={focused}
+        size={24}
+        color={color}
+      />
+    )
+  }
 ];
 
 export const userTabs: TabConfig<RootStackParamList>[] = [
@@ -49,7 +59,7 @@ export const userTabs: TabConfig<RootStackParamList>[] = [
     title: 'Inicio',
     tabBarIcon: ({ focused, color }) => (
       <FontAwesome5 name="home" solid={focused} size={24} color={color} />
-    ),
+    )
   },
   {
     name: 'Publications',
@@ -57,6 +67,6 @@ export const userTabs: TabConfig<RootStackParamList>[] = [
     title: 'Mis Publicaciones',
     tabBarIcon: ({ focused, color }) => (
       <FontAwesome5 name="book-open" solid={focused} size={24} color={color} />
-    ),
-  },
+    )
+  }
 ];

@@ -27,7 +27,7 @@ class CameraService {
   public async getLocationPermission(): Promise<boolean> {
     const permission = Platform.select({
       android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-      ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
+      ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
     })!;
 
     const result = await request(permission);

@@ -26,7 +26,7 @@ const CameraView: React.FC<CameraViewProps> = ({ device, isActive }) => {
 CameraView.displayName = 'CameraView';
 
 const styles = StyleSheet.create({
-  fullscreen: StyleSheet.absoluteFillObject,
+  fullscreen: StyleSheet.absoluteFillObject
 });
 
 export default memo(CameraView);
