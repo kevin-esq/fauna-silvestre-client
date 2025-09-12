@@ -1,10 +1,8 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import {
-  PublicationResponse,
-  PublicationStatus
-} from '../../domain/models/publication.models';
+import { PublicationModelResponse } from '../../domain/models/publication.models';
 import type { Location } from 'react-native-get-location';
 import Animal from '../../domain/entities/animal.entity';
+import { PublicationStatus } from '@/services/publication/publication.service';
 
 // Única fuente de verdad para todas las rutas de la aplicación.
 export type RootStackParamList = {
@@ -20,7 +18,7 @@ export type RootStackParamList = {
   ReviewPublication: undefined;
   ViewPublications: undefined;
   PublicationDetails: {
-    publication: PublicationResponse;
+    publication: PublicationModelResponse;
     status: PublicationStatus;
     reason?: string | undefined;
   };

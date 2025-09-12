@@ -39,9 +39,12 @@ export class ApiService {
     });
 
     axiosRetry(this.client, {
-      retries: 2,
-      retryDelay: axiosRetry.exponentialDelay,
-      retryCondition: err => axiosRetry.isNetworkOrIdempotentRequestError(err),
+      retries: 1,
+      retryDelay: () => 2000,
+      retryCondition: err => {
+        // Only retry on network errors, not on 4xx/5xx HTTP errors
+        return axiosRetry.isNetworkError(err) && !err.response;
+      },
       onRetry: (err, attempt) =>
         this.logger.warn(`[ApiService] Retry #${attempt}: ${err}`)
     });

@@ -10,6 +10,7 @@ import React, {
 import { useAuth } from '@/presentation/contexts/auth.context';
 import {
   PublicationResponse,
+  PublicationModelResponse,
   CountsResponse
 } from '@/domain/models/publication.models';
 import {
@@ -17,7 +18,7 @@ import {
   PublicationStatus
 } from '@/services/publication/publication.service';
 import {
-  createTable,
+  createTables,
   getDBConnection,
   loadPublications,
   savePublications,
@@ -26,40 +27,49 @@ import {
 import { SQLiteDatabase } from 'react-native-sqlite-storage';
 
 const CONFIG = {
-  DEFAULT_PAGE_SIZE: 10,
+  DEFAULT_PAGE_SIZE: 5,
   INITIAL_PAGE: 1,
   SYNC_THRESHOLD: 5 * 60 * 1000,
-  MAX_RETRIES: 3,
+  MAX_RETRIES: 1,
   PREFETCH_THRESHOLD: 0.8,
   BATCH_SIZE: 5,
-  DEBOUNCE_DELAY: 300
+  DEBOUNCE_DELAY: 300,
+  MAX_BACKGROUND_REFRESHES: 1,
+  BACKGROUND_REFRESH_DELAY: 10000
 } as const;
 
 interface PublicationState {
-  readonly publications: PublicationResponse[];
-  readonly filteredPublications: PublicationResponse[];
+  readonly publications: PublicationModelResponse[];
+  readonly filteredPublications: PublicationModelResponse[];
   readonly isLoading: boolean;
   readonly isLoadingMore: boolean;
-  readonly page: number;
-  readonly hasMore: boolean;
+  readonly pagination: {
+    readonly page: number;
+    readonly size: number;
+    readonly total: number;
+    readonly totalPages: number;
+    readonly hasNext: boolean;
+    readonly hasPrev: boolean;
+  };
   readonly lastSynced?: number;
   readonly currentSearchQuery: string;
-  readonly pageSize: number;
   readonly error?: string;
   readonly retryCount: number;
+}
+
+interface CountsState {
+  readonly users: number;
+  readonly records: number;
+  readonly loading: boolean;
+  readonly lastUpdated?: number;
+  readonly error?: string;
 }
 
 interface State {
   readonly [PublicationStatus.PENDING]: PublicationState;
   readonly [PublicationStatus.ACCEPTED]: PublicationState;
   readonly [PublicationStatus.REJECTED]: PublicationState;
-  readonly counts: {
-    readonly users: number;
-    readonly records: number;
-    readonly loading: boolean;
-    readonly lastUpdated?: number;
-    readonly error?: string;
-  };
+  readonly counts: CountsState;
   readonly error: string | null;
   readonly isOnline: boolean;
 }
@@ -69,9 +79,7 @@ type Action =
   | {
       type: 'FETCH_STATUS_SUCCESS';
       status: PublicationStatus;
-      payload: PublicationResponse[];
-      filteredPayload: PublicationResponse[];
-      hasMore: boolean;
+      payload: PublicationResponse;
       searchQuery: string;
       resetPage: boolean;
       lastSynced: number;
@@ -80,8 +88,7 @@ type Action =
   | {
       type: 'FETCH_MORE_SUCCESS';
       status: PublicationStatus;
-      payload: PublicationResponse[];
-      hasMore: boolean;
+      payload: PublicationResponse;
     }
   | {
       type: 'FILTER_PUBLICATIONS';
@@ -109,7 +116,7 @@ type Action =
       recordId: string;
       fromStatus: PublicationStatus;
       toStatus: PublicationStatus;
-      publication: PublicationResponse;
+      publication: PublicationModelResponse;
     }
   | { type: 'SET_ONLINE_STATUS'; isOnline: boolean }
   | { type: 'INCREMENT_RETRY'; status: PublicationStatus };
@@ -154,38 +161,83 @@ interface StatusStats {
   totalItems: number;
   filteredItems: number;
   currentPage: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
   isFiltered: boolean;
   lastSync: string | null;
 }
 
 interface SyncResult {
-  publications: PublicationResponse[];
-  filtered: PublicationResponse[];
+  response: PublicationResponse;
   source: 'cache' | 'remote' | 'hybrid';
-  hasMore: boolean;
 }
+
+// Pure function factories
+const createInitialPaginationState = () => ({
+  page: CONFIG.INITIAL_PAGE,
+  size: CONFIG.DEFAULT_PAGE_SIZE,
+  total: 0,
+  totalPages: 0,
+  hasNext: false,
+  hasPrev: false
+});
 
 const createInitialPublicationState = (): PublicationState => ({
   publications: [],
   filteredPublications: [],
   isLoading: false,
   isLoadingMore: false,
-  page: CONFIG.INITIAL_PAGE,
-  hasMore: true,
+  pagination: createInitialPaginationState(),
   currentSearchQuery: '',
-  pageSize: CONFIG.DEFAULT_PAGE_SIZE,
   retryCount: 0
 });
+
+const createInitialCountsState = (): CountsState => ({
+  users: 0,
+  records: 0,
+  loading: false
+});
+
+// Validation utilities
+const validatePublications = (data: unknown): PublicationModelResponse[] => {
+  if (!Array.isArray(data)) {
+    console.warn('Invalid publications data - not an array:', typeof data);
+    return [];
+  }
+  return data.filter(Boolean);
+};
+
+const validatePagination = (
+  pagination: unknown,
+  fallback: PublicationState['pagination']
+) => {
+  if (!pagination || typeof pagination !== 'object') {
+    return fallback;
+  }
+  return pagination as PublicationState['pagination'];
+};
+
+// Search utility
+const filterPublicationsByQuery = (
+  publications: PublicationModelResponse[],
+  query: string
+): PublicationModelResponse[] => {
+  if (!query) return publications;
+
+  const searchTerm = query.toLowerCase();
+  return publications.filter(
+    pub =>
+      pub.commonNoun?.toLowerCase().includes(searchTerm) ||
+      pub.description?.toLowerCase().includes(searchTerm)
+  );
+};
 
 const initialState: State = {
   [PublicationStatus.PENDING]: createInitialPublicationState(),
   [PublicationStatus.ACCEPTED]: createInitialPublicationState(),
   [PublicationStatus.REJECTED]: createInitialPublicationState(),
-  counts: {
-    users: 0,
-    records: 0,
-    loading: false
-  },
+  counts: createInitialCountsState(),
   error: null,
   isOnline: true
 };
@@ -218,26 +270,44 @@ function publicationsReducer(state: State, action: Action): State {
 
     case 'FETCH_STATUS_SUCCESS': {
       const currentState = state[action.status];
-      const newPublications = action.resetPage
-        ? action.payload
-        : [...currentState.publications, ...action.payload];
+      const { records: newPublications, pagination } = action.payload;
 
-      const newFiltered = action.resetPage
-        ? action.filteredPayload
-        : [...currentState.filteredPublications, ...action.filteredPayload];
+      // console.log(`[REDUCER] FETCH_STATUS_SUCCESS for ${action.status}:`, {
+      //   newPublicationsCount: newPublications?.length || 0,
+      //   firstRecordId: newPublications?.[0]?.recordId,
+      //   resetPage: action.resetPage
+      // });
+
+      const validPublications = validatePublications(newPublications);
+      const validPagination = validatePagination(
+        pagination,
+        currentState.pagination
+      );
+
+      const publications = action.resetPage
+        ? validPublications
+        : [...currentState.publications, ...validPublications];
+
+      const filteredPublications = filterPublicationsByQuery(
+        publications,
+        action.searchQuery
+      );
+
+      // console.log(`[REDUCER] Final state for ${action.status}:`, {
+      //   totalPublications: publications.length,
+      //   filteredPublications: filteredPublications.length,
+      //   firstPublicationId: publications[0]?.recordId
+      // });
 
       return {
         ...state,
         [action.status]: {
           ...currentState,
-          publications: newPublications,
-          filteredPublications: newFiltered,
+          publications,
+          filteredPublications,
           isLoading: false,
           isLoadingMore: false,
-          page: action.resetPage
-            ? CONFIG.INITIAL_PAGE + 1
-            : currentState.page + 1,
-          hasMore: action.hasMore,
+          pagination: validPagination,
           lastSynced: action.lastSynced,
           currentSearchQuery: action.searchQuery,
           retryCount: 0,
@@ -248,40 +318,46 @@ function publicationsReducer(state: State, action: Action): State {
 
     case 'FETCH_MORE_SUCCESS': {
       const currentState = state[action.status];
+      const { records: newPublications, pagination } = action.payload;
       const searchQuery = currentState.currentSearchQuery;
 
-      if (action.payload.length === 0) {
+      const validNewPublications = validatePublications(newPublications);
+      const validPagination = validatePagination(
+        pagination,
+        currentState.pagination
+      );
+
+      if (validNewPublications.length === 0) {
         return {
           ...state,
           [action.status]: {
             ...currentState,
             isLoadingMore: false,
-            hasMore: false
+            pagination: {
+              ...currentState.pagination,
+              hasNext: false
+            }
           }
         };
       }
 
-      let newFiltered: PublicationResponse[];
-      if (searchQuery) {
-        const filtered = action.payload.filter(
-          p =>
-            p.commonNoun?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.description?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        newFiltered = [...currentState.filteredPublications, ...filtered];
-      } else {
-        newFiltered = [...currentState.filteredPublications, ...action.payload];
-      }
+      const allPublications = [
+        ...currentState.publications,
+        ...validNewPublications
+      ];
+      const filteredPublications = filterPublicationsByQuery(
+        allPublications,
+        searchQuery
+      );
 
       return {
         ...state,
         [action.status]: {
           ...currentState,
-          publications: [...currentState.publications, ...action.payload],
-          filteredPublications: newFiltered,
+          publications: allPublications,
+          filteredPublications,
           isLoadingMore: false,
-          page: currentState.page + 1,
-          hasMore: action.hasMore,
+          pagination: validPagination,
           retryCount: 0
         }
       };
@@ -289,25 +365,17 @@ function publicationsReducer(state: State, action: Action): State {
 
     case 'FILTER_PUBLICATIONS': {
       const currentState = state[action.status];
-      const searchQuery = action.searchQuery.toLowerCase();
-
-      const filtered = searchQuery
-        ? currentState.publications.filter(
-            pub =>
-              pub.commonNoun?.toLowerCase().includes(searchQuery) ||
-              pub.description?.toLowerCase().includes(searchQuery)
-          )
-        : currentState.publications;
+      const filteredPublications = filterPublicationsByQuery(
+        currentState.publications,
+        action.searchQuery
+      );
 
       return {
         ...state,
         [action.status]: {
           ...currentState,
-          filteredPublications: filtered,
-          currentSearchQuery: action.searchQuery,
-          hasMore:
-            filtered.length < currentState.publications.length ||
-            currentState.hasMore
+          filteredPublications,
+          currentSearchQuery: action.searchQuery
         }
       };
     }
@@ -315,13 +383,14 @@ function publicationsReducer(state: State, action: Action): State {
     case 'UPDATE_PUBLICATION_OPTIMISTIC': {
       const { recordId, fromStatus } = action;
       const currentState = state[fromStatus];
+      const recordIdStr = recordId;
 
       const updatedPublications = currentState.publications.filter(
-        pub => pub.recordId.toString() !== recordId
+        pub => pub.recordId.toString() !== recordIdStr
       );
 
       const updatedFiltered = currentState.filteredPublications.filter(
-        pub => pub.recordId.toString() !== recordId
+        pub => pub.recordId.toString() !== recordIdStr
       );
 
       return {
@@ -329,7 +398,11 @@ function publicationsReducer(state: State, action: Action): State {
         [fromStatus]: {
           ...currentState,
           publications: updatedPublications,
-          filteredPublications: updatedFiltered
+          filteredPublications: updatedFiltered,
+          pagination: {
+            ...currentState.pagination,
+            total: Math.max(0, currentState.pagination.total - 1)
+          }
         }
       };
     }
@@ -346,7 +419,11 @@ function publicationsReducer(state: State, action: Action): State {
           filteredPublications: [
             ...currentState.filteredPublications,
             publication
-          ]
+          ],
+          pagination: {
+            ...currentState.pagination,
+            total: currentState.pagination.total + 1
+          }
         }
       };
     }
@@ -374,10 +451,7 @@ function publicationsReducer(state: State, action: Action): State {
       };
 
     case 'OPERATION_FAILURE': {
-      const baseState = {
-        ...state,
-        error: action.payload
-      };
+      const baseState = { ...state, error: action.payload };
 
       if (action.status) {
         return {
@@ -427,83 +501,97 @@ function publicationsReducer(state: State, action: Action): State {
   }
 }
 
+// Custom hooks for specific functionality
+const useDBConnection = () => {
+  const connectionRef = useRef<Promise<SQLiteDatabase> | null>(null);
+
+  const getDB = useCallback(async (): Promise<SQLiteDatabase> => {
+    connectionRef.current ??= getDBConnection().then(async db => {
+      await createTables(db);
+      return db;
+    });
+    return connectionRef.current;
+  }, []);
+
+  return { getDB };
+};
+
+const useRequestManagement = () => {
+  const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
+  const prefetchingRef = useRef<Set<string>>(new Set());
+  const debounceTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const backgroundRefreshRef = useRef<Map<string, boolean>>(new Map());
+  const retryCountersRef = useRef<Map<string, number>>(new Map());
+  const refreshCountRef = useRef<Map<string, number>>(new Map());
+
+  const cancelPreviousRequest = useCallback((key: string) => {
+    const controller = abortControllersRef.current.get(key);
+    if (controller) {
+      controller.abort();
+      abortControllersRef.current.delete(key);
+    }
+  }, []);
+
+  const cleanup = useCallback(() => {
+    debounceTimersRef.current.forEach(timer => clearTimeout(timer));
+    debounceTimersRef.current.clear();
+    abortControllersRef.current.forEach(controller => controller.abort());
+    abortControllersRef.current.clear();
+    prefetchingRef.current.clear();
+  }, []);
+
+  return {
+    abortControllersRef,
+    prefetchingRef,
+    debounceTimersRef,
+    backgroundRefreshRef,
+    retryCountersRef,
+    refreshCountRef,
+    cancelPreviousRequest,
+    cleanup
+  };
+};
+
+const useErrorHandler = () => {
+  return useCallback(
+    (
+      error: unknown,
+      fallback: string,
+      status?: PublicationStatus,
+      retryable = false
+    ) => {
+      const message = error instanceof Error ? error.message : fallback;
+      console.error(`[PublicationContext] ${fallback}:`, error);
+
+      const isNetworkError = [
+        'CanceledError',
+        'No response',
+        'Network Error',
+        'ECONNREFUSED'
+      ].some(errorType => message.includes(errorType));
+
+      return {
+        type: 'OPERATION_FAILURE' as const,
+        payload: isNetworkError
+          ? 'Error de conexión. Verifica tu internet.'
+          : message,
+        status,
+        retryable
+      };
+    },
+    []
+  );
+};
+
 const PublicationContext = createContext<PublicationContextType | null>(null);
 
 export const PublicationProvider = React.memo(
   ({ children }: { children: React.ReactNode }) => {
     const { user } = useAuth();
     const [state, dispatch] = useReducer(publicationsReducer, initialState);
-
-    const dbConnectionRef = useRef<Promise<SQLiteDatabase> | null>(null);
-    const prefetchingRef = useRef<Set<string>>(new Set());
-    const debounceTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
-    const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
-
-    const backgroundRefreshRef = useRef<Map<string, boolean>>(new Map());
-
-    const getDB = useCallback(async (): Promise<SQLiteDatabase> => {
-      if (!dbConnectionRef.current) {
-        dbConnectionRef.current = getDBConnection().then(async db => {
-          await createTable(db);
-          return db;
-        });
-      }
-      return dbConnectionRef.current;
-    }, []);
-
-    const retryCountersRef = useRef<Map<string, number>>(new Map());
-
-    const handleError = useCallback(
-      (
-        error: unknown,
-        fallback: string,
-        status?: PublicationStatus,
-        retryable = false
-      ) => {
-        const message = error instanceof Error ? error.message : fallback;
-        console.error(`[PublicationContext] ${fallback}:`, error);
-
-        const isNetworkError =
-          message.includes('CanceledError') ||
-          message.includes('No response') ||
-          message.includes('Network Error') ||
-          message.includes('ECONNREFUSED');
-
-        if (status && retryable) {
-          const currentCount = retryCountersRef.current.get(status) || 0;
-          const maxRetries = isNetworkError ? 2 : CONFIG.MAX_RETRIES;
-
-          if (currentCount >= maxRetries) {
-            console.warn(`Max retries reached for ${status}, not retrying`);
-            retryable = false;
-            retryCountersRef.current.set(status, 0);
-          } else {
-            retryCountersRef.current.set(status, currentCount + 1);
-          }
-        }
-
-        dispatch({
-          type: 'OPERATION_FAILURE',
-          payload: isNetworkError
-            ? 'Error de conexión. Verifica tu internet.'
-            : message,
-          status,
-          retryable
-        });
-      },
-      []
-    );
-
-    const cancelPreviousRequest = useCallback((key: string) => {
-      const controller = abortControllersRef.current.get(key);
-      if (controller) {
-        controller.abort();
-        abortControllersRef.current.delete(key);
-      }
-    }, []);
-
-    const MAX_BACKGROUND_REFRESHES = 3;
-    const refreshCountRef = useRef<Map<string, number>>(new Map());
+    const { getDB } = useDBConnection();
+    const requestManager = useRequestManagement();
+    const handleError = useErrorHandler();
 
     const syncPublications = useCallback(
       async (
@@ -516,253 +604,283 @@ export const PublicationProvider = React.memo(
         const isAdmin = user?.role === 'Admin';
         const requestKey = `sync-${status}-${page}`;
 
-        if (forceRefresh && page === 1) {
+        // Small helpers to flatten logic and reduce complexity
+        const shouldUseCacheFirst = () =>
+          useCache && !searchQuery && !forceRefresh && page === 1;
+        const makePagination = (len: number) => ({
+          page: 1,
+          size: len,
+          total: len,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false
+        });
+        const makeCacheResult = (
+          records: PublicationModelResponse[]
+        ): SyncResult => ({
+          response: { records, pagination: makePagination(records.length) },
+          source: 'cache'
+        });
+        const runBackgroundRefresh = async () => {
+          try {
+            await syncPublications(status, page, size, {
+              ...options,
+              forceRefresh: true
+            });
+          } catch (err) {
+            console.warn('Background refresh failed:', err);
+          } finally {
+            requestManager.backgroundRefreshRef.current.delete(
+              `refresh-${status}`
+            );
+          }
+        };
+
+        const scheduleBackgroundRefreshIfNeeded = () => {
+          const currentState = state[status];
+          const needsRefresh =
+            !currentState.lastSynced ||
+            Date.now() - currentState.lastSynced > CONFIG.SYNC_THRESHOLD;
+          if (!needsRefresh) return;
+          const refreshCount =
+            requestManager.refreshCountRef.current.get(status) || 0;
+          if (refreshCount >= CONFIG.MAX_BACKGROUND_REFRESHES) return;
           const refreshKey = `refresh-${status}`;
-          if (backgroundRefreshRef.current.get(refreshKey)) {
-            console.log(`Background refresh already in progress for ${status}`);
-            throw new Error('Refresh already in progress');
-          }
-          backgroundRefreshRef.current.set(refreshKey, true);
-        }
+          if (requestManager.backgroundRefreshRef.current.get(refreshKey)) return;
+          requestManager.refreshCountRef.current.set(status, refreshCount + 1);
+          setTimeout(() => {
+            void runBackgroundRefresh();
+          }, CONFIG.BACKGROUND_REFRESH_DELAY);
+        };
 
-        cancelPreviousRequest(requestKey);
-        const controller = new AbortController();
-        abortControllersRef.current.set(requestKey, controller);
-
-        try {
-          if (useCache && !searchQuery && !forceRefresh && page === 1) {
-            try {
-              const db = await getDB();
-              const cached = await loadPublications(db, status, size, 0);
-
-              if (cached.length > 0) {
-                console.log(
-                  `[Cache Hit] ${cached.length} publications for ${status}`
-                );
-
-                const currentState = state[status];
-                const shouldRefresh =
-                  !currentState.lastSynced ||
-                  Date.now() - currentState.lastSynced > CONFIG.SYNC_THRESHOLD;
-
-                if (shouldRefresh) {
-                  const refreshCount = refreshCountRef.current.get(status) || 0;
-                  if (refreshCount < MAX_BACKGROUND_REFRESHES) {
-                    refreshCountRef.current.set(status, refreshCount + 1);
-                    setTimeout(() => {
-                      syncPublications(status, page, size, {
-                        ...options,
-                        forceRefresh: true
-                      })
-                        .catch(err =>
-                          console.warn('Background refresh failed:', err)
-                        )
-                        .finally(() => {
-                          backgroundRefreshRef.current.delete(
-                            `refresh-${status}`
-                          );
-                        });
-                    }, 5000);
-                  }
-                }
-
-                return {
-                  publications: cached,
-                  filtered: cached,
-                  source: 'cache',
-                  hasMore: cached.length >= size
-                };
-              }
-            } catch (cacheError) {
-              console.warn(
-                'Cache access failed, falling back to remote:',
-                cacheError
+        const tryCacheFirst = async (): Promise<SyncResult | null> => {
+          if (!shouldUseCacheFirst()) return null;
+          try {
+            const db = await getDB();
+            const cached = await loadPublications(db, status, size, 0, {
+              pageNumber: page,
+              orderBy: 'loadOrder'
+            });
+            const validCached = validatePublications(cached);
+            if (validCached.length > 0) {
+              console.log(
+                `[Cache Hit] ${validCached.length} publications for ${status} page ${page}`
               );
-            } finally {
-              abortControllersRef.current.delete(requestKey);
+              scheduleBackgroundRefreshIfNeeded();
+              return makeCacheResult(validCached);
             }
+          } catch (cacheError) {
+            console.warn(
+              'Cache access failed, falling back to remote:',
+              cacheError
+            );
           }
+          return null;
+        };
 
-          const startTime = Date.now();
-          const remote = await publicationService.getPublicationsByStatus({
+        const loadFromRemote = async (): Promise<SyncResult> => {
+          // console.log(`[Remote Load] Requesting ${status} publications for ${isAdmin ? 'admin' : 'user'}, page ${page}, size ${size}`);
+          const response = await publicationService.getPublicationsByStatus({
             status,
             page,
             size,
             forAdmin: isAdmin
           });
+          if (!response) throw new Error('No response received from server');
 
-          const loadTime = Date.now() - startTime;
-          console.log(
-            `[Remote Load] ${remote.length} publications in ${loadTime}ms`
-          );
+          const publications = validatePublications(response.records);
+          const pagination =
+            response.pagination || makePagination(publications.length);
 
-          if (!searchQuery && remote.length > 0) {
+          // const loadTime = Date.now() - startTime;
+          // console.log(
+          //   `[Remote Load] ${status}: ${publications.length} publications in ${loadTime}ms (${isAdmin ? 'admin' : 'user'})`
+          // );
+
+          if (!searchQuery && publications.length > 0) {
             getDB()
               .then(async db => {
                 if (page === 1) {
-                  await clearStatus(db, status);
+                  await clearStatus(db, status, {
+                    onlyOldPages: false,
+                    currentPage: 1
+                  });
                 }
-                await savePublications(db, remote, status);
+                const saveResult = await savePublications(
+                  db,
+                  publications,
+                  status,
+                  {
+                    pageNumber: page,
+                    pagination,
+                    upsert: true
+                  }
+                );
                 console.log(
-                  `[Cache Update] ${remote.length} publications saved`
+                  `[Cache Update] ${saveResult.saved} publications saved for ${status} page ${page}, ${saveResult.errors} errors`
                 );
               })
               .catch(err => console.warn('Cache save failed:', err));
           }
 
           return {
-            publications: remote,
-            filtered: remote,
-            source: 'remote',
-            hasMore: remote.length >= size
+            response: { records: publications, pagination },
+            source: 'remote'
           };
-        } catch (err) {
-          if (
-            err instanceof Error &&
-            err.message.includes('Failed to load publications')
-          ) {
-            throw new Error('Error de base de datos local');
-          }
+        };
 
-          if (useCache && !searchQuery) {
-            try {
-              const db = await getDB();
-              const cached = await loadPublications(db, status, size, 0);
-              if (cached.length > 0) {
-                console.log(
-                  `[Cache Fallback] Using cached data due to network error`
-                );
-                return {
-                  publications: cached,
-                  filtered: cached,
-                  source: 'cache',
-                  hasMore: false
-                };
-              }
-            } catch (cacheError) {
-              console.warn('Cache fallback also failed:', cacheError);
+        const tryCacheFallback = async (): Promise<SyncResult | null> => {
+          if (!(useCache && !searchQuery)) return null;
+          try {
+            const db = await getDB();
+            const cached = await loadPublications(db, status, size, 0, {
+              pageNumber: page,
+              orderBy: 'loadOrder'
+            });
+            const validCached = validatePublications(cached);
+            if (validCached.length > 0) {
+              console.log(
+                `[Cache Fallback] Using ${validCached.length} cached items for ${status} page ${page} due to network error`
+              );
+              return makeCacheResult(validCached);
             }
+          } catch (cacheError) {
+            console.warn('Cache fallback also failed:', cacheError);
           }
+          return null;
+        };
 
-          throw err;
-        } finally {
-          abortControllersRef.current.delete(requestKey);
-        }
-      },
-      [user, state, getDB, cancelPreviousRequest]
-    );
-
-    const prefetchNextPage = useCallback(
-      async (status: PublicationStatus) => {
-        const prefetchKey = `${status}-${state[status].page}`;
-
-        if (prefetchingRef.current.has(prefetchKey)) {
-          return;
+        // Handle background refresh lock
+        if (forceRefresh && page === 1) {
+          const refreshKey = `refresh-${status}`;
+          if (requestManager.backgroundRefreshRef.current.get(refreshKey)) {
+            console.log(`Refresh already in progress for ${status}`);
+            throw new Error('Refresh already in progress');
+          }
+          requestManager.backgroundRefreshRef.current.set(refreshKey, true);
         }
 
-        prefetchingRef.current.add(prefetchKey);
+        requestManager.cancelPreviousRequest(requestKey);
+        const controller = new AbortController();
+        requestManager.abortControllersRef.current.set(requestKey, controller);
 
         try {
-          await syncPublications(
-            status,
-            state[status].page + 1,
-            state[status].pageSize,
-            { useCache: false }
-          );
-          console.log(`[Prefetch] Next page for ${status} loaded`);
-        } catch (error) {
-          console.warn(`[Prefetch] Failed for ${status}:`, error);
+          const cacheFirst = await tryCacheFirst();
+          if (cacheFirst) return cacheFirst;
+
+          // 2) Load from server
+          const remote = await loadFromRemote();
+          return remote;
+        } catch (err) {
+          const cacheFallback = await tryCacheFallback();
+          if (cacheFallback) return cacheFallback;
+          throw err;
         } finally {
-          prefetchingRef.current.delete(prefetchKey);
+          requestManager.abortControllersRef.current.delete(requestKey);
         }
       },
-      [state, syncPublications]
+      [user, state, getDB, requestManager]
     );
 
     const loadStatus = useCallback(
       async (status: PublicationStatus, options: LoadOptions = {}) => {
         const { searchQuery = '', forceRefresh = false } = options;
-
+        const currentState = state[status];
         const loadKey = `load-${status}-${searchQuery}`;
-        if (abortControllersRef.current.has(loadKey)) {
+
+        // Cancel all other status requests when switching tabs
+        const allStatuses: PublicationStatus[] = [PublicationStatus.PENDING, PublicationStatus.ACCEPTED, PublicationStatus.REJECTED];
+        allStatuses.forEach(otherStatus => {
+          if (otherStatus !== status) {
+            const otherLoadKey = `load-${otherStatus}-${searchQuery}`;
+            requestManager.cancelPreviousRequest(otherLoadKey);
+            const otherSyncKey = `sync-${otherStatus}`;
+            requestManager.cancelPreviousRequest(otherSyncKey);
+          }
+        });
+
+        // Prevent duplicate requests
+        if (requestManager.abortControllersRef.current.has(loadKey)) {
           console.log(`Load already in progress for ${loadKey}`);
           return;
         }
 
-        console.log(
-          `[LoadStatus] ${status} - Query: "${searchQuery}" - Force: ${forceRefresh}`
-        );
-        dispatch({ type: 'FETCH_STATUS_START', status });
+        // Prevent loading if already loading
+        if (currentState.isLoading && !forceRefresh) {
+          console.log(`Status ${status} already loading, skipping`);
+          return;
+        }
 
+        dispatch({ type: 'FETCH_STATUS_START', status });
         const controller = new AbortController();
-        abortControllersRef.current.set(loadKey, controller);
+        requestManager.abortControllersRef.current.set(loadKey, controller);
 
         try {
           const result = await syncPublications(
             status,
             CONFIG.INITIAL_PAGE,
-            state[status].pageSize,
+            currentState.pagination.size || CONFIG.DEFAULT_PAGE_SIZE,
             { searchQuery, forceRefresh, useCache: !searchQuery }
           );
 
-          retryCountersRef.current.set(status, 0);
+          requestManager.retryCountersRef.current.set(status, 0);
 
           dispatch({
             type: 'FETCH_STATUS_SUCCESS',
             status,
-            payload: result.publications,
-            filteredPayload: result.filtered,
-            hasMore: result.hasMore,
+            payload: result.response,
             resetPage: true,
             searchQuery,
             lastSynced: Date.now()
           });
         } catch (err) {
-          handleError(err, `Error loading ${status}`, status, true);
+          const errorAction = handleError(
+            err,
+            `Error loading ${status}`,
+            status,
+            true
+          );
+          dispatch(errorAction);
         } finally {
-          abortControllersRef.current.delete(loadKey);
+          requestManager.abortControllersRef.current.delete(loadKey);
         }
       },
-      [state, syncPublications, handleError]
+      [state, syncPublications, handleError, requestManager]
     );
 
     const loadMore = useCallback(
       async (status: PublicationStatus, searchQuery = '') => {
         const currentState = state[status];
-        console.log('🔍 LoadMore Debug:', {
-          hasMore: currentState.hasMore,
-          isLoadingMore: currentState.isLoadingMore,
-          currentPage: currentState.page,
-          totalPublications: currentState.publications.length,
-          canLoadMore: currentState.hasMore && !currentState.isLoadingMore
-        });
 
-        if (!currentState.hasMore || currentState.isLoadingMore) {
-          console.log('❌ Cannot load more:', {
-            hasMore: currentState.hasMore,
-            isLoadingMore: currentState.isLoadingMore
-          });
+
+        if (!currentState.pagination.hasNext || currentState.isLoadingMore) {
           return;
         }
 
         dispatch({ type: 'FETCH_MORE_START', status });
 
         try {
+          const nextPage = currentState.pagination.page + 1;
           const result = await syncPublications(
             status,
-            currentState.page,
-            currentState.pageSize,
+            nextPage,
+            currentState.pagination.size,
             { searchQuery, useCache: !searchQuery }
           );
 
           dispatch({
             type: 'FETCH_MORE_SUCCESS',
             status,
-            payload: result.publications,
-            hasMore: result.hasMore
+            payload: result.response
           });
         } catch (err) {
-          handleError(err, `Error loading more ${status}`, status, true);
+          const errorAction = handleError(
+            err,
+            `Error loading more ${status}`,
+            status,
+            true
+          );
+          dispatch(errorAction);
         }
       },
       [state, syncPublications, handleError]
@@ -770,7 +888,7 @@ export const PublicationProvider = React.memo(
 
     const filterPublications = useCallback(
       (status: PublicationStatus, searchQuery: string) => {
-        const timerId = debounceTimersRef.current.get(status);
+        const timerId = requestManager.debounceTimersRef.current.get(status);
         if (timerId) {
           clearTimeout(timerId);
         }
@@ -781,12 +899,12 @@ export const PublicationProvider = React.memo(
             status,
             searchQuery
           });
-          debounceTimersRef.current.delete(status);
+          requestManager.debounceTimersRef.current.delete(status);
         }, CONFIG.DEBOUNCE_DELAY);
 
-        debounceTimersRef.current.set(status, newTimerId);
+        requestManager.debounceTimersRef.current.set(status, newTimerId);
       },
-      []
+      [requestManager]
     );
 
     const loadCounts = useCallback(
@@ -806,7 +924,8 @@ export const PublicationProvider = React.memo(
           const countsData = await publicationService.getCounts();
           dispatch({ type: 'FETCH_COUNTS_SUCCESS', payload: countsData });
         } catch (err) {
-          handleError(err, 'Error loading counts');
+          const errorAction = handleError(err, 'Error loading counts');
+          dispatch(errorAction);
         }
       },
       [state, handleError]
@@ -848,7 +967,6 @@ export const PublicationProvider = React.memo(
           );
 
           await loadCounts(true);
-
           return true;
         } catch (error) {
           dispatch({
@@ -859,33 +977,49 @@ export const PublicationProvider = React.memo(
             publication
           });
 
-          handleError(error, `Error ${action}ing publication`);
+          const errorAction = handleError(
+            error,
+            `Error ${action}ing publication`
+          );
+          dispatch(errorAction);
           return false;
         }
       },
       [state, getDB, loadCounts, handleError]
     );
 
-    const approve = useCallback(
-      (recordId: string) =>
-        updatePublicationStatus(
-          recordId,
-          PublicationStatus.PENDING,
-          PublicationStatus.ACCEPTED,
-          'accept'
-        ),
-      [updatePublicationStatus]
-    );
+    const prefetchNextPage = useCallback(
+      async (status: PublicationStatus) => {
+        const currentState = state[status];
+        const nextPage = currentState.pagination.page + 1;
 
-    const reject = useCallback(
-      (recordId: string) =>
-        updatePublicationStatus(
-          recordId,
-          PublicationStatus.PENDING,
-          PublicationStatus.REJECTED,
-          'reject'
-        ),
-      [updatePublicationStatus]
+        if (!currentState.pagination.hasNext) {
+          return;
+        }
+
+        const prefetchKey = `${status}-${nextPage}`;
+
+        if (requestManager.prefetchingRef.current.has(prefetchKey)) {
+          return;
+        }
+
+        requestManager.prefetchingRef.current.add(prefetchKey);
+
+        try {
+          await syncPublications(
+            status,
+            nextPage,
+            currentState.pagination.size,
+            { useCache: false }
+          );
+          console.log(`[Prefetch] Next page for ${status} loaded`);
+        } catch (error) {
+          console.warn(`[Prefetch] Failed for ${status}:`, error);
+        } finally {
+          requestManager.prefetchingRef.current.delete(prefetchKey);
+        }
+      },
+      [state, syncPublications, requestManager]
     );
 
     const retryOperation = useCallback(
@@ -896,58 +1030,42 @@ export const PublicationProvider = React.memo(
           return;
         }
 
+        // Don't retry if already loading or loading more
+        if (currentState.isLoading || currentState.isLoadingMore) {
+          console.log(`Retry blocked for ${status}: already loading`);
+          return;
+        }
+
         dispatch({ type: 'INCREMENT_RETRY', status });
+
+        // Add delay before retry to avoid rapid successive attempts
+        await new Promise(resolve => setTimeout(resolve, 1000 * (currentState.retryCount + 1)));
         await loadStatus(status, { forceRefresh: true });
       },
       [state, loadStatus]
     );
 
-    const utils = useMemo(
-      () => ({
-        canLoadMore: (status: PublicationStatus) => {
-          const currentState = state[status];
-          return (
-            currentState.hasMore &&
-            !currentState.isLoadingMore &&
-            !currentState.isLoading
-          );
-        },
-
-        shouldPrefetch: (status: PublicationStatus) => {
-          const currentState = state[status];
-          const threshold = Math.floor(
-            currentState.pageSize * CONFIG.PREFETCH_THRESHOLD
-          );
-          return (
-            currentState.filteredPublications.length >= threshold &&
-            currentState.hasMore
-          );
-        },
-
-        getStatusStats: (status: PublicationStatus): StatusStats => {
-          const currentState = state[status];
-          return {
-            totalItems: currentState.publications.length,
-            filteredItems: currentState.filteredPublications.length,
-            currentPage: currentState.page,
-            isFiltered: currentState.currentSearchQuery.length > 0,
-            lastSync: currentState.lastSynced
-              ? new Date(currentState.lastSynced).toLocaleTimeString()
-              : null
-          };
-        }
-      }),
-      [state]
-    );
-
+    // Memoized action creators
     const actions = useMemo(
       () => ({
         loadStatus,
         loadMoreStatus: loadMore,
         filterPublications,
         loadCounts,
-        approve,
-        reject,
+        approve: (recordId: string) =>
+          updatePublicationStatus(
+            recordId,
+            PublicationStatus.PENDING,
+            PublicationStatus.ACCEPTED,
+            'accept'
+          ),
+        reject: (recordId: string) =>
+          updatePublicationStatus(
+            recordId,
+            PublicationStatus.PENDING,
+            PublicationStatus.REJECTED,
+            'reject'
+          ),
         resetStatus: (status: PublicationStatus) =>
           dispatch({ type: 'RESET_STATUS', status }),
         resetAll: () => dispatch({ type: 'RESET_ALL' }),
@@ -959,11 +1077,53 @@ export const PublicationProvider = React.memo(
         loadMore,
         filterPublications,
         loadCounts,
-        approve,
-        reject,
+        updatePublicationStatus,
         retryOperation,
         prefetchNextPage
       ]
+    );
+
+    const utils = useMemo(
+      () => ({
+        canLoadMore: (status: PublicationStatus) => {
+          const currentState = state[status];
+          // For pagination, we only need to check hasNext and isLoadingMore
+          // isLoading is for initial load, not for pagination
+          const canLoad = (
+            currentState.pagination.hasNext &&
+            !currentState.isLoadingMore
+          );
+          return canLoad;
+        },
+
+        shouldPrefetch: (status: PublicationStatus) => {
+          const currentState = state[status];
+          const threshold = Math.floor(
+            currentState.pagination.size * CONFIG.PREFETCH_THRESHOLD
+          );
+          return (
+            currentState.filteredPublications.length >= threshold &&
+            currentState.pagination.hasNext
+          );
+        },
+
+        getStatusStats: (status: PublicationStatus): StatusStats => {
+          const currentState = state[status];
+          return {
+            totalItems: currentState.pagination.total,
+            filteredItems: currentState.filteredPublications.length,
+            currentPage: currentState.pagination.page,
+            totalPages: currentState.pagination.totalPages,
+            hasNext: currentState.pagination.hasNext,
+            hasPrev: currentState.pagination.hasPrev,
+            isFiltered: currentState.currentSearchQuery.length > 0,
+            lastSync: currentState.lastSynced
+              ? new Date(currentState.lastSynced).toLocaleTimeString()
+              : null
+          };
+        }
+      }),
+      [state]
     );
 
     const contextValue = useMemo(
@@ -972,20 +1132,10 @@ export const PublicationProvider = React.memo(
     );
 
     useEffect(() => {
-      const debounceTimers = debounceTimersRef.current;
-      const abortControllers = abortControllersRef.current;
-      const prefetching = prefetchingRef.current;
-
       return () => {
-        debounceTimers.forEach(timer => clearTimeout(timer));
-        debounceTimers.clear();
-
-        abortControllers.forEach(controller => controller.abort());
-        abortControllers.clear();
-
-        prefetching.clear();
+        requestManager.cleanup();
       };
-    }, []);
+    }, [requestManager]);
 
     return (
       <PublicationContext.Provider value={contextValue}>
@@ -1013,9 +1163,10 @@ export const usePublicationStatus = (status: PublicationStatus) => {
   return useMemo(
     () => ({
       data: state[status],
+      publications: state[status].filteredPublications,
       isLoading: state[status].isLoading,
       isLoadingMore: state[status].isLoadingMore,
-      hasMore: state[status].hasMore,
+      pagination: state[status].pagination,
       error: state[status].error,
       canLoadMore: utils.canLoadMore(status),
       shouldPrefetch: utils.shouldPrefetch(status),

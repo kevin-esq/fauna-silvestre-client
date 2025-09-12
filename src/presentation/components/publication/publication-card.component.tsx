@@ -2,14 +2,12 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, Button } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import AnimatedPressable from '@/presentation/components/ui/animated-pressable.component';
-import {
-  PublicationResponse,
-  PublicationStatus
-} from '@/domain/models/publication.models';
+import { PublicationModelResponse } from '@/domain/models/publication.models';
 import {
   useTheme,
   themeVariables
 } from '@/presentation/contexts/theme.context';
+import { PublicationStatus } from '@/services/publication/publication.service';
 
 const STATUS_CONFIG = {
   rejected: { icon: 'times-circle', colorKey: '--error', label: 'Rechazada' },
@@ -122,7 +120,7 @@ const getImageStyles = (
   });
 
 interface PublicationContentProps {
-  publication: PublicationResponse;
+  publication: PublicationModelResponse;
   status: PublicationStatus;
 }
 
@@ -235,7 +233,7 @@ const getReviewButtonStyles = () =>
   });
 
 interface PublicationCardProps {
-  publication: PublicationResponse;
+  publication: PublicationModelResponse;
   status: PublicationStatus;
   onPress?: () => void;
   reviewActions?: {

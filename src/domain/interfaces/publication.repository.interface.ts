@@ -10,30 +10,30 @@ export interface IPublicationRepository {
   getUserPendingPublications(
     page: number,
     size: number
-  ): Promise<PublicationResponse[]>;
+  ): Promise<PublicationResponse>;
   getUserAcceptedPublications(
     page: number,
     size: number
-  ): Promise<PublicationResponse[]>;
+  ): Promise<PublicationResponse>;
   getUserPublications(): Promise<PublicationsModel[]>;
   getUserRejectedPublications(
     page: number,
     size: number
-  ): Promise<PublicationResponse[]>;
+  ): Promise<PublicationResponse>;
   getPublicationById(recordId: string): Promise<PublicationResponse>;
   getAllPublications(): Promise<PublicationsModel[]>;
   getAllPendingPublications(
     page: number,
     size: number
-  ): Promise<PublicationResponse[]>;
+  ): Promise<PublicationResponse>;
   getAllAcceptedPublications(
     page: number,
     size: number
-  ): Promise<PublicationResponse[]>;
+  ): Promise<PublicationResponse>;
   getAllRejectedPublications(
     page: number,
     size: number
-  ): Promise<PublicationResponse[]>;
+  ): Promise<PublicationResponse>;
   acceptPublication(publicationId: string): Promise<void>;
   rejectPublication(publicationId: string): Promise<void>;
   getCounts(): Promise<CountsResponse>;

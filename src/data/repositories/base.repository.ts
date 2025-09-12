@@ -22,6 +22,7 @@ export abstract class BaseRepository {
    * @throws {HttpError} Si el estado no es exitoso
    */
   protected ensureSuccessStatus(response: AxiosResponse): void {
+    console.log(response.data);
     if (response.status < 200 || response.status >= 300) {
       throw new HttpError(
         `HTTP Error: Received status ${response.status}`,

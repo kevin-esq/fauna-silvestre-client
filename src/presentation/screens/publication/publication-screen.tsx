@@ -39,7 +39,7 @@ import ErrorBoundary from '@/presentation/components/ui/error-boundary.component
 import SkeletonLoader from '@/presentation/components/ui/skeleton-loader.component';
 import FloatingActionButton from '@/presentation/components/ui/floating-action-button.component';
 
-import { PublicationResponse } from '@/domain/models/publication.models';
+import { PublicationModelResponse } from '@/domain/models/publication.models';
 import { createStyles } from './publication-screen.styles';
 import { PublicationStatus } from '@/services/publication/publication.service';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -47,7 +47,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 const CONFIG = {
   SEARCH_DEBOUNCE: 300,
   PREFETCH_THRESHOLD: 0.5,
-  INITIAL_RENDER: 10,
+  INITIAL_RENDER: 5,
   MAX_RENDER_BATCH: 8,
   WINDOW_SIZE: 12,
   UPDATE_CELLS_PERIOD: 100,
@@ -86,7 +86,7 @@ const STATUS_OPTIONS = [
 ] as const;
 
 const useOptimizedPublications = (
-  publications: PublicationResponse[],
+  publications: PublicationModelResponse[],
   searchQuery: string
 ) => {
   return useMemo(() => {
@@ -107,7 +107,7 @@ const OptimizedPublicationCard = React.memo(
     onPress,
     status
   }: {
-    publication: PublicationResponse;
+    publication: PublicationModelResponse;
     onPress: () => void;
     status: PublicationStatus;
   }) => {
@@ -166,52 +166,24 @@ const useScrollHandler = (onScroll?: (offset: number) => void) => {
 
 const useOptimizedSearch = (initialValue = '') => {
   const [searchInput, setSearchInput] = useState(initialValue);
-  const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(
     searchInput.toLowerCase().trim()
   );
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSearchRef = useRef('');
-
-  const updateSearchQuery = useCallback((value: string) => {
-    const trimmedValue = value.toLowerCase().trim();
-
-    if (trimmedValue === lastSearchRef.current) {
-      return;
-    }
-
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      lastSearchRef.current = trimmedValue;
-      setSearchQuery(trimmedValue);
-    }, CONFIG.SEARCH_DEBOUNCE);
-  }, []);
-
-  useEffect(() => {
-    updateSearchQuery(searchInput);
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchInput, updateSearchQuery]);
 
   const clearSearch = useCallback(() => {
     setSearchInput('');
-    setSearchQuery('');
     lastSearchRef.current = '';
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+  }, []);
+
+  useEffect(() => {
+    return undefined;
   }, []);
 
   return {
     searchInput,
     setSearchInput,
-    searchQuery,
+    searchQuery: deferredSearchQuery,
     deferredSearchQuery,
     clearSearch
   };
@@ -400,7 +372,6 @@ const PublicationScreen = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showFAB, setShowFAB] = useState(false);
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
-  const [isLoadingData, setIsLoadingData] = useState(false);
 
   const {
     searchInput,
@@ -412,8 +383,9 @@ const PublicationScreen = () => {
 
   const { executeWithRetry, resetRetries, isRetrying } = useErrorHandling();
 
+  // Use the context hook for the selected status
   const {
-    data: statusData,
+    publications: contextPublications,
     isLoading,
     isLoadingMore,
     error,
@@ -421,15 +393,17 @@ const PublicationScreen = () => {
     shouldPrefetch,
     load,
     loadMore,
-    prefetch
+    prefetch,
+    retry
   } = usePublicationStatus(selectedStatus);
 
+  // Apply local search filtering to context publications
   const filteredPublications = useOptimizedPublications(
-    statusData?.publications || [],
+    contextPublications,
     deferredSearchQuery
   );
 
-  const listRef = useRef<FlatList<PublicationResponse>>(null);
+  const listRef = useRef<FlatList<PublicationModelResponse>>(null);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loadMoreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -448,7 +422,7 @@ const PublicationScreen = () => {
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       const visiblePublications = viewableItems
         .filter(token => token.isViewable)
-        .map(token => token.item as PublicationResponse);
+        .map(token => token.item as PublicationModelResponse);
 
       if (visiblePublications.length > 0) {
         setShowFAB(true);
@@ -499,13 +473,13 @@ const PublicationScreen = () => {
 
       try {
         isLoadingRef.current = true;
-        setIsLoadingData(true);
         lastLoadParamsRef.current = currentParams;
 
         await executeWithRetry(
           async () => {
             if (!isMountedRef.current) return;
 
+            // Use the context load function
             await load({
               searchQuery: params.searchQuery || undefined,
               forceRefresh: params.forceRefresh || false,
@@ -535,14 +509,15 @@ const PublicationScreen = () => {
               { text: 'Cancelar', style: 'cancel' },
               {
                 text: 'Reintentar',
-                onPress: () => loadDataSafely({ ...params, forceRefresh: true })
+                onPress: () => {
+                  void loadDataSafely({ ...params, forceRefresh: true });
+                }
               }
             ]
           );
         }
       } finally {
         if (isMountedRef.current) {
-          setIsLoadingData(false);
           isLoadingRef.current = false;
         }
       }
@@ -571,16 +546,14 @@ const PublicationScreen = () => {
       }
 
       if (shouldPrefetch && offset > 0 && !isLoadingRef.current) {
-        if (!prefetchTimeoutRef.current) {
-          prefetchTimeoutRef.current = setTimeout(() => {
-            if (isMountedRef.current && !isLoadingRef.current) {
-              prefetch().catch(error => {
-                console.warn('⚠️ Error en prefetch:', error);
-              });
-            }
-            prefetchTimeoutRef.current = null;
-          }, 1500);
-        }
+        prefetchTimeoutRef.current ??= setTimeout(() => {
+          if (isMountedRef.current && !isLoadingRef.current) {
+            prefetch().catch(error => {
+              console.warn('⚠️ Error en prefetch:', error);
+            });
+          }
+          prefetchTimeoutRef.current = null;
+        }, 1500);
       }
     },
     [showFAB, isHeaderScrolled, shouldPrefetch, prefetch, fabAnimatedValue]
@@ -588,6 +561,7 @@ const PublicationScreen = () => {
 
   const { scrollHandler } = useScrollHandler(handleScroll);
 
+  // Load data when status changes (simplified to prevent loops)
   useEffect(() => {
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
@@ -595,37 +569,44 @@ const PublicationScreen = () => {
 
     resetRetries();
 
-    const shouldLoad =
-      isMountedRef.current && !isLoadingRef.current && !isRetrying;
+    const shouldLoad = isMountedRef.current && !isLoadingRef.current;
 
     if (!shouldLoad) {
       return;
     }
 
-    const delay = searchQuery ? 400 : 100;
-
     loadingTimeoutRef.current = setTimeout(() => {
       if (isMountedRef.current) {
         loadDataSafely({
-          searchQuery: searchQuery || undefined,
           forceRefresh: false,
-          useCache: !searchQuery
+          useCache: true
         });
       }
-    }, delay);
+    }, 100);
 
     return () => {
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
-      if (prefetchTimeoutRef.current) {
-        clearTimeout(prefetchTimeoutRef.current);
-      }
-      if (loadMoreTimeoutRef.current) {
-        clearTimeout(loadMoreTimeoutRef.current);
-      }
     };
-  }, [selectedStatus, searchQuery, loadDataSafely, resetRetries, isRetrying]);
+  }, [selectedStatus, resetRetries, loadDataSafely]);
+
+  // Handle search separately to avoid conflicts
+  useEffect(() => {
+    if (!searchQuery) return;
+
+    const searchTimeout = setTimeout(() => {
+      if (isMountedRef.current && !isLoadingRef.current) {
+        loadDataSafely({
+          searchQuery,
+          forceRefresh: false,
+          useCache: false
+        });
+      }
+    }, 400);
+
+    return () => clearTimeout(searchTimeout);
+  }, [searchQuery, loadDataSafely]);
 
   useLayoutEffect(() => {
     if (Platform.OS === 'android') {
@@ -654,10 +635,10 @@ const PublicationScreen = () => {
   }, [loadDataSafely, searchQuery, resetRetries]);
 
   const handleLoadMore = useCallback(async () => {
+    // Only check context state, not local refs for pagination
     if (
       !canLoadMore ||
       isLoadingMore ||
-      isLoadingRef.current ||
       isLoadingMoreRef.current
     ) {
       return;
@@ -666,18 +647,22 @@ const PublicationScreen = () => {
     if (loadMoreTimeoutRef.current) {
       return;
     }
-
     loadMoreTimeoutRef.current = setTimeout(async () => {
       try {
         isLoadingMoreRef.current = true;
-
+        // Use the context loadMore function
         await loadMore(searchQuery || '');
       } catch (error: unknown) {
         console.error('❌ Error al cargar más publicaciones:', error);
         if (isMountedRef.current) {
           Alert.alert('Error', 'No se pudieron cargar más publicaciones.', [
             { text: 'Cancelar', style: 'cancel' },
-            { text: 'Reintentar', onPress: () => handleLoadMore() }
+            {
+              text: 'Reintentar',
+              onPress: () => {
+                void handleLoadMore();
+              }
+            }
           ]);
         }
       } finally {
@@ -688,7 +673,7 @@ const PublicationScreen = () => {
   }, [canLoadMore, isLoadingMore, loadMore, searchQuery]);
 
   const handlePublicationPress = useCallback(
-    (item: PublicationResponse) => {
+    (item: PublicationModelResponse) => {
       navigate('PublicationDetails', {
         publication: item,
         status: selectedStatus
@@ -723,17 +708,14 @@ const PublicationScreen = () => {
   const handleRetry = useCallback(async () => {
     try {
       resetRetries();
-      await loadDataSafely({
-        searchQuery: searchQuery || undefined,
-        forceRefresh: true
-      });
+      await retry();
     } catch (error) {
       console.error('❌ Retry failed:', error);
     }
-  }, [loadDataSafely, searchQuery, resetRetries]);
+  }, [retry, resetRetries]);
 
   const renderPublicationItem = useCallback(
-    ({ item }: { item: PublicationResponse }) => (
+    ({ item }: { item: PublicationModelResponse }) => (
       <OptimizedPublicationCard
         publication={item}
         onPress={() => handlePublicationPress(item)}
@@ -763,25 +745,17 @@ const PublicationScreen = () => {
     () => (
       <EmptyListComponent
         searchQuery={deferredSearchQuery}
-        isLoading={(isLoading || isLoadingData) && !isRefreshing}
+        isLoading={isLoading && !isRefreshing}
         error={error}
         onRetry={handleRetry}
         theme={theme}
       />
     ),
-    [
-      deferredSearchQuery,
-      isLoading,
-      isLoadingData,
-      isRefreshing,
-      error,
-      handleRetry,
-      theme
-    ]
+    [deferredSearchQuery, isLoading, isRefreshing, error, handleRetry, theme]
   );
 
   const keyExtractor = useCallback(
-    (item: PublicationResponse) => `pub-${item.recordId}`,
+    (item: PublicationModelResponse) => `pub-${item.recordId}`,
     []
   );
 
@@ -794,7 +768,10 @@ const PublicationScreen = () => {
   }, [isAdmin]);
 
   const getItemLayout = useCallback(
-    (_: ArrayLike<PublicationResponse> | null | undefined, index: number) => ({
+    (
+      _: ArrayLike<PublicationModelResponse> | null | undefined,
+      index: number
+    ) => ({
       length: CONFIG.ITEM_HEIGHT,
       offset: CONFIG.ITEM_HEIGHT * index,
       index
@@ -855,7 +832,7 @@ const PublicationScreen = () => {
             />
           }
           onEndReached={handleLoadMore}
-          onEndReachedThreshold={CONFIG.PREFETCH_THRESHOLD}
+          onEndReachedThreshold={0.1}
           onScroll={scrollHandler}
           ListFooterComponent={renderFooter}
           ListEmptyComponent={renderEmptyComponent}
@@ -894,23 +871,18 @@ const PublicationScreen = () => {
           ]}
         />
 
-        {(isLoading || isLoadingData) &&
-          !isRefreshing &&
-          filteredPublications.length === 0 && (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
-              <Text
-                style={[
-                  styles.loadingOverlayText,
-                  { color: theme.colors.text }
-                ]}
-              >
-                {isRetrying
-                  ? `Reintentando conexión...`
-                  : 'Cargando publicaciones...'}
-              </Text>
-            </View>
-          )}
+        {isLoading && !isRefreshing && filteredPublications.length === 0 && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text
+              style={[styles.loadingOverlayText, { color: theme.colors.text }]}
+            >
+              {isRetrying
+                ? `Reintentando conexión...`
+                : 'Cargando publicaciones...'}
+            </Text>
+          </View>
+        )}
       </View>
     </ErrorBoundary>
   );

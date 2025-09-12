@@ -40,8 +40,8 @@ export class PublicationService {
   private readonly statusHandlers = new Map<
     PublicationStatus,
     {
-      admin: (page: number, size: number) => Promise<PublicationResponse[]>;
-      user: (page: number, size: number) => Promise<PublicationResponse[]>;
+      admin: (page: number, size: number) => Promise<PublicationResponse>;
+      user: (page: number, size: number) => Promise<PublicationResponse>;
     }
   >([
     [
@@ -123,7 +123,7 @@ export class PublicationService {
     page,
     size,
     forAdmin
-  }: PublicationFilters): Promise<PublicationResponse[]> {
+  }: PublicationFilters): Promise<PublicationResponse> {
     this.validatePaginationParams(page, size);
 
     const handler = this.statusHandlers.get(status);

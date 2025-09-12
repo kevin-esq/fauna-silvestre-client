@@ -10,12 +10,26 @@ export interface PublicationData {
 }
 
 export interface PublicationResponse {
+  records: PublicationModelResponse[];
+  pagination: PaginationModelResponse;
+}
+
+export interface PublicationModelResponse {
   recordId: number;
   commonNoun: string;
   animalState: string;
   description: string;
   img: string;
   location: string;
+}
+
+export interface PaginationModelResponse {
+  page: number;
+  size: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 export interface CountsResponse {
