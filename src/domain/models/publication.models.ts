@@ -1,4 +1,4 @@
-import { PublicationStatus } from '@/services/publication/publication.service';
+export type PublicationStatus = 'pending' | 'accepted' | 'rejected';
 
 export interface PublicationData {
   commonNoun: string;
@@ -21,6 +21,10 @@ export interface PublicationModelResponse {
   description: string;
   img: string;
   location: string;
+  // Optimizaciones para imágenes
+  imgPath?: string; // Ruta del archivo local
+  thumbnailPath?: string; // Ruta de la miniatura local
+  author?: string;
 }
 
 export interface PaginationModelResponse {

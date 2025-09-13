@@ -1,13 +1,22 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, Button } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity
+} from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import AnimatedPressable from '@/presentation/components/ui/animated-pressable.component';
-import { PublicationModelResponse } from '@/domain/models/publication.models';
 import {
   useTheme,
   themeVariables
 } from '@/presentation/contexts/theme.context';
-import { PublicationStatus } from '@/services/publication/publication.service';
+import {
+  PublicationModelResponse,
+  PublicationStatus
+} from '@/domain/models/publication.models';
 
 const STATUS_CONFIG = {
   rejected: { icon: 'times-circle', colorKey: '--error', label: 'Rechazada' },
@@ -25,7 +34,7 @@ const ANIMAL_STATE_CONFIG = {
 } as const;
 
 interface StatusRowProps {
-  icon: React.ComponentProps<typeof FontAwesome>['name'];
+  icon: string;
   color: string;
   label: string;
 }
@@ -63,33 +72,126 @@ interface PublicationImageProps {
   uri?: string;
   commonNoun: string;
   viewMode: 'card' | 'presentation';
+  thumbnailPath?: string;
+  imgPath?: string;
 }
 
 const PublicationImage = React.memo(
-  ({ uri, commonNoun, viewMode }: PublicationImageProps) => {
+  ({
+    uri,
+    commonNoun,
+    viewMode,
+    thumbnailPath,
+    imgPath
+  }: PublicationImageProps) => {
     const { theme } = useTheme();
     const vars = themeVariables(theme);
     const styles = getImageStyles(vars, viewMode);
+    const [imageError, setImageError] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showFullImage, setShowFullImage] = useState(false);
 
-    if (uri) {
+    const getImageSource = (useThumbnail = false) => {
+      if (useThumbnail && thumbnailPath && thumbnailPath.trim()) {
+        console.log(`[PublicationImage] Using thumbnail: ${thumbnailPath}`);
+        return { uri: thumbnailPath };
+      }
+
+      const imageUri = imgPath && imgPath.trim() ? imgPath : uri;
+      if (!imageUri || !imageUri.trim()) {
+        return null;
+      }
+
+      console.log(`[PublicationImage] Using image source: ${imageUri.substring(0, 50)}...`);
+
+      if (imageUri.startsWith('file://')) {
+        return { uri: imageUri };
+      }
+
+      if (imageUri.startsWith('data:')) {
+        return { uri: imageUri };
+      }
+
+      if (imageUri.length > 100 && !imageUri.startsWith('http')) {
+        return { uri: `data:image/jpeg;base64,${imageUri}` };
+      }
+
+      return { uri: imageUri };
+    };
+
+    const thumbnailSource = getImageSource(true);
+    const fullImageSource = getImageSource(false);
+
+    const handleThumbnailLoad = () => {
+      setIsLoading(false);
+      // Cargar imagen completa después de mostrar thumbnail
+      if (
+        fullImageSource &&
+        thumbnailSource &&
+        fullImageSource.uri !== thumbnailSource.uri
+      ) {
+        setTimeout(() => setShowFullImage(true), 100);
+      } else {
+        setShowFullImage(true);
+      }
+    };
+
+    const handleImageLoad = () => {
+      setIsLoading(false);
+      setShowFullImage(true);
+    };
+
+    const handleImageError = () => {
+      setImageError(true);
+      setIsLoading(false);
+    };
+
+    if (imageError || (!thumbnailSource && !fullImageSource)) {
       return (
-        <Image
-          source={{ uri }}
-          style={styles.image}
-          accessibilityLabel={`Imagen de ${commonNoun}`}
-          resizeMode={viewMode === 'card' ? 'cover' : 'contain'}
-        />
+        <View style={styles.placeholder}>
+          <Ionicons
+            name="image-outline"
+            size={viewMode === 'card' ? 40 : 24}
+            color="#999"
+          />
+          <Text style={styles.placeholderText}>
+            {commonNoun || 'Imagen no disponible'}
+          </Text>
+        </View>
       );
     }
 
+    const containerStyle = styles.image;
+
     return (
-      <View style={styles.placeholder}>
-        <FontAwesome name="image" size={50} color={vars['--text-secondary']} />
-        <Text
-          style={[styles.placeholderText, { color: vars['--text-secondary'] }]}
-        >
-          Imagen no disponible
-        </Text>
+      <View style={containerStyle}>
+        {isLoading && (
+          <View style={[styles.loadingOverlay, containerStyle]}>
+            <ActivityIndicator size="small" color="#007AFF" />
+          </View>
+        )}
+
+        {/* Mostrar thumbnail primero para carga rápida */}
+        {thumbnailSource && !showFullImage && (
+          <Image
+            source={thumbnailSource}
+            style={containerStyle}
+            onLoad={handleThumbnailLoad}
+            onError={handleImageError}
+            resizeMode="cover"
+          />
+        )}
+
+        {/* Mostrar imagen completa cuando esté lista */}
+        {(showFullImage || !thumbnailSource) && fullImageSource && (
+          <Image
+            source={fullImageSource}
+            style={containerStyle}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            resizeMode="cover"
+          />
+        )}
       </View>
     );
   }
@@ -115,7 +217,20 @@ const getImageStyles = (
     },
     placeholderText: {
       marginTop: 8,
-      fontSize: 14
+      fontSize: 14,
+      color: '#999',
+      textAlign: 'center'
+    },
+    loadingOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      zIndex: 1
     }
   });
 
@@ -205,16 +320,18 @@ const ReviewButtons = React.memo(({ actions }: ReviewButtonsProps) => {
 
   return (
     <View style={styles.container}>
-      <Button
-        title="Rechazar"
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: vars['--error'] }]}
         onPress={actions.onReject}
-        color={vars['--error']}
-      />
-      <Button
-        title="Aprobar"
+      >
+        <Text style={styles.buttonText}>Rechazar</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: vars['--success'] }]}
         onPress={actions.onApprove}
-        color={vars['--success']}
-      />
+      >
+        <Text style={styles.buttonText}>Aprobar</Text>
+      </TouchableOpacity>
     </View>
   );
 });
@@ -229,6 +346,18 @@ const getReviewButtonStyles = () =>
       borderTopWidth: 1,
       borderTopColor: '#eee',
       paddingTop: 12
+    },
+    button: {
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 8,
+      minWidth: 80,
+      alignItems: 'center'
+    },
+    buttonText: {
+      color: 'white',
+      fontWeight: '600',
+      fontSize: 14
     }
   });
 
@@ -256,17 +385,19 @@ const PublicationCard = React.memo(
     const styles = getMainCardStyles(vars);
 
     return (
-      <AnimatedPressable style={styles.card} onPress={onPress}>
+      <TouchableOpacity style={styles.card} onPress={onPress}>
         <PublicationImage
           uri={publication.img}
           commonNoun={publication.commonNoun}
           viewMode={viewMode}
+          thumbnailPath={publication.thumbnailPath}
+          imgPath={publication.imgPath}
         />
         <View style={styles.contentWrapper}>
           <PublicationContent publication={publication} status={status} />
           {reviewActions && <ReviewButtons actions={reviewActions} />}
         </View>
-      </AnimatedPressable>
+      </TouchableOpacity>
     );
   }
 );

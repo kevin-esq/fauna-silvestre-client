@@ -1,891 +1,258 @@
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useDeferredValue,
-  useLayoutEffect
-} from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   FlatList,
-  Text,
-  RefreshControl,
   ActivityIndicator,
-  Animated,
-  Platform,
-  StatusBar,
-  Pressable,
-  Alert,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-  ViewToken
+  RefreshControl,
+  Text,
+  StyleSheet,
+  TouchableOpacity
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAuth } from '@/presentation/contexts/auth.context';
-import {
-  useTheme,
-  themeVariables
-} from '@/presentation/contexts/theme.context';
-import { usePublicationStatus } from '@/presentation/contexts/publication.context';
-import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
+import { useTheme } from '../../contexts/theme.context';
+import { usePublications } from '../../contexts/publication.context';
+import PublicationCard from '../../components/publication/publication-card.component';
+import PublicationSkeleton from '../../components/ui/publication-skeleton.component';
 
-import StatusTabs from '@/presentation/components/publication/status-tabs.component';
-import PublicationCard from '@/presentation/components/publication/publication-card.component';
-import SearchBar from '@/presentation/components/ui/search-bar.component';
-import ErrorBoundary from '@/presentation/components/ui/error-boundary.component';
-import SkeletonLoader from '@/presentation/components/ui/skeleton-loader.component';
-import FloatingActionButton from '@/presentation/components/ui/floating-action-button.component';
+import { PublicationModelResponse } from '../../../domain/models/publication.models';
+import { PublicationStatus } from '../../../services/publication/publication.service';
 
-import { PublicationModelResponse } from '@/domain/models/publication.models';
-import { createStyles } from './publication-screen.styles';
-import { PublicationStatus } from '@/services/publication/publication.service';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+const ITEM_HEIGHT = 280;
 
-const CONFIG = {
-  SEARCH_DEBOUNCE: 300,
-  PREFETCH_THRESHOLD: 0.5,
-  INITIAL_RENDER: 5,
-  MAX_RENDER_BATCH: 8,
-  WINDOW_SIZE: 12,
-  UPDATE_CELLS_PERIOD: 100,
-  REFRESH_THRESHOLD: 100,
-  FAB_SHOW_THRESHOLD: 200,
-  RETRY_DELAY: 1000,
-  MAX_RETRIES: 3,
-  ITEM_HEIGHT: 140,
-  VIEWABILITY_CONFIG: {
-    itemVisiblePercentThreshold: 50,
-    minimumViewTime: 100
-  },
-  LOAD_MORE_THRESHOLD: 2,
-  DEBOUNCE_LOAD_MORE: 1000
-} as const;
-
-const STATUS_OPTIONS = [
-  {
-    label: 'Pendientes',
-    value: PublicationStatus.PENDING,
-    icon: 'clock',
-    badge: true
-  },
-  {
-    label: 'Aceptados',
-    value: PublicationStatus.ACCEPTED,
-    icon: 'check-circle',
-    badge: false
-  },
-  {
-    label: 'Rechazados',
-    value: PublicationStatus.REJECTED,
-    icon: 'x-circle',
-    badge: false
-  }
-] as const;
-
-const useOptimizedPublications = (
-  publications: PublicationModelResponse[],
-  searchQuery: string
-) => {
-  return useMemo(() => {
-    if (!searchQuery || searchQuery.length < 2) return publications;
-
-    const query = searchQuery.toLowerCase();
-    return publications.filter(publication => {
-      const name = publication.commonNoun?.toLowerCase() ?? '';
-      const desc = publication.description?.toLowerCase() ?? '';
-      return name.includes(query) || desc.includes(query);
-    });
-  }, [publications, searchQuery]);
-};
-
-const OptimizedPublicationCard = React.memo(
-  ({
-    publication,
-    onPress,
-    status
-  }: {
-    publication: PublicationModelResponse;
-    onPress: () => void;
-    status: PublicationStatus;
-  }) => {
-    return (
-      <PublicationCard
-        publication={publication}
-        onPress={onPress}
-        status={status}
-      />
-    );
-  },
-  (prevProps, nextProps) => {
-    return (
-      prevProps.publication.recordId === nextProps.publication.recordId &&
-      prevProps.status === nextProps.status &&
-      prevProps.publication.commonNoun === nextProps.publication.commonNoun
-    );
-  }
-);
-
-const useScrollHandler = (onScroll?: (offset: number) => void) => {
-  const lastScrollY = useRef(0);
-  const scrollThrottleRef = useRef<NodeJS.Timeout | null>(null);
-
-  const scrollHandler = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const offsetY = event.nativeEvent.contentOffset.y;
-
-      if (Math.abs(offsetY - lastScrollY.current) < 5) {
-        return;
-      }
-
-      lastScrollY.current = offsetY;
-
-      if (scrollThrottleRef.current) {
-        clearTimeout(scrollThrottleRef.current);
-      }
-
-      scrollThrottleRef.current = setTimeout(() => {
-        onScroll?.(offsetY);
-      }, 50);
-    },
-    [onScroll]
-  );
-
-  useEffect(() => {
-    return () => {
-      if (scrollThrottleRef.current) {
-        clearTimeout(scrollThrottleRef.current);
-      }
-    };
-  }, []);
-
-  return { scrollHandler };
-};
-
-const useOptimizedSearch = (initialValue = '') => {
-  const [searchInput, setSearchInput] = useState(initialValue);
-  const deferredSearchQuery = useDeferredValue(
-    searchInput.toLowerCase().trim()
-  );
-  const lastSearchRef = useRef('');
-
-  const clearSearch = useCallback(() => {
-    setSearchInput('');
-    lastSearchRef.current = '';
-  }, []);
-
-  useEffect(() => {
-    return undefined;
-  }, []);
-
-  return {
-    searchInput,
-    setSearchInput,
-    searchQuery: deferredSearchQuery,
-    deferredSearchQuery,
-    clearSearch
-  };
-};
-
-const useErrorHandling = () => {
-  const [retryCount, setRetryCount] = useState(0);
-  const [isRetrying, setIsRetrying] = useState(false);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const executeWithRetry = useCallback(
-    async (
-      operation: () => Promise<void>,
-      onError?: (error: Error, retries: number) => void
-    ) => {
-      try {
-        setIsRetrying(true);
-        await operation();
-        setRetryCount(0);
-      } catch (error) {
-        const currentRetries = retryCount + 1;
-
-        if (currentRetries <= CONFIG.MAX_RETRIES) {
-          setRetryCount(currentRetries);
-          onError?.(error as Error, currentRetries);
-
-          const delay = CONFIG.RETRY_DELAY * Math.pow(2, currentRetries - 1);
-
-          retryTimeoutRef.current = setTimeout(() => {
-            executeWithRetry(operation, onError);
-          }, delay);
-        } else {
-          setRetryCount(0);
-          throw error;
-        }
-      } finally {
-        setIsRetrying(false);
-      }
-    },
-    [retryCount]
-  );
-
-  const resetRetries = useCallback(() => {
-    setRetryCount(0);
-    setIsRetrying(false);
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  return {
-    executeWithRetry,
-    resetRetries,
-    isRetrying,
-    retryCount
-  };
-};
-
-const EmptyListComponent = React.memo(
-  ({
-    searchQuery,
-    isLoading,
-    error,
-    onRetry,
-    theme
-  }: {
-    searchQuery: string;
-    isLoading: boolean;
-    error?: string;
-    onRetry: () => void;
-    theme: ReturnType<typeof useTheme>['theme'];
-  }) => {
-    const styles = createStyles(themeVariables(theme));
-    const insets = useSafeAreaInsets();
-
-    if (isLoading) {
-      return (
-        <View style={[styles.centered, { paddingTop: insets.top + 100 }]}>
-          <SkeletonLoader count={3} height={120} />
-        </View>
-      );
-    }
-
-    if (error) {
-      return (
-        <View style={[styles.centered, { paddingTop: insets.top + 100 }]}>
-          <Text style={[styles.errorText, { color: theme.colors.error }]}>
-            {error}
-          </Text>
-          <Pressable
-            style={[
-              styles.retryButton,
-              { backgroundColor: theme.colors.primary }
-            ]}
-            onPress={onRetry}
-          >
-            <Text
-              style={[styles.retryButtonText, { color: theme.colors.surface }]}
-            >
-              Reintentar
-            </Text>
-          </Pressable>
-        </View>
-      );
-    }
-
-    const message = searchQuery
-      ? 'No se encontraron publicaciones'
-      : 'No hay publicaciones disponibles';
-    const subMessage = searchQuery
-      ? 'Intenta con otros términos de búsqueda'
-      : 'Desliza hacia abajo para actualizar';
-
-    return (
-      <View style={[styles.centered, { paddingTop: insets.top + 100 }]}>
-        <Text style={[styles.emptyText, { color: theme.colors.text }]}>
-          {message}
-        </Text>
-        <Text
-          style={[styles.emptySubText, { color: theme.colors.textSecondary }]}
-        >
-          {subMessage}
-        </Text>
-      </View>
-    );
-  }
-);
-
-const StickyHeader = React.memo(
-  ({
-    searchInput,
-    onSearchChange,
-    onSearchClear,
-    theme,
-    isScrolled
-  }: {
-    searchInput: string;
-    onSearchChange: (text: string) => void;
-    onSearchClear: () => void;
-    theme: ReturnType<typeof useTheme>['theme'];
-    isScrolled: boolean;
-  }) => {
-    const styles = createStyles(themeVariables(theme));
-    const animatedStyle = useMemo(
-      () => ({
-        elevation: isScrolled ? 8 : 0,
-        shadowOpacity: isScrolled ? 0.1 : 0
-      }),
-      [isScrolled]
-    );
-
-    return (
-      <Animated.View style={[styles.stickyHeader, animatedStyle]}>
-        <SearchBar
-          value={searchInput}
-          onChangeText={onSearchChange}
-          placeholder="Buscar por nombre o descripción..."
-          theme={theme}
-          onClear={onSearchClear}
-        />
-      </Animated.View>
-    );
-  }
-);
-
-const PublicationScreen = () => {
-  const { user, isAuthenticated } = useAuth();
-  const isAdmin = isAuthenticated && user?.role === 'Admin';
+const PublicationScreen: React.FC = () => {
   const { theme } = useTheme();
-  const variables = useMemo(() => themeVariables(theme), [theme]);
-  const styles = useMemo(() => createStyles(variables), [variables]);
-  const { navigate } = useNavigationActions();
   const insets = useSafeAreaInsets();
+  const { state, actions } = usePublications();
 
-  const [selectedStatus, setSelectedStatus] = useState<PublicationStatus>(() =>
-    isAdmin ? PublicationStatus.ACCEPTED : PublicationStatus.PENDING
+  const [selectedStatus, setSelectedStatus] = useState<PublicationStatus>(
+    PublicationStatus.PENDING
   );
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showFAB, setShowFAB] = useState(false);
-  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
-
-  const {
-    searchInput,
-    setSearchInput,
-    searchQuery,
-    deferredSearchQuery,
-    clearSearch
-  } = useOptimizedSearch();
-
-  const { executeWithRetry, resetRetries, isRetrying } = useErrorHandling();
-
-  // Use the context hook for the selected status
-  const {
-    publications: contextPublications,
-    isLoading,
-    isLoadingMore,
-    error,
-    canLoadMore,
-    shouldPrefetch,
-    load,
-    loadMore,
-    prefetch,
-    retry
-  } = usePublicationStatus(selectedStatus);
-
-  // Apply local search filtering to context publications
-  const filteredPublications = useOptimizedPublications(
-    contextPublications,
-    deferredSearchQuery
-  );
-
   const listRef = useRef<FlatList<PublicationModelResponse>>(null);
-  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const prefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const loadMoreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const fabAnimatedValue = useRef(new Animated.Value(0)).current;
-  const lastLoadParamsRef = useRef<{
-    status: PublicationStatus;
-    searchQuery: string;
-    timestamp: number;
-  }>({ status: selectedStatus, searchQuery: '', timestamp: 0 });
-  const isLoadingRef = useRef(false);
-  const isLoadingMoreRef = useRef(false);
-  const isMountedRef = useRef(true);
 
-  const viewabilityConfig = useRef(CONFIG.VIEWABILITY_CONFIG);
-  const onViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      const visiblePublications = viewableItems
-        .filter(token => token.isViewable)
-        .map(token => token.item as PublicationModelResponse);
-
-      if (visiblePublications.length > 0) {
-        setShowFAB(true);
-      }
-    },
-    []
-  );
-
-  const viewabilityConfigCallbackPairs = useRef([
-    {
-      viewabilityConfig: viewabilityConfig.current,
-      onViewableItemsChanged
-    }
-  ]);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  const loadDataSafely = useCallback(
-    async (params: {
-      searchQuery?: string;
-      forceRefresh?: boolean;
-      useCache?: boolean;
-    }) => {
-      if (!isMountedRef.current || isLoadingRef.current) {
-        return;
-      }
-
-      const currentParams = {
-        status: selectedStatus,
-        searchQuery: params.searchQuery || '',
-        timestamp: Date.now()
-      };
-
-      const timeDiff =
-        currentParams.timestamp - lastLoadParamsRef.current.timestamp;
-      const isSameParams =
-        lastLoadParamsRef.current.status === currentParams.status &&
-        lastLoadParamsRef.current.searchQuery === currentParams.searchQuery;
-
-      if (isSameParams && timeDiff < 1000 && !params.forceRefresh) {
-        return;
-      }
-
-      try {
-        isLoadingRef.current = true;
-        lastLoadParamsRef.current = currentParams;
-
-        await executeWithRetry(
-          async () => {
-            if (!isMountedRef.current) return;
-
-            // Use the context load function
-            await load({
-              searchQuery: params.searchQuery || undefined,
-              forceRefresh: params.forceRefresh || false,
-              useCache: params.useCache !== false
-            });
-          },
-          (error, retries) => {
-            console.warn(
-              `⚠️ Error en carga (intento ${retries}):`,
-              error.message
-            );
-            if (isMountedRef.current) {
-              Alert.alert(
-                'Error de conexión',
-                `Reintentando... (${retries}/${CONFIG.MAX_RETRIES})`
-              );
-            }
-          }
-        );
-      } catch (error) {
-        console.error('❌ Error final en carga de datos:', error);
-        if (isMountedRef.current) {
-          Alert.alert(
-            'Error',
-            'No se pudieron cargar las publicaciones. Verifica tu conexión.',
-            [
-              { text: 'Cancelar', style: 'cancel' },
-              {
-                text: 'Reintentar',
-                onPress: () => {
-                  void loadDataSafely({ ...params, forceRefresh: true });
-                }
-              }
-            ]
-          );
-        }
-      } finally {
-        if (isMountedRef.current) {
-          isLoadingRef.current = false;
-        }
-      }
-    },
-    [selectedStatus, load, executeWithRetry]
-  );
-
-  const handleScroll = useCallback(
-    (offset: number) => {
-      if (!isMountedRef.current) return;
-
-      const shouldShowFAB = offset > CONFIG.FAB_SHOW_THRESHOLD;
-      const headerScrolled = offset > CONFIG.REFRESH_THRESHOLD;
-
-      if (shouldShowFAB !== showFAB) {
-        setShowFAB(shouldShowFAB);
-        Animated.timing(fabAnimatedValue, {
-          toValue: shouldShowFAB ? 1 : 0,
-          duration: 200,
-          useNativeDriver: true
-        }).start();
-      }
-
-      if (headerScrolled !== isHeaderScrolled) {
-        setIsHeaderScrolled(headerScrolled);
-      }
-
-      if (shouldPrefetch && offset > 0 && !isLoadingRef.current) {
-        prefetchTimeoutRef.current ??= setTimeout(() => {
-          if (isMountedRef.current && !isLoadingRef.current) {
-            prefetch().catch(error => {
-              console.warn('⚠️ Error en prefetch:', error);
-            });
-          }
-          prefetchTimeoutRef.current = null;
-        }, 1500);
-      }
-    },
-    [showFAB, isHeaderScrolled, shouldPrefetch, prefetch, fabAnimatedValue]
-  );
-
-  const { scrollHandler } = useScrollHandler(handleScroll);
-
-  // Load data when status changes (simplified to prevent loops)
-  useEffect(() => {
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-
-    resetRetries();
-
-    const shouldLoad = isMountedRef.current && !isLoadingRef.current;
-
-    if (!shouldLoad) {
-      return;
-    }
-
-    loadingTimeoutRef.current = setTimeout(() => {
-      if (isMountedRef.current) {
-        loadDataSafely({
-          forceRefresh: false,
-          useCache: true
-        });
-      }
-    }, 100);
-
-    return () => {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-    };
-  }, [selectedStatus, resetRetries, loadDataSafely]);
-
-  // Handle search separately to avoid conflicts
-  useEffect(() => {
-    if (!searchQuery) return;
-
-    const searchTimeout = setTimeout(() => {
-      if (isMountedRef.current && !isLoadingRef.current) {
-        loadDataSafely({
-          searchQuery,
-          forceRefresh: false,
-          useCache: false
-        });
-      }
-    }, 400);
-
-    return () => clearTimeout(searchTimeout);
-  }, [searchQuery, loadDataSafely]);
-
-  useLayoutEffect(() => {
-    if (Platform.OS === 'android') {
-      StatusBar.setBackgroundColor(theme.colors.surface, true);
-    }
-  }, [theme.colors.surface]);
-
-  const handleRefresh = useCallback(async () => {
-    if (isLoadingRef.current) return;
-
-    try {
-      setIsRefreshing(true);
-      resetRetries();
-
-      await loadDataSafely({
-        searchQuery: searchQuery || undefined,
-        forceRefresh: true
-      });
-    } catch (error) {
-      console.error('❌ Error en refresh:', error);
-    } finally {
-      if (isMountedRef.current) {
-        setIsRefreshing(false);
-      }
-    }
-  }, [loadDataSafely, searchQuery, resetRetries]);
-
-  const handleLoadMore = useCallback(async () => {
-    // Only check context state, not local refs for pagination
-    if (
-      !canLoadMore ||
-      isLoadingMore ||
-      isLoadingMoreRef.current
-    ) {
-      return;
-    }
-
-    if (loadMoreTimeoutRef.current) {
-      return;
-    }
-    loadMoreTimeoutRef.current = setTimeout(async () => {
-      try {
-        isLoadingMoreRef.current = true;
-        // Use the context loadMore function
-        await loadMore(searchQuery || '');
-      } catch (error: unknown) {
-        console.error('❌ Error al cargar más publicaciones:', error);
-        if (isMountedRef.current) {
-          Alert.alert('Error', 'No se pudieron cargar más publicaciones.', [
-            { text: 'Cancelar', style: 'cancel' },
-            {
-              text: 'Reintentar',
-              onPress: () => {
-                void handleLoadMore();
-              }
-            }
-          ]);
-        }
-      } finally {
-        isLoadingMoreRef.current = false;
-        loadMoreTimeoutRef.current = null;
-      }
-    }, CONFIG.DEBOUNCE_LOAD_MORE);
-  }, [canLoadMore, isLoadingMore, loadMore, searchQuery]);
-
-  const handlePublicationPress = useCallback(
-    (item: PublicationModelResponse) => {
-      navigate('PublicationDetails', {
-        publication: item,
-        status: selectedStatus
-      });
-    },
-    [navigate, selectedStatus]
-  );
+  // Get current status data
+  const currentStatusData = state[selectedStatus];
+  const publications = currentStatusData.filteredPublications;
+  const isLoading = currentStatusData.isLoading;
+  const isLoadingMore = currentStatusData.isLoadingMore;
+  const pagination = currentStatusData.pagination;
 
   const handleStatusChange = useCallback(
     (status: PublicationStatus) => {
-      if (status === selectedStatus) return;
-
       setSelectedStatus(status);
-      clearSearch();
-      resetRetries();
-
-      listRef.current?.scrollToOffset({
-        animated: true,
-        offset: 0
-      });
+      // Forzar refresh al cambiar tabs para sincronizar con backend
+      actions.loadStatus(status, { forceRefresh: true });
     },
-    [selectedStatus, clearSearch, resetRetries]
+    [actions]
   );
 
-  const handleScrollToTop = useCallback(() => {
-    listRef.current?.scrollToOffset({
-      animated: true,
-      offset: 0
-    });
-  }, []);
+  const handleRefresh = useCallback(() => {
+    actions.loadStatus(selectedStatus, { forceRefresh: true });
+  }, [actions, selectedStatus]);
 
-  const handleRetry = useCallback(async () => {
-    try {
-      resetRetries();
-      await retry();
-    } catch (error) {
-      console.error('❌ Retry failed:', error);
+  const handleLoadMore = useCallback(() => {
+    // Check if we can load more (respects circuit breaker)
+    if (pagination.hasNext && !isLoadingMore) {
+      actions.loadMoreStatus(selectedStatus);
     }
-  }, [retry, resetRetries]);
+  }, [actions, selectedStatus, pagination.hasNext, isLoadingMore]);
 
-  const renderPublicationItem = useCallback(
+  const renderItem = useCallback(
     ({ item }: { item: PublicationModelResponse }) => (
-      <OptimizedPublicationCard
+      <PublicationCard
         publication={item}
-        onPress={() => handlePublicationPress(item)}
         status={selectedStatus}
+        viewMode="card"
       />
     ),
-    [handlePublicationPress, selectedStatus]
+    [selectedStatus]
   );
 
   const renderFooter = useCallback(() => {
-    if (isLoadingMore && filteredPublications.length > 0) {
+    if (!isLoadingMore) return null;
+    return (
+      <View style={styles.footer}>
+        <ActivityIndicator size="small" color={theme.colors.primary} />
+      </View>
+    );
+  }, [isLoadingMore, theme.colors.primary]);
+
+  const renderEmpty = useCallback(() => {
+    if (isLoading) {
       return (
-        <View style={styles.footer}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text
-            style={[styles.loadingText, { color: theme.colors.textSecondary }]}
-          >
-            Cargando más publicaciones...
-          </Text>
+        <View style={styles.skeletonContainer}>
+          {Array.from({ length: 3 }, (_, index) => (
+            <PublicationSkeleton key={index} viewMode="card" />
+          ))}
         </View>
       );
     }
-    return <View style={{ height: 20 }} />;
-  }, [isLoadingMore, filteredPublications.length, styles, theme]);
 
-  const renderEmptyComponent = useCallback(
-    () => (
-      <EmptyListComponent
-        searchQuery={deferredSearchQuery}
-        isLoading={isLoading && !isRefreshing}
-        error={error}
-        onRetry={handleRetry}
-        theme={theme}
-      />
-    ),
-    [deferredSearchQuery, isLoading, isRefreshing, error, handleRetry, theme]
-  );
-
-  const keyExtractor = useCallback(
-    (item: PublicationModelResponse) => `pub-${item.recordId}`,
-    []
-  );
-
-  const visibleStatusOptions = useMemo(() => {
-    return isAdmin
-      ? STATUS_OPTIONS.filter(
-          option => option.value !== PublicationStatus.PENDING
-        )
-      : STATUS_OPTIONS;
-  }, [isAdmin]);
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+          No hay publicaciones disponibles
+        </Text>
+      </View>
+    );
+  }, [isLoading, theme.colors.textSecondary]);
 
   const getItemLayout = useCallback(
-    (
-      _: ArrayLike<PublicationModelResponse> | null | undefined,
-      index: number
-    ) => ({
-      length: CONFIG.ITEM_HEIGHT,
-      offset: CONFIG.ITEM_HEIGHT * index,
+    (_: unknown, index: number) => ({
+      length: ITEM_HEIGHT,
+      offset: ITEM_HEIGHT * index,
       index
     }),
     []
   );
 
+  useEffect(() => {
+    actions.loadStatus(selectedStatus);
+  }, [actions, selectedStatus]);
+
   return (
-    <ErrorBoundary>
-      <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.colors.background,
-            paddingTop: insets.top
-          }
-        ]}
-      >
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <StatusTabs
-          statuses={visibleStatusOptions}
-          active={selectedStatus}
-          onSelect={handleStatusChange}
-          theme={theme}
+          selectedStatus={selectedStatus}
+          onStatusChange={handleStatusChange}
         />
-
-        <StickyHeader
-          searchInput={searchInput}
-          onSearchChange={setSearchInput}
-          onSearchClear={clearSearch}
-          theme={theme}
-          isScrolled={isHeaderScrolled}
-        />
-
-        <FlatList
-          ref={listRef}
-          data={filteredPublications}
-          renderItem={renderPublicationItem}
-          keyExtractor={keyExtractor}
-          getItemLayout={getItemLayout}
-          removeClippedSubviews={Platform.OS === 'android'}
-          initialNumToRender={CONFIG.INITIAL_RENDER}
-          maxToRenderPerBatch={CONFIG.MAX_RENDER_BATCH}
-          windowSize={CONFIG.WINDOW_SIZE}
-          updateCellsBatchingPeriod={CONFIG.UPDATE_CELLS_PERIOD}
-          disableVirtualization={false}
-          legacyImplementation={false}
-          viewabilityConfigCallbackPairs={
-            viewabilityConfigCallbackPairs.current
-          }
-          scrollEventThrottle={16}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={handleRefresh}
-              colors={[theme.colors.primary]}
-              tintColor={theme.colors.primary}
-              progressBackgroundColor={theme.colors.surface}
-            />
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.1}
-          onScroll={scrollHandler}
-          ListFooterComponent={renderFooter}
-          ListEmptyComponent={renderEmptyComponent}
-          contentContainerStyle={[
-            styles.listContent,
-            filteredPublications.length === 0 && styles.flexGrow
-          ]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          maintainVisibleContentPosition={
-            Platform.OS === 'ios'
-              ? {
-                  minIndexForVisible: 0,
-                  autoscrollToTopThreshold: 100
-                }
-              : undefined
-          }
-        />
-
-        <FloatingActionButton
-          visible={showFAB}
-          onPress={handleScrollToTop}
-          icon={
-            <Ionicons
-              name="arrow-up"
-              size={24}
-              color={theme.colors.textOnPrimary}
-            />
-          }
-          style={[
-            styles.fab,
-            {
-              bottom: insets.bottom + 20,
-              right: 20
-            }
-          ]}
-        />
-
-        {isLoading && !isRefreshing && filteredPublications.length === 0 && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text
-              style={[styles.loadingOverlayText, { color: theme.colors.text }]}
-            >
-              {isRetrying
-                ? `Reintentando conexión...`
-                : 'Cargando publicaciones...'}
-            </Text>
-          </View>
-        )}
       </View>
-    </ErrorBoundary>
+
+      <FlatList
+        ref={listRef}
+        data={publications}
+        renderItem={renderItem}
+        keyExtractor={(item, index) =>
+          `${selectedStatus}-${item.recordId?.toString() || index}-${index}`
+        }
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={handleRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3}
+        ListEmptyComponent={renderEmpty}
+        ListFooterComponent={renderFooter}
+        getItemLayout={getItemLayout}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        windowSize={10}
+        initialNumToRender={5}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 };
 
-export default React.memo(PublicationScreen);
+const StatusTabs: React.FC<{
+  selectedStatus: PublicationStatus;
+  onStatusChange: (status: PublicationStatus) => void;
+}> = ({ selectedStatus, onStatusChange }) => {
+  const { theme } = useTheme();
+
+  const statusOptions = [
+    { label: 'Pendientes', value: PublicationStatus.PENDING },
+    { label: 'Aceptadas', value: PublicationStatus.ACCEPTED },
+    { label: 'Rechazadas', value: PublicationStatus.REJECTED }
+  ];
+
+  return (
+    <View style={styles.tabsContainer}>
+      {statusOptions.map(option => (
+        <TouchableOpacity
+          key={option.value}
+          onPress={() => onStatusChange(option.value)}
+          style={[
+            styles.tab,
+            selectedStatus === option.value && [
+              styles.activeTab,
+              { backgroundColor: theme.colors.primary }
+            ]
+          ]}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              { color: theme.colors.text },
+              selectedStatus === option.value && [
+                styles.activeTabText,
+                { color: theme.colors.background }
+              ]
+            ]}
+          >
+            {option.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5'
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 8
+  },
+  footer: {
+    paddingVertical: 16,
+    alignItems: 'center'
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 32
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center'
+  },
+  skeletonContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginHorizontal: 4,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E5E5'
+  },
+  activeTab: {
+    borderColor: 'transparent'
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500'
+  },
+  activeTabText: {
+    fontWeight: '600'
+  }
+});
+
+export default PublicationScreen;

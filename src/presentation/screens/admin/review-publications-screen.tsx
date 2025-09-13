@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useTheme, themeVariables } from '../../contexts/theme.context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PublicationResponse } from '../../../domain/models/publication.models';
+import { PublicationModelResponse } from '../../../domain/models/publication.models';
 import { usePublications } from '../../contexts/publication.context';
 
 import PublicationCard from '../../components/publication/publication-card.component';
@@ -76,7 +76,7 @@ const ReviewPublicationsScreen: React.FC = () => {
   const handleLoadMore = useCallback(async () => {
     if (
       isLoadingMore ||
-      !pending.hasMore ||
+      !pending.pagination.hasNext ||
       filteredPublications.length < PAGE_SIZE
     )
       return;
@@ -91,7 +91,7 @@ const ReviewPublicationsScreen: React.FC = () => {
     }
   }, [
     isLoadingMore,
-    pending.hasMore,
+    pending.pagination.hasNext,
     filteredPublications.length,
     loadMoreStatus,
     searchQuery
@@ -136,7 +136,7 @@ const ReviewPublicationsScreen: React.FC = () => {
   }, [currentId, reason, reject]);
 
   const renderPublicationItem = useCallback(
-    ({ item }: { item: PublicationResponse }) => (
+    ({ item }: { item: PublicationModelResponse }) => (
       <PublicationCard
         publication={item}
         status="pending"
@@ -220,8 +220,10 @@ const ReviewPublicationsScreen: React.FC = () => {
       {filteredPublications.length > 0 && renderResultCount()}
 
       <FlatList
-        data={filteredPublications}
-        keyExtractor={item => item.recordId.toString()}
+        data={filteredPublications as PublicationModelResponse[]}
+        keyExtractor={item =>
+          item.recordId?.toString() || `item-${Math.random()}`
+        }
         renderItem={renderPublicationItem}
         contentContainerStyle={styles.listContent}
         refreshControl={

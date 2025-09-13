@@ -274,6 +274,13 @@ export const createStyles = (vars: ThemeVariablesType) =>
       fontSize: FONT_SIZE.lg,
       color: vars['--text']
     },
+    loadingSubText: {
+      marginTop: SPACING.sm,
+      fontSize: FONT_SIZE.md,
+      color: vars['--text-secondary'],
+      textAlign: 'center',
+      paddingHorizontal: SPACING.lg
+    },
     shadow: {
       ...Platform.select({
         ios: {

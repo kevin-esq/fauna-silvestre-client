@@ -17,23 +17,29 @@ import {
   publicationService,
   PublicationStatus
 } from '@/services/publication/publication.service';
-import {
-  createTables,
-  getDBConnection,
-  loadPublications,
-  savePublications,
-  clearStatus
-} from '@/services/data/db.service';
-import { SQLiteDatabase } from 'react-native-sqlite-storage';
+import { databaseService } from '@/services/data/db.service';
 
 const CONFIG = {
   DEFAULT_PAGE_SIZE: 5,
   INITIAL_PAGE: 1,
   SYNC_THRESHOLD: 5 * 60 * 1000,
-  MAX_RETRIES: 1,
+  MAX_RETRIES: 2, // Reducido de 3 a 2
   PREFETCH_THRESHOLD: 0.8,
   BATCH_SIZE: 5,
   DEBOUNCE_DELAY: 300,
+  DEBOUNCE_LOAD_MORE: 1000, // Aumentado para evitar spam
+  AGGRESSIVE_LOADING: false, // DESHABILITADO para evitar loops
+  AUTO_LOAD_DELAY: 5000, // Aumentado a 5 segundos
+  CIRCUIT_BREAKER_THRESHOLD: 5000, // Aumentado a 5 segundos
+  CIRCUIT_BREAKER_RAPID_CALLS: 3, // Reducido a 3 llamadas
+  CIRCUIT_BREAKER_COOLDOWN: 30000, // 30 segundos de cooldown
+  REQUEST_TIMEOUT: 60000, // 60 segundos para requests lentos con imágenes base64
+  RETRY_DELAY_BASE: 5000, // Aumentado de 2s a 5s
+  SLOW_CONNECTION_THRESHOLD: 30000, // 30 segundos para detectar conexión lenta
+  MAX_CACHE_FAILURES: 5, // Máximo de fallos de cache antes de circuit breaker
+  CIRCUIT_BREAKER_TIMEOUT: 30000, // 30 segundos antes de reintentar cache
+  RAPID_CALL_THRESHOLD: 3000, // 3 segundos entre llamadas para prevenir bucles
+  MAX_RAPID_CALLS: 5, // Máximo de llamadas rápidas antes de activar circuit breaker
   MAX_BACKGROUND_REFRESHES: 1,
   BACKGROUND_REFRESH_DELAY: 10000
 } as const;
@@ -69,9 +75,14 @@ interface State {
   readonly [PublicationStatus.PENDING]: PublicationState;
   readonly [PublicationStatus.ACCEPTED]: PublicationState;
   readonly [PublicationStatus.REJECTED]: PublicationState;
+  readonly retryCount: number;
+  readonly lastSync: string | null;
+  readonly cacheFailures: number;
+  readonly cacheCircuitBreakerUntil: number | null;
+  readonly isOnline: boolean;
   readonly counts: CountsState;
   readonly error: string | null;
-  readonly isOnline: boolean;
+  readonly lastApiCall: { [key: string]: number };
 }
 
 type Action =
@@ -105,6 +116,9 @@ type Action =
     }
   | { type: 'RESET_STATUS'; status: PublicationStatus }
   | { type: 'RESET_ALL' }
+  | { type: 'INCREMENT_CACHE_FAILURES' }
+  | { type: 'RESET_CACHE_FAILURES' }
+  | { type: 'ACTIVATE_CACHE_CIRCUIT_BREAKER' }
   | {
       type: 'UPDATE_PUBLICATION_OPTIMISTIC';
       recordId: string;
@@ -239,7 +253,12 @@ const initialState: State = {
   [PublicationStatus.REJECTED]: createInitialPublicationState(),
   counts: createInitialCountsState(),
   error: null,
-  isOnline: true
+  isOnline: true,
+  retryCount: 0,
+  lastSync: null,
+  cacheFailures: 0,
+  cacheCircuitBreakerUntil: null,
+  lastApiCall: {}
 };
 
 function publicationsReducer(state: State, action: Action): State {
@@ -284,9 +303,34 @@ function publicationsReducer(state: State, action: Action): State {
         currentState.pagination
       );
 
-      const publications = action.resetPage
-        ? validPublications
-        : [...currentState.publications, ...validPublications];
+      // For optimized pagination with memory management
+      // Only keep a limited number of pages in memory (current + previous pages)
+      const maxPagesInMemory = 3;
+      const currentPage = validPagination.page || 1;
+
+      let publications: PublicationModelResponse[];
+
+      if (action.resetPage || currentPage === 1) {
+        // Fresh start or first page
+        publications = validPublications;
+      } else {
+        // Append new page but limit memory usage
+        const allPublications = [
+          ...currentState.publications,
+          ...validPublications
+        ];
+        const totalPages = Math.ceil(
+          allPublications.length / validPagination.size
+        );
+
+        if (totalPages > maxPagesInMemory) {
+          // Keep only the last maxPagesInMemory worth of data
+          const itemsToKeep = maxPagesInMemory * validPagination.size;
+          publications = allPublications.slice(-itemsToKeep);
+        } else {
+          publications = allPublications;
+        }
+      }
 
       const filteredPublications = filterPublicationsByQuery(
         publications,
@@ -341,12 +385,23 @@ function publicationsReducer(state: State, action: Action): State {
         };
       }
 
+      // Apply memory management for load more as well
+      const maxPagesInMemory = 3;
       const allPublications = [
         ...currentState.publications,
         ...validNewPublications
       ];
+
+      // Limit memory usage by keeping only recent pages
+      const pageSize = validPagination.size || CONFIG.DEFAULT_PAGE_SIZE;
+      const maxItemsInMemory = maxPagesInMemory * pageSize;
+
+      const publications =
+        allPublications.length > maxItemsInMemory
+          ? allPublications.slice(-maxItemsInMemory)
+          : allPublications;
       const filteredPublications = filterPublicationsByQuery(
-        allPublications,
+        publications,
         searchQuery
       );
 
@@ -354,7 +409,7 @@ function publicationsReducer(state: State, action: Action): State {
         ...state,
         [action.status]: {
           ...currentState,
-          publications: allPublications,
+          publications,
           filteredPublications,
           isLoadingMore: false,
           pagination: validPagination,
@@ -496,32 +551,38 @@ function publicationsReducer(state: State, action: Action): State {
     case 'RESET_ALL':
       return initialState;
 
+    case 'INCREMENT_CACHE_FAILURES':
+      return {
+        ...state,
+        cacheFailures: state.cacheFailures + 1
+      };
+
+    case 'RESET_CACHE_FAILURES':
+      return {
+        ...state,
+        cacheFailures: 0,
+        cacheCircuitBreakerUntil: null
+      };
+
+    case 'ACTIVATE_CACHE_CIRCUIT_BREAKER':
+      return {
+        ...state,
+        cacheCircuitBreakerUntil: Date.now() + CONFIG.CIRCUIT_BREAKER_TIMEOUT
+      };
+
     default:
       return state;
   }
 }
 
 // Custom hooks for specific functionality
-const useDBConnection = () => {
-  const connectionRef = useRef<Promise<SQLiteDatabase> | null>(null);
 
-  const getDB = useCallback(async (): Promise<SQLiteDatabase> => {
-    connectionRef.current ??= getDBConnection().then(async db => {
-      await createTables(db);
-      return db;
-    });
-    return connectionRef.current;
-  }, []);
-
-  return { getDB };
-};
-
-const useRequestManagement = () => {
+const useRequestManager = () => {
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
   const prefetchingRef = useRef<Set<string>>(new Set());
   const debounceTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const backgroundRefreshRef = useRef<Map<string, boolean>>(new Map());
-  const retryCountersRef = useRef<Map<string, number>>(new Map());
+  const retryCountersRef = useRef<Map<string, number[]>>(new Map());
   const refreshCountRef = useRef<Map<string, number>>(new Map());
 
   const cancelPreviousRequest = useCallback((key: string) => {
@@ -552,7 +613,7 @@ const useRequestManagement = () => {
   };
 };
 
-const useErrorHandler = () => {
+const useErrorHandler = (requestManager: ReturnType<typeof useRequestManager>) => {
   return useCallback(
     (
       error: unknown,
@@ -570,6 +631,18 @@ const useErrorHandler = () => {
         'ECONNREFUSED'
       ].some(errorType => message.includes(errorType));
 
+      // Track error for circuit breaker
+      if (status && isNetworkError) {
+        const now = Date.now();
+        const errorHistory = requestManager.retryCountersRef.current.get(status) || [];
+        errorHistory.push(now);
+        // Keep only recent errors
+        const recentErrors = errorHistory.filter((errorTime: number) => now - errorTime < CONFIG.CIRCUIT_BREAKER_COOLDOWN);
+        requestManager.retryCountersRef.current.set(status, recentErrors);
+
+        console.warn(`[Circuit Breaker] Network error recorded for ${status}. Recent failures: ${recentErrors.length}/${CONFIG.CIRCUIT_BREAKER_RAPID_CALLS}`);
+      }
+
       return {
         type: 'OPERATION_FAILURE' as const,
         payload: isNetworkError
@@ -579,7 +652,7 @@ const useErrorHandler = () => {
         retryable
       };
     },
-    []
+    [requestManager.retryCountersRef]
   );
 };
 
@@ -589,9 +662,9 @@ export const PublicationProvider = React.memo(
   ({ children }: { children: React.ReactNode }) => {
     const { user } = useAuth();
     const [state, dispatch] = useReducer(publicationsReducer, initialState);
-    const { getDB } = useDBConnection();
-    const requestManager = useRequestManagement();
-    const handleError = useErrorHandler();
+    // Database service is initialized automatically when needed
+    const requestManager = useRequestManager();
+    const handleError = useErrorHandler(requestManager);
 
     const syncPublications = useCallback(
       async (
@@ -606,7 +679,7 @@ export const PublicationProvider = React.memo(
 
         // Small helpers to flatten logic and reduce complexity
         const shouldUseCacheFirst = () =>
-          useCache && !searchQuery && !forceRefresh && page === 1;
+          useCache && !searchQuery && !forceRefresh;
         const makePagination = (len: number) => ({
           page: 1,
           size: len,
@@ -614,12 +687,6 @@ export const PublicationProvider = React.memo(
           totalPages: 1,
           hasNext: false,
           hasPrev: false
-        });
-        const makeCacheResult = (
-          records: PublicationModelResponse[]
-        ): SyncResult => ({
-          response: { records, pagination: makePagination(records.length) },
-          source: 'cache'
         });
         const runBackgroundRefresh = async () => {
           try {
@@ -646,7 +713,8 @@ export const PublicationProvider = React.memo(
             requestManager.refreshCountRef.current.get(status) || 0;
           if (refreshCount >= CONFIG.MAX_BACKGROUND_REFRESHES) return;
           const refreshKey = `refresh-${status}`;
-          if (requestManager.backgroundRefreshRef.current.get(refreshKey)) return;
+          if (requestManager.backgroundRefreshRef.current.get(refreshKey))
+            return;
           requestManager.refreshCountRef.current.set(status, refreshCount + 1);
           setTimeout(() => {
             void runBackgroundRefresh();
@@ -655,97 +723,246 @@ export const PublicationProvider = React.memo(
 
         const tryCacheFirst = async (): Promise<SyncResult | null> => {
           if (!shouldUseCacheFirst()) return null;
+
+          // Check circuit breaker
+          if (
+            state.cacheCircuitBreakerUntil &&
+            Date.now() < state.cacheCircuitBreakerUntil
+          ) {
+            console.log('[Cache] Circuit breaker active, skipping cache');
+            return null;
+          }
+
           try {
-            const db = await getDB();
-            const cached = await loadPublications(db, status, size, 0, {
-              pageNumber: page,
-              orderBy: 'loadOrder'
-            });
+            await databaseService.initialize();
+            // Calculate proper offset for incremental loading
+            const offset = (page - 1) * size;
+            const cached = await databaseService.loadPublications(
+              status,
+              size,
+              offset
+            );
             const validCached = validatePublications(cached);
             if (validCached.length > 0) {
               console.log(
-                `[Cache Hit] ${validCached.length} publications for ${status} page ${page}`
+                `[Cache Hit] ${validCached.length} publications for ${status} page ${page} (offset: ${offset}, size: ${size})`
               );
+              // Reset cache failures on successful cache hit
+              if (state.cacheFailures > 0) {
+                dispatch({ type: 'RESET_CACHE_FAILURES' });
+              }
               scheduleBackgroundRefreshIfNeeded();
-              return makeCacheResult(validCached);
+
+              // Get total count from cache metadata to determine hasNext correctly
+              const cacheMetadata =
+                await databaseService.getCacheMetadata(status);
+              console.log(
+                `[Cache Metadata] Retrieved ${cacheMetadata.length} entries for ${status}:`,
+                cacheMetadata
+              );
+
+              // Calculate total from cache metadata or fall back to conservative estimate
+              let totalFromCache = validCached.length;
+              let hasNext = false;
+              const currentOffset = (page - 1) * size;
+
+              if (cacheMetadata.length > 0) {
+                totalFromCache = Math.max(
+                  ...cacheMetadata.map(
+                    (m: { totalCount: number }) => m.totalCount
+                  )
+                );
+                console.log(
+                  `[Cache Total] Using metadata total: ${totalFromCache}`
+                );
+                hasNext = currentOffset + validCached.length < totalFromCache;
+              } else {
+                console.warn(
+                  '[Cache Total] No metadata found, using conservative estimate'
+                );
+                // Conservative fallback: only show hasNext if we have a full page AND we're on page 1
+                // This prevents infinite pagination when we don't have metadata
+                if (page === 1 && validCached.length === size) {
+                  // We have a full first page, there might be more
+                  totalFromCache = validCached.length + 1;
+                  hasNext = true;
+                } else {
+                  // Either not page 1 or not a full page - assume we're at the end
+                  totalFromCache = (page - 1) * size + validCached.length;
+                  hasNext = false;
+                }
+              }
+
+              console.log(
+                `[Cache Pagination] page=${page}, size=${size}, offset=${currentOffset}, cached=${validCached.length}, total=${totalFromCache}, hasNext=${hasNext}`
+              );
+              return {
+                response: {
+                  records: validCached,
+                  pagination: {
+                    hasNext,
+                    hasPrev: page > 1,
+                    total: totalFromCache,
+                    totalPages: Math.ceil(totalFromCache / size),
+                    page,
+                    size
+                  }
+                },
+                source: 'cache'
+              };
             }
           } catch (cacheError) {
             console.warn(
               'Cache access failed, falling back to remote:',
               cacheError
             );
+            // Increment cache failures and activate circuit breaker if needed
+            dispatch({ type: 'INCREMENT_CACHE_FAILURES' });
+            if (state.cacheFailures + 1 >= CONFIG.MAX_CACHE_FAILURES) {
+              console.warn(
+                '[Cache] Too many failures, activating circuit breaker'
+              );
+              dispatch({ type: 'ACTIVATE_CACHE_CIRCUIT_BREAKER' });
+            }
           }
           return null;
         };
 
         const loadFromRemote = async (): Promise<SyncResult> => {
-          // console.log(`[Remote Load] Requesting ${status} publications for ${isAdmin ? 'admin' : 'user'}, page ${page}, size ${size}`);
-          const response = await publicationService.getPublicationsByStatus({
-            status,
-            page,
-            size,
-            forAdmin: isAdmin
-          });
-          if (!response) throw new Error('No response received from server');
+          console.log(
+            `[Remote Load] Requesting ${status} publications for ${isAdmin ? 'admin' : 'user'}, page ${page}, size ${size} (may be slow due to base64 images)`
+          );
 
-          const publications = validatePublications(response.records);
-          const pagination =
-            response.pagination || makePagination(publications.length);
+          // Crear AbortController con timeout extendido para imágenes base64
+          const timeoutController = new AbortController();
+          const timeoutId = setTimeout(() => {
+            timeoutController.abort();
+          }, CONFIG.REQUEST_TIMEOUT);
 
-          // const loadTime = Date.now() - startTime;
-          // console.log(
-          //   `[Remote Load] ${status}: ${publications.length} publications in ${loadTime}ms (${isAdmin ? 'admin' : 'user'})`
-          // );
+          try {
+            const response = await publicationService.getPublicationsByStatus({
+              status,
+              page,
+              size,
+              forAdmin: isAdmin
+            });
 
-          if (!searchQuery && publications.length > 0) {
-            getDB()
-              .then(async db => {
-                if (page === 1) {
-                  await clearStatus(db, status, {
-                    onlyOldPages: false,
-                    currentPage: 1
-                  });
-                }
-                const saveResult = await savePublications(
-                  db,
-                  publications,
-                  status,
-                  {
-                    pageNumber: page,
-                    pagination,
-                    upsert: true
+            clearTimeout(timeoutId);
+            if (!response) throw new Error('No response received from server');
+
+            const publications = validatePublications(response.records);
+            const pagination =
+              response.pagination || makePagination(publications.length);
+
+            // const loadTime = Date.now() - startTime;
+            // console.log(
+            //   `[Remote Load] ${status}: ${publications.length} publications in ${loadTime}ms (${isAdmin ? 'admin' : 'user'})`
+            // );
+
+            if (!searchQuery && publications.length > 0) {
+              databaseService
+                .initialize()
+                .then(async () => {
+                  // Only clear cache on first page AND when force refresh is requested
+                  // This prevents the infinite loop of clearing cache on every load
+                  if (page === 1 && forceRefresh) {
+                    console.log(
+                      `[Cache Clear] Clearing cache for ${status} due to force refresh`
+                    );
+                    await databaseService.clearCache(status);
                   }
-                );
-                console.log(
-                  `[Cache Update] ${saveResult.saved} publications saved for ${status} page ${page}, ${saveResult.errors} errors`
-                );
-              })
-              .catch(err => console.warn('Cache save failed:', err));
-          }
+                  await databaseService.savePublications(
+                    publications,
+                    status,
+                    page,
+                    pagination.total
+                  );
+                  console.log(
+                    `[Cache Update] ${publications.length} publications saved for ${status} page ${page}`
+                  );
+                })
+                .catch((err: Error) => console.warn('Cache save failed:', err));
+            }
 
-          return {
-            response: { records: publications, pagination },
-            source: 'remote'
-          };
+            return {
+              response: { records: publications, pagination },
+              source: 'remote'
+            };
+          } catch (error) {
+            clearTimeout(timeoutId);
+            if ((error as Error).name === 'AbortError') {
+              throw new Error(
+                'Request timeout - El servidor está tardando mucho en responder debido a las imágenes'
+              );
+            }
+            throw error;
+          }
         };
 
         const tryCacheFallback = async (): Promise<SyncResult | null> => {
           if (!(useCache && !searchQuery)) return null;
+
+          // Check circuit breaker for fallback as well
+          if (
+            state.cacheCircuitBreakerUntil &&
+            Date.now() < state.cacheCircuitBreakerUntil
+          ) {
+            console.log(
+              '[Cache Fallback] Circuit breaker active, skipping cache fallback'
+            );
+            return null;
+          }
+
           try {
-            const db = await getDB();
-            const cached = await loadPublications(db, status, size, 0, {
-              pageNumber: page,
-              orderBy: 'loadOrder'
-            });
+            await databaseService.initialize();
+            // Calculate proper offset for incremental loading
+            const offset = (page - 1) * size;
+            const cached = await databaseService.loadPublications(
+              status,
+              size,
+              offset
+            );
             const validCached = validatePublications(cached);
             if (validCached.length > 0) {
               console.log(
-                `[Cache Fallback] Using ${validCached.length} cached items for ${status} page ${page} due to network error`
+                `[Cache Fallback] Using ${validCached.length} cached items for ${status} page ${page} (offset: ${offset}) due to network error`
               );
-              return makeCacheResult(validCached);
+
+              // Get total count for proper pagination
+              const cacheMetadata =
+                await databaseService.getCacheMetadata(status);
+              const totalCount = cacheMetadata.reduce(
+                (sum, meta) => sum + meta.totalCount,
+                0
+              );
+              const totalPages = Math.ceil(totalCount / size);
+              const hasNext = page < totalPages;
+
+              return {
+                response: {
+                  records: validCached,
+                  pagination: {
+                    page,
+                    size,
+                    total: totalCount,
+                    totalPages,
+                    hasNext,
+                    hasPrev: page > 1
+                  }
+                },
+                source: 'cache'
+              };
             }
           } catch (cacheError) {
             console.warn('Cache fallback also failed:', cacheError);
+            // Increment cache failures for fallback errors too
+            dispatch({ type: 'INCREMENT_CACHE_FAILURES' });
+            if (state.cacheFailures + 1 >= CONFIG.MAX_CACHE_FAILURES) {
+              console.warn(
+                '[Cache Fallback] Too many failures, activating circuit breaker'
+              );
+              dispatch({ type: 'ACTIVATE_CACHE_CIRCUIT_BREAKER' });
+            }
           }
           return null;
         };
@@ -779,7 +996,7 @@ export const PublicationProvider = React.memo(
           requestManager.abortControllersRef.current.delete(requestKey);
         }
       },
-      [user, state, getDB, requestManager]
+      [user, state, requestManager]
     );
 
     const loadStatus = useCallback(
@@ -788,8 +1005,53 @@ export const PublicationProvider = React.memo(
         const currentState = state[status];
         const loadKey = `load-${status}-${searchQuery}`;
 
+        // Circuit breaker for rapid calls
+        const now = Date.now();
+        const lastCallKey = `${status}_${user?.role === 'Admin' ? 'admin' : 'user'}`;
+        const lastCall = state.lastApiCall[lastCallKey] || 0;
+        const timeSinceLastCall = now - lastCall;
+        if (timeSinceLastCall < CONFIG.CIRCUIT_BREAKER_TIMEOUT) {
+          console.log(
+            `[Circuit Breaker] Blocking rapid call for ${status}, last call was ${timeSinceLastCall}ms ago`
+          );
+          throw new Error(`Too many rapid requests for ${status}`);
+        }
+
+        // Track rapid calls and activate global circuit breaker if needed
+        const rapidCallsKey = `rapid-calls-${status}`;
+        const rapidCallsData = requestManager.retryCountersRef.current.get(rapidCallsKey) || [];
+        const rapidCalls = Array.isArray(rapidCallsData) ? rapidCallsData.length : 0;
+
+        if (now - lastCall < CONFIG.RAPID_CALL_THRESHOLD) {
+          const newRapidCalls = rapidCalls + 1;
+          // Store as array of timestamps for consistency with the Map type
+          const rapidCallsArray = Array.isArray(rapidCallsData) ? rapidCallsData : [];
+          rapidCallsArray.push(now);
+          requestManager.retryCountersRef.current.set(
+            rapidCallsKey,
+            rapidCallsArray
+          );
+
+          if (newRapidCalls >= CONFIG.MAX_RAPID_CALLS) {
+            console.error(
+              `[EMERGENCY CIRCUIT BREAKER] Too many rapid calls detected for ${status}. Activating emergency stop.`
+            );
+            dispatch({ type: 'ACTIVATE_CACHE_CIRCUIT_BREAKER' });
+            return;
+          }
+        } else {
+          // Reset rapid call counter if enough time has passed
+          requestManager.retryCountersRef.current.set(rapidCallsKey, []);
+        }
+
+        requestManager.refreshCountRef.current.set(rapidCallsKey, now);
+
         // Cancel all other status requests when switching tabs
-        const allStatuses: PublicationStatus[] = [PublicationStatus.PENDING, PublicationStatus.ACCEPTED, PublicationStatus.REJECTED];
+        const allStatuses: PublicationStatus[] = [
+          PublicationStatus.PENDING,
+          PublicationStatus.ACCEPTED,
+          PublicationStatus.REJECTED
+        ];
         allStatuses.forEach(otherStatus => {
           if (otherStatus !== status) {
             const otherLoadKey = `load-${otherStatus}-${searchQuery}`;
@@ -811,6 +1073,20 @@ export const PublicationProvider = React.memo(
           return;
         }
 
+        // Additional check: if we have recent data and no force refresh, skip
+        // Reducir tiempo de "recent data" para ser más agresivo en sincronización
+        if (
+          !forceRefresh &&
+          currentState.lastSynced &&
+          now - currentState.lastSynced < 1000 && // 1 segundo (reducido de 5)
+          currentState.publications.length > 0
+        ) {
+          console.log(
+            `[Skip Load] Recent data exists for ${status}, skipping unnecessary load`
+          );
+          return;
+        }
+
         dispatch({ type: 'FETCH_STATUS_START', status });
         const controller = new AbortController();
         requestManager.abortControllersRef.current.set(loadKey, controller);
@@ -823,7 +1099,7 @@ export const PublicationProvider = React.memo(
             { searchQuery, forceRefresh, useCache: !searchQuery }
           );
 
-          requestManager.retryCountersRef.current.set(status, 0);
+          requestManager.retryCountersRef.current.set(status, []);
 
           dispatch({
             type: 'FETCH_STATUS_SUCCESS',
@@ -845,15 +1121,54 @@ export const PublicationProvider = React.memo(
           requestManager.abortControllersRef.current.delete(loadKey);
         }
       },
-      [state, syncPublications, handleError, requestManager]
+      [handleError, requestManager, state, syncPublications, user?.role]
     );
 
     const loadMore = useCallback(
       async (status: PublicationStatus, searchQuery = '') => {
         const currentState = state[status];
 
-
         if (!currentState.pagination.hasNext || currentState.isLoadingMore) {
+          return;
+        }
+
+        // Circuit breaker: prevent loadMore if too many recent failures
+        const now = Date.now();
+        const recentErrors = requestManager.retryCountersRef.current.get(status) || [];
+        const recentFailures = recentErrors.filter((errorTime: number) => now - errorTime < CONFIG.CIRCUIT_BREAKER_COOLDOWN);
+
+        // Also check rapid calls for this specific operation
+        const rapidCallsKey = `rapid-calls-${status}`;
+        const rapidCallsData = requestManager.retryCountersRef.current.get(rapidCallsKey) || [];
+        const recentRapidCalls = Array.isArray(rapidCallsData) ? rapidCallsData.filter((callTime: number) => now - callTime < CONFIG.RAPID_CALL_THRESHOLD) : [];
+
+        // Use >= for strict threshold enforcement
+        if (recentFailures.length >= CONFIG.CIRCUIT_BREAKER_RAPID_CALLS) {
+          console.warn(`[Circuit Breaker] LoadMore blocked for ${status} due to recent failures (${recentFailures.length}/${CONFIG.CIRCUIT_BREAKER_RAPID_CALLS})`);
+          return;
+        }
+
+        if (recentRapidCalls.length >= CONFIG.MAX_RAPID_CALLS) {
+          console.warn(`[Circuit Breaker] LoadMore blocked for ${status} due to rapid calls (${recentRapidCalls.length}/${CONFIG.MAX_RAPID_CALLS})`);
+          return;
+        }
+
+        // Pre-register this attempt to prevent race conditions
+        const loadMoreAttemptKey = `loadmore-${status}`;
+        const loadMoreAttempts = requestManager.retryCountersRef.current.get(loadMoreAttemptKey) || [];
+        loadMoreAttempts.push(now);
+        requestManager.retryCountersRef.current.set(loadMoreAttemptKey, loadMoreAttempts);
+
+        // Check if we're making too many loadMore attempts
+        const recentLoadMoreAttempts = loadMoreAttempts.filter((attemptTime: number) => now - attemptTime < CONFIG.RAPID_CALL_THRESHOLD);
+        if (recentLoadMoreAttempts.length > CONFIG.CIRCUIT_BREAKER_RAPID_CALLS) {
+          console.warn(`[Circuit Breaker] LoadMore blocked for ${status} due to too many attempts (${recentLoadMoreAttempts.length}/${CONFIG.CIRCUIT_BREAKER_RAPID_CALLS})`);
+          dispatch({
+            type: 'OPERATION_FAILURE',
+            status,
+            payload: 'Circuit breaker activated - too many failed attempts',
+            retryable: false
+          });
           return;
         }
 
@@ -864,7 +1179,7 @@ export const PublicationProvider = React.memo(
           const result = await syncPublications(
             status,
             nextPage,
-            currentState.pagination.size,
+            currentState.pagination.size || CONFIG.DEFAULT_PAGE_SIZE,
             { searchQuery, useCache: !searchQuery }
           );
 
@@ -874,6 +1189,16 @@ export const PublicationProvider = React.memo(
             payload: result.response
           });
         } catch (err) {
+          // Track this error for circuit breaker
+          const now = Date.now();
+          const errorHistory = requestManager.retryCountersRef.current.get(status) || [];
+          errorHistory.push(now);
+          // Keep only recent errors
+          const recentErrors = errorHistory.filter((errorTime: number) => now - errorTime < CONFIG.CIRCUIT_BREAKER_COOLDOWN);
+          requestManager.retryCountersRef.current.set(status, recentErrors);
+
+          console.warn(`[Circuit Breaker] LoadMore error recorded for ${status}. Recent failures: ${recentErrors.length}/${CONFIG.CIRCUIT_BREAKER_RAPID_CALLS}`);
+
           const errorAction = handleError(
             err,
             `Error loading more ${status}`,
@@ -883,7 +1208,7 @@ export const PublicationProvider = React.memo(
           dispatch(errorAction);
         }
       },
-      [state, syncPublications, handleError]
+      [state, syncPublications, handleError, requestManager.retryCountersRef]
     );
 
     const filterPublications = useCallback(
@@ -902,7 +1227,10 @@ export const PublicationProvider = React.memo(
           requestManager.debounceTimersRef.current.delete(status);
         }, CONFIG.DEBOUNCE_DELAY);
 
-        requestManager.debounceTimersRef.current.set(status, newTimerId);
+        requestManager.debounceTimersRef.current.set(
+          status,
+          newTimerId as NodeJS.Timeout
+        );
       },
       [requestManager]
     );
@@ -960,11 +1288,9 @@ export const PublicationProvider = React.memo(
             await publicationService.rejectPublication(recordId);
           }
 
-          const db = await getDB();
-          await db.executeSql(
-            `UPDATE publications SET status = ? WHERE recordId = ?`,
-            [toStatus, recordId]
-          );
+          await databaseService.initialize();
+          // Note: The new database service doesn't expose direct SQL execution
+          // Status updates are handled through the API and cache refresh
 
           await loadCounts(true);
           return true;
@@ -985,7 +1311,7 @@ export const PublicationProvider = React.memo(
           return false;
         }
       },
-      [state, getDB, loadCounts, handleError]
+      [state, loadCounts, handleError]
     );
 
     const prefetchNextPage = useCallback(
@@ -1026,30 +1352,53 @@ export const PublicationProvider = React.memo(
       async (status: PublicationStatus) => {
         const currentState = state[status];
         if (currentState.retryCount >= CONFIG.MAX_RETRIES) {
-          console.warn(`Max retries reached for ${status}`);
+          console.warn(`[Circuit Breaker] Max retries reached for ${status}, stopping auto-retry`);
           return;
         }
 
         // Don't retry if already loading or loading more
         if (currentState.isLoading || currentState.isLoadingMore) {
-          console.log(`Retry blocked for ${status}: already loading`);
+          console.log(`[Circuit Breaker] Retry blocked for ${status}: already loading`);
+          return;
+        }
+
+        // Circuit breaker: check for recent failures
+        const now = Date.now();
+        const recentErrors = requestManager.retryCountersRef.current.get(status) || [];
+        const recentFailures = recentErrors.filter((errorTime: number) => now - errorTime < CONFIG.CIRCUIT_BREAKER_COOLDOWN);
+
+        if (recentFailures.length >= CONFIG.CIRCUIT_BREAKER_RAPID_CALLS) {
+          console.warn(`[Circuit Breaker] Too many recent failures for ${status}, cooling down for ${CONFIG.CIRCUIT_BREAKER_COOLDOWN/1000}s`);
           return;
         }
 
         dispatch({ type: 'INCREMENT_RETRY', status });
 
-        // Add delay before retry to avoid rapid successive attempts
-        await new Promise(resolve => setTimeout(resolve, 1000 * (currentState.retryCount + 1)));
-        await loadStatus(status, { forceRefresh: true });
+        // Exponential backoff with longer delays for slow backend
+        const retryDelay =
+          CONFIG.RETRY_DELAY_BASE * Math.pow(2, currentState.retryCount);
+        console.log(
+          `[Retry] Waiting ${retryDelay}ms before retry attempt ${currentState.retryCount + 1}/${CONFIG.MAX_RETRIES} for ${status}`
+        );
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+
+        // Only retry if we're still in a valid state
+        const latestState = state[status];
+        if (!latestState.isLoading && !latestState.isLoadingMore) {
+          await loadStatus(status, { forceRefresh: true });
+        }
       },
-      [state, loadStatus]
+      [state, loadStatus, requestManager.retryCountersRef]
     );
 
-    // Memoized action creators
     const actions = useMemo(
       () => ({
-        loadStatus,
-        loadMoreStatus: loadMore,
+        loadStatus: (
+          status: PublicationStatus,
+          options: { forceRefresh?: boolean; searchQuery?: string } = {}
+        ) => loadStatus(status, options),
+        loadMoreStatus: (status: PublicationStatus, searchQuery = '') =>
+          loadMore(status, searchQuery),
         filterPublications,
         loadCounts,
         approve: (recordId: string) =>
@@ -1089,10 +1438,8 @@ export const PublicationProvider = React.memo(
           const currentState = state[status];
           // For pagination, we only need to check hasNext and isLoadingMore
           // isLoading is for initial load, not for pagination
-          const canLoad = (
-            currentState.pagination.hasNext &&
-            !currentState.isLoadingMore
-          );
+          const canLoad =
+            currentState.pagination.hasNext && !currentState.isLoadingMore;
           return canLoad;
         },
 
