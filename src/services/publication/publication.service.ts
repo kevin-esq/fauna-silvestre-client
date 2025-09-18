@@ -33,6 +33,7 @@ interface CacheEntry<T> {
 export class PublicationService {
   private readonly repository: IPublicationRepository;
   private readonly logger: ConsoleLogger;
+  private onCacheInvalidate?: (() => void) | null;
 
   private countsCache: CacheEntry<CountsResponse> | null = null;
   private readonly CACHE_TTL = 5 * 60 * 1000;
@@ -73,9 +74,16 @@ export class PublicationService {
     ]
   ]);
 
-  constructor(repository: IPublicationRepository, logger?: ConsoleLogger) {
-    this.repository = repository;
-    this.logger = logger || new ConsoleLogger('info');
+  constructor(apiService: ApiService) {
+    this.repository = new PublicationRepository(
+      apiService.client,
+      new ConsoleLogger()
+    );
+    this.logger = new ConsoleLogger();
+  }
+
+  setOnCacheInvalidate(callback: (() => void) | null) {
+    this.onCacheInvalidate = callback;
   }
 
   async createPublication(publication: PublicationData): Promise<void> {
@@ -184,15 +192,15 @@ export class PublicationService {
       await this.repository.acceptPublication(publicationId);
 
       this.invalidateCountsCache();
+      // Invalidar cache del contexto para forzar actualización inmediata
+      this.onCacheInvalidate?.();
 
       this.logger.info('Publicación aceptada exitosamente', { publicationId });
     } catch (error) {
       this.logger.error('Error al aceptar publicación', error as Error, {
         publicationId
       });
-      throw new Error(
-        `No se pudo aceptar la publicación con ID: ${publicationId}`
-      );
+      throw error;
     }
   }
 
@@ -206,15 +214,15 @@ export class PublicationService {
       await this.repository.rejectPublication(publicationId);
 
       this.invalidateCountsCache();
+      // Invalidar cache del contexto para forzar actualización inmediata
+      this.onCacheInvalidate?.();
 
       this.logger.info('Publicación rechazada exitosamente', { publicationId });
     } catch (error) {
       this.logger.error('Error al rechazar publicación', error as Error, {
         publicationId
       });
-      throw new Error(
-        `No se pudo rechazar la publicación con ID: ${publicationId}`
-      );
+      throw error;
     }
   }
 
@@ -309,20 +317,15 @@ export class PublicationServiceFactory {
 
   static getInstance(): PublicationService {
     if (!this.instance) {
-      const repository = new PublicationRepository(
-        ApiService.getInstance().client,
-        new ConsoleLogger('debug')
-      );
-      this.instance = new PublicationService(repository);
+      const apiService = ApiService.getInstance();
+      this.instance = new PublicationService(apiService);
     }
     return this.instance;
   }
 
-  static createInstance(
-    repository?: IPublicationRepository
-  ): PublicationService {
-    if (repository) {
-      return new PublicationService(repository);
+  static createInstance(apiService?: ApiService): PublicationService {
+    if (apiService) {
+      return new PublicationService(apiService);
     }
     return this.getInstance();
   }

@@ -86,26 +86,30 @@ const AdminHeader = React.memo(
               style={styles.infoIcon}
             />
             <Text style={styles.infoText}>Publicaciones: </Text>
-            {statePub.counts.loading ? (
+            {statePub.counts.isLoading ? (
               <ActivityIndicator
                 size="small"
                 style={styles.activityIndicator}
               />
             ) : (
-              <Text style={styles.infoValue}>{statePub.counts.records}</Text>
+              <Text style={styles.infoValue}>
+                {statePub.counts.data?.records || 0}
+              </Text>
             )}
           </View>
 
           <View style={styles.infoRow}>
             <Ionicons name="people-outline" size={24} style={styles.infoIcon} />
             <Text style={styles.infoText}>Usuarios: </Text>
-            {statePub.counts.loading ? (
+            {statePub.counts.isLoading ? (
               <ActivityIndicator
                 size="small"
                 style={styles.activityIndicator}
               />
             ) : (
-              <Text style={styles.infoValue}>{statePub.counts.users}</Text>
+              <Text style={styles.infoValue}>
+                {statePub.counts.data?.users || 0}
+              </Text>
             )}
           </View>
 

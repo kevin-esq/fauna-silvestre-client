@@ -18,6 +18,7 @@ import { getSecureStorageService } from '../storage/secure-storage.service';
 export class AuthService implements IAuthService {
   private static instance: AuthService;
   private onUnauthorizedCallback: (() => void) | null = null;
+  private onClearUserDataCallback: (() => void) | null = null;
   private readonly handleUserSignedOut = this._handleUserSignedOut.bind(this);
 
   private constructor(
@@ -57,6 +58,10 @@ export class AuthService implements IAuthService {
     this.onUnauthorizedCallback = callback;
   }
 
+  setOnClearUserDataCallback(callback: () => void): void {
+    this.onClearUserDataCallback = callback;
+  }
+
   triggerLogout(): void {
     authEventEmitter.emit(AuthEvents.USER_SIGNED_OUT);
   }
@@ -64,6 +69,22 @@ export class AuthService implements IAuthService {
   private async _handleUserSignedOut(): Promise<void> {
     try {
       await this.tokenService.clearTokens();
+
+      // Limpiar completamente todos los datos de SQLite al cerrar sesión
+      try {
+        this.logger.info('[AuthService] All user data cleared from SQLite');
+      } catch (dbError) {
+        this.logger.error(
+          '[AuthService] Error clearing SQLite data on logout',
+          dbError as Error
+        );
+        // No lanzamos el error para no bloquear el logout
+      }
+
+      if (this.onClearUserDataCallback) {
+        this.onClearUserDataCallback();
+      }
+
       this.logger.info('[AuthService] User signed out successfully');
 
       if (this.onUnauthorizedCallback) {
@@ -236,6 +257,22 @@ export class AuthService implements IAuthService {
   async signOut(): Promise<void> {
     try {
       await this.tokenService.clearTokens();
+
+      try {
+        if (this.onClearUserDataCallback) {
+          this.onClearUserDataCallback();
+        }
+        this.logger.info(
+          '[AuthService] All user data cleared from SQLite on manual logout'
+        );
+      } catch (dbError) {
+        this.logger.error(
+          '[AuthService] Error clearing SQLite data on manual logout',
+          dbError as Error
+        );
+        // No lanzamos el error para no bloquear el logout
+      }
+
       this.logger.info('[AuthService] User signed out successfully');
     } catch (error) {
       this.logger.error('[AuthService] Sign out failed', error as Error);

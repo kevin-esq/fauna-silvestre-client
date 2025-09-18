@@ -54,8 +54,33 @@ export const createStyles = (vars: Record<string, string>) =>
       marginLeft: 8,
       color: vars['--text-secondary']
     },
+    retryButton: {
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      marginTop: 12,
+      backgroundColor: vars['--primary'],
+      minWidth: 120,
+      alignItems: 'center'
+    },
+    retryButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: vars['--primary-light']
+    },
     resultsContainer: {
       paddingVertical: 12,
       alignItems: 'center'
+    },
+    skeletonContainer: {
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      width: '100%'
+    },
+    emptyListContent: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 40
     }
   });
