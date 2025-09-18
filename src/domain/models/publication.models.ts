@@ -21,9 +21,7 @@ export interface PublicationModelResponse {
   description: string;
   img: string;
   location: string;
-  // Optimizaciones para imágenes
-  imgPath?: string; // Ruta del archivo local
-  thumbnailPath?: string; // Ruta de la miniatura local
+  createdDate?: string;
   author?: string;
 }
 
@@ -39,6 +37,9 @@ export interface PaginationModelResponse {
 export interface CountsResponse {
   users: number;
   records: number;
+  pendingCount?: number;
+  acceptedCount?: number;
+  rejectedCount?: number;
 }
 
 export interface PublicationsModel {

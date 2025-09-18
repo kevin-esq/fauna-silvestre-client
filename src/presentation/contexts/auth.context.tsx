@@ -85,6 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const handleSignOut = () => {
+      localStorage.clear();
       setUser(null);
       setIsAuthenticated(false);
       setStatus('UNAUTHENTICATED');

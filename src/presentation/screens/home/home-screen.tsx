@@ -26,7 +26,7 @@ const HomeScreen: React.FC = React.memo(() => {
   const { user, signOut } = useAuth();
   const styles = createStyles(theme);
   const { navigate } = useNavigationActions();
-  const { state, actions } = usePublications();
+  const { state, loadCounts } = usePublications();
   const [totalEspecies, setTotalEspecies] = useState(0);
   const [totalPublications, setTotalPublications] = useState<number>(0);
   const variables = useMemo(() => themeVariables(theme), [theme]);
@@ -42,6 +42,11 @@ const HomeScreen: React.FC = React.memo(() => {
   const [showAllAnimals, setShowAllAnimals] = useState(false);
 
   const categories = useMemo(() => {
+    // Defensive programming: ensure catalog exists and is an array
+    if (!catalog || !Array.isArray(catalog) || catalog.length === 0) {
+      return ['Todas las categorías'] as const;
+    }
+
     const uniqueCategories = [
       ...new Set(catalog.map(animal => animal.category))
     ].filter(Boolean);
@@ -49,6 +54,11 @@ const HomeScreen: React.FC = React.memo(() => {
   }, [catalog]);
 
   const filteredAnimals = useMemo(() => {
+    // Defensive programming: ensure catalog exists and is an array
+    if (!catalog || !Array.isArray(catalog)) {
+      return [];
+    }
+
     if (!selectedCategory || selectedCategory === 'Todas las categorías') {
       return catalog;
     }
@@ -63,16 +73,18 @@ const HomeScreen: React.FC = React.memo(() => {
 
   useEffect(() => {
     if (!hasLoaded.current) {
-      actions.loadCounts();
+      loadCounts();
       hasLoaded.current = true;
     }
-  }, [actions]);
+  }, [loadCounts]);
 
   useEffect(() => {
-    setTotalPublications(state.counts.records);
-    setTotalEspecies(state.counts.users);
-    setTotalPublications(state.counts.records);
-  }, [state.counts]);
+    // Calcular total de publicaciones sumando todos los estados
+    const totalPubs = state.counts.data?.records || 0;
+    setTotalPublications(totalPubs);
+    // Usar users para especies (manteniendo la lógica original)
+    setTotalEspecies(state.counts.data?.users || 0);
+  }, [state.counts.data]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -197,7 +209,7 @@ const HomeScreen: React.FC = React.memo(() => {
             <Text style={styles.resultsText}>
               {selectedCategory && selectedCategory !== 'Todas las categorías'
                 ? `${filteredAnimals.length} ${filteredAnimals.length === 1 ? 'animal' : 'animales'} en "${selectedCategory}"`
-                : `${catalog.length} ${catalog.length === 1 ? 'animal' : 'animales'} en total`}
+                : `${catalog?.length || 0} ${(catalog?.length || 0) === 1 ? 'animal' : 'animales'} en total`}
             </Text>
             {filteredAnimals.length > 5 && (
               <TouchableOpacity

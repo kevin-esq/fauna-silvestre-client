@@ -1,10 +1,16 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, ViewStyle } from 'react-native';
+import {
+  View,
+  Animated,
+  StyleSheet,
+  ViewStyle,
+  DimensionValue
+} from 'react-native';
 import { useTheme } from '@/presentation/contexts/theme.context';
 
 interface ImageSkeletonProps {
-  width?: number;
-  height?: number;
+  width?: DimensionValue;
+  height?: DimensionValue;
   borderRadius?: number;
   style?: ViewStyle;
 }

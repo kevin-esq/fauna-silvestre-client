@@ -12,5 +12,6 @@ export interface IAuthService {
   hydrate(): Promise<User | null>;
   refreshToken(refreshToken: string): Promise<string>;
   setOnUnauthorizedCallback(callback: () => void): void;
+  setOnClearUserDataCallback(callback: () => void): void;
   triggerLogout(): void;
 }

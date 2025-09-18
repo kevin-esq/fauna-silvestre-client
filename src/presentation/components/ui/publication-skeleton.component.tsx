@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, ViewStyle } from 'react-native';
 import { useTheme } from '@/presentation/contexts/theme.context';
 import ImageSkeleton from './image-skeleton.component';
+import { ITEM_HEIGHT } from '../publication/publication-card.component';
 
 interface PublicationSkeletonProps {
   viewMode?: 'card' | 'list';
@@ -88,22 +89,32 @@ const PublicationSkeleton: React.FC<PublicationSkeletonProps> = ({
         style
       ]}
     >
-      <ImageSkeleton width={100} height={160} borderRadius={12} />
+      {/* Imagen skeleton - misma altura que PublicationImage */}
+      <ImageSkeleton width="100%" height={180} borderRadius={0} />
 
       <View style={styles.cardContent}>
         {/* Título */}
         <SkeletonLine width="80%" height={18} marginBottom={8} />
 
-        {/* Estado */}
-        <SkeletonLine width="40%" height={14} marginBottom={6} />
-
         {/* Descripción */}
-        <SkeletonLine width="100%" height={12} marginBottom={4} />
-        <SkeletonLine width="85%" height={12} marginBottom={4} />
-        <SkeletonLine width="60%" height={12} marginBottom={8} />
+        <SkeletonLine width="100%" height={14} marginBottom={4} />
+        <SkeletonLine width="85%" height={14} marginBottom={12} />
 
-        {/* Ubicación */}
-        <SkeletonLine width="70%" height={12} marginBottom={0} />
+        {/* Status rows */}
+        <View style={styles.statusRow}>
+          <View style={styles.statusIcon} />
+          <SkeletonLine width="30%" height={14} marginBottom={8} />
+        </View>
+
+        <View style={styles.statusRow}>
+          <View style={styles.statusIcon} />
+          <SkeletonLine width="25%" height={14} marginBottom={8} />
+        </View>
+
+        <View style={styles.statusRow}>
+          <View style={styles.statusIcon} />
+          <SkeletonLine width="60%" height={14} marginBottom={0} />
+        </View>
       </View>
     </View>
   );
@@ -112,17 +123,14 @@ const PublicationSkeleton: React.FC<PublicationSkeletonProps> = ({
 const styles = StyleSheet.create({
   cardContainer: {
     borderRadius: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    padding: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3
+    height: ITEM_HEIGHT // Misma altura que PublicationCard
   },
   listContainer: {
     flexDirection: 'row',
@@ -145,7 +153,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   cardContent: {
-    marginTop: 12
+    padding: 16,
+    flex: 1
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  statusIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#E1E9EE',
+    marginRight: 8
   },
   skeletonLine: {
     backgroundColor: '#E1E9EE'

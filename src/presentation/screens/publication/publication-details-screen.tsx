@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   TouchableOpacity,
   Modal,
@@ -18,13 +17,14 @@ import LocationMap from '../../components/ui/location-map.component';
 import { createStyles } from './publication-details-screen.styles';
 import { useAuth } from '../../contexts/auth.context';
 import type {
-  PublicationResponse,
+  PublicationModelResponse,
   PublicationStatus
 } from '../../../domain/models/publication.models';
 import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import { useRoute } from '@react-navigation/native';
+import PublicationImage from '@/presentation/components/publication/publication-image.component';
 
 const { width, height } = Dimensions.get('window');
 
@@ -46,10 +46,22 @@ const STATUS_CONFIG = {
   }
 } as const;
 
+const formatDate = (dateString?: string) => {
+  if (!dateString) return 'Fecha no disponible';
+
+  return new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(dateString));
+};
+
 export default function PublicationDetailsScreen() {
   const route = useRoute();
   const { publication, status, reason } = route.params as {
-    publication: PublicationResponse;
+    publication: PublicationModelResponse;
     status: PublicationStatus;
     reason?: string | undefined;
   };
@@ -67,6 +79,7 @@ export default function PublicationDetailsScreen() {
   const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
   const [isImageExpanded, setIsImageExpanded] = useState(false);
+
   const toggleImageExpand = useCallback(() => setIsImageExpanded(p => !p), []);
 
   useFocusEffect(
@@ -132,33 +145,26 @@ export default function PublicationDetailsScreen() {
             : 'Imagen no disponible'
         }
       >
-        {publication.img ? (
-          <>
-            <Image
-              source={{ uri: publication.img }}
-              style={styles.image}
-              resizeMode="cover"
-              accessibilityIgnoresInvertColors
-            />
-            <View style={styles.zoomIcon}>
-              <MaterialIcons name="zoom-in" size={24} color="white" />
-            </View>
-          </>
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <FontAwesome
-              name="image"
-              size={40}
-              color={theme.colors.placeholder}
-            />
-            <Text style={styles.placeholderText}>Imagen no disponible</Text>
+        <PublicationImage
+          uri={publication.img}
+          commonNoun={publication.commonNoun}
+          viewMode="presentation"
+          style={styles.image}
+        />
+        {publication.img && (
+          <View style={styles.zoomIcon}>
+            <MaterialIcons name="zoom-in" size={24} color="white" />
           </View>
         )}
       </TouchableOpacity>
 
       <Modal visible={isImageExpanded} transparent={true} animationType="fade">
         <ImageViewer
-          imageUrls={[{ url: publication.img }]}
+          imageUrls={[
+            {
+              url: publication.img || ''
+            }
+          ]}
           enableImageZoom={true}
           enableSwipeDown={true}
           onSwipeDown={toggleImageExpand}
@@ -179,15 +185,48 @@ export default function PublicationDetailsScreen() {
       {/* Componentes de información */}
       <InfoCard
         title="Descripción"
-        content={publication.description}
+        content={publication.description || 'Sin descripción disponible'}
+        icon={
+          <MaterialIcons
+            name="description"
+            size={16}
+            color={theme.colors.primary}
+          />
+        }
         isAdmin={user?.role === 'Admin'}
         onModify={() => handleModify('Descripción')}
         insets={insets}
       />
 
       <InfoCard
+        title="Nombre Común"
+        content={publication.commonNoun || 'No especificado'}
+        icon={<FontAwesome name="tag" size={16} color={theme.colors.primary} />}
+        isAdmin={user?.role === 'Admin'}
+        onModify={() => handleModify('Nombre Común')}
+        insets={insets}
+      />
+
+      <InfoCard
+        title="Fecha de creación"
+        content={formatDate(publication.createdDate)}
+        icon={
+          <FontAwesome name="calendar" size={16} color={theme.colors.primary} />
+        }
+        isAdmin={user?.role === 'Admin'}
+        insets={insets}
+      />
+
+      <InfoCard
         title="Estado"
         content={statusConfig.label}
+        icon={
+          <FontAwesome
+            name={statusConfig.icon}
+            size={16}
+            color={statusConfig.color}
+          />
+        }
         titleColor={statusConfig.color}
         borderColor={statusConfig.color}
         isAdmin={user?.role === 'Admin'}
@@ -217,36 +256,17 @@ export default function PublicationDetailsScreen() {
       />
 
       {/* Usuario (solo admin) */}
-      {user?.role === 'Admin' && (
-        <View
-          style={[
-            styles.card,
-            {
-              flexDirection: 'row',
-              alignItems: 'center',
-              borderLeftColor: statusConfig.color,
-              borderLeftWidth: 5
-            }
-          ]}
-        >
-          <View style={styles.userProfilePicture}>
+      {user?.role === 'Admin' && publication.author && (
+        <InfoCard
+          title="Usuario"
+          content={publication.author}
+          icon={
             <FontAwesome name="user" size={16} color={theme.colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>Usuario</Text>
-            </View>
-            <Text style={styles.cardText}>{'Sin información'}</Text>
-          </View>
-        </View>
-      )}
-
-      {/* Motivo de rechazo */}
-      {status === 'rejected' && reason && (
-        <View style={[styles.card, styles.rejectionCard]}>
-          <Text style={styles.rejectionTitle}>Motivo de rechazo</Text>
-          <Text style={styles.cardText}>{reason}</Text>
-        </View>
+          }
+          borderColor={statusConfig.color}
+          isAdmin={user?.role === 'Admin'}
+          insets={insets}
+        />
       )}
 
       {/* Ubicación textual */}
@@ -267,12 +287,46 @@ export default function PublicationDetailsScreen() {
       )}
 
       {/* Mapa */}
-      {publication.location && (
+      {publication.location ? (
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Ubicación en Mapa</Text>
+            <View style={styles.titleContainer}>
+              <FontAwesome name="map" size={16} color={theme.colors.primary} />
+              <Text style={styles.cardTitle}>Ubicación en Mapa</Text>
+            </View>
           </View>
           <LocationMap location={publication.location} />
+        </View>
+      ) : (
+        <InfoCard
+          title="Ubicación"
+          content="Ubicación no disponible"
+          icon={
+            <FontAwesome
+              name="map-marker"
+              size={16}
+              color={theme.colors.placeholder}
+            />
+          }
+          isAdmin={user?.role === 'Admin'}
+          insets={insets}
+        />
+      )}
+
+      {/* Motivo de rechazo */}
+      {status === 'rejected' && reason && (
+        <View style={[styles.card, styles.rejectionCard]}>
+          <View style={styles.cardHeader}>
+            <View style={styles.titleContainer}>
+              <FontAwesome
+                name="exclamation-triangle"
+                size={16}
+                color="#D32F2F"
+              />
+              <Text style={styles.rejectionTitle}>Motivo de rechazo</Text>
+            </View>
+          </View>
+          <Text style={styles.cardText}>{reason}</Text>
         </View>
       )}
     </ScrollView>
