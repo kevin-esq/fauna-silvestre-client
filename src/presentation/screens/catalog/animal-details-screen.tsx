@@ -68,7 +68,7 @@ const AnimalDetailsScreen: React.FC = () => {
       );
 
       return () => backHandler.remove();
-    }, [navigate, navigation])
+    }, [navigate, navigation, goBack])
   );
 
   useEffect(() => {
