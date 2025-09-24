@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { BackHandler, ToastAndroid } from "react-native";
+import { useState, useEffect } from 'react';
+import { BackHandler, ToastAndroid } from 'react-native';
 
 const useDoubleBackExit = () => {
   const [backPressedOnce, setBackPressedOnce] = useState(false);
@@ -8,7 +8,7 @@ const useDoubleBackExit = () => {
     const backAction = () => {
       if (!backPressedOnce) {
         ToastAndroid.show(
-          "Presiona atrás de nuevo para salir",
+          'Presiona atrás de nuevo para salir',
           ToastAndroid.SHORT
         );
         setBackPressedOnce(true);
@@ -20,7 +20,7 @@ const useDoubleBackExit = () => {
     };
 
     const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
+      'hardwareBackPress',
       backAction
     );
     return () => backHandler.remove();

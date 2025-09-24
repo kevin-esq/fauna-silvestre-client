@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Pressable } from "react-native";
-import { MotiView } from "moti";
+import React, { useState } from 'react';
+import { Pressable, StyleProp, ViewStyle } from 'react-native';
+import { MotiView } from 'moti';
 
 /**
  * Botón animado que escala y cambia opacidad al presionar.
@@ -10,7 +10,15 @@ import { MotiView } from "moti";
  * @param {object} style - Estilo adicional del botón.
  * @returns {JSX.Element}
  */
-const AnimatedPressable = ({ children, onPress, style }: { children: React.ReactNode; onPress: any; style?: any }) => {
+const AnimatedPressable = ({
+  children,
+  onPress,
+  style
+}: {
+  children: React.ReactNode;
+  onPress: (() => void) | undefined;
+  style?: StyleProp<ViewStyle>;
+}) => {
   const [pressed, setPressed] = useState(false);
 
   return (
@@ -22,9 +30,9 @@ const AnimatedPressable = ({ children, onPress, style }: { children: React.React
       <MotiView
         animate={{
           scale: pressed ? 0.95 : 1,
-          opacity: pressed ? 0.8 : 1,
+          opacity: pressed ? 0.8 : 1
         }}
-        transition={{ type: "timing", duration: 120 }}
+        transition={{ type: 'timing', duration: 120 }}
         style={style}
       >
         {children}

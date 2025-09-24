@@ -1,6 +1,13 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
-const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
+const {
+  wrapWithReanimatedMetroConfig
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+} = require('react-native-reanimated/metro-config');
 
 const config = {};
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), wrapWithReanimatedMetroConfig(config));
+module.exports = mergeConfig(
+  getDefaultConfig(__dirname),
+  wrapWithReanimatedMetroConfig(config)
+);

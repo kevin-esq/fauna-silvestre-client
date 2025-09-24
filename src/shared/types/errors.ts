@@ -4,14 +4,14 @@
  * @extends Error
  */
 export class HttpError extends Error {
-    constructor(
-        message: string,
-        public readonly statusCode?: number,
-        public readonly data?: unknown
-    ) {
-        super(message);
-        this.name = 'HttpError';
-    }
+  constructor(
+    message: string,
+    public readonly statusCode?: number,
+    public readonly data?: unknown
+  ) {
+    super(message);
+    this.name = 'HttpError';
+  }
 }
 
 /**
@@ -20,10 +20,10 @@ export class HttpError extends Error {
  * @extends Error
  */
 export class NetworkError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'NetworkError';
-    }
+  constructor(message: string) {
+    super(message);
+    this.name = 'NetworkError';
+  }
 }
 
 /**
@@ -32,8 +32,8 @@ export class NetworkError extends Error {
  * @extends Error
  */
 export class UserCancelledError extends Error {
-    constructor() {
-        super('Operación cancelada por el usuario');
-        this.name = 'UserCancelledError';
-    }
+  constructor() {
+    super('Operación cancelada por el usuario');
+    this.name = 'UserCancelledError';
+  }
 }

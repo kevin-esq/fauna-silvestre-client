@@ -1,4 +1,4 @@
-import React, { useState, useCallback, FC, useMemo } from "react";
+import React, { useState, useCallback, FC, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,26 +6,27 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
-  TextInputProps,
-} from "react-native";
-import { Picker } from "@react-native-picker/picker";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { pick } from "@react-native-documents/picker";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+  TextInputProps
+} from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { pick } from '@react-native-documents/picker';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 export type InputType =
-  | "username"
-  | "name"
-  | "lastName"
-  | "location"
-  | "text"
-  | "password"
-  | "email"
-  | "date"
-  | "file"
-  | "select"
-  | "textarea"
-  | "number";
+  | 'username'
+  | 'name'
+  | 'lastName'
+  | 'location'
+  | 'text'
+  | 'password'
+  | 'email'
+  | 'date'
+  | 'file'
+  | 'select'
+  | 'textarea'
+  | 'number';
 
 interface Option {
   label: string;
@@ -37,7 +38,7 @@ interface CustomInputProps {
   type: InputType;
   value?: string;
   placeholder?: string;
-  onChange?: (value: string) => void;
+  onChange?: (value: string | null) => void;
   options?: Option[];
   style?: object;
   error?: boolean;
@@ -49,29 +50,29 @@ interface CustomInputProps {
 
 const getAutoCompleteType = (
   type: InputType
-): TextInputProps["autoComplete"] => {
+): TextInputProps['autoComplete'] => {
   switch (type) {
-    case "username":
-      return "username";
-    case "password":
-      return "password";
-    case "email":
-      return "email";
-    case "name":
-      return "name";
-    case "lastName":
-      return "name-family";
-    case "location":
-      return "address-line1";
+    case 'username':
+      return 'username';
+    case 'password':
+      return 'current-password';
+    case 'email':
+      return 'email';
+    case 'name':
+      return 'name-given';
+    case 'lastName':
+      return 'name-family';
+    case 'location':
+      return 'street-address';
     default:
-      return "off";
+      return 'off';
   }
 };
 
 const CustomInput: FC<CustomInputProps> = ({
   label,
   type,
-  value = "",
+  value = '',
   placeholder,
   onChange,
   options,
@@ -80,7 +81,7 @@ const CustomInput: FC<CustomInputProps> = ({
   errorMessage,
   autoFocus = false,
   disabled = false,
-  icon,
+  icon
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -90,14 +91,14 @@ const CustomInput: FC<CustomInputProps> = ({
   );
   const [showPassword, setShowPassword] = useState(false);
 
-  const borderColor = error ? "#ef4444" : isFocused ? "#3b82f6" : "#ccc";
+  const borderColor = error ? '#ef4444' : isFocused ? '#3b82f6' : '#ccc';
   const borderWidth = isFocused || error ? 2 : 1;
 
   const handleFocus = () => setIsFocused(true);
   const handleBlur = () => setIsFocused(false);
 
   const handleDateChange = useCallback(
-    (_: any, selectedDate?: Date) => {
+    (_: DateTimePickerEvent, selectedDate?: Date) => {
       setShowDatePicker(false);
       if (selectedDate) {
         setDate(selectedDate);
@@ -109,34 +110,38 @@ const CustomInput: FC<CustomInputProps> = ({
 
   const handleFilePick = useCallback(async () => {
     try {
-      const result = await pick({
-        allowMultiSelection: false,
-        type: ['*/*'], // o 'application/pdf', 'image/*', etc. según lo que quieras permitir
-      });
-  
+      const result = await pick({ allowMultiSelection: false, type: ['*/*'] });
       if (result?.length) {
         const file = result[0];
         setSelectedFile(file.name);
-        onChange?.(file.name as string);
+        onChange?.(file.name);
       }
-    } catch (err: any) {
-      if (err?.code !== 'DOCUMENT_PICKER_CANCELED') {
-        console.error("Error al seleccionar archivo:", err);
+    } catch (err: unknown) {
+      if (
+        typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        (err as { code: string }).code !== 'DOCUMENT_PICKER_CANCELED'
+      ) {
+        console.error('Error al seleccionar archivo:', err);
       }
     }
   }, [onChange]);
 
-  const wrapperStyle = useMemo(() => [
-    styles.inputWrapper,
-    {
-      borderColor,
-      borderWidth,
-      backgroundColor: disabled ? "#f5f5f5" : "#fff",
-    },
-  ], [borderColor, borderWidth, disabled]);
+  const wrapperStyle = useMemo(
+    () => [
+      styles.inputWrapper,
+      {
+        borderColor,
+        borderWidth,
+        backgroundColor: disabled ? '#f5f5f5' : '#fff'
+      }
+    ],
+    [borderColor, borderWidth, disabled]
+  );
 
   const renderTextInput = (
-    keyboardType: "default" | "email-address" | "numeric" = "default",
+    keyboardType: 'default' | 'email-address' | 'numeric' = 'default',
     secureTextEntry = false
   ) => (
     <View style={wrapperStyle}>
@@ -150,18 +155,18 @@ const CustomInput: FC<CustomInputProps> = ({
         editable={!disabled}
         autoFocus={autoFocus}
         autoCapitalize="none"
-        multiline={type === "textarea"}
+        multiline={type === 'textarea'}
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         autoComplete={getAutoCompleteType(type)}
-        style={[styles.input, type === "textarea" && styles.textarea]}
+        style={[styles.input, type === 'textarea' && styles.textarea]}
       />
     </View>
   );
 
   const renderInputByType = () => {
     switch (type) {
-      case "date":
+      case 'date':
         return (
           <>
             <TouchableOpacity
@@ -171,18 +176,18 @@ const CustomInput: FC<CustomInputProps> = ({
                 {
                   borderColor,
                   borderWidth,
-                  backgroundColor: disabled ? "#f5f5f5" : "#fff",
-                },
+                  backgroundColor: disabled ? '#f5f5f5' : '#fff'
+                }
               ]}
               disabled={disabled}
             >
               <View style={styles.row}>
                 <Text
-                  style={[styles.inputText, { color: value ? "#000" : "#888" }]}
+                  style={[styles.inputText, { color: value ? '#000' : '#888' }]}
                 >
                   {value
                     ? new Date(value).toLocaleDateString()
-                    : placeholder || "Selecciona fecha"}
+                    : placeholder || 'Selecciona fecha'}
                 </Text>
                 {value && (
                   <MaterialIcons
@@ -197,14 +202,14 @@ const CustomInput: FC<CustomInputProps> = ({
               <DateTimePicker
                 value={date}
                 mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={handleDateChange}
               />
             )}
           </>
         );
 
-      case "select":
+      case 'select':
         return (
           <View
             style={[
@@ -212,17 +217,17 @@ const CustomInput: FC<CustomInputProps> = ({
               {
                 borderColor,
                 borderWidth,
-                backgroundColor: disabled ? "#f5f5f5" : "#fff",
-              },
+                backgroundColor: disabled ? '#f5f5f5' : '#fff'
+              }
             ]}
           >
             <Picker
               selectedValue={value}
-              onValueChange={(val) => onChange?.(val)}
+              onValueChange={val => onChange?.(val)}
               style={styles.picker}
               enabled={!disabled}
             >
-              {options?.map((opt) => (
+              {options?.map(opt => (
                 <Picker.Item
                   key={opt.value}
                   label={opt.label}
@@ -233,7 +238,7 @@ const CustomInput: FC<CustomInputProps> = ({
           </View>
         );
 
-      case "file":
+      case 'file':
         return (
           <TouchableOpacity
             onPress={handleFilePick}
@@ -242,8 +247,8 @@ const CustomInput: FC<CustomInputProps> = ({
               {
                 borderColor,
                 borderWidth,
-                backgroundColor: disabled ? "#f5f5f5" : "#fff",
-              },
+                backgroundColor: disabled ? '#f5f5f5' : '#fff'
+              }
             ]}
             disabled={disabled}
           >
@@ -251,10 +256,10 @@ const CustomInput: FC<CustomInputProps> = ({
               <Text
                 style={[
                   styles.inputText,
-                  { color: selectedFile ? "#000" : "#888" },
+                  { color: selectedFile ? '#000' : '#888' }
                 ]}
               >
-                {selectedFile || placeholder || "Selecciona archivo"}
+                {selectedFile || placeholder || 'Selecciona archivo'}
               </Text>
               {selectedFile && (
                 <MaterialIcons name="check-circle" size={20} color="#4caf50" />
@@ -263,7 +268,7 @@ const CustomInput: FC<CustomInputProps> = ({
           </TouchableOpacity>
         );
 
-      case "password":
+      case 'password':
         return (
           <View
             style={[
@@ -271,8 +276,8 @@ const CustomInput: FC<CustomInputProps> = ({
               {
                 borderColor,
                 borderWidth,
-                backgroundColor: disabled ? "#f5f5f5" : "#fff",
-              },
+                backgroundColor: disabled ? '#f5f5f5' : '#fff'
+              }
             ]}
           >
             {icon && <View style={styles.iconContainer}>{icon}</View>}
@@ -289,12 +294,12 @@ const CustomInput: FC<CustomInputProps> = ({
               style={[styles.passwordInput, { flex: 1 }]}
             />
             <TouchableOpacity
-              onPress={() => setShowPassword((prev) => !prev)}
+              onPress={() => setShowPassword(prev => !prev)}
               style={styles.showPasswordButton}
               disabled={disabled}
             >
               <MaterialIcons
-                name={showPassword ? "visibility" : "visibility-off"}
+                name={showPassword ? 'visibility' : 'visibility-off'}
                 size={24}
                 color="#888"
               />
@@ -302,11 +307,11 @@ const CustomInput: FC<CustomInputProps> = ({
           </View>
         );
 
-      case "email":
-        return renderTextInput("email-address");
+      case 'email':
+        return renderTextInput('email-address');
 
-      case "number":
-        return renderTextInput("numeric");
+      case 'number':
+        return renderTextInput('numeric');
 
       default:
         return renderTextInput();
@@ -323,93 +328,72 @@ const CustomInput: FC<CustomInputProps> = ({
 };
 
 const commonShadow = {
-  shadowColor: "#000",
+  shadowColor: '#000',
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.06,
   shadowRadius: 6,
-  elevation: 2,
+  elevation: 2
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: 12,
-  },
-  label: {
-    marginBottom: 6,
-    fontSize: 15,
-    color: "#333",
-    fontWeight: "600",
-  },
+  container: { marginVertical: 12 },
+  label: { marginBottom: 6, fontSize: 15, color: '#333', fontWeight: '600' },
   inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: 14,
     paddingHorizontal: 14,
     height: 52,
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
+    backgroundColor: '#fff',
+    borderColor: '#ccc',
     borderWidth: 1,
-    ...commonShadow,
+    ...commonShadow
   },
   inputContainer: {
     borderRadius: 14,
-    justifyContent: "center",
+    justifyContent: 'center',
     paddingHorizontal: 14,
     height: 52,
-    backgroundColor: "#fff",
-    ...commonShadow,
+    backgroundColor: '#fff',
+    ...commonShadow
   },
   pickerContainer: {
     borderRadius: 14,
-    overflow: "hidden",
+    overflow: 'hidden',
     height: 52,
-    justifyContent: "center",
+    justifyContent: 'center',
     paddingHorizontal: 10,
-    backgroundColor: "#fff",
-    ...commonShadow,
+    backgroundColor: '#fff',
+    ...commonShadow
   },
-  picker: {
-    height: 52,
-    fontSize: 16,
-  },
+  picker: { height: 52, fontSize: 16 },
   input: {
     fontSize: 16,
-    color: "#222",
+    color: '#222',
     flex: 1,
-    height: "100%",
-    paddingVertical: Platform.OS === "ios" ? 12 : 8,
+    height: '100%',
+    paddingVertical: Platform.OS === 'ios' ? 12 : 8
   },
   passwordInput: {
     fontSize: 16,
-    color: "#222",
-    paddingVertical: 0,
+    color: '#222',
+    paddingVertical: 0
   },
-  inputText: {
-    fontSize: 16,
-    color: "#222",
-  },
-  textarea: {
-    height: 120,
-    textAlignVertical: "top",
-    paddingTop: 12,
-  },
-  iconContainer: {
-    marginRight: 10,
-  },
-  showPasswordButton: {
-    paddingLeft: 10,
-  },
+  inputText: { fontSize: 16, color: '#222' },
+  textarea: { height: 120, textAlignVertical: 'top', paddingTop: 12 },
+  iconContainer: { marginRight: 10 },
+  showPasswordButton: { paddingLeft: 10 },
   errorText: {
-    color: "#ef4444",
+    color: '#ef4444',
     fontSize: 13,
     marginTop: 6,
-    fontWeight: "500",
+    fontWeight: '500'
   },
   row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  }
 });
 
 export default React.memo(CustomInput);

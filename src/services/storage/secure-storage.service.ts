@@ -1,92 +1,156 @@
-import { ILogger } from '../../shared/types/ILogger';
 import { ConsoleLogger } from '../logging/console-logger';
 import { StorageError } from '../../shared/types/custom-errors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
+import { ILogger } from '../logging/ILogger';
+import {
+  IKeyManager,
+  CryptoService,
+  KeychainKeyManager
+} from './crypto‑storage.service';
+import { INDEX_KEY } from './storage-keys';
 
-/**
- * Defines the contract for a secure key-value storage service.
- * This interface allows for dependency inversion and easier testing.
- */
 export interface ISecureStorage {
   save(key: string, value: string): Promise<void>;
   getValueFor(key: string): Promise<string | null>;
   deleteValueFor(key: string): Promise<void>;
+  clear(): Promise<void>;
+  rotateEncryptionKeys(): Promise<void>;
 }
 
-/**
- * A singleton service that provides a secure way to store key-value pairs using Expo's SecureStore.
- * It includes logging and custom error handling for storage operations.
- */
-class SecureStorageService implements ISecureStorage {
+export class SecureStorageService implements ISecureStorage {
   private static instance: SecureStorageService;
-  private readonly logger: ILogger;
+  private encryptionKey!: string;
+  private readonly indexKey = INDEX_KEY;
 
-  private constructor(logger: ILogger) {
-    this.logger = logger;
-  }
+  private constructor(
+    private logger: ILogger,
+    private keyManager: IKeyManager,
+    private cryptoService: CryptoService
+  ) {}
 
-  /**
-   * Gets the single instance of the SecureStorageService.
-   * @returns The singleton instance.
-   */
-  public static getInstance(): SecureStorageService {
+  public static async getInstance(): Promise<SecureStorageService> {
     if (!SecureStorageService.instance) {
-      // In a real app, you might inject a different logger based on the environment.
-      SecureStorageService.instance = new SecureStorageService(new ConsoleLogger('info'));
+      const logger = new ConsoleLogger('info');
+      const keyManager = new KeychainKeyManager(logger);
+      const cryptoService = new CryptoService(logger);
+      const svc = new SecureStorageService(logger, keyManager, cryptoService);
+      svc.encryptionKey = await keyManager.getKey();
+      SecureStorageService.instance = svc;
     }
     return SecureStorageService.instance;
   }
 
-  /**
-   * Securely saves a key-value pair.
-   * @param key The key to associate with the value.
-   * @param value The value to store.
-   * @throws {StorageError} If the save operation fails.
-   */
-  async save(key: string, value: string): Promise<void> {
+  private async getStoredKeys(): Promise<Set<string>> {
+    const raw = await EncryptedStorage.getItem(this.indexKey);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  }
+
+  private async saveStoredKeys(keys: Set<string>): Promise<void> {
+    await EncryptedStorage.setItem(this.indexKey, JSON.stringify([...keys]));
+  }
+
+  public async save(key: string, value: string): Promise<void> {
+    if (!value) throw new StorageError('No se puede guardar valor vacío');
     try {
-      await AsyncStorage.setItem(key, value);
-      this.logger.debug(`[SecureStorage] Saved value for key: ${key}`);
-    } catch (error) {
-      this.logger.error(`[SecureStorage] Failed to save value for key: ${key}`, error as Error);
-      throw new StorageError(`Could not save data for key: ${key}`);
+      const encrypted = await this.cryptoService.encrypt(
+        value,
+        this.encryptionKey
+      );
+      await EncryptedStorage.setItem(key, encrypted);
+      const keys = await this.getStoredKeys();
+      keys.add(key);
+      await this.saveStoredKeys(keys);
+      this.logger.debug(`Guardado y registrado key: ${key}`);
+    } catch (e) {
+      this.logger.error(`Error guardando key ${key}`, e as Error);
+      throw new StorageError(`No se pudo guardar datos para ${key}`);
     }
   }
 
-  /**
-   * Retrieves a value by its key.
-   * @param key The key of the value to retrieve.
-   * @returns The stored value, or null if not found.
-   * @throws {StorageError} If the retrieval operation fails.
-   */
-  async getValueFor(key: string): Promise<string | null> {
+  public async getValueFor(key: string): Promise<string | null> {
     try {
-      const value = await AsyncStorage.getItem(key);
-      this.logger.debug(`[AsyncStorage] ${value ? 'Retrieved' : 'Did not find'} value for key: ${key}`);
-      return value;
-    } catch (error) {
-      this.logger.error(`[AsyncStorage] Failed to get value for key: ${key}`, error as Error);
-      throw new StorageError(`Could not retrieve data for key: ${key}`);
+      const raw = await EncryptedStorage.getItem(key);
+      if (!raw) return null;
+      const decrypted = await this.cryptoService.decrypt(
+        raw,
+        this.encryptionKey
+      );
+      this.logger.debug(`Obtenido y desencriptado key: ${key}`);
+      return decrypted;
+    } catch (e) {
+      this.logger.error(`Error leyendo key ${key}`, e as Error);
+      this.logger.warn('Falló desencriptado, rotando keys');
+      await this.rotateEncryptionKeys();
+      throw new StorageError(`No se pudo leer datos para ${key}`);
     }
   }
 
-  /**
-   * Deletes a key-value pair.
-   * @param key The key of the value to delete.
-   * @throws {StorageError} If the delete operation fails.
-   */
-  async deleteValueFor(key: string): Promise<void> {
+  public async deleteValueFor(key: string): Promise<void> {
     try {
-      await AsyncStorage.removeItem(key);
-      this.logger.debug(`[AsyncStorage] Deleted value for key: ${key}`);
-    } catch (error) {
-      this.logger.error(`[AsyncStorage] Failed to delete value for key: ${key}`, error as Error);
-      throw new StorageError(`Could not delete data for key: ${key}`);
+      await EncryptedStorage.removeItem(key);
+      const keys = await this.getStoredKeys();
+      keys.delete(key);
+      await this.saveStoredKeys(keys);
+      this.logger.debug(`Eliminada key: ${key}`);
+    } catch (e) {
+      this.logger.error(`Error eliminando key ${key}`, e as Error);
+      throw new StorageError(`No se pudo eliminar datos para ${key}`);
+    }
+  }
+
+  public async clear(): Promise<void> {
+    try {
+      await EncryptedStorage.clear();
+      await EncryptedStorage.removeItem(this.indexKey);
+      this.logger.debug('Se borró todo el storage seguro');
+    } catch (e) {
+      this.logger.error('Error limpiando storage', e as Error);
+      throw new StorageError('No se pudo limpiar el storage');
+    }
+  }
+
+  public async rotateEncryptionKeys(): Promise<void> {
+    try {
+      const keys = await this.getStoredKeys();
+      const backup: Record<string, string> = {};
+      for (const k of keys) {
+        backup[k] = (await EncryptedStorage.getItem(k)) || '';
+      }
+
+      this.encryptionKey = await this.keyManager.rotateKey();
+
+      for (const [k, raw] of Object.entries(backup)) {
+        try {
+          const plain = await this.cryptoService.decrypt(
+            raw,
+            this.encryptionKey
+          );
+          const reenc = await this.cryptoService.encrypt(
+            plain,
+            this.encryptionKey
+          );
+          await EncryptedStorage.setItem(k, reenc);
+        } catch {
+          this.logger.warn(`No se pudo re‑encriptar ${k}, eliminando`);
+          await EncryptedStorage.removeItem(k);
+          keys.delete(k);
+        }
+      }
+      await this.saveStoredKeys(keys);
+      this.logger.info('Rotación de keys completada');
+    } catch (e) {
+      this.logger.error('Error rotando keys', e as Error);
+      throw new StorageError('Falló rotación de claves');
     }
   }
 }
 
-/**
- * The singleton instance of the SecureStorageService.
- */
-export const secureStorageService = SecureStorageService.getInstance();
+let instance: SecureStorageService | null = null;
+
+export const getSecureStorageService =
+  async (): Promise<SecureStorageService> => {
+    if (!instance) {
+      instance = await SecureStorageService.getInstance();
+    }
+    return instance;
+  };

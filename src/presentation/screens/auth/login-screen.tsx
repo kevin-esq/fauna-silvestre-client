@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Switch,
-} from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, Switch } from 'react-native';
 
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import useDoubleBackExit from '../../hooks/use-double-back-exit.hook';
 import { useLoginForm } from '../../hooks/use-login-form.hook';
-import { useTheme, themeVariables } from '../../contexts/theme-context';
+import { useTheme, themeVariables } from '../../contexts/theme.context';
 
 import AuthContainer from '../../components/auth/auth-container.component';
 import AuthTextInput from '../../components/auth/auth-text-input.component';
@@ -30,17 +25,21 @@ const LoginScreen = () => {
     password,
     setPassword,
     error,
-    handleLogin,
+    rememberMe,
+    setRememberMe,
+    handleLogin
   } = useLoginForm();
 
   const { theme } = useTheme();
   const variables = themeVariables(theme);
   const styles = createStyles(variables);
 
-  const [rememberMe, setRememberMe] = useState(false);
-
   return (
-    <AuthContainer title="¡Hola! 👋" subtitle="Inicia sesión para continuar" variables={variables}>
+    <AuthContainer
+      title="¡Hola! 👋"
+      subtitle="Inicia sesión para continuar"
+      variables={variables}
+    >
       <ErrorMessage message={error} variables={variables} />
 
       <AuthTextInput
@@ -56,8 +55,8 @@ const LoginScreen = () => {
           styles.input,
           {
             color: variables['--text'],
-            borderColor: variables['--border'],
-          },
+            borderColor: variables['--border']
+          }
         ]}
       />
 
@@ -73,8 +72,8 @@ const LoginScreen = () => {
           styles.input,
           {
             color: variables['--text'],
-            borderColor: variables['--border'],
-          },
+            borderColor: variables['--border']
+          }
         ]}
       />
 
@@ -83,8 +82,13 @@ const LoginScreen = () => {
         <Switch
           value={rememberMe}
           onValueChange={setRememberMe}
-          trackColor={{ false: variables['--border'], true: variables['--primary-light'] }}
-          thumbColor={rememberMe ? variables['--primary'] : variables['--text-secondary']}
+          trackColor={{
+            false: variables['--border'],
+            true: variables['--primary-light']
+          }}
+          thumbColor={
+            rememberMe ? variables['--primary'] : variables['--text-secondary']
+          }
         />
       </View>
 
@@ -100,9 +104,7 @@ const LoginScreen = () => {
         onPress={() => navigate('ForgotPassword')}
         style={styles.forgotPassword}
       >
-        <Text style={styles.forgotPasswordText}>
-          ¿Olvidaste tu contraseña?
-        </Text>
+        <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
       </TouchableOpacity>
 
       <Text style={styles.orText}>¿No tienes cuenta?</Text>

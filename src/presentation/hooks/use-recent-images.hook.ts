@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import CameraRoll from '@react-native-camera-roll/camera-roll';
+import {
+  CameraRoll,
+  PhotoIdentifier
+} from '@react-native-camera-roll/camera-roll';
 import { Platform } from 'react-native';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 
@@ -22,11 +25,13 @@ export function useRecentImages() {
       }
 
       try {
-        const result = await CameraRoll.CameraRoll.getPhotos({
+        const result = await CameraRoll.getPhotos({
           first: 20,
-          assetType: 'Photos',
+          assetType: 'Photos'
         });
-        setImages(result.edges.map(edge => edge.node.image.uri));
+        setImages(
+          result.edges.map((edge: PhotoIdentifier) => edge.node.image.uri)
+        );
       } catch (error) {
         console.error('Error cargando imágenes recientes:', error);
       }

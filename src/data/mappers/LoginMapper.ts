@@ -1,6 +1,6 @@
-import { LoginResponseModel } from "../models/LoginResponse";
+import { LoginResponseModel } from '../models/LoginResponse';
 
 export const mapLoginModelToEntity = (data: LoginResponseModel): string => {
-    const {token} = data;
-    return token;
+  const { token } = data;
+  return token;
 };

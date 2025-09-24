@@ -1,6 +1,6 @@
 import { useReducer, useCallback, useRef } from 'react';
-import { useAuth } from '../contexts/auth-context';
-import { useLoading } from '../contexts/loading-context';
+import { useAuth } from '../contexts/auth.context';
+import { useLoading } from '../contexts/loading.context';
 import { useNavigationActions } from '../navigation/navigation-provider';
 import { RegisterState } from '../../domain/types/register-state';
 import { UserData } from '../../domain/models/auth.models';
@@ -21,10 +21,13 @@ const initialState: RegisterState = {
   password: '',
   confirmPassword: '',
   error: '',
-  backPressedOnce: false,
+  backPressedOnce: false
 };
 
-function reducer(state: RegisterState, action: Partial<RegisterState>): RegisterState {
+function reducer(
+  state: RegisterState,
+  action: Partial<RegisterState>
+): RegisterState {
   return { ...state, ...action };
 }
 
@@ -35,14 +38,24 @@ export const useRegisterForm = () => {
   const { navigate } = useNavigationActions();
   const isSubmitting = useRef(false);
 
-    const onChange = useCallback((key: keyof RegisterState) => (value: string | number) => {
-        dispatch({ [key]: String(value) });
-  }, []);
+  const onChange = useCallback(
+    (key: keyof RegisterState) => (value: string | number) => {
+      dispatch({ [key]: String(value) });
+    },
+    []
+  );
 
   const createUserData = (sanitized: RegisterState): UserData | null => {
     const {
-      username, name, lastName, location, alternativeLocation,
-      gender, age, email, password,
+      username,
+      name,
+      lastName,
+      location,
+      alternativeLocation,
+      gender,
+      age,
+      email,
+      password
     } = sanitized;
 
     const ageNumber = parseInt(age, 10);
@@ -51,7 +64,9 @@ export const useRegisterForm = () => {
       return null;
     }
 
-    const genderIndex = genderOptions.findIndex((option) => option.value === gender);
+    const genderIndex = genderOptions.findIndex(
+      option => option.value === gender
+    );
 
     return {
       userName: username,
@@ -61,7 +76,7 @@ export const useRegisterForm = () => {
       gender: genderIndex + 1,
       age: ageNumber,
       email,
-      password,
+      password
     };
   };
 
@@ -93,8 +108,12 @@ export const useRegisterForm = () => {
     try {
       await auth.registerUser(userData);
       navigate('Login');
-    } catch (error) {
-      dispatch({ error: 'Error al registrarse. Inténtalo de nuevo.' });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        dispatch({ error: error.message });
+      } else {
+        dispatch({ error: 'Error al registrarse. Inténtalo de nuevo.' });
+      }
     } finally {
       isSubmitting.current = false;
       hideLoading();
@@ -104,6 +123,6 @@ export const useRegisterForm = () => {
   return {
     state,
     onChange,
-    handleRegister,
+    handleRegister
   };
 };

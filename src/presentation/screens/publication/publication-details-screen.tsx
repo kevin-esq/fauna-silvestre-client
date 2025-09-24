@@ -1,319 +1,410 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
-  Image,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Modal,
-  Dimensions,
-} from "react-native";
+  Dimensions
+} from 'react-native';
+import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { useNavigationActions } from "../../navigation/navigation-provider";
-import { useTheme } from "../../contexts/theme-context";
-import type { PublicationsModel } from '../../../domain/models/publication.models';
-import LocationMap from "../../components/ui/location-map.component";
+import { useNavigationActions } from '../../navigation/navigation-provider';
+import { themeVariables, useTheme } from '../../contexts/theme.context';
+import LocationMap from '../../components/ui/location-map.component';
+import { createStyles } from './publication-details-screen.styles';
+import { useAuth } from '../../contexts/auth.context';
+import type {
+  PublicationModelResponse,
+  PublicationStatus
+} from '../../../domain/models/publication.models';
+import { BackHandler } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import ImageViewer from 'react-native-image-zoom-viewer';
+import { useRoute } from '@react-navigation/native';
+import PublicationImage from '@/presentation/components/publication/publication-image.component';
 
-const { width, height } = Dimensions.get("window");
-
-interface PublicationDetailsScreenProps {
-  route: {
-    params: {
-      publication: PublicationsModel;
-    };
-  };
-}
+const { width, height } = Dimensions.get('window');
 
 const STATUS_CONFIG = {
   rejected: {
     icon: 'times-circle',
     color: '#F44336',
-    label: 'Rechazada',
+    label: 'Rechazada'
   },
   pending: {
     icon: 'hourglass-half',
     color: '#FFC107',
-    label: 'Pendiente',
+    label: 'Pendiente'
   },
   accepted: {
     icon: 'check-circle',
     color: '#4CAF50',
-    label: 'Publicada',
-  },
+    label: 'Publicada'
+  }
 } as const;
-const PublicationDetailsScreen = ({ route }: PublicationDetailsScreenProps) => {
+
+const formatDate = (dateString?: string) => {
+  if (!dateString) return 'Fecha no disponible';
+
+  return new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(dateString));
+};
+
+export default function PublicationDetailsScreen() {
+  const route = useRoute();
+  const { publication, status, reason } = route.params as {
+    publication: PublicationModelResponse;
+    status: PublicationStatus;
+    reason?: string | undefined;
+  };
   const { goBack } = useNavigationActions();
   const { theme } = useTheme();
-  const { publication } = route.params;
+  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
-  const statusConfig = STATUS_CONFIG[publication.status] || STATUS_CONFIG.pending;
+  const variables = useMemo(() => themeVariables(theme), [theme]);
+  const styles = useMemo(
+    () => createStyles(variables, width, height, insets),
+    [variables, insets]
+  );
+
+  const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
   const [isImageExpanded, setIsImageExpanded] = useState(false);
 
-  const toggleImageExpand = useCallback(() => {
-    setIsImageExpanded(!isImageExpanded);
-  }, [isImageExpanded]);
+  const toggleImageExpand = useCallback(() => setIsImageExpanded(p => !p), []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          goBack();
+          return true;
+        }
+      );
+
+      return () => {
+        backHandler.remove();
+      };
+    }, [goBack])
+  );
+
+  const handleModify = useCallback((section: string) => {
+    console.log(`Modificar sección: ${section}`);
+  }, []);
 
   return (
-      <ScrollView
-          style={[styles.container, { backgroundColor: theme.colors.background }]}
-          contentContainerStyle={styles.contentContainer}
-      >
-        <View style={[
-          styles.header,
-          { backgroundColor: statusConfig.color }
-        ]}>
-          <Text style={[styles.title, { color: theme.colors.textOnPrimary }]}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      accessibilityLabel="Detalles de publicación"
+    >
+      {/* Header */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          onPress={() => goBack()}
+          style={styles.backButton}
+          accessibilityLabel="Volver"
+          accessibilityRole="button"
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+        >
+          <Ionicons name="arrow-back" size={22} color="white" />
+          <Text style={styles.backButtonText}>Volver</Text>
+        </TouchableOpacity>
+
+        <View style={styles.headerContent}>
+          <FontAwesome
+            name={statusConfig.icon}
+            size={20}
+            color={statusConfig.color}
+            accessibilityLabel={`Estado: ${statusConfig.label}`}
+          />
+          <Text style={styles.headerTitle} accessibilityRole="header">
             {publication.commonNoun}
           </Text>
         </View>
+      </View>
 
-        {publication.img ? (
-            <ImagePreview
-            uri={publication.img}
-            isExpanded={isImageExpanded}
-            onToggleExpand={toggleImageExpand}
+      {/* Imagen */}
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={toggleImageExpand}
+        style={styles.imageCard}
+        accessibilityLabel={
+          publication.img
+            ? 'Ver imagen en tamaño completo'
+            : 'Imagen no disponible'
+        }
+      >
+        <PublicationImage
+          uri={publication.img}
+          commonNoun={publication.commonNoun}
+          viewMode="presentation"
+          style={styles.image}
+        />
+        {publication.img && (
+          <View style={styles.zoomIcon}>
+            <MaterialIcons name="zoom-in" size={24} color="white" />
+          </View>
+        )}
+      </TouchableOpacity>
+
+      <Modal visible={isImageExpanded} transparent={true} animationType="fade">
+        <ImageViewer
+          imageUrls={[
+            {
+              url: publication.img || ''
+            }
+          ]}
+          enableImageZoom={true}
+          enableSwipeDown={true}
+          onSwipeDown={toggleImageExpand}
+          onCancel={toggleImageExpand}
+          renderHeader={() => (
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={toggleImageExpand}
+              accessibilityLabel="Cerrar vista de imagen"
+            >
+              <Ionicons name="close" size={30} color="#fff" />
+            </TouchableOpacity>
+          )}
+          backgroundColor="rgba(0,0,0,0.9)"
+        />
+      </Modal>
+
+      {/* Componentes de información */}
+      <InfoCard
+        title="Descripción"
+        content={publication.description || 'Sin descripción disponible'}
+        icon={
+          <MaterialIcons
+            name="description"
+            size={16}
+            color={theme.colors.primary}
           />
-        ) : (
-            <View style={styles.imagePlaceholder}>
-              <FontAwesome name="image" size={50} color={theme.colors.placeholder} />
-              <Text style={{ color: theme.colors.placeholder }}>
-                Imagen no disponible
-              </Text>
-            </View>
-        )}
+        }
+        isAdmin={user?.role === 'Admin'}
+        onModify={() => handleModify('Descripción')}
+        insets={insets}
+      />
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Descripción
-          </Text>
-          <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-            {publication.description}
-          </Text>
-        </View>
+      <InfoCard
+        title="Nombre Común"
+        content={publication.commonNoun || 'No especificado'}
+        icon={<FontAwesome name="tag" size={16} color={theme.colors.primary} />}
+        isAdmin={user?.role === 'Admin'}
+        onModify={() => handleModify('Nombre Común')}
+        insets={insets}
+      />
 
-        {publication.location && (
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                Ubicación
-              </Text>
-              <View style={styles.locationRow}>
-                <FontAwesome
-                    name="map-marker"
-                    size={16}
-                    color={theme.colors.primary}
-                />
-                <Text style={[styles.locationText, { color: theme.colors.text }]}>
-                  {publication.location}
-                </Text>
-              </View>
-            </View>
-        )}
+      <InfoCard
+        title="Fecha de creación"
+        content={formatDate(publication.createdDate)}
+        icon={
+          <FontAwesome name="calendar" size={16} color={theme.colors.primary} />
+        }
+        isAdmin={user?.role === 'Admin'}
+        insets={insets}
+      />
 
-        <View style={[
-          styles.statusContainer,
-          { backgroundColor: statusConfig.color }
-        ]}>
+      <InfoCard
+        title="Estado"
+        content={statusConfig.label}
+        icon={
           <FontAwesome
-              name={statusConfig.icon}
-              size={16}
-              color={theme.colors.textOnPrimary}
+            name={statusConfig.icon}
+            size={16}
+            color={statusConfig.color}
           />
-          <Text style={[styles.status, { color: theme.colors.textOnPrimary }]}>
-            {` ${statusConfig.label}`}
-          </Text>
+        }
+        titleColor={statusConfig.color}
+        borderColor={statusConfig.color}
+        isAdmin={user?.role === 'Admin'}
+        onModify={() => handleModify('Estado')}
+        insets={insets}
+      />
+
+      <InfoCard
+        title="Estado del Animal"
+        content={publication.animalState === 'ALIVE' ? 'Vivo' : 'Muerto'}
+        icon={
+          publication.animalState === 'ALIVE' ? (
+            <MaterialIcons name="pets" size={16} color={theme.colors.success} />
+          ) : (
+            <FontAwesome name="ambulance" size={16} color="#D32F2F" />
+          )
+        }
+        titleColor={
+          publication.animalState === 'ALIVE' ? theme.colors.success : '#D32F2F'
+        }
+        borderColor={
+          publication.animalState === 'ALIVE' ? theme.colors.success : '#D32F2F'
+        }
+        isAdmin={user?.role === 'Admin'}
+        onModify={() => handleModify('Estado del Animal')}
+        insets={insets}
+      />
+
+      {/* Usuario (solo admin) */}
+      {user?.role === 'Admin' && publication.author && (
+        <InfoCard
+          title="Usuario"
+          content={publication.author}
+          icon={
+            <FontAwesome name="user" size={16} color={theme.colors.primary} />
+          }
+          borderColor={statusConfig.color}
+          isAdmin={user?.role === 'Admin'}
+          insets={insets}
+        />
+      )}
+
+      {/* Ubicación textual */}
+      {publication.location && user?.role === 'Admin' && (
+        <InfoCard
+          title="Ubicación"
+          icon={
+            <FontAwesome
+              name="map-marker"
+              size={16}
+              color={theme.colors.primary}
+            />
+          }
+          content={publication.location}
+          isAdmin={user?.role === 'Admin'}
+          insets={insets}
+        />
+      )}
+
+      {/* Mapa */}
+      {publication.location ? (
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.titleContainer}>
+              <FontAwesome name="map" size={16} color={theme.colors.primary} />
+              <Text style={styles.cardTitle}>Ubicación en Mapa</Text>
+            </View>
+          </View>
+          <LocationMap location={publication.location} />
         </View>
+      ) : (
+        <InfoCard
+          title="Ubicación"
+          content="Ubicación no disponible"
+          icon={
+            <FontAwesome
+              name="map-marker"
+              size={16}
+              color={theme.colors.placeholder}
+            />
+          }
+          isAdmin={user?.role === 'Admin'}
+          insets={insets}
+        />
+      )}
 
-        {publication.status === "rejected" && "publication.reason" && (
-            <View style={[
-              styles.rejectionContainer,
-              { backgroundColor: theme.colors.error }
-            ]}>
-              <Text style={[
-                styles.rejectionTitle,
-                { color: theme.colors.error }
-              ]}>
-                Motivo de rechazo:
-              </Text>
-              <Text style={[
-                styles.rejectionText,
-                { color: theme.colors.error }
-              ]}>
-                {"publication.reason"}
-              </Text>
-            </View>
-        )}
-
-        {publication.location && (
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                Ubicación en mapa
-              </Text>
-              <LocationMap
-                  location={publication.location}
+      {/* Motivo de rechazo */}
+      {status === 'rejected' && reason && (
+        <View style={[styles.card, styles.rejectionCard]}>
+          <View style={styles.cardHeader}>
+            <View style={styles.titleContainer}>
+              <FontAwesome
+                name="exclamation-triangle"
+                size={16}
+                color="#D32F2F"
               />
+              <Text style={styles.rejectionTitle}>Motivo de rechazo</Text>
             </View>
-        )}
-
-        <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.colors.primary }]}
-            onPress={goBack}
-            activeOpacity={0.8}
-        >
-          <Text style={[styles.buttonText, { color: theme.colors.textOnPrimary }]}>
-            Volver
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+          </View>
+          <Text style={styles.cardText}>{reason}</Text>
+        </View>
+      )}
+    </ScrollView>
   );
-};
-
-interface ImagePreviewProps {
-  uri: string;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
 }
 
-const ImagePreview: React.FC<ImagePreviewProps> = ({ uri, isExpanded, onToggleExpand }) => (
-  <>
-    <TouchableOpacity onPress={onToggleExpand} activeOpacity={0.8}>
-      <Image source={{ uri }} style={styles.image} resizeMode="cover" />
-      <View style={styles.expandIconContainer}>
-        <MaterialIcons name="zoom-in" size={24} color="white" />
+type InfoCardProps = {
+  title: string;
+  content: string;
+  icon?: React.ReactNode;
+  isAdmin?: boolean;
+  titleColor?: string;
+  borderColor?: string;
+  onModify?: () => void;
+  insets: EdgeInsets;
+};
+
+const InfoCard = React.memo(
+  ({
+    title,
+    content,
+    icon,
+    isAdmin = false,
+    titleColor,
+    borderColor,
+    onModify,
+    insets
+  }: InfoCardProps) => {
+    const { theme } = useTheme();
+    const styles = useMemo(
+      () => createStyles(themeVariables(theme), width, height, insets),
+      [theme, insets]
+    );
+
+    return (
+      <View
+        style={[
+          styles.card,
+          borderColor
+            ? {
+                borderLeftColor: borderColor,
+                borderLeftWidth: 5
+              }
+            : {}
+        ]}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.titleContainer}>
+            {icon}
+            <Text
+              style={[
+                styles.cardTitle,
+                titleColor ? { color: titleColor } : {}
+              ]}
+              accessibilityRole="header"
+            >
+              {title}
+            </Text>
+          </View>
+
+          {isAdmin && onModify && (
+            <TouchableOpacity
+              onPress={onModify}
+              accessibilityLabel={`Modificar ${title.toLowerCase()}`}
+              accessibilityRole="button"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <MaterialIcons
+                name="edit"
+                size={20}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <Text style={styles.cardText}>{content}</Text>
       </View>
-    </TouchableOpacity>
-    <Modal visible={isExpanded} transparent>
-      <View style={styles.modalContainer}>
-        <TouchableOpacity
-          style={styles.modalCloseButton}
-          onPress={onToggleExpand}
-          activeOpacity={0.7}>
-          <Ionicons name="close" size={30} color="white" />
-        </TouchableOpacity>
-        <Image source={{ uri }} style={styles.expandedImage} resizeMode="contain" />
-      </View>
-    </Modal>
-  </>
+    );
+  }
 );
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  expandIconContainer: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 6,
-    borderRadius: 20,
-  },
-  contentContainer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalCloseButton: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 10,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    borderRadius: 20,
-    padding: 8,
-  },
-  expandedImage: {
-    width: width,
-    height: height * 0.8,
-  },
-  header: {
-    marginBottom: 20,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-  image: {
-    width: "100%",
-    height: 250,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  imagePlaceholder: {
-    width: "100%",
-    height: 250,
-    borderRadius: 10,
-    marginBottom: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  locationText: {
-    marginLeft: 8,
-    fontSize: 16,
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  status: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginLeft: 8,
-  },
-  rejectionContainer: {
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  rejectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  rejectionText: {
-    fontSize: 16,
-  },
-  button: {
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-});
-
-export default PublicationDetailsScreen;
