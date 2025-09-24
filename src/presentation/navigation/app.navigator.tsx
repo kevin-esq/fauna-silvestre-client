@@ -1,4 +1,3 @@
-// src/presentation/navigation/app.navigator.tsx
 import React, { useCallback, useEffect, useMemo } from 'react';
 import {
   createMaterialTopTabNavigator,
@@ -8,15 +7,11 @@ import {
 import { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs';
 import { Alert } from 'react-native';
 
-// Contexts
 import { useAuth } from '../contexts/auth.context';
 import { Theme, themeVariables, useTheme } from '../contexts/theme.context';
 import { useApiStatus } from '../contexts/api-status.context';
-
-// Components
 import TopTabsNavigationBar from '../components/ui/top-tabs-navigation-bar.component';
 
-// Screens
 import LoginScreen from '../screens/auth/login-screen';
 import RegisterScreen from '../screens/auth/register-screen';
 import ForgotPasswordScreen from '../screens/auth/forgot-password-screen';
@@ -26,13 +21,14 @@ import AnimalDetailsScreen from '../screens/catalog/animal-details-screen';
 import PublicationFormScreen from '../screens/publication/publication-form-screen';
 import { CameraGalleryScreen } from '../screens/media/camera-gallery-screen';
 import ImagePreviewScreen from '../screens/media/image-preview-screen';
+import AnimalFormScreen from '../screens/admin/animal-form-screen';
+import ImageEditorScreen from '../screens/admin/image-editor-screen';
+import CatalogAnimalsScreen from '../screens/catalog/catalog-animals-screen';
+import DownloadedFilesScreen from '../screens/media/downloaded-files-screen';
 
-// Navigation
 import type { RootStackParamList } from './navigation.types';
 import { createRootStack } from './create-root-stack';
 import { adminTabs, userTabs } from './tabs-config';
-
-// Types
 export type ValidRole = 'Admin' | 'User';
 
 interface TabConfig {
@@ -45,12 +41,10 @@ interface TabConfig {
   tabBarIcon?: MaterialTopTabNavigationOptions['tabBarIcon'];
 }
 
-// Constants
 const VALID_ROLES: readonly ValidRole[] = ['Admin', 'User'] as const;
 
 const TopTabs = createMaterialTopTabNavigator<RootStackParamList>();
 
-// Pure functions
 const createScreenOptions = (
   variables: Record<string, string>
 ): MaterialTopTabNavigationOptions => ({
@@ -72,7 +66,6 @@ const isValidRole = (role: string | undefined): role is ValidRole => {
   return role !== undefined && VALID_ROLES.includes(role as ValidRole);
 };
 
-// Custom hooks
 const useRoleValidation = () => {
   const { user, isAuthenticated, initializing, signOut } = useAuth();
 
@@ -181,7 +174,6 @@ export const UserTabs = React.memo(() => {
 
 UserTabs.displayName = 'UserTabs';
 
-// Stack configurations
 const createStackConfigurations = () => {
   const publicationFormStack = createRootStack<RootStackParamList>([
     { name: 'CameraGallery', component: CameraGalleryScreen },
@@ -193,14 +185,19 @@ const createStackConfigurations = () => {
     { name: 'HomeTabs', component: AdminTabs },
     { name: 'AddPublication', component: publicationFormStack },
     { name: 'PublicationDetails', component: PublicationDetailsScreen },
-    { name: 'AnimalDetails', component: AnimalDetailsScreen }
+    { name: 'AnimalDetails', component: AnimalDetailsScreen },
+    { name: 'AnimalForm', component: AnimalFormScreen },
+    { name: 'ImageEditor', component: ImageEditorScreen },
+    { name: 'DownloadedFiles', component: DownloadedFilesScreen }
   ]);
 
   const userRootStack = createRootStack<RootStackParamList>([
     { name: 'HomeTabs', component: UserTabs },
     { name: 'AddPublication', component: publicationFormStack },
     { name: 'PublicationDetails', component: PublicationDetailsScreen },
-    { name: 'AnimalDetails', component: AnimalDetailsScreen }
+    { name: 'AnimalDetails', component: AnimalDetailsScreen },
+    { name: 'Catalog', component: CatalogAnimalsScreen },
+    { name: 'DownloadedFiles', component: DownloadedFilesScreen }
   ]);
 
   const authStack = createRootStack<RootStackParamList>([
@@ -217,7 +214,6 @@ const createStackConfigurations = () => {
   };
 };
 
-// Error Boundary Component
 interface ErrorBoundaryState {
   hasError: boolean;
   error?: Error;
@@ -249,7 +245,6 @@ class NavigationErrorBoundary extends React.Component<
   }
 }
 
-// Main Navigator Component
 const AppNavigator: React.FC = () => {
   const navigationState = useNavigationState();
 

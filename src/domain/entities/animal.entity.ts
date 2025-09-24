@@ -11,7 +11,6 @@ export default class Animal {
   habits: string;
   image: string;
   map: [
-    // <-- esta parte debe existir
     {
       cords: [
         { latitude: 19.4326; longitude: -99.1332 },
@@ -33,7 +32,6 @@ export default class Animal {
     habits: string,
     image: string,
     map: [
-      // <-- esta parte debe existir
       {
         cords: [
           { latitude: 19.4326; longitude: -99.1332 },

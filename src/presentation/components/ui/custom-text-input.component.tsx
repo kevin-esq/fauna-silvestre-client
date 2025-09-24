@@ -1,4 +1,3 @@
-// components/CustomInput.tsx
 import React, { useState, useCallback, FC, useMemo } from 'react';
 import {
   View,

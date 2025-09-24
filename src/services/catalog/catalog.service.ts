@@ -3,33 +3,69 @@ import Animal from '../../domain/entities/animal.entity';
 import { ApiService } from '../../services/http/api.service';
 import { CatalogRepository } from '../../data/repositories/catalog.repository';
 import { ConsoleLogger } from '../logging/console-logger';
-import { LocationResponse } from '../../domain/models/animal.models';
+import {
+  CatalogModelResponse,
+  LocationResponse,
+  AnimalModelResponse,
+  CommonNounResponse,
+  CreateAnimalRequest,
+  UpdateAnimalRequest,
+  UpdateAnimalImageRequest,
+  AnimalCrudResponse,
+  DeleteAnimalResponse
+} from '../../domain/models/animal.models';
 
 class CatalogService {
   constructor(private catalogRepository: ICatalogRepository) {}
 
-  async getAllCatalogs(page: number, size: number): Promise<Animal[]> {
-    return this.catalogRepository.getAllCatalogs(page, size);
+  async getAllCatalogs(
+    page: number,
+    size: number,
+    signal?: AbortSignal
+  ): Promise<CatalogModelResponse> {
+    return this.catalogRepository.getAllCatalogs(page, size, signal);
   }
 
   async getCatalogByCommonName(commonName: string): Promise<Animal> {
     return this.catalogRepository.getCatalogByCommonName(commonName);
   }
 
-  async createCatalog(animal: Animal): Promise<Animal> {
-    return this.catalogRepository.createCatalog(animal);
+  async getCatalogById(catalogId: string): Promise<AnimalModelResponse> {
+    return this.catalogRepository.getCatalogById(catalogId);
   }
 
-  async updateCatalog(id: string, animal: Animal): Promise<Animal> {
-    return this.catalogRepository.updateCatalog(id, animal);
+  async createCatalog(
+    createAnimalRequest: CreateAnimalRequest
+  ): Promise<AnimalCrudResponse> {
+    return this.catalogRepository.createCatalog(createAnimalRequest);
   }
 
-  async deleteCatalog(id: string): Promise<void> {
+  async updateCatalog(
+    updateAnimalRequest: UpdateAnimalRequest
+  ): Promise<AnimalCrudResponse> {
+    return this.catalogRepository.updateCatalog(updateAnimalRequest);
+  }
+
+  async updateCatalogImage(
+    updateAnimalImageRequest: UpdateAnimalImageRequest
+  ): Promise<AnimalCrudResponse> {
+    return this.catalogRepository.updateCatalogImage(updateAnimalImageRequest);
+  }
+
+  async deleteCatalog(id: string): Promise<DeleteAnimalResponse> {
     return this.catalogRepository.deleteCatalog(id);
   }
 
   async getLocations(catalogId: string): Promise<LocationResponse> {
     return this.catalogRepository.getLocations(catalogId);
+  }
+
+  async downloadAnimalSheet(catalogId: string): Promise<Blob> {
+    return this.catalogRepository.downloadAnimalSheet(catalogId);
+  }
+
+  async getCommonNouns(): Promise<CommonNounResponse[]> {
+    return this.catalogRepository.getCommonNouns();
   }
 }
 

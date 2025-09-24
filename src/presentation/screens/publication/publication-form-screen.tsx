@@ -16,7 +16,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  ActivityIndicator
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -27,19 +28,15 @@ import { useNavigationActions } from '../../navigation/navigation-provider';
 import { publicationService } from '../../../services/publication/publication.service';
 import { useTheme, themeVariables } from '../../contexts/theme.context';
 import { createStyles } from './publication-form-screen.styles';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets
+} from 'react-native-safe-area-context';
 import { PublicationData } from '../../../domain/models/publication.models';
+import { useCommonNouns } from '../../hooks/use-common-nouns';
+import { CommonNounResponse } from '../../../domain/models/animal.models';
 
 const { width, height } = Dimensions.get('window');
-
-const animalOptions = [
-  'Jaguar',
-  'Mono aullador',
-  'Guacamaya',
-  'Puma',
-  'Tucán'
-] as const;
-type AnimalType = (typeof animalOptions)[number];
 
 enum AnimalState {
   Alive = 1,
@@ -61,19 +58,28 @@ const PublicationFormScreen: React.FC = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
+  const insets = useSafeAreaInsets();
   const styles = useMemo(
-    () => createStyles(variables, width, height - 40),
-    [variables]
+    () => createStyles(variables, width, height, insets),
+    [variables, insets]
   );
+
+  // Hook para cargar nombres comunes desde el API
+  const {
+    commonNouns,
+    isLoading: isLoadingAnimals,
+    error: animalsError,
+    refetch
+  } = useCommonNouns();
 
   const [formState, setFormState] = useState<{
     description: string;
-    animal: AnimalType;
+    selectedAnimal: CommonNounResponse | null;
     animalState: AnimalState;
     isImageExpanded: boolean;
   }>({
     description: '',
-    animal: animalOptions[0],
+    selectedAnimal: null,
     animalState: AnimalState.Alive,
     isImageExpanded: false
   });
@@ -89,14 +95,14 @@ const PublicationFormScreen: React.FC = () => {
   }, [fadeAnim]);
 
   const handleSubmit = useCallback(async () => {
-    const { description, animal, animalState } = formState;
+    const { description, selectedAnimal, animalState } = formState;
 
     if (!imageUri) {
       Alert.alert('Imagen requerida', 'Por favor, selecciona una imagen.');
       return;
     }
 
-    if (!animal) {
+    if (!selectedAnimal) {
       Alert.alert('Animal requerido', 'Por favor, selecciona un animal.');
       return;
     }
@@ -114,8 +120,8 @@ const PublicationFormScreen: React.FC = () => {
       const base64Image = await imageUrlToBase64(imageUri);
       const data: PublicationData = {
         description: description.trim(),
-        commonNoun: animal,
-        catalogId: animalOptions.indexOf(animal) + 1,
+        commonNoun: selectedAnimal.commonNoun,
+        catalogId: selectedAnimal.catalogId,
         animalState: animalState,
         location: `${location?.latitude},${location?.longitude}`,
         img: base64Image
@@ -162,9 +168,12 @@ const PublicationFormScreen: React.FC = () => {
     setFormState(prev => ({ ...prev, isImageExpanded: !prev.isImageExpanded }));
   }, []);
 
-  const handleAnimalSelect = useCallback((animal: AnimalType) => {
-    setFormState(prev => ({ ...prev, animal }));
-  }, []);
+  const handleAnimalSelect = useCallback(
+    (animal: CommonNounResponse | null) => {
+      setFormState(prev => ({ ...prev, selectedAnimal: animal }));
+    },
+    []
+  );
 
   const handleDescriptionChange = useCallback((text: string) => {
     setFormState(prev => ({ ...prev, description: text }));
@@ -195,7 +204,7 @@ const PublicationFormScreen: React.FC = () => {
             />
             <FormSection
               description={formState.description}
-              animal={formState.animal}
+              selectedAnimal={formState.selectedAnimal}
               animalState={formState.animalState}
               onDescriptionChange={handleDescriptionChange}
               onAnimalSelect={handleAnimalSelect}
@@ -203,6 +212,10 @@ const PublicationFormScreen: React.FC = () => {
               location={location}
               theme={theme}
               styles={styles}
+              commonNouns={commonNouns}
+              isLoadingAnimals={isLoadingAnimals}
+              animalsError={animalsError}
+              refetch={refetch}
             />
           </ScrollView>
           <FooterButtons
@@ -323,65 +336,96 @@ const AnimalStateSelector: React.FC<{
 
 const FormSection: React.FC<{
   description: string;
-  animal: AnimalType;
+  selectedAnimal: CommonNounResponse | null;
   animalState: AnimalState;
   onDescriptionChange: (text: string) => void;
-  onAnimalSelect: (animal: AnimalType) => void;
+  onAnimalSelect: (animal: CommonNounResponse | null) => void;
   onAnimalStateSelect: (state: AnimalState) => void;
   location?: { latitude: number; longitude: number };
   styles: ReturnType<typeof createStyles>;
   theme: ReturnType<typeof useTheme>['theme'];
+  commonNouns: CommonNounResponse[];
+  isLoadingAnimals: boolean;
+  animalsError: string | null;
+  refetch: () => void;
 }> = React.memo(
   ({
     description,
-    animal,
+    selectedAnimal,
     animalState,
     onDescriptionChange,
     onAnimalSelect,
     onAnimalStateSelect,
     location,
     styles,
-    theme
-  }) => (
-    <View style={styles.formContainer}>
-      <Text style={styles.label}>📝 Descripción*</Text>
-      <TextInput
-        style={styles.textArea}
-        placeholder="Describe el avistamiento..."
-        placeholderTextColor="#888"
-        value={description}
-        onChangeText={onDescriptionChange}
-        multiline
-        numberOfLines={4}
-        textAlignVertical="top"
-      />
+    theme,
+    commonNouns,
+    isLoadingAnimals,
+    animalsError,
+    refetch
+  }) => {
+    const variables = useMemo(() => themeVariables(theme), [theme]);
 
-      <Text style={styles.label}>🐾 Animal*</Text>
-      <AnimalSearchableDropdown
-        selectedValue={animal}
-        options={animalOptions}
-        onValueChange={onAnimalSelect}
-        placeholder="Selecciona un animal"
-        theme={theme}
-      />
+    return (
+      <View style={styles.formContainer}>
+        <Text style={styles.label}>📝 Descripción*</Text>
+        <TextInput
+          style={styles.textArea}
+          placeholder="Describe el avistamiento..."
+          placeholderTextColor="#888"
+          value={description}
+          onChangeText={onDescriptionChange}
+          multiline
+          numberOfLines={4}
+          textAlignVertical="top"
+        />
 
-      <Text style={styles.label}>📍 Estado del animal*</Text>
-      <AnimalStateSelector
-        selected={animalState}
-        onSelect={onAnimalStateSelect}
-        styles={styles}
-      />
+        <Text style={styles.label}>🐾 Animal*</Text>
+        {isLoadingAnimals ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={variables['--primary']} />
+            <Text style={styles.loadingText}>Cargando animales...</Text>
+          </View>
+        ) : animalsError ? (
+          <TouchableOpacity
+            style={styles.errorContainer}
+            onPress={() => {
+              refetch();
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.errorText}>
+              Error al cargar animales. Toca para reintentar.
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <AnimalSearchableDropdown
+            selectedValue={selectedAnimal}
+            options={commonNouns}
+            onValueChange={onAnimalSelect}
+            placeholder="Selecciona un animal"
+            theme={theme}
+          />
+        )}
 
-      {location && (
-        <View style={styles.locationContainer}>
-          <Ionicons name="location-sharp" size={16} color="#555" />
-          <Text
-            style={styles.locationText}
-          >{`Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`}</Text>
-        </View>
-      )}
-    </View>
-  )
+        <Text style={styles.label}>📍 Estado del animal*</Text>
+        <AnimalStateSelector
+          selected={animalState}
+          onSelect={onAnimalStateSelect}
+          styles={styles}
+        />
+
+        {location && (
+          <View style={styles.locationContainer}>
+            <Ionicons name="location-sharp" size={16} color="#555" />
+            <Text
+              style={styles.locationText}
+            >{`Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`}</Text>
+          </View>
+        )}
+      </View>
+    );
+  }
 );
 
 const FooterButtons: React.FC<{

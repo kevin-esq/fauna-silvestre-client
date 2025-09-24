@@ -54,6 +54,10 @@ export class AuthService implements IAuthService {
     return AuthService.instance;
   }
 
+  public static isInitialized(): boolean {
+    return AuthService.instance !== undefined;
+  }
+
   setOnUnauthorizedCallback(callback: () => void): void {
     this.onUnauthorizedCallback = callback;
   }

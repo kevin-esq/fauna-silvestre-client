@@ -1,4 +1,3 @@
-// error-boundary.component.tsx
 import React, { Component, ReactNode } from 'react';
 import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
 

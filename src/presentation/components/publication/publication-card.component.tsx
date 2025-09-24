@@ -1,11 +1,5 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator
-} from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {
   useTheme,
@@ -16,6 +10,7 @@ import { PublicationModelResponse } from '@/domain/models/publication.models';
 import { PublicationStatus } from '@/services/publication/publication.service';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { createStyles } from './publication-card.styles';
 
 export const ITEM_HEIGHT = 380;
 
@@ -25,310 +20,369 @@ const STATUS_CONFIG: Record<
     icon: string;
     colorKey: keyof ReturnType<typeof themeVariables>;
     label: string;
+    emoji: string;
   }
 > = {
   [PublicationStatus.REJECTED]: {
     icon: 'times-circle',
     colorKey: '--error',
-    label: 'Rechazada'
+    label: 'Rechazada',
+    emoji: '❌'
   },
   [PublicationStatus.PENDING]: {
     icon: 'hourglass-half',
     colorKey: '--warning',
-    label: 'Pendiente'
+    label: 'Pendiente',
+    emoji: '⏳'
   },
   [PublicationStatus.ACCEPTED]: {
     icon: 'check-circle',
     colorKey: '--success',
-    label: 'Aceptada'
+    label: 'Aceptada',
+    emoji: '✅'
   }
 };
 
 const ANIMAL_STATE_CONFIG = {
-  ALIVE: { icon: 'heartbeat', colorKey: '--success', label: 'Vivo' },
-  DEAD: { icon: 'ambulance', colorKey: '--error', label: 'Muerto' }
+  ALIVE: {
+    icon: 'heartbeat',
+    colorKey: '--success',
+    label: 'Vivo',
+    emoji: '💚'
+  },
+  DEAD: {
+    icon: 'ambulance',
+    colorKey: '--error',
+    label: 'Muerto',
+    emoji: '🚨'
+  }
 } as const;
 
-const StatusRow = ({
-  icon,
-  color,
-  label
-}: {
+interface StatusRowProps {
   icon: string;
   color: string;
   label: string;
-}) => (
-  <View style={stylesStatus.container}>
-    <FontAwesome name={icon} size={18} color={color} />
-    <Text style={[stylesStatus.text, { color }]} numberOfLines={1}>
-      {label}
-    </Text>
-  </View>
+  emoji?: string;
+}
+
+const StatusRow = React.memo<StatusRowProps>(
+  ({ icon, color, label, emoji }) => {
+    const styles = createStyles(useTheme().theme);
+
+    return (
+      <View style={styles.statusContainer}>
+        <View style={styles.statusIconContainer}>
+          {emoji && <Text style={styles.statusEmoji}>{emoji}</Text>}
+          <FontAwesome name={icon} size={16} color={color} />
+        </View>
+        <Text style={[styles.statusText, { color }]} numberOfLines={1}>
+          {label}
+        </Text>
+      </View>
+    );
+  }
 );
 
-const stylesStatus = StyleSheet.create({
-  container: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  text: { marginLeft: 8, fontWeight: '600', fontSize: 14 }
-});
-
-const PublicationContent = ({
-  publication,
-  status
-}: {
+interface PublicationContentProps {
   publication: PublicationModelResponse;
   status: PublicationStatus;
-}) => {
-  const { theme } = useTheme();
-  const vars = themeVariables(theme);
+}
 
-  const { commonNoun, description, animalState, location, createdDate } =
-    publication;
-  const statusData = STATUS_CONFIG[status];
-  const animalData =
-    ANIMAL_STATE_CONFIG[animalState as keyof typeof ANIMAL_STATE_CONFIG] ??
-    ANIMAL_STATE_CONFIG.ALIVE;
+const PublicationContent = React.memo<PublicationContentProps>(
+  ({ publication, status }) => {
+    const { theme } = useTheme();
+    const vars = themeVariables(theme);
+    const styles = createStyles(theme);
 
-  // Formato de fecha legible
-  const formattedDate = createdDate
-    ? format(new Date(createdDate), "dd 'de' MMMM yyyy, HH:mm", { locale: es })
-    : null;
+    const { commonNoun, description, animalState, location, createdDate } =
+      publication;
 
-  return (
-    <View style={{ marginTop: 4 }}>
-      <Text
-        style={{
-          fontSize: 18,
-          fontWeight: '700',
-          color: vars['--text'],
-          marginBottom: 4
-        }}
-      >
-        {commonNoun}
-      </Text>
+    const statusData = useMemo(() => STATUS_CONFIG[status], [status]);
+    const animalData = useMemo(
+      () =>
+        ANIMAL_STATE_CONFIG[animalState as keyof typeof ANIMAL_STATE_CONFIG] ??
+        ANIMAL_STATE_CONFIG.ALIVE,
+      [animalState]
+    );
 
-      {formattedDate && (
+    const formattedDate = useMemo(
+      () =>
+        createdDate
+          ? format(new Date(createdDate), "dd 'de' MMMM yyyy, HH:mm", {
+              locale: es
+            })
+          : null,
+      [createdDate]
+    );
+
+    const truncateDescription = useCallback(
+      (text: string, maxLength: number = 120) =>
+        text.length > maxLength ? `${text.substring(0, maxLength)}...` : text,
+      []
+    );
+
+    return (
+      <View style={styles.contentContainer}>
+        <View style={styles.headerContainer}>
+          <Text style={[styles.titleText, { color: vars['--text'] }]}>
+            🦎 {commonNoun}
+          </Text>
+          <StatusBadge
+            status={status}
+            statusData={statusData}
+            vars={vars}
+            styles={styles}
+          />
+        </View>
+
+        {formattedDate && (
+          <Text style={[styles.dateText, { color: vars['--text-secondary'] }]}>
+            📅 Creado el {formattedDate}
+          </Text>
+        )}
+
         <Text
-          style={{
-            fontSize: 12,
-            color: vars['--text-secondary'],
-            marginBottom: 8
-          }}
+          style={[styles.descriptionText, { color: vars['--text-secondary'] }]}
         >
-          Creado el {formattedDate}
+          {truncateDescription(description)}
         </Text>
-      )}
 
+        <View style={styles.statusRowsContainer}>
+          <StatusRow
+            icon={animalData.icon}
+            color={vars[animalData.colorKey]}
+            label={animalData.label}
+            emoji={animalData.emoji}
+          />
+          {location && (
+            <StatusRow
+              icon="map-marker"
+              color={vars['--info']}
+              label={location}
+              emoji="📍"
+            />
+          )}
+        </View>
+      </View>
+    );
+  }
+);
+
+interface StatusBadgeProps {
+  status: PublicationStatus;
+  statusData: (typeof STATUS_CONFIG)[PublicationStatus];
+  vars: ReturnType<typeof themeVariables>;
+  styles: ReturnType<typeof createStyles>;
+}
+
+const StatusBadge = React.memo<StatusBadgeProps>(
+  ({ statusData, vars, styles }) => (
+    <View
+      style={[
+        styles.statusBadge,
+        {
+          backgroundColor: `${vars[statusData.colorKey]}20`,
+          borderColor: vars[statusData.colorKey]
+        }
+      ]}
+    >
+      <Text style={styles.statusBadgeEmoji}>{statusData.emoji}</Text>
       <Text
-        style={{
-          fontSize: 14,
-          color: vars['--text-secondary'],
-          marginBottom: 12
-        }}
+        style={[styles.statusBadgeText, { color: vars[statusData.colorKey] }]}
       >
-        {description}
+        {statusData.label}
       </Text>
-
-      <StatusRow
-        icon={statusData.icon}
-        color={vars[statusData.colorKey]}
-        label={statusData.label}
-      />
-      <StatusRow
-        icon={animalData.icon}
-        color={vars[animalData.colorKey]}
-        label={animalData.label}
-      />
-      {location && (
-        <StatusRow icon="map-marker" color={vars['--info']} label={location} />
-      )}
     </View>
-  );
-};
+  )
+);
 
-const ReviewButtons = ({
-  actions,
-  isLoading = false,
-  disabled = false
-}: {
+interface ReviewButtonsProps {
   actions: { onApprove: () => void; onReject: () => void };
   isLoading?: boolean;
   disabled?: boolean;
-}) => {
-  const { theme } = useTheme();
-  const vars = themeVariables(theme);
+}
 
-  console.log('[ReviewButtons] Rendering with actions:', !!actions);
+const ReviewButtons = React.memo<ReviewButtonsProps>(
+  ({ actions, isLoading = false, disabled = false }) => {
+    const { theme } = useTheme();
+    const styles = createStyles(theme);
 
-  return (
-    <View
-      style={[
-        stylesButtons.container,
-        { borderTopColor: vars['--surface-variant'] }
-      ]}
-    >
-      <TouchableOpacity
+    const handleReject = useCallback(() => {
+      if (!disabled && !isLoading) {
+        actions.onReject();
+      }
+    }, [actions, disabled, isLoading]);
+
+    const handleApprove = useCallback(() => {
+      if (!disabled && !isLoading) {
+        actions.onApprove();
+      }
+    }, [actions, disabled, isLoading]);
+
+    const buttonDisabled = disabled || isLoading;
+
+    return (
+      <View
         style={[
-          stylesButtons.button,
-          { backgroundColor: '#dc3545' },
-          (disabled || isLoading) && stylesButtons.disabled
+          styles.buttonsContainer,
+          { borderTopColor: theme.colors.surfaceVariant }
         ]}
-        onPress={() => {
-          console.log('[ReviewButtons] Reject pressed');
-          actions.onReject();
-        }}
-        disabled={disabled || isLoading}
       >
-        {isLoading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <>
-            <FontAwesome
-              name="times"
-              size={18}
-              color="white"
-              style={{ marginRight: 8 }}
-            />
-            <Text style={stylesButtons.text}>Rechazar</Text>
-          </>
-        )}
-      </TouchableOpacity>
+        <Pressable
+          style={[
+            styles.actionButton,
+            styles.rejectButton,
+            buttonDisabled && styles.disabledButton
+          ]}
+          onPress={handleReject}
+          disabled={buttonDisabled}
+          android_ripple={{ color: 'rgba(255, 255, 255, 0.3)' }}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <>
+              <Text style={styles.buttonEmoji}>❌</Text>
+              <FontAwesome
+                name="times"
+                size={16}
+                color="white"
+                style={styles.buttonIcon}
+              />
+              <Text style={styles.buttonText}>Rechazar</Text>
+            </>
+          )}
+        </Pressable>
 
-      <TouchableOpacity
-        style={[
-          stylesButtons.button,
-          { backgroundColor: '#28a745' },
-          (disabled || isLoading) && stylesButtons.disabled
-        ]}
-        onPress={() => {
-          console.log('[ReviewButtons] Approve pressed');
-          actions.onApprove();
-        }}
-        disabled={disabled || isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <>
-            <FontAwesome
-              name="check"
-              size={18}
-              color="white"
-              style={{ marginRight: 8 }}
-            />
-            <Text style={stylesButtons.text}>Aprobar</Text>
-          </>
-        )}
-      </TouchableOpacity>
+        <Pressable
+          style={[
+            styles.actionButton,
+            styles.approveButton,
+            buttonDisabled && styles.disabledButton
+          ]}
+          onPress={handleApprove}
+          disabled={buttonDisabled}
+          android_ripple={{ color: 'rgba(255, 255, 255, 0.3)' }}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <>
+              <Text style={styles.buttonEmoji}>✅</Text>
+              <FontAwesome
+                name="check"
+                size={16}
+                color="white"
+                style={styles.buttonIcon}
+              />
+              <Text style={styles.buttonText}>Aprobar</Text>
+            </>
+          )}
+        </Pressable>
+      </View>
+    );
+  }
+);
+
+interface ProcessingOverlayProps {
+  vars: ReturnType<typeof themeVariables>;
+  styles: ReturnType<typeof createStyles>;
+}
+
+const ProcessingOverlay = React.memo<ProcessingOverlayProps>(
+  ({ vars, styles }) => (
+    <View style={styles.processingOverlay}>
+      <View style={styles.processingContent}>
+        <ActivityIndicator size="large" color={vars['--primary']} />
+        <Text style={[styles.processingText, { color: vars['--text'] }]}>
+          ⚡ Procesando...
+        </Text>
+      </View>
     </View>
-  );
-};
+  )
+);
 
-const stylesButtons = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-    paddingTop: 16,
-    gap: 12,
-    borderTopWidth: 1
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  disabled: { opacity: 0.6 },
-  text: { color: 'white', fontWeight: '700', fontSize: 15 }
-});
-
-const PublicationCard = ({
-  publication,
-  status,
-  onPress,
-  reviewActions,
-  viewMode = 'card',
-  isProcessing = false
-}: {
+interface PublicationCardProps {
   publication: PublicationModelResponse;
   status: PublicationStatus;
   onPress?: () => void;
   reviewActions?: { onApprove: () => void; onReject: () => void };
   viewMode?: 'card' | 'presentation';
   isProcessing?: boolean;
-}) => {
-  const { theme } = useTheme();
-  const vars = themeVariables(theme);
+}
 
-  // Debug: verificar que reviewActions se pasa correctamente
-  console.log(
-    '[PublicationCard] reviewActions:',
-    !!reviewActions,
-    'status:',
-    status
-  );
+const PublicationCard = React.memo<PublicationCardProps>(
+  ({
+    publication,
+    status,
+    onPress,
+    reviewActions,
+    viewMode = 'card',
+    isProcessing = false
+  }) => {
+    const { theme } = useTheme();
+    const vars = themeVariables(theme);
+    const styles = createStyles(theme);
 
-  return (
-    <TouchableOpacity
-      style={[
-        stylesCard.card,
-        isProcessing && { opacity: 0.7 },
-        // Solo usar altura fija si no hay botones de revisión
-        !reviewActions && { height: ITEM_HEIGHT }
-      ]}
-      onPress={onPress}
-      disabled={isProcessing}
-      activeOpacity={0.9}
-    >
-      <PublicationImage
-        uri={publication.img}
-        commonNoun={publication.commonNoun}
-        viewMode={viewMode}
-      />
-      <View style={stylesCard.content}>
-        <PublicationContent publication={publication} status={status} />
-        {reviewActions && (
-          <ReviewButtons
-            actions={reviewActions}
-            isLoading={isProcessing}
-            disabled={isProcessing}
-          />
-        )}
-      </View>
-      {isProcessing && (
-        <View style={stylesCard.overlay}>
-          <ActivityIndicator size="large" color={vars['--primary']} />
-          <Text
-            style={{ marginTop: 8, color: vars['--text'], fontWeight: '600' }}
-          >
-            Procesando...
-          </Text>
+    const handlePress = useCallback(() => {
+      if (!isProcessing && onPress) {
+        onPress();
+      }
+    }, [isProcessing, onPress]);
+
+    const cardStyle = useMemo(
+      () => [
+        styles.card,
+        isProcessing && styles.processingCard,
+        !reviewActions && { minHeight: ITEM_HEIGHT },
+        viewMode === 'presentation' && styles.presentationCard
+      ],
+      [isProcessing, reviewActions, viewMode, styles]
+    );
+
+    const CardWrapper = onPress ? Pressable : View;
+    const cardProps = onPress
+      ? {
+          onPress: handlePress,
+          disabled: isProcessing,
+          android_ripple: { color: 'rgba(0, 0, 0, 0.05)' },
+          accessibilityRole: 'button' as const,
+          accessibilityLabel: `Ver detalles de ${publication.commonNoun}`
+        }
+      : {};
+
+    return (
+      <CardWrapper style={cardStyle} {...cardProps}>
+        <PublicationImage
+          uri={publication.img}
+          commonNoun={publication.commonNoun}
+          viewMode={viewMode}
+          style={styles.imageContainer}
+        />
+
+        <View style={styles.cardContent}>
+          <PublicationContent publication={publication} status={status} />
+
+          {reviewActions && (
+            <ReviewButtons
+              actions={reviewActions}
+              isLoading={isProcessing}
+              disabled={isProcessing}
+            />
+          )}
         </View>
-      )}
-    </TouchableOpacity>
-  );
-};
 
-const stylesCard = StyleSheet.create({
-  card: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    marginBottom: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    backgroundColor: 'white'
-  },
-  content: { padding: 16, flex: 1 },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    justifyContent: 'center',
-    alignItems: 'center'
+        {isProcessing && <ProcessingOverlay vars={vars} styles={styles} />}
+      </CardWrapper>
+    );
   }
-});
+);
+
+StatusRow.displayName = 'StatusRow';
+PublicationContent.displayName = 'PublicationContent';
+StatusBadge.displayName = 'StatusBadge';
+ReviewButtons.displayName = 'ReviewButtons';
+ProcessingOverlay.displayName = 'ProcessingOverlay';
+PublicationCard.displayName = 'PublicationCard';
 
 export default PublicationCard;

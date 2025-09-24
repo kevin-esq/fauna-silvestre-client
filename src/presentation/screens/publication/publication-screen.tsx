@@ -402,6 +402,8 @@ const PublicationScreen: React.FC = () => {
     publicationData.statusData.isLoading,
     publicationData.statusData.isRefreshing,
     publicationData.statusData.lastUpdated,
+    publicationData.statusData.error,
+    publicationData.statusData.pagination.total,
     handleInitialLoad
   ]);
 

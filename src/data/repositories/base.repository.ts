@@ -1,12 +1,7 @@
-// data/repositories/BaseRepository.ts
 import { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { HttpError, NetworkError } from '../../shared/types/errors';
 import { ILogger } from '../../shared/types/ILogger';
 
-/**
- * Clase base para repositorios HTTP.
- * @class
- */
 export abstract class BaseRepository {
   protected readonly api: AxiosInstance;
   protected readonly logger: ILogger;
@@ -16,11 +11,6 @@ export abstract class BaseRepository {
     this.logger = logger;
   }
 
-  /**
-   * Verifica el estado de la respuesta HTTP.
-   * @param response - Respuesta de Axios
-   * @throws {HttpError} Si el estado no es exitoso
-   */
   protected ensureSuccessStatus(response: AxiosResponse): void {
     console.log(response.data);
     if (response.status < 200 || response.status >= 300) {
@@ -32,12 +22,6 @@ export abstract class BaseRepository {
     }
   }
 
-  /**
-   * Maneja errores HTTP centralizados.
-   * @param error - Error capturado
-   * @param context - Contexto de la operación
-   * @returns {HttpError | NetworkError} Error procesado
-   */
   protected handleHttpError(
     error: unknown,
     context: string

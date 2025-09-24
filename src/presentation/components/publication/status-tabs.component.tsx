@@ -13,7 +13,6 @@ import { useTheme } from '../../contexts/theme.context';
 import { themeVariables } from '../../contexts/theme.context';
 import { PublicationStatus } from '@/services/publication/publication.service';
 
-// --- TIPOS ---
 export interface StatusTab {
   label: string;
   value: PublicationStatus;
@@ -26,7 +25,6 @@ interface StatusTabsProps {
   theme?: ReturnType<typeof useTheme>['theme'];
 }
 
-// --- COMPONENTE ---
 const StatusTabs: React.FC<StatusTabsProps> = ({
   statuses,
   active,
@@ -75,7 +73,6 @@ const StatusTabs: React.FC<StatusTabsProps> = ({
 
 StatusTabs.displayName = 'StatusTabs';
 
-// --- ESTILOS DINÁMICOS ---
 const getTabButtonStyle = (
   vars: Record<string, string>,
   isActive: boolean,
@@ -101,7 +98,6 @@ const getTabTextStyle = (
   ...styles.tabText
 });
 
-// --- ESTILOS ESTÁTICOS ---
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',

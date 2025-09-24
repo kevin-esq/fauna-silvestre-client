@@ -34,19 +34,24 @@ export class ApiService {
     this.logger = logger;
     this.client = axios.create({
       baseURL: PUBLIC_API_URL,
-      timeout: Number(PUBLIC_API_TIMEOUT),
+      timeout: Number(PUBLIC_API_TIMEOUT) || 60000,
       headers: { 'Content-Type': 'application/json' }
     });
 
     axiosRetry(this.client, {
-      retries: 1,
-      retryDelay: () => 2000,
+      retries: 3,
+      retryDelay: retryCount => retryCount * 2000,
       retryCondition: err => {
-        // Only retry on network errors, not on 4xx/5xx HTTP errors
-        return axiosRetry.isNetworkError(err) && !err.response;
+        return (
+          axiosRetry.isNetworkError(err) ||
+          axiosRetry.isRetryableError(err) ||
+          (err.code === 'ECONNABORTED' && err.message.includes('timeout'))
+        );
       },
-      onRetry: (err, attempt) =>
-        this.logger.warn(`[ApiService] Retry #${attempt}: ${err}`)
+      onRetry: (err, attempt) => {
+        const errorMessage = this.getErrorMessage(err);
+        this.logger.warn(`[ApiService] Retry #${attempt}: ${errorMessage}`);
+      }
     });
 
     this.setupInterceptors();
@@ -185,5 +190,12 @@ export class ApiService {
     return `${config.method}|${config.baseURL}|${config.url}|${JSON.stringify(
       config.params
     )}|${JSON.stringify(config.data)}`;
+  }
+
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return String(error);
   }
 }

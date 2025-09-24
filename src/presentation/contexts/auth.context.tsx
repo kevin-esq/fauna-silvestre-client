@@ -1,4 +1,3 @@
-// src/presentation/contexts/auth-context.tsx
 import React, {
   createContext,
   useContext,

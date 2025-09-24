@@ -1,5 +1,15 @@
 import Animal from '../entities/animal.entity';
-import { LocationResponse } from '../models/animal.models';
+import {
+  CatalogModelResponse,
+  LocationResponse,
+  AnimalModelResponse,
+  CommonNounResponse,
+  CreateAnimalRequest,
+  UpdateAnimalRequest,
+  UpdateAnimalImageRequest,
+  AnimalCrudResponse,
+  DeleteAnimalResponse
+} from '../models/animal.models';
 
 export interface Location {
   latitude: number;
@@ -7,10 +17,24 @@ export interface Location {
 }
 
 export interface ICatalogRepository {
-  getAllCatalogs(page: number, size: number): Promise<Animal[]>;
+  getAllCatalogs(
+    page: number,
+    size: number,
+    signal?: AbortSignal
+  ): Promise<CatalogModelResponse>;
   getCatalogByCommonName(commonName: string): Promise<Animal>;
-  createCatalog(animal: Animal): Promise<Animal>;
-  updateCatalog(id: string, animal: Animal): Promise<Animal>;
-  deleteCatalog(id: string): Promise<void>;
+  getCatalogById(catalogId: string): Promise<AnimalModelResponse>;
+  createCatalog(
+    createAnimalRequest: CreateAnimalRequest
+  ): Promise<AnimalCrudResponse>;
+  updateCatalog(
+    updateAnimalRequest: UpdateAnimalRequest
+  ): Promise<AnimalCrudResponse>;
+  updateCatalogImage(
+    updateAnimalImageRequest: UpdateAnimalImageRequest
+  ): Promise<AnimalCrudResponse>;
+  deleteCatalog(id: string): Promise<DeleteAnimalResponse>;
   getLocations(catalogId: string): Promise<LocationResponse>;
+  downloadAnimalSheet(catalogId: string): Promise<Blob>;
+  getCommonNouns(): Promise<CommonNounResponse[]>;
 }

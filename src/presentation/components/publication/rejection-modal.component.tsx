@@ -148,7 +148,7 @@ const createLocalStyles = (vars: Record<string, string>) =>
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: 20,
-      backgroundColor: 'rgba(0,0,0,0.5)' // fallback if vars["--overlay"] undefined
+      backgroundColor: 'rgba(0,0,0,0.5)'
     },
     keyboardAvoidingView: {
       width: '100%',
