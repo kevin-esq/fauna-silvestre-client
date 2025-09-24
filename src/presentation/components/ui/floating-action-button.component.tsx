@@ -98,8 +98,6 @@ const createStyles = (vars: Record<string, string>, visible: boolean) =>
       justifyContent: 'center',
       flexDirection: 'row',
       opacity: visible ? 1 : 0
-      //transitionProperty: 'transform, background-color',
-      //transitionDuration: '200ms',
     },
     fabWithLabel: {
       paddingVertical: 16,

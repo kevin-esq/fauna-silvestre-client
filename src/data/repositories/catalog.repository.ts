@@ -4,8 +4,16 @@ import { ILogger } from '../../shared/types/ILogger';
 import { ICatalogRepository } from '../../domain/interfaces/catalog.repository.interface';
 import Animal from '../../domain/entities/animal.entity';
 import {
+  CatalogModelResponse,
   LocationResponse,
-  ParsedLocation
+  ParsedLocation,
+  AnimalModelResponse,
+  CommonNounResponse,
+  CreateAnimalRequest,
+  UpdateAnimalRequest,
+  UpdateAnimalImageRequest,
+  AnimalCrudResponse,
+  DeleteAnimalResponse
 } from '../../domain/models/animal.models';
 import { ApiService } from '../../services/http/api.service';
 import { ConsoleLogger } from '../../services/logging/console-logger';
@@ -19,10 +27,15 @@ export class CatalogRepository
     super(api, logger);
   }
 
-  async getAllCatalogs(page: number, size: number): Promise<Animal[]> {
+  async getAllCatalogs(
+    page: number,
+    size: number,
+    signal?: AbortSignal
+  ): Promise<CatalogModelResponse> {
     try {
-      const response = await this.api.get<Animal[]>(
-        `/Animal/Catalog?page=${page}&size=${size}`
+      const response = await this.api.get<CatalogModelResponse>(
+        `/Animal/Catalog?page=${page}&size=${size}`,
+        { signal }
       );
       this.ensureSuccessStatus(response);
       return response.data;
@@ -49,11 +62,29 @@ export class CatalogRepository
     }
   }
 
-  async createCatalog(animal: Animal): Promise<Animal> {
+  async getCatalogById(catalogId: string): Promise<AnimalModelResponse> {
     try {
-      const response = await this.api.post<Animal>(
-        '/Animal/new-catalog',
-        animal
+      const response = await this.api.get<AnimalModelResponse>(
+        `/Animal/by-Id/${catalogId}`
+      );
+      this.ensureSuccessStatus(response);
+      return response.data;
+    } catch (error) {
+      throw this.handleHttpError(
+        error,
+        `Error al obtener el animal con ID ${catalogId}`
+      );
+    }
+  }
+
+  async createCatalog(
+    createAnimalRequest: CreateAnimalRequest
+  ): Promise<AnimalCrudResponse> {
+    try {
+      console.log('Creating catalog with request:', createAnimalRequest);
+      const response = await this.api.post<AnimalCrudResponse>(
+        '/Admin/new-catalog',
+        createAnimalRequest
       );
       this.ensureSuccessStatus(response);
       return response.data;
@@ -62,26 +93,49 @@ export class CatalogRepository
     }
   }
 
-  async updateCatalog(id: string, animal: Animal): Promise<Animal> {
+  async updateCatalog(
+    updateAnimalRequest: UpdateAnimalRequest
+  ): Promise<AnimalCrudResponse> {
     try {
-      const response = await this.api.patch<Animal>(
-        `/Animal/update-catalog/${id}`,
-        animal
+      const response = await this.api.patch<AnimalCrudResponse>(
+        '/Admin/catalog',
+        updateAnimalRequest
       );
       this.ensureSuccessStatus(response);
       return response.data;
     } catch (error) {
       throw this.handleHttpError(
         error,
-        `Error al actualizar el animal con ID ${id}`
+        `Error al actualizar el animal con ID ${updateAnimalRequest.catalogId}`
       );
     }
   }
 
-  async deleteCatalog(id: string): Promise<void> {
+  async updateCatalogImage(
+    updateAnimalImageRequest: UpdateAnimalImageRequest
+  ): Promise<AnimalCrudResponse> {
     try {
-      const response = await this.api.delete(`/Animal/delete-catalog/${id}`);
+      const response = await this.api.patch<AnimalCrudResponse>(
+        '/Admin/catalog-img',
+        updateAnimalImageRequest
+      );
       this.ensureSuccessStatus(response);
+      return response.data;
+    } catch (error) {
+      throw this.handleHttpError(
+        error,
+        `Error al actualizar la imagen del animal con ID ${updateAnimalImageRequest.catalogId}`
+      );
+    }
+  }
+
+  async deleteCatalog(id: string): Promise<DeleteAnimalResponse> {
+    try {
+      const response = await this.api.delete<DeleteAnimalResponse>(
+        `/Animal/delete-catalog/${id}`
+      );
+      this.ensureSuccessStatus(response);
+      return response.data;
     } catch (error) {
       throw this.handleHttpError(
         error,
@@ -99,21 +153,13 @@ export class CatalogRepository
 
       this.ensureSuccessStatus(response);
 
-      console.log('Coords raw:', response.data.cords); // DEBUG
-
       const parsedCords: ParsedLocation[] = response.data.cords.map(item => {
         const [latStr, lonStr] = item.location.split(',');
         const latitude = parseFloat(latStr);
         const longitude = parseFloat(lonStr);
 
-        // Para debug solo comentamos filtro:
-        // if (isNaN(latitude) || isNaN(longitude)) return null;
-
         return { latitude, longitude };
       });
-      //.filter(Boolean) as ParsedLocation[]; // comentado temporalmente
-
-      console.log('Coords parsed:', parsedCords); // DEBUG
 
       return {
         catalogId: response.data.catalogId,
@@ -123,6 +169,43 @@ export class CatalogRepository
       throw this.handleHttpError(
         error,
         `Error al obtener ubicaciones del catálogo con ID ${catalogId}`
+      );
+    }
+  }
+
+  async downloadAnimalSheet(catalogId: string): Promise<Blob> {
+    try {
+      const response = await this.api.get(
+        `/Animal/bibliographic/${catalogId}`,
+        {
+          responseType: 'blob',
+          headers: {
+            Accept: 'application/pdf'
+          }
+        }
+      );
+
+      this.ensureSuccessStatus(response);
+      return response.data;
+    } catch (error) {
+      throw this.handleHttpError(
+        error,
+        `Error al descargar la ficha del animal con ID ${catalogId}`
+      );
+    }
+  }
+
+  async getCommonNouns(): Promise<CommonNounResponse[]> {
+    try {
+      const response = await this.api.get<CommonNounResponse[]>(
+        '/Animal/common-noun'
+      );
+      this.ensureSuccessStatus(response);
+      return response.data;
+    } catch (error) {
+      throw this.handleHttpError(
+        error,
+        'Error al obtener los nombres comunes de animales'
       );
     }
   }

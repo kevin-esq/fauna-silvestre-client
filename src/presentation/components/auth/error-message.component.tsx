@@ -66,10 +66,10 @@ const createStyles = (variables: Record<string, string> | undefined) =>
       fontWeight: '500'
     },
     errorText: {
-      color: variables?.['--text-on-primary'] // Usually white text on red background
+      color: variables?.['--text-on-primary']
     },
     successText: {
-      color: variables?.['--text-on-primary'] // Same as error, white text on green background
+      color: variables?.['--text-on-primary']
     }
   });
 

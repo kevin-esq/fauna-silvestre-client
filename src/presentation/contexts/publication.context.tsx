@@ -701,9 +701,15 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
     publicationService.setOnCacheInvalidate(handleCacheInvalidation);
 
     try {
-      const authService = AuthService.getInstance();
-      authService.setOnClearUserDataCallback(clearAllData);
-      console.log('[PublicationContext] Auth cleanup callback registered');
+      if (AuthService.isInitialized()) {
+        const authService = AuthService.getInstance();
+        authService.setOnClearUserDataCallback(clearAllData);
+        console.log('[PublicationContext] Auth cleanup callback registered');
+      } else {
+        console.log(
+          '[PublicationContext] AuthService not yet initialized, skipping callback registration'
+        );
+      }
     } catch (error) {
       console.warn(
         '[PublicationContext] Could not register auth cleanup callback:',

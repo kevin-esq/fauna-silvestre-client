@@ -28,7 +28,6 @@ import RejectionModal from '../../components/publication/rejection-modal.compone
 import { createStyles } from './review-publications-screen.styles';
 import { PublicationStatus } from '@/services/publication/publication.service';
 
-// Configuración optimizada para evitar bucles
 const LOAD_CONFIG = {
   DEBOUNCE_TIME: 300,
   END_REACHED_THRESHOLD: 0.8,
@@ -51,18 +50,15 @@ const ReviewPublicationsScreen: React.FC = () => {
     getStatusData
   } = usePublications();
 
-  // Estados locales
   const [searchQuery, setSearchQuery] = useState('');
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
-  // Refs para evitar bucles
   const loadMoreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const listRef = useRef<FlatList<PublicationModelResponse>>(null);
 
-  // Obtener datos del estado PENDING
   const pendingData = getStatusData(PublicationStatus.PENDING);
   const publications = pendingData.publications;
   const isLoading = pendingData.isLoading;
@@ -71,7 +67,6 @@ const ReviewPublicationsScreen: React.FC = () => {
   const isEmpty = pendingData.isEmpty;
   const error = pendingData.error;
 
-  // Filtrado de publicaciones
   const filteredPublications = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return publications;
@@ -84,7 +79,6 @@ const ReviewPublicationsScreen: React.FC = () => {
     );
   }, [publications, searchQuery]);
 
-  // Carga inicial controlada - SOLO UNA VEZ
   useEffect(() => {
     if (!hasInitialLoad && publications.length === 0 && !isLoading && !error) {
       console.log('[ReviewPublications] Initial load');
@@ -93,18 +87,15 @@ const ReviewPublicationsScreen: React.FC = () => {
     }
   }, [hasInitialLoad, publications.length, isLoading, error, loadStatus]);
 
-  // Refresh controlado
   const handleRefresh = useCallback(async () => {
     console.log('[ReviewPublications] Manual refresh');
     await refreshStatus(PublicationStatus.PENDING);
 
-    // Reset scroll position
     if (listRef.current) {
       listRef.current.scrollToOffset({ offset: 0, animated: false });
     }
   }, [refreshStatus]);
 
-  // Load more con debounce para evitar bucles
   const handleLoadMore = useCallback(() => {
     if (
       !canLoadMore(PublicationStatus.PENDING) ||
@@ -124,7 +115,6 @@ const ReviewPublicationsScreen: React.FC = () => {
     }, LOAD_CONFIG.DEBOUNCE_TIME);
   }, [canLoadMore, isLoadingMore, loadMoreStatus]);
 
-  // Retry con delay para evitar spam
   const handleRetry = useCallback(() => {
     if (retryTimeoutRef.current) return;
 
@@ -136,7 +126,6 @@ const ReviewPublicationsScreen: React.FC = () => {
     }, LOAD_CONFIG.RETRY_DELAY);
   }, [loadStatus]);
 
-  // Cleanup timeouts
   useEffect(() => {
     return () => {
       if (loadMoreTimeoutRef.current) {
@@ -148,7 +137,6 @@ const ReviewPublicationsScreen: React.FC = () => {
     };
   }, []);
 
-  // Handlers para aprobar/rechazar
   const handleApprove = useCallback(
     (id: string) => {
       Alert.alert(
@@ -186,7 +174,6 @@ const ReviewPublicationsScreen: React.FC = () => {
     setReason('');
   }, [currentId, reason, rejectPublication]);
 
-  // Render optimizado de items
   const renderPublicationItem = useCallback(
     ({ item }: { item: PublicationModelResponse }) => (
       <PublicationCard
@@ -202,9 +189,7 @@ const ReviewPublicationsScreen: React.FC = () => {
     [handleApprove, handleReject]
   );
 
-  // Footer inteligente como en publication-screen
   const renderFooter = useCallback(() => {
-    // Loading more
     if (isLoadingMore) {
       return (
         <View style={styles.footer}>
@@ -216,7 +201,6 @@ const ReviewPublicationsScreen: React.FC = () => {
       );
     }
 
-    // Error con retry
     if (error) {
       return (
         <View style={styles.footer}>
@@ -234,7 +218,6 @@ const ReviewPublicationsScreen: React.FC = () => {
       );
     }
 
-    // Completion message
     if (
       !canLoadMore(PublicationStatus.PENDING) &&
       filteredPublications.length > 0
@@ -261,7 +244,6 @@ const ReviewPublicationsScreen: React.FC = () => {
     styles
   ]);
 
-  // Empty component con skeleton
   const renderEmptyComponent = useCallback(() => {
     if (isLoading && publications.length === 0) {
       return (
@@ -286,7 +268,6 @@ const ReviewPublicationsScreen: React.FC = () => {
     );
   }, [isLoading, publications.length, isEmpty, theme, styles]);
 
-  // Result count
   const renderResultCount = useCallback(() => {
     if (filteredPublications.length === 0) return null;
 
@@ -302,7 +283,6 @@ const ReviewPublicationsScreen: React.FC = () => {
     );
   }, [filteredPublications.length, theme, styles]);
 
-  // Key extractor optimizado
   const keyExtractor = useCallback(
     (item: PublicationModelResponse, index: number) => {
       const id = item.recordId?.toString() || `unknown-${index}`;
@@ -311,7 +291,6 @@ const ReviewPublicationsScreen: React.FC = () => {
     []
   );
 
-  // Layout calculation
   const getItemLayout = useCallback(
     (_: unknown, index: number) => ({
       length: ITEM_HEIGHT,
@@ -366,14 +345,12 @@ const ReviewPublicationsScreen: React.FC = () => {
         ListFooterComponent={renderFooter}
         ListEmptyComponent={renderEmptyComponent}
         getItemLayout={getItemLayout}
-        // Performance optimizations
         removeClippedSubviews={true}
         initialNumToRender={5}
         maxToRenderPerBatch={5}
         windowSize={5}
         updateCellsBatchingPeriod={100}
         keyboardShouldPersistTaps="handled"
-        // Prevent unnecessary re-renders
         extraData={searchQuery}
       />
 

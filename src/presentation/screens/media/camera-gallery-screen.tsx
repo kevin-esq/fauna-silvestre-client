@@ -36,6 +36,7 @@ import Location, {
 import { createStyles } from './camera-gallery-screen.styles';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 interface PermissionMessageProps {
   styles: ReturnType<typeof createStyles>;
@@ -121,8 +122,9 @@ export const CameraGalleryScreen: React.FC = () => {
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
 
-  // Manejar botón de retroceso para Android
-  useEffect(() => {
+  const navigation = useNavigation();
+
+  useFocusEffect(() => {
     const backHandler = BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
@@ -130,13 +132,18 @@ export const CameraGalleryScreen: React.FC = () => {
           setIsModalOpen(false);
           return true;
         }
-        goBack();
-        return true;
+        if (navigation.canGoBack()) {
+          goBack();
+          return true;
+        } else {
+          navigate('HomeTabs');
+          return true;
+        }
       }
     );
 
     return () => backHandler.remove();
-  }, [isModalOpen, goBack]);
+  });
 
   // Animación de cámara lista
   useEffect(() => {

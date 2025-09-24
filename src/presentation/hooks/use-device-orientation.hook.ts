@@ -5,12 +5,10 @@ export const useDeviceOrientation = () => {
   const [orientation, setOrientation] = useState<OrientationType | null>(null);
 
   useEffect(() => {
-    // Obtener la orientación inicial
     Orientation.getOrientation(current => {
       setOrientation(current);
     });
 
-    // Escuchar cambios de orientación
     const orientationChangeHandler = (newOrientation: OrientationType) => {
       setOrientation(newOrientation);
     };

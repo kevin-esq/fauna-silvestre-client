@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    height: ITEM_HEIGHT // Misma altura que PublicationCard
+    height: ITEM_HEIGHT
   },
   listContainer: {
     flexDirection: 'row',

@@ -1,4 +1,3 @@
-// src/app/app.tsx
 import React from 'react';
 import { AuthProvider } from '../presentation/contexts/auth.context';
 import AppNavigator from '../presentation/navigation/app.navigator';
@@ -12,7 +11,7 @@ import { PublicationProvider } from '../presentation/contexts/publication.contex
 import { LoadingProvider } from '../presentation/contexts/loading.context';
 import { CatalogProvider } from '../presentation/contexts/catalog.context';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { APIStatusProvider } from '@/presentation/contexts/api-status.context';
+import { APIStatusProvider } from '../presentation/contexts/api-status.context';
 
 export default function App() {
   return (

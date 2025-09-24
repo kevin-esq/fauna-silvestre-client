@@ -94,13 +94,12 @@ export default function TopTabsNavigationBar({
     [insets, variables]
   );
 
-  position.value = state.index;
-
   const currentRouteRef = useRef(state.routes[state.index].key);
 
   useEffect(() => {
+    position.value = state.index;
     currentRouteRef.current = state.routes[state.index].key;
-  }, [state.index, state.routes]);
+  }, [state, position]);
 
   const handleTabPress = useCallback(
     (routeKey: string, routeName: string) => {

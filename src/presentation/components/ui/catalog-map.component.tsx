@@ -15,7 +15,6 @@ interface Props {
 const CatalogMap: React.FC<Props> = ({ locations }) => {
   const mapRef = useRef<MapView>(null);
 
-  // Calcula una región inicial basada en el primer marcador (para evitar África u otra ubicación irrelevante)
   const getInitialRegion = (): Region | undefined => {
     if (!locations.length) return undefined;
 
@@ -23,12 +22,11 @@ const CatalogMap: React.FC<Props> = ({ locations }) => {
     return {
       latitude,
       longitude,
-      latitudeDelta: 0.2, // Ajusta el zoom inicial
+      latitudeDelta: 0.2,
       longitudeDelta: 0.2
     };
   };
 
-  // Ajusta a todos los marcadores cuando el componente se monte
   useEffect(() => {
     if (locations.length > 0 && mapRef.current) {
       setTimeout(() => {
@@ -36,7 +34,7 @@ const CatalogMap: React.FC<Props> = ({ locations }) => {
           edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
           animated: true
         });
-      }, 500); // Esperamos un poco para asegurar que el mapa esté montado
+      }, 500);
     }
   }, [locations]);
 
@@ -54,7 +52,7 @@ const CatalogMap: React.FC<Props> = ({ locations }) => {
       provider={PROVIDER_GOOGLE}
       style={StyleSheet.absoluteFillObject}
       showsUserLocation={false}
-      initialRegion={getInitialRegion()} // << ESTA LÍNEA ES CLAVE
+      initialRegion={getInitialRegion()}
     >
       {locations.map((coord, index) => (
         <Marker key={index} coordinate={coord}>

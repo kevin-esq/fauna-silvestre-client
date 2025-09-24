@@ -28,7 +28,6 @@ const CodeInput: React.FC<CodeInputProps> = ({
   }, [code, digitCount]);
 
   const handleTextChange = (text: string, index: number) => {
-    // Handle pasting code
     if (text.length > 1 && index === 0) {
       const newCode = text.replace(/[^0-9]/g, '').slice(0, digitCount);
       setCode(newCode);

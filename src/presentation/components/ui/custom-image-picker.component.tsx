@@ -13,7 +13,7 @@ const requestCameraPermission = async (): Promise<boolean> => {
     );
     return granted === PermissionsAndroid.RESULTS.GRANTED;
   }
-  return true; // iOS maneja permisos automáticamente
+  return true;
 };
 
 const requestStoragePermission = async (): Promise<boolean> => {

@@ -8,6 +8,7 @@ import AdminHomeScreen from '../screens/admin/admin-home-screen/admin-home-scree
 import HomeScreen from '../screens/home/home-screen';
 import PublicationScreen from '../screens/publication/publication-screen';
 import ReviewPublicationsScreen from '../screens/admin/review-publications-screen';
+import CatalogManagementScreen from '../screens/admin/catalog-management-screen';
 import { ParamListBase } from '@react-navigation/native';
 
 type TabConfig<ParamList extends ParamListBase> = {
@@ -49,6 +50,14 @@ export const adminTabs: TabConfig<RootStackParamList>[] = [
         color={color}
       />
     )
+  },
+  {
+    name: 'CatalogManagement',
+    component: CatalogManagementScreen,
+    title: 'Gestión de Catálogos',
+    tabBarIcon: ({ focused, color }) => (
+      <FontAwesome5 name="paw" solid={focused} size={24} color={color} />
+    )
   }
 ];
 
@@ -69,4 +78,5 @@ export const userTabs: TabConfig<RootStackParamList>[] = [
       <FontAwesome5 name="book-open" solid={focused} size={24} color={color} />
     )
   }
+  // Removed DownloadedFiles tab - user will access it through navigation
 ];

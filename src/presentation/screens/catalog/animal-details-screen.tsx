@@ -7,13 +7,14 @@ import {
   TouchableOpacity,
   Modal,
   ImageLoadEventData,
-  NativeSyntheticEvent
+  NativeSyntheticEvent,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, themeVariables } from '../../contexts/theme.context';
 import { createStyles } from './animal-details-screen.styles';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Animal from '../../../domain/entities/animal.entity';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CatalogMap from '../../components/ui/catalog-map.component';
@@ -24,6 +25,7 @@ import { useNavigationActions } from '../../navigation/navigation-provider';
 import { BackHandler } from 'react-native';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { Dimensions } from 'react-native';
+import { useFileDownload } from '../../hooks/use-file-download.hook';
 
 const AnimalDetailsScreen: React.FC = () => {
   const route = useRoute();
@@ -41,21 +43,32 @@ const AnimalDetailsScreen: React.FC = () => {
   const [, setLoadingMap] = useState(true);
   const [, setMapError] = useState<string | null>(null);
   const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
-  console.log('animalLocations:', animalLocations);
-  const { navigate } = useNavigationActions();
+
+  // Hook para descarga de fichas PDF
+  const { goBack, navigate } = useNavigationActions();
+  const navigation = useNavigation();
+  const { downloadState, handleDownloadSheet } = useFileDownload(
+    Number(animal.catalogId),
+    animal.commonNoun,
+    navigate
+  );
 
   useFocusEffect(
     useCallback(() => {
       const backHandler = BackHandler.addEventListener(
         'hardwareBackPress',
         () => {
+          if (navigation.canGoBack()) {
+            goBack();
+            return true;
+          }
           navigate('HomeTabs');
           return true;
         }
       );
 
       return () => backHandler.remove();
-    }, [navigate])
+    }, [navigate, navigation])
   );
 
   useEffect(() => {
@@ -67,8 +80,6 @@ const AnimalDetailsScreen: React.FC = () => {
         const response = await catalogRepository.getLocations(
           String(animal.catalogId)
         );
-
-        console.log('Locations response:', response); // DEBUG
 
         setAnimalLocations(response.cords);
       } catch (error: unknown) {
@@ -142,7 +153,14 @@ const AnimalDetailsScreen: React.FC = () => {
         }}
       >
         <TouchableOpacity
-          onPress={() => navigate('HomeTabs')}
+          onPress={() => {
+            if (navigation.canGoBack()) {
+              goBack();
+              return;
+            }
+            navigate('HomeTabs');
+            return;
+          }}
           style={styles.backButton}
           accessibilityLabel="Volver"
           accessibilityRole="button"
@@ -277,16 +295,27 @@ const AnimalDetailsScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons
-                name="save-outline"
-                size={16}
-                color={theme.colors.text}
-              />
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                downloadState.isDownloading && { opacity: 0.6 }
+              ]}
+              onPress={handleDownloadSheet}
+              disabled={downloadState.isDownloading}
+            >
+              {downloadState.isDownloading ? (
+                <ActivityIndicator size="small" color={theme.colors.text} />
+              ) : (
+                <Ionicons
+                  name="save-outline"
+                  size={16}
+                  color={theme.colors.text}
+                />
+              )}
               <Text
                 style={[styles.actionButtonText, { color: theme.colors.text }]}
               >
-                Descargar
+                {downloadState.isDownloading ? 'Descargando...' : 'Descargar'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -314,7 +343,7 @@ const AnimalDetailsScreen: React.FC = () => {
                   <Ionicons name="close" size={30} color="#FFFFFF" />
                 </TouchableOpacity>
                 {/* Imagen con zoom */}
-                //@ts-ignore
+                {/* @ts-expect-error - TypeScript definitions for react-native-image-pan-zoom don't include children prop */}
                 <ImageZoom
                   cropWidth={Dimensions.get('window').width}
                   cropHeight={Dimensions.get('window').height}

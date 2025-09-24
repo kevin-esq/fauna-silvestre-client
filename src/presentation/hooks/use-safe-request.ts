@@ -1,4 +1,3 @@
-// src/hooks/useSafeRequest.ts
 import { useApiStatus } from '@/presentation/contexts/api-status.context';
 import { InternalAxiosRequestConfig } from 'axios';
 import { ApiService } from '@/services/http/api.service';

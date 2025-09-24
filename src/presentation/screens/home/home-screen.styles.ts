@@ -1,196 +1,505 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { Theme } from '../../contexts/theme.context';
+
+const { width: screenWidth } = Dimensions.get('window');
+const CARD_WIDTH = (screenWidth - 48) / 2;
+
+// Design System Constants
+const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
+  huge: 40
+} as const;
+
+const BORDER_RADIUS = {
+  sm: 6,
+  md: 8,
+  lg: 12,
+  xl: 16,
+  xxl: 20,
+  xxxl: 24,
+  huge: 32
+} as const;
+
+const ELEVATION = {
+  none: 0,
+  sm: 2,
+  md: 4,
+  lg: 6,
+  xl: 8,
+  xxl: 12,
+  huge: 16
+} as const;
+
+const TYPOGRAPHY = {
+  h1: { fontSize: 32, fontWeight: '800' as const },
+  h2: { fontSize: 28, fontWeight: '700' as const },
+  h3: { fontSize: 24, fontWeight: '600' as const },
+  h4: { fontSize: 20, fontWeight: '600' as const },
+  h5: { fontSize: 18, fontWeight: '600' as const },
+  body1: { fontSize: 16, fontWeight: '400' as const },
+  body2: { fontSize: 14, fontWeight: '400' as const },
+  caption: { fontSize: 12, fontWeight: '400' as const },
+  overline: { fontSize: 10, fontWeight: '600' as const },
+  button: { fontSize: 16, fontWeight: '600' as const }
+} as const;
+
+const createShadow = (
+  elevation: number,
+  color: string = '#000',
+  opacity: number = 0.1
+) => ({
+  elevation,
+  shadowColor: color,
+  shadowOffset: { width: 0, height: elevation / 2 },
+  shadowOpacity: opacity,
+  shadowRadius: elevation
+});
+
+const createSurface = (theme: Theme, elevation: number = ELEVATION.md) => ({
+  backgroundColor: theme.colors.surface,
+  borderRadius: BORDER_RADIUS.lg,
+  ...createShadow(
+    elevation,
+    theme.colors.shadow || '#000',
+    theme.colors.primary || '#000' ? 0.3 : 0.1
+  )
+});
 
 export const createStyles = (theme: Theme) => {
   const vars = theme.colors;
+
   return StyleSheet.create({
+    // ==================== LAYOUT BASE ====================
     container: {
       flex: 1,
-      backgroundColor: vars.background,
-      paddingTop: 10 // Espacio para el status bar
+      backgroundColor: vars.background
     },
-    list: {
-      paddingHorizontal: 16,
-      paddingBottom: 100
+    scrollView: {
+      flex: 1,
+      backgroundColor: vars.background
     },
-    timeAndLocationContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 16,
-      paddingTop: 12,
-      borderTopWidth: 1,
-      borderColor: theme.colors.border
+    bottomSpacer: {
+      height: 120 // Espacio para FAB
     },
-    timeAndLocationText: {
-      color: theme.colors.textSecondary,
-      fontSize: 14,
-      marginLeft: 8
-    },
-    separator: {
-      height: '60%',
-      width: 1,
-      backgroundColor: theme.colors.border,
-      marginHorizontal: 12
-    },
-    activityIndicator: {
-      marginLeft: 8
-    },
-    statsContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      paddingTop: 10,
-      width: '100%'
-    },
-    statNumber: {
-      fontSize: 32,
-      fontWeight: 'bold',
-      color: theme.colors.primary,
-      marginTop: 4
-    },
-    scrollContainer: {
-      paddingBottom: 100
+
+    // ==================== HEADER MEJORADO ====================
+    headerGradient: {
+      borderBottomLeftRadius: BORDER_RADIUS.xxxl,
+      borderBottomRightRadius: BORDER_RADIUS.xxxl,
+      ...createShadow(ELEVATION.lg, '#000', 0.2)
     },
     headerContainer: {
-      backgroundColor: vars.background,
-      paddingHorizontal: 20,
-      paddingTop: 10,
-      paddingBottom: 20,
-      borderBottomLeftRadius: 24,
-      borderBottomRightRadius: 24
+      paddingHorizontal: SPACING.xl,
+      paddingVertical: SPACING.xxl,
+      paddingTop: SPACING.huge
     },
     headerTopRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center'
+      alignItems: 'flex-start',
+      marginBottom: SPACING.xl
     },
-    logoutButton: {
+    greetingSection: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 8,
-      borderRadius: 8,
-      backgroundColor: vars.cardBackground
+      flex: 1
     },
-    logoutButtonText: {
-      marginLeft: 8,
-      color: vars.text,
-      fontWeight: 'bold'
+    greetingIcon: {
+      fontSize: 32,
+      marginRight: SPACING.md
     },
     greeting: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: vars.text
+      ...TYPOGRAPHY.h4,
+      color: vars.textOnPrimary || '#FFFFFF',
+      marginBottom: SPACING.xs
     },
     subGreeting: {
-      fontSize: 18,
-      color: vars.textSecondary,
-      marginTop: 4
+      ...TYPOGRAPHY.body2,
+      color: vars.textOnPrimary || '#FFFFFF',
+      opacity: 0.9
     },
-    description: {
-      fontSize: 16,
+    logoutButton: {
+      width: 44,
+      height: 44,
+      borderRadius: BORDER_RADIUS.lg,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+    logoutIcon: {
+      fontSize: 20,
+      color: vars.textOnPrimary || '#FFFFFF'
+    },
+
+    // ==================== TIME & LOCATION CHIPS ====================
+    timeAndLocationContainer: {
+      flexDirection: 'row',
+      gap: SPACING.md,
+      flexWrap: 'wrap'
+    },
+    infoChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderRadius: BORDER_RADIUS.xl,
+      gap: SPACING.xs
+    },
+    infoChipText: {
+      ...TYPOGRAPHY.caption,
+      color: vars.textOnPrimary || '#FFFFFF',
+      fontWeight: '500'
+    },
+
+    // ==================== SECTIONS ====================
+    sectionTitle: {
+      ...TYPOGRAPHY.h4,
+      color: vars.text,
+      marginBottom: SPACING.lg,
+      textAlign: 'center'
+    },
+
+    // ==================== STATS MEJORADAS ====================
+    statsSection: {
+      paddingHorizontal: SPACING.xl,
+      paddingTop: SPACING.xxxl
+    },
+    statsContainer: {
+      flexDirection: 'row',
+      gap: SPACING.lg
+    },
+    statCard: {
+      ...createSurface(theme, ELEVATION.md),
+      flex: 1,
+      padding: SPACING.xl,
+      alignItems: 'center',
+      minHeight: 140,
+      justifyContent: 'center'
+    },
+    statIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: BORDER_RADIUS.lg,
+      backgroundColor: vars.surfaceVariant || '#F5F5F5',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: SPACING.md,
+      ...createShadow(ELEVATION.sm)
+    },
+    statNumber: {
+      ...TYPOGRAPHY.h2,
+      color: vars.text,
+      marginBottom: SPACING.xs,
+      textAlign: 'center'
+    },
+    statLabel: {
+      ...TYPOGRAPHY.body2,
       color: vars.textSecondary,
       textAlign: 'center',
-      marginBottom: 16,
+      fontWeight: '500',
+      marginBottom: SPACING.sm
+    },
+    statTrend: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: vars.success || '#E8F5E8',
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: SPACING.xs,
+      borderRadius: BORDER_RADIUS.md,
+      gap: SPACING.xs
+    },
+    statTrendText: {
+      ...TYPOGRAPHY.caption,
+      color: vars.success || '#4CAF50',
+      fontWeight: '600'
+    },
+
+    // ==================== QUICK ACTIONS ====================
+    quickActionsSection: {
+      paddingHorizontal: SPACING.xl,
+      paddingTop: SPACING.xxxl
+    },
+    quickActionsContainer: {
+      flexDirection: 'row',
+      gap: SPACING.lg
+    },
+    quickActionCard: {
+      flex: 1,
+      padding: SPACING.xl,
+      borderRadius: BORDER_RADIUS.xl,
+      alignItems: 'center',
+      minHeight: 120,
+      ...createShadow(ELEVATION.md)
+    },
+    quickActionPrimary: {
+      backgroundColor: vars.primary
+    },
+    quickActionSecondary: {
+      backgroundColor: vars.surface,
+      borderWidth: 2,
+      borderColor: vars.forest || vars.primary
+    },
+    quickActionIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: BORDER_RADIUS.lg,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: SPACING.md
+    },
+    quickActionTitle: {
+      ...TYPOGRAPHY.body1,
+      fontWeight: '600',
+      color: vars.textOnPrimary,
+      textAlign: 'center',
+      marginBottom: SPACING.xs
+    },
+    quickActionSubtitle: {
+      ...TYPOGRAPHY.caption,
+      color: vars.textOnPrimary,
+      opacity: 0.9,
+      textAlign: 'center'
+    },
+
+    // ==================== FILTERS SECTION ====================
+    filtersSection: {
+      paddingHorizontal: SPACING.xl,
+      paddingTop: SPACING.xxxl
+    },
+    filtersHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.lg
+    },
+    filterToggle: {
+      width: 36,
+      height: 36,
+      borderRadius: BORDER_RADIUS.md,
+      backgroundColor: vars.surfaceVariant,
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+    filterContainer: {
+      marginBottom: SPACING.lg,
+      zIndex: 1000,
+      elevation: 1000
+    },
+    filterContainerOpen: {
+      zIndex: 99999,
+      elevation: 99999
+    },
+
+    // ==================== RESULTS INFO ====================
+    resultsInfo: {
+      ...createSurface(theme, ELEVATION.sm),
+      padding: SPACING.lg,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.xl
+    },
+    resultsCount: {
+      flex: 1
+    },
+    resultsNumber: {
+      ...TYPOGRAPHY.h3,
+      color: vars.primary,
+      fontWeight: '700'
+    },
+    resultsLabel: {
+      ...TYPOGRAPHY.body2,
+      color: vars.textSecondary,
+      marginTop: SPACING.xs
+    },
+    toggleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md,
+      backgroundColor: vars.primaryLight || vars.surfaceVariant,
+      borderRadius: BORDER_RADIUS.xl,
+      gap: SPACING.sm,
+      ...createShadow(ELEVATION.sm)
+    },
+    toggleButtonText: {
+      ...TYPOGRAPHY.body2,
+      fontWeight: '600',
+      color: vars.primary
+    },
+
+    // ==================== ANIMALS GRID ====================
+    animalsGrid: {
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: SPACING.sm
+    },
+    animalsContainer: {
+      gap: SPACING.xl,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between'
+    },
+    animalsRow: {
+      justifyContent: 'space-between',
+      marginBottom: SPACING.lg
+    },
+    animalCardWrapper: {
+      width: CARD_WIDTH
+    },
+    animalCardLeft: {
+      marginRight: SPACING.sm
+    },
+    animalCardRight: {
+      marginLeft: SPACING.sm
+    },
+
+    // ==================== LOADING STATES ====================
+    loadingSection: {
+      paddingHorizontal: SPACING.sm
+    },
+    loadingTitle: {
+      ...TYPOGRAPHY.h5,
+      color: vars.text,
+      textAlign: 'center',
+      marginBottom: SPACING.lg
+    },
+    skeletonGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.lg,
+      justifyContent: 'space-between'
+    },
+
+    // ==================== EMPTY STATES MEJORADOS ====================
+    emptyState: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.md
+    },
+    emptyIconContainer: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: vars.surfaceVariant || '#F5F5F5',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: SPACING.xl,
+      ...createShadow(ELEVATION.sm)
+    },
+    emptyStateTitle: {
+      ...TYPOGRAPHY.h4,
+      color: vars.text,
+      textAlign: 'center',
+      marginBottom: SPACING.md
+    },
+    emptyStateText: {
+      ...TYPOGRAPHY.body2,
+      color: vars.textSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
+      opacity: 0.8,
+      maxWidth: 280
+    },
+
+    // ==================== LEGACY COMPATIBILITY ====================
+    scrollContainer: {
+      paddingBottom: 120,
+      flexGrow: 1
+    },
+    section: {
+      marginVertical: SPACING.lg,
+      paddingHorizontal: SPACING.lg
+    },
+    imageSection: {
+      marginTop: SPACING.xxl,
+      paddingHorizontal: SPACING.lg
+    },
+    list: {
+      paddingHorizontal: SPACING.lg,
+      paddingBottom: 100
+    },
+    description: {
+      ...TYPOGRAPHY.body1,
+      color: vars.textSecondary,
+      textAlign: 'center',
+      marginBottom: SPACING.lg,
       alignSelf: 'stretch'
     },
     welcome: {
-      fontSize: 22,
-      fontWeight: 'bold',
+      ...TYPOGRAPHY.h3,
       color: vars.text,
-      marginVertical: 16
+      marginVertical: SPACING.lg
     },
     statsRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: 24
-    },
-    statCard: {
-      flex: 1,
-      backgroundColor: vars.cardBackground,
-      borderRadius: 12,
-      padding: 16,
-      marginHorizontal: 14,
-      alignItems: 'center',
-      elevation: 2,
-      width: '100%'
-    },
-    statLabel: {
-      fontSize: 14,
-      color: vars.textSecondary
+      marginBottom: SPACING.xxl
     },
     statCount: {
-      fontSize: 20,
-      fontWeight: 'bold',
+      ...TYPOGRAPHY.h3,
       color: vars.primary
-    },
-    section: {
-      marginVertical: 12,
-      paddingHorizontal: 16
-    },
-    sectionTitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      color: vars.text,
-      marginBottom: 16,
-      textAlign: 'center'
-    },
-    imageSection: {
-      marginTop: 24,
-      paddingHorizontal: 16
-    },
-    imagePlaceholder: {
-      textAlign: 'center',
-      color: vars.textSecondary,
-      padding: 16,
-      backgroundColor: vars.cardBackground,
-      borderRadius: 8
-    },
-    statsCard: {
-      width: '100%',
-      padding: 16,
-      borderRadius: 12,
-      backgroundColor: vars.cardBackground,
-      alignItems: 'center',
-      marginBottom: 24
     },
     statBox: {
       alignItems: 'center',
       flex: 1
     },
     statValue: {
-      fontSize: 24,
-      fontWeight: 'bold',
+      ...TYPOGRAPHY.h2,
       color: vars.primary
+    },
+    imagePlaceholder: {
+      ...TYPOGRAPHY.body1,
+      textAlign: 'center',
+      color: vars.textSecondary,
+      padding: SPACING.lg,
+      backgroundColor: vars.surface,
+      borderRadius: BORDER_RADIUS.md
+    },
+    statsCard: {
+      ...createSurface(theme),
+      width: '100%',
+      padding: SPACING.lg,
+      alignItems: 'center',
+      marginBottom: SPACING.xxl
     },
     cardButtonContainer: {
       width: '100%',
-      marginBottom: 24
+      marginBottom: SPACING.xxl
     },
     cardButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: vars.cardBackground,
-      padding: 16,
-      borderRadius: 12,
-      marginBottom: 12
+      ...createSurface(theme),
+      padding: SPACING.lg,
+      marginBottom: SPACING.md
     },
     cardButtonText: {
-      fontSize: 16,
+      ...TYPOGRAPHY.body1,
       color: vars.text,
       fontWeight: '600'
     },
     buttonIcon: {
-      marginLeft: 8
+      marginLeft: SPACING.sm
     },
     emptyListContainer: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 40
+      paddingVertical: SPACING.xxxl
     },
     emptyListText: {
-      marginTop: 12,
-      fontSize: 16,
+      ...TYPOGRAPHY.body1,
+      marginTop: SPACING.md,
       color: vars.textSecondary,
       textAlign: 'center'
     },
@@ -198,91 +507,62 @@ export const createStyles = (theme: Theme) => {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 16
+      marginBottom: SPACING.lg
     },
-
     viewAllButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 8,
-      backgroundColor: theme.colors.surfaceVariant
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderRadius: BORDER_RADIUS.md,
+      backgroundColor: vars.surfaceVariant
     },
-
     viewAllButtonText: {
-      fontSize: 14,
+      ...TYPOGRAPHY.body2,
       fontWeight: '600',
-      color: theme.colors.primary,
-      marginRight: 4
+      color: vars.primary,
+      marginRight: SPACING.xs
     },
-
-    filterContainer: {
-      marginBottom: 16,
-      paddingHorizontal: 4
+    timeAndLocationText: {
+      ...TYPOGRAPHY.body2,
+      color: vars.textSecondary,
+      marginLeft: SPACING.sm
     },
-
-    resultsInfo: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 12,
-      paddingHorizontal: 4
+    separator: {
+      height: SPACING.lg,
+      width: 1,
+      backgroundColor: vars.border,
+      marginHorizontal: SPACING.md,
+      opacity: 0.5
     },
-
-    resultsText: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-      fontWeight: '500'
+    activityIndicator: {
+      marginLeft: SPACING.sm
     },
-
-    toggleButton: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 6,
-      backgroundColor: theme.colors.surfaceVariant
-    },
-
-    toggleButtonText: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: theme.colors.primary
-    },
-
     loadingContainer: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 40
+      paddingVertical: SPACING.xxxl * 2
     },
-
     loadingText: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-      marginTop: 12,
+      ...TYPOGRAPHY.body2,
+      color: vars.textSecondary,
+      marginTop: SPACING.md,
       fontStyle: 'italic'
     },
-
-    emptyState: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 40,
-      paddingHorizontal: 20
-    },
-
-    emptyStateTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: theme.colors.text,
-      marginTop: 16,
-      marginBottom: 8,
-      textAlign: 'center'
-    },
-
-    emptyStateText: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-      lineHeight: 20
+    quickActionTertiary: {
+      backgroundColor: vars.surface,
+      borderWidth: 2,
+      borderColor: vars.primary
     }
   });
+};
+
+// Export design system constants for reuse
+export {
+  SPACING,
+  BORDER_RADIUS,
+  ELEVATION,
+  TYPOGRAPHY,
+  createShadow,
+  createSurface
 };

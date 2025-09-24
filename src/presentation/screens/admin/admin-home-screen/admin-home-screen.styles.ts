@@ -14,7 +14,6 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       backgroundColor: vars['--background']
     },
 
-    // Header
     headerContainer: {
       padding: 20,
       paddingBottom: 10,
@@ -43,7 +42,6 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       color: vars['--text-secondary']
     },
 
-    // Info Card
     infoCard: {
       backgroundColor: vars['--surface'],
       borderRadius: 12,
@@ -75,7 +73,6 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       color: vars['--text-secondary']
     },
 
-    // Secciones
     section: {
       marginTop: 20,
       paddingHorizontal: 20
@@ -102,7 +99,6 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       fontWeight: '500'
     },
 
-    // Quick Actions
     quickActions: {
       marginTop: 8
     },
@@ -187,7 +183,6 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       color: vars['--text-secondary']
     },
 
-    // Empty State
     emptyContainer: {
       alignItems: 'center',
       padding: 40
@@ -209,7 +204,6 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       textAlign: 'center'
     },
 
-    // Loading State
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -224,7 +218,6 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       color: vars['--text']
     },
 
-    // Error State
     errorContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -253,7 +246,6 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       fontWeight: '600'
     },
 
-    // FAB
     fab: {
       position: 'absolute',
       bottom: 30,
@@ -270,14 +262,12 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       color: vars['--text-on-primary']
     },
 
-    // Refresh Control
     refreshControl: {
       color: vars['--primary']
     }
   });
 };
 
-// Función auxiliar para sombras consistentes
 const shadowStyle = (
   vars: ThemeVariablesType,
   isDark?: boolean,
