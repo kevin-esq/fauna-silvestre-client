@@ -108,4 +108,3 @@ const createStyles = (variables: Record<string, string>) =>
   });
 
 export default React.memo(AuthContainer);
-
