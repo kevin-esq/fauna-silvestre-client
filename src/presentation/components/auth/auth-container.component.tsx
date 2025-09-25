@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
 import {
+  View,
   Text,
   StyleSheet,
   Image,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
+  StatusBar
 } from 'react-native';
 import icon from '../../../assets/icon.png';
 
@@ -25,20 +27,32 @@ const AuthContainer: React.FC<AuthContainerProps> = ({
   const styles = useMemo(() => createStyles(variables), [variables]);
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: variables['--background'] }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
+    <>
+      <StatusBar
+        backgroundColor={variables['--background']}
+        barStyle={
+          variables['--text'] === '#E0E0E0' ? 'light-content' : 'dark-content'
+        }
+      />
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: variables['--background'] }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Image source={icon} style={styles.logo} />
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
-        {children}
-      </ScrollView>
-    </KeyboardAvoidingView>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.headerSection}>
+            <Image source={icon} style={styles.logo} />
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle}>{subtitle}</Text>
+          </View>
+
+          <View style={styles.contentSection}>{children}</View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </>
   );
 };
 
@@ -46,28 +60,50 @@ const createStyles = (variables: Record<string, string>) =>
   StyleSheet.create({
     container: {
       flexGrow: 1,
-      justifyContent: 'center',
-      padding: 24,
+      backgroundColor: variables['--background'],
+      minHeight: '100%'
+    },
+    headerSection: {
+      alignItems: 'center',
+      paddingHorizontal: 24,
+      paddingTop: 60,
+      paddingBottom: 32,
       backgroundColor: variables['--background']
     },
+    contentSection: {
+      flex: 1,
+      paddingHorizontal: 24,
+      paddingBottom: 24
+    },
     logo: {
-      width: 150,
-      height: 150,
+      width: 120,
+      height: 120,
       alignSelf: 'center',
-      marginBottom: 16,
-      resizeMode: 'contain'
+      marginBottom: 24,
+      resizeMode: 'contain',
+      shadowColor: variables['--shadow'],
+      shadowOffset: {
+        width: 0,
+        height: 4
+      },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 5
     },
     title: {
-      fontSize: 26,
+      fontSize: 32,
       fontWeight: '700',
       textAlign: 'center',
-      color: variables['--text']
+      color: variables['--text'],
+      marginBottom: 8,
+      letterSpacing: -0.5
     },
     subtitle: {
       fontSize: 16,
       color: variables['--text-secondary'],
       textAlign: 'center',
-      marginBottom: 24
+      lineHeight: 22,
+      maxWidth: 280
     }
   });
 

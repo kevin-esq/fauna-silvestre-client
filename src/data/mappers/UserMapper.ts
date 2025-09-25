@@ -1,18 +1,7 @@
-// data/mappers/UserMapper.ts
 import User from '../../domain/entities/user.entity';
 import { UserModel } from '../models/UserModel';
 
-/**
- * Mapeador para convertir modelos de usuario a entidades del dominio.
- * @class
- */
 export class UserMapper {
-  /**
-   * Convierte un modelo de usuario a entidad.
-   * @static
-   * @param {UserModel} data - Modelo de datos de la API
-   * @returns {User} Entidad de dominio
-   */
   static toDomain(data: UserModel): User {
     return new User(
       '',
@@ -28,12 +17,6 @@ export class UserMapper {
     );
   }
 
-  /**
-   * Convierte una entidad de usuario a modelo.
-   * @static
-   * @param {User} entity - Entidad de dominio
-   * @returns {UserModel} Modelo para la API
-   */
   static toModel(entity: User): UserModel {
     return {
       userName: entity.UserName,

@@ -11,7 +11,11 @@ export class AuthServiceFactory {
     const loggerInstance = logger || new ConsoleLogger('info');
     const tokenService = new TokenService(apiInstance, loggerInstance);
 
-    return AuthService.getInstance(apiInstance, tokenService, loggerInstance);
+    return AuthService.getInstance({
+      api: apiInstance,
+      tokenService: tokenService,
+      logger: loggerInstance
+    });
   }
 }
 

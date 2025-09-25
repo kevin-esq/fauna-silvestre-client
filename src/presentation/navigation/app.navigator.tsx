@@ -5,7 +5,6 @@ import {
   MaterialTopTabNavigationOptions
 } from '@react-navigation/material-top-tabs';
 import { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs';
-import { Alert } from 'react-native';
 
 import { useAuth } from '../contexts/auth.context';
 import { Theme, themeVariables, useTheme } from '../contexts/theme.context';
@@ -72,11 +71,6 @@ const useRoleValidation = () => {
   const handleInvalidRole = useCallback(async () => {
     try {
       console.warn('Invalid role detected, signing out user');
-      Alert.alert(
-        'Error de Sesión',
-        'Se ha detectado un problema con tu cuenta. Por favor, vuelve a iniciar sesión.',
-        [{ text: 'Entendido' }]
-      );
       await signOut();
     } catch (error) {
       console.error('Error during signOut:', error);
@@ -113,7 +107,6 @@ const useNavigationState = () => {
   }, [status, initializing, isAuthenticated, hasValidRole, role]);
 };
 
-// Components with error boundaries
 const TabsComponent = React.memo<{
   screens: TabConfig[];
   theme: Theme;
@@ -157,7 +150,6 @@ const TabsComponent = React.memo<{
 
 TabsComponent.displayName = 'TabsComponent';
 
-// Memoized tab components
 export const AdminTabs = React.memo(() => {
   const { theme } = useTheme();
   return (

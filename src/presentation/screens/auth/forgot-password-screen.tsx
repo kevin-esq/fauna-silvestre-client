@@ -12,7 +12,6 @@ import {
   ResetStep
 } from '../../hooks/use-forgot-password.hook';
 
-// Reusable Components
 import AuthContainer from '../../components/auth/auth-container.component';
 import AuthTextInput from '../../components/auth/auth-text-input.component';
 import CodeInput from '../../components/auth/code-input.component';
@@ -20,13 +19,13 @@ import ErrorMessage from '../../components/auth/error-message.component';
 import CustomButton from '../../components/ui/custom-button.component';
 import { createStyles } from './forgot-password-screen.styles';
 import { useTheme, Theme, themeVariables } from '../../contexts/theme.context';
+import { useAuth } from '@/presentation/contexts/auth.context';
 
 type StepProps = {
   theme: Theme;
   styles: { button: StyleProp<ViewStyle>; resendText?: StyleProp<TextStyle> };
 };
 
-// Step Components
 const EmailStep = ({
   email,
   setEmail,
@@ -151,6 +150,7 @@ const ForgotPasswordScreen = () => {
   const { theme } = useTheme();
   const variables = themeVariables(theme);
   const styles = createStyles(variables);
+  const { clearError } = useAuth();
 
   const subtitles = {
     [ResetStep.EMAIL]: 'Ingresa tu correo para enviarte un código',
@@ -204,7 +204,10 @@ const ForgotPasswordScreen = () => {
       <Text style={styles.orText}>¿Recordaste tu contraseña?</Text>
       <CustomButton
         title="Volver a Iniciar Sesión"
-        onPress={() => navigate('Login')}
+        onPress={() => {
+          clearError();
+          navigate('Login');
+        }}
         variant="secondary"
         style={styles.button}
         variables={variables}

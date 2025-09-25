@@ -24,10 +24,25 @@ export interface UserResponse {
   email: string;
 }
 
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  error?: string;
+export interface BaseResponse {
+  message: string;
+  error: boolean;
+}
+
+export interface AuthResponse extends BaseResponse {
+  accessToken?: string;
+  refreshToken?: string;
+}
+
+// eslint-disable-next-line
+export interface RegisterResponse extends BaseResponse {}
+// eslint-disable-next-line
+export interface ResetCodeResponse extends BaseResponse {}
+// eslint-disable-next-line
+export interface ChangePasswordResponse extends BaseResponse {}
+
+export interface VerifyCodeResponse extends BaseResponse {
+  token: string;
 }
 
 export interface RefreshTokenPayload {
@@ -40,16 +55,7 @@ export interface AuthError {
     | 'email_not_verified'
     | 'account_locked'
     | 'token_expired'
-    | 'validation_error';
-  message: string;
-}
-
-export interface AuthError {
-  code:
-    | 'invalid_credentials'
-    | 'email_not_verified'
-    | 'account_locked'
-    | 'token_expired'
-    | 'validation_error';
+    | 'validation_error'
+    | 'backend_error';
   message: string;
 }
