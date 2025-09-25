@@ -1,133 +1,201 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import { ISecureStorage, secureStorageService } from '../storage/secure-storage.service';
+import axios, {
+  AxiosInstance,
+  AxiosResponse,
+  AxiosError,
+  InternalAxiosRequestConfig
+} from 'axios';
+import axiosRetry from 'axios-retry';
 import { ILogger } from '../../shared/types/ILogger';
 import { ConsoleLogger } from '../logging/console-logger';
 import { ApiError, NetworkError } from '../../shared/types/custom-errors';
-import appJson from '../../../app.json';
+import { extra } from '../../../app.json';
+import { getSecureStorageService } from '../storage/secure-storage.service';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../storage/storage-keys';
+import { authService } from '../auth/auth.factory';
 
-/**
- * A singleton service for managing API calls using Axios.
- * It handles Axios instance configuration, token injection, and global error handling.
- */
+const { PUBLIC_API_URL, PUBLIC_API_TIMEOUT } = extra;
+interface CustomConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+  _pendingKey?: string;
+}
 
-const {
-  extra,
-} = appJson as { extra: Record<string, any> };
-
-class ApiService {
+export class ApiService {
   private static instance: ApiService;
   public readonly client: AxiosInstance;
-  private onUnauthorizedCallback: (() => void) | null = null;
+  private isRefreshing = false;
+  private failedQueue: Array<{
+    resolve: (token: string) => void;
+    reject: (error: Error) => void;
+  }> = [];
+  private pending = new Map<string, AbortController>();
+  private logger: ILogger;
 
-  private readonly extraConfig: { [k: string]: any } | undefined;
-  private readonly API_URL: string;
-  private readonly API_TIMEOUT: number;
-
-  /**
-   * Private constructor to enforce the singleton pattern.
-   * @param storageService The secure storage service for handling auth tokens.
-   * @param logger The logging service.
-   */
-  private constructor(private readonly storageService: ISecureStorage, private readonly logger: ILogger) {
-    this.extraConfig = extra;
-    this.API_URL = this.extraConfig?.API_URL || '';
-    this.API_TIMEOUT = Number(this.extraConfig?.API_TIMEOUT || 15000);
-
+  private constructor(logger: ILogger) {
+    this.logger = logger;
     this.client = axios.create({
-      baseURL: this.API_URL,
-      timeout: this.API_TIMEOUT,
-      headers: { 'Content-Type': 'application/json' },
+      baseURL: PUBLIC_API_URL,
+      timeout: Number(PUBLIC_API_TIMEOUT) || 60000,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    axiosRetry(this.client, {
+      retries: 3,
+      retryDelay: retryCount => retryCount * 2000,
+      retryCondition: err => {
+        return (
+          axiosRetry.isNetworkError(err) ||
+          axiosRetry.isRetryableError(err) ||
+          (err.code === 'ECONNABORTED' && err.message.includes('timeout'))
+        );
+      },
+      onRetry: (err, attempt) => {
+        const errorMessage = this.getErrorMessage(err);
+        this.logger.warn(`[ApiService] Retry #${attempt}: ${errorMessage}`);
+      }
     });
 
     this.setupInterceptors();
   }
 
-  /**
-   * Retrieves the single instance of the ApiService.
-   * @returns The singleton ApiService instance.
-   */
   public static getInstance(): ApiService {
     if (!ApiService.instance) {
-      const logger = new ConsoleLogger('info');
-      ApiService.instance = new ApiService(secureStorageService, logger);
+      ApiService.instance = new ApiService(new ConsoleLogger('info'));
     }
     return ApiService.instance;
   }
 
-  /**
-   * Registers a callback function to be executed upon receiving a 401 Unauthorized response.
-   * @param callback The function to execute.
-   */
   public setOnUnauthorizedCallback(callback: () => void): void {
-    this.onUnauthorizedCallback = callback;
+    authService.setOnUnauthorizedCallback(callback);
   }
 
-  /**
-   * Sets up the request and response interceptors for the Axios client.
-   */
   private setupInterceptors(): void {
-    // Request interceptor: Injects the auth token into headers.
-    this.client.interceptors.request.use(this.requestInterceptor.bind(this), (error) => Promise.reject(error));
-
-    // Response interceptor: Handles API errors globally.
-    this.client.interceptors.response.use((response) => response, this.responseErrorInterceptor.bind(this));
+    this.client.interceptors.request.use(this.onRequest.bind(this));
+    this.client.interceptors.response.use(
+      r => this.onResponse(r),
+      e => this.onError(e)
+    );
   }
 
-  /**
-   * Intercepts outgoing requests to inject the authentication token.
-   * @param config The Axios request configuration.
-   * @returns The modified config.
-   */
-  private async requestInterceptor(config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> {
-    if (!config.headers.Authorization) {
-      const token = await this.storageService.getValueFor('auth_access_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-        this.logger.debug('[ApiService] Auth token injected into request header.');
-      }
-    }
+  private async onRequest(config: CustomConfig): Promise<CustomConfig> {
+    const token = await (
+      await getSecureStorageService()
+    ).getValueFor(ACCESS_TOKEN_KEY);
+    if (token && config.headers)
+      config.headers.Authorization = `Bearer ${token}`;
+
+    const key = this.makeKey(config);
+    if (this.pending.has(key)) this.pending.get(key)!.abort();
+
+    const ctrl = new AbortController();
+    this.pending.set(key, ctrl);
+    config.signal = ctrl.signal;
+    config._pendingKey = key;
+
     return config;
   }
 
-  /**
-   * Intercepts incoming responses to handle errors centrally.
-   * @param error The error object from Axios.
-   * @returns A rejected promise with a custom error.
-   */
-  private responseErrorInterceptor(error: any): Promise<never> {
-    if (axios.isAxiosError(error)) {
-      const { response, request, message, config } = error;
-      const method = config?.method?.toUpperCase();
-      const url = config?.url;
+  private onResponse<T>(response: AxiosResponse<T>): AxiosResponse<T> {
+    const key = (response.config as CustomConfig)._pendingKey;
+    if (key) this.pending.delete(key);
+    return response;
+  }
 
-      if (response) {
-        // The request was made and the server responded with a status code
-        this.logger.error(`[ApiService] API Error: ${method} ${url}`, error, { status: response.status, data: response.data });
+  private async onError(error: unknown): Promise<unknown> {
+    if (!axios.isAxiosError(error)) {
+      this.logger.error('Non Axios error', error as Error);
+      return Promise.reject(new ApiError('Unexpected non-Axios error'));
+    }
 
-        if (response.status === 401 || response.status === 403 || response.status === 404 || response.status === 400) {
-          this.logger.warn('[ApiService] Unauthorized access detected. Triggering sign-out.');
-          this.onUnauthorizedCallback?.();
-        }
+    if (!error.response) {
+      this.logger.error('No response', error as Error);
+      return Promise.reject(new NetworkError('No response from server'));
+    }
 
-        // Create a specific ApiError
-        return Promise.reject(new ApiError(response.data?.message || 'Ocurrió un error de API.', response.status));
-      } else if (request) {
-        // The request was made but no response was received (e.g., network error)
-        this.logger.error(`[ApiService] Network Error: No response for ${method} ${url}`, error);
-        return Promise.reject(new NetworkError('No se recibió respuesta del servidor. Por favor, verifique su conexión a internet.'));
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        this.logger.error(`[ApiService] Request Setup Error: ${method} ${url}`, error);
-        return Promise.reject(new ApiError('Ocurrió un error inesperado.'));
+    return this.handleAuthErrors(error);
+  }
+
+  private async handleAuthErrors<T>(
+    error: AxiosError<T>
+  ): Promise<AxiosResponse<T> | never> {
+    const response = error.response;
+    const original = error.config as CustomConfig;
+
+    if (response?.status === 401 && !original._retry) {
+      original._retry = true;
+
+      if (this.isRefreshing) {
+        return new Promise<string>((resolve, reject) =>
+          this.failedQueue.push({ resolve, reject })
+        ).then(token => {
+          original.headers!.Authorization = `Bearer ${token}`;
+          return this.client(original);
+        });
+      }
+
+      this.isRefreshing = true;
+      try {
+        const refreshToken = await (
+          await getSecureStorageService()
+        ).getValueFor(REFRESH_TOKEN_KEY);
+        const newToken = await authService.refreshToken(refreshToken || '');
+        this.processFailedQueue(null, newToken);
+        original.headers!.Authorization = `Bearer ${newToken}`;
+        return this.client(original);
+      } catch (err) {
+        const ex = err instanceof Error ? err : new Error('Refresh failed');
+        this.processFailedQueue(ex, null);
+        authService.triggerLogout();
+        return Promise.reject(ex);
+      } finally {
+        this.isRefreshing = false;
       }
     }
 
-    this.logger.error('[ApiService] Non-Axios error occurred', error);
-    return Promise.reject(new ApiError('Ocurrió un error inesperado.'));
+    if (response && [400, 403, 404].includes(response.status)) {
+      this.logger.warn(`[ApiService] HTTP ${response.status}`);
+    }
+
+    if (
+      response?.data &&
+      typeof response.data === 'object' &&
+      'message' in response.data
+    ) {
+      return Promise.reject(
+        new ApiError(
+          (response.data as { message: string }).message,
+          response.status
+        )
+      );
+    }
+
+    if ((error as AxiosError).request) {
+      return Promise.reject(new NetworkError('No response from server'));
+    }
+
+    return Promise.reject(new ApiError('Unexpected error'));
+  }
+
+  private processFailedQueue(error: Error | null, token: string | null): void {
+    this.failedQueue.forEach(({ resolve, reject }) =>
+      error
+        ? reject(error)
+        : token
+          ? resolve(token)
+          : reject(new Error('No token'))
+    );
+    this.failedQueue = [];
+  }
+
+  private makeKey(config: InternalAxiosRequestConfig): string {
+    return `${config.method}|${config.baseURL}|${config.url}|${JSON.stringify(
+      config.params
+    )}|${JSON.stringify(config.data)}`;
+  }
+
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return String(error);
   }
 }
-
-/**
- * The singleton instance of the ApiService.
- */
-export const apiService = ApiService.getInstance();

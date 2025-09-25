@@ -41,7 +41,10 @@ export class AuthError extends BaseError {
  * Represents an error related to secure storage operations (e.g., failed to save or retrieve data).
  */
 export class StorageError extends BaseError {
-  constructor(message = 'A secure storage operation failed.', statusCode = 500) {
+  constructor(
+    message = 'A secure storage operation failed.',
+    statusCode = 500
+  ) {
     super(message, statusCode);
   }
 }
@@ -50,7 +53,10 @@ export class StorageError extends BaseError {
  * Represents a client-side network error (e.g., request timeout, no internet connection).
  */
 export class NetworkError extends BaseError {
-  constructor(message = 'A network error occurred. Please check your connection.', statusCode = 503) {
+  constructor(
+    message = 'A network error occurred. Please check your connection.',
+    statusCode = 503
+  ) {
     super(message, statusCode);
   }
 }

@@ -1,12 +1,7 @@
-// data/repositories/BaseRepository.ts
 import { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { HttpError, NetworkError } from '../../shared/types/errors';
 import { ILogger } from '../../shared/types/ILogger';
 
-/**
- * Clase base para repositorios HTTP.
- * @class
- */
 export abstract class BaseRepository {
   protected readonly api: AxiosInstance;
   protected readonly logger: ILogger;
@@ -16,12 +11,8 @@ export abstract class BaseRepository {
     this.logger = logger;
   }
 
-  /**
-   * Verifica el estado de la respuesta HTTP.
-   * @param response - Respuesta de Axios
-   * @throws {HttpError} Si el estado no es exitoso
-   */
   protected ensureSuccessStatus(response: AxiosResponse): void {
+    console.log(response.data);
     if (response.status < 200 || response.status >= 300) {
       throw new HttpError(
         `HTTP Error: Received status ${response.status}`,
@@ -31,13 +22,10 @@ export abstract class BaseRepository {
     }
   }
 
-  /**
-   * Maneja errores HTTP centralizados.
-   * @param error - Error capturado
-   * @param context - Contexto de la operación
-   * @returns {HttpError | NetworkError} Error procesado
-   */
-  protected handleHttpError(error: unknown, context: string): HttpError | NetworkError {
+  protected handleHttpError(
+    error: unknown,
+    context: string
+  ): HttpError | NetworkError {
     if (error instanceof HttpError) {
       this.logger.error(`[${context}] HTTP Error: ${error.message}`, error);
       return error;
@@ -53,12 +41,18 @@ export abstract class BaseRepository {
         return networkError;
       }
 
-      const httpError = new HttpError(message, statusCode, error.response?.data);
+      const httpError = new HttpError(
+        message,
+        statusCode,
+        error.response?.data
+      );
       this.logger.error(`[${context}] API Error`, httpError);
       return httpError;
     }
 
-    const unknownError = new HttpError(`Unknown error in ${context}: ${String(error)}`);
+    const unknownError = new HttpError(
+      `Unknown error in ${context}: ${String(error)}`
+    );
     this.logger.error(`[${context}] Unexpected Error`, unknownError);
     return unknownError;
   }

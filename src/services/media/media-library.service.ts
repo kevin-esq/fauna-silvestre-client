@@ -9,7 +9,7 @@ export interface MediaMetadata {
   width?: number;
   height?: number;
   creationTime?: number;
-  exif?: any;
+  exif?: unknown;
 }
 
 export class MediaLibraryService {
@@ -22,12 +22,7 @@ export class MediaLibraryService {
         return null;
       }
 
-      const {
-        GPSLatitude,
-        GPSLongitude,
-        GPSAltitude,
-        GPSDOP,
-      } = tags;
+      const { GPSLatitude, GPSLongitude, GPSAltitude, GPSDOP } = tags;
 
       if (GPSLatitude && GPSLongitude) {
         return {
@@ -35,7 +30,7 @@ export class MediaLibraryService {
           longitude: parseFloat(GPSLongitude.toString()),
           altitude: GPSAltitude ? parseFloat(GPSAltitude.toString()) : 0,
           accuracy: GPSDOP ? parseFloat(GPSDOP.toString()) : 0,
-          exif: tags,
+          exif: tags
         };
       }
 

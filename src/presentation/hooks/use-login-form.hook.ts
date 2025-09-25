@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { useAuth } from '../contexts/auth-context';
-import { useLoading } from '../contexts/loading-context';
+import { useAuth } from '../contexts/auth.context';
+import { useLoading } from '../contexts/loading.context';
 import { Credentials } from '../../domain/models/auth.models';
 
 export const useLoginForm = () => {
@@ -10,6 +10,7 @@ export const useLoginForm = () => {
   const [username, setUsername] = useState('MizunoCM');
   const [password, setPassword] = useState('Mizuno1508');
   const [error, setError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleAuthError = (err: unknown) => {
     if (err instanceof Error) {
@@ -27,27 +28,27 @@ export const useLoginForm = () => {
 
   const handleLogin = useCallback(async () => {
     if (!username || !password) {
-        setError("El nombre de usuario y la contraseña son obligatorios.");
-        return;
+      setError('El nombre de usuario y la contraseña son obligatorios.');
+      return;
     }
-    
+
     showLoading();
     setError(null);
 
     const credentials: Credentials = {
       UserName: username.trim(),
-      Password: password,
+      Password: password
     };
 
     try {
-      await auth.signIn(credentials);
+      await auth.signIn(credentials, rememberMe);
     } catch (err) {
       const errorMessage = handleAuthError(err);
       setError(errorMessage);
     } finally {
       hideLoading();
     }
-  }, [username, password, auth, showLoading, hideLoading]);
+  }, [username, password, auth, showLoading, hideLoading, rememberMe]);
 
   return {
     username,
@@ -56,5 +57,7 @@ export const useLoginForm = () => {
     setPassword,
     error,
     handleLogin,
+    rememberMe,
+    setRememberMe
   };
 };

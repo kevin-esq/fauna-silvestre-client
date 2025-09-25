@@ -8,10 +8,10 @@ import {
   StyleSheet,
   SafeAreaView,
   KeyboardAvoidingView,
-  Platform,
+  Platform
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { themeVariables } from "../../contexts/theme-context";
+import { themeVariables, Theme } from '../../contexts/theme.context';
 
 interface RejectionModalProps {
   visible: boolean;
@@ -19,7 +19,7 @@ interface RejectionModalProps {
   rejectionReason: string;
   setRejectionReason: (text: string) => void;
   onConfirm: () => void;
-  theme: any;
+  theme: Theme;
 }
 
 const RejectionModal: React.FC<RejectionModalProps> = ({
@@ -28,7 +28,7 @@ const RejectionModal: React.FC<RejectionModalProps> = ({
   rejectionReason,
   setRejectionReason,
   onConfirm,
-  theme,
+  theme
 }) => {
   const vars = themeVariables(theme);
   const styles = createLocalStyles(vars);
@@ -44,16 +44,25 @@ const RejectionModal: React.FC<RejectionModalProps> = ({
         onRequestClose={onDismiss}
         statusBarTranslucent
       >
-        <SafeAreaView style={[styles.overlay, { backgroundColor: vars["--overlay"] }]}>
+        <SafeAreaView
+          style={[styles.overlay, { backgroundColor: vars['--overlay'] }]}
+        >
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.keyboardAvoidingView}
           >
-            <View style={[styles.modalContainer, { backgroundColor: vars["--surface"] }]}>
-              <Text style={[styles.title, { color: vars["--text"] }]}>
+            <View
+              style={[
+                styles.modalContainer,
+                { backgroundColor: vars['--surface'] }
+              ]}
+            >
+              <Text style={[styles.title, { color: vars['--text'] }]}>
                 Rechazar publicación
               </Text>
-              <Text style={[styles.subtitle, { color: vars["--text-secondary"] }]}>
+              <Text
+                style={[styles.subtitle, { color: vars['--text-secondary'] }]}
+              >
                 Por favor, ingresa la razón del rechazo:
               </Text>
 
@@ -61,14 +70,14 @@ const RejectionModal: React.FC<RejectionModalProps> = ({
                 style={[
                   styles.textInput,
                   {
-                    borderColor: vars["--border"],
-                    backgroundColor: vars["--surface-variant"],
-                    color: vars["--text"],
-                  },
+                    borderColor: vars['--border'],
+                    backgroundColor: vars['--surface-variant'],
+                    color: vars['--text']
+                  }
                 ]}
                 multiline
                 placeholder="Escribe aquí la razón..."
-                placeholderTextColor={vars["--placeholder"]}
+                placeholderTextColor={vars['--placeholder']}
                 value={rejectionReason}
                 onChangeText={setRejectionReason}
                 autoFocus
@@ -80,12 +89,20 @@ const RejectionModal: React.FC<RejectionModalProps> = ({
               <View style={styles.buttonsContainer}>
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  style={[styles.button, { backgroundColor: vars["--secondary"] }]}
+                  style={[
+                    styles.button,
+                    { backgroundColor: vars['--secondary'] }
+                  ]}
                   onPress={onDismiss}
                   accessibilityRole="button"
                   accessibilityLabel="Cancelar rechazo"
                 >
-                  <Text style={[styles.buttonText, { color: vars["--text-on-secondary"] }]}>
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      { color: vars['--text-on-secondary'] }
+                    ]}
+                  >
                     Cancelar
                   </Text>
                 </TouchableOpacity>
@@ -95,16 +112,23 @@ const RejectionModal: React.FC<RejectionModalProps> = ({
                   style={[
                     styles.button,
                     {
-                      backgroundColor: isConfirmEnabled ? vars["--primary"] : vars["--disabled"],
-                      opacity: isConfirmEnabled ? 1 : 0.6,
-                    },
+                      backgroundColor: isConfirmEnabled
+                        ? vars['--primary']
+                        : vars['--disabled'],
+                      opacity: isConfirmEnabled ? 1 : 0.6
+                    }
                   ]}
                   onPress={onConfirm}
                   disabled={!isConfirmEnabled}
                   accessibilityRole="button"
                   accessibilityLabel="Confirmar rechazo"
                 >
-                  <Text style={[styles.buttonText, { color: vars["--text-on-primary"] }]}>
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      { color: vars['--text-on-primary'] }
+                    ]}
+                  >
                     Confirmar
                   </Text>
                 </TouchableOpacity>
@@ -124,36 +148,36 @@ const createLocalStyles = (vars: Record<string, string>) =>
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: 20,
-      backgroundColor: 'rgba(0,0,0,0.5)', // fallback if vars["--overlay"] undefined
+      backgroundColor: 'rgba(0,0,0,0.5)'
     },
     keyboardAvoidingView: {
       width: '100%',
       paddingHorizontal: 10,
       justifyContent: 'center',
-      alignItems: 'center',
+      alignItems: 'center'
     },
     modalContainer: {
       width: '90%',
-      backgroundColor: vars["--surface"],
+      backgroundColor: vars['--surface'],
       borderRadius: 16,
       padding: 24,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.25,
       shadowRadius: 8,
-      elevation: 10,
+      elevation: 10
     },
     title: {
       fontSize: 20,
       fontWeight: '700',
       marginBottom: 8,
-      textAlign: 'center',
+      textAlign: 'center'
     },
     subtitle: {
       fontSize: 15,
       fontWeight: '400',
       marginBottom: 16,
-      textAlign: 'center',
+      textAlign: 'center'
     },
     textInput: {
       minHeight: 140,
@@ -162,25 +186,25 @@ const createLocalStyles = (vars: Record<string, string>) =>
       padding: 16,
       fontSize: 16,
       textAlignVertical: 'top',
-      marginBottom: 24,
+      marginBottom: 24
     },
     buttonsContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      gap: 12,
+      gap: 12
     },
     button: {
       flex: 1,
       borderRadius: 10,
       paddingVertical: 14,
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'center'
     },
     buttonText: {
       fontWeight: '700',
       fontSize: 16,
-      textTransform: 'uppercase',
-    },
+      textTransform: 'uppercase'
+    }
   });
 
 export default RejectionModal;

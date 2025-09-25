@@ -1,21 +1,27 @@
-// components/CameraView.tsx
 import React, { memo } from 'react';
-import { Camera, CameraDevice } from 'react-native-vision-camera';
 import { StyleSheet } from 'react-native';
+import { Camera, CameraDevice } from 'react-native-vision-camera';
 
-type CameraViewProps = {
+interface CameraViewProps {
   device: CameraDevice;
   isActive: boolean;
+}
+const CameraView: React.FC<CameraViewProps> = ({ device, isActive }) => {
+  return (
+    <Camera
+      style={styles.fullscreen}
+      device={device}
+      isActive={isActive}
+      photo
+      enableZoomGesture
+    />
+  );
 };
 
-const CameraView = memo(({ device, isActive }: CameraViewProps) => (
-  <Camera
-    style={StyleSheet.absoluteFill}
-    device={device}
-    isActive={isActive}
-    photo
-    enableZoomGesture
-  />
-));
+CameraView.displayName = 'CameraView';
 
-export default CameraView;
+const styles = StyleSheet.create({
+  fullscreen: StyleSheet.absoluteFillObject
+});
+
+export default memo(CameraView);

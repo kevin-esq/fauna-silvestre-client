@@ -1,20 +1,16 @@
-// data/repositories/AuthRepository.ts
 import { BaseRepository } from './base.repository';
 import { IAuthRepository } from '../../domain/interfaces/auth.repository.interface';
-import {HttpError, NetworkError} from "../../shared/types/errors";
-import {Credentials, UserData} from "../../domain/models/auth.models";
+import { HttpError, NetworkError } from '../../shared/types/errors';
+import { Credentials, UserData } from '../../domain/models/auth.models';
 
-/**
- * Implementación concreta del repositorio de autenticación.
- * @class
- * @extends BaseRepository
- * @implements IAuthRepository
- */
 export class AuthRepository extends BaseRepository implements IAuthRepository {
   async login(credentials: Credentials): Promise<string> {
     try {
       this.logger.debug('[AuthRepository] Starting login', { credentials });
-      const response = await this.api.post<string>('/Authentication/LogIn', credentials);
+      const response = await this.api.post<string>(
+        '/Authentication/LogIn',
+        credentials
+      );
       this.ensureSuccessStatus(response);
       return response.data;
     } catch (error) {
@@ -34,7 +30,9 @@ export class AuthRepository extends BaseRepository implements IAuthRepository {
 
   async forgotPassword(email: string): Promise<void> {
     try {
-      this.logger.debug('[AuthRepository] Starting password recovery', { email });
+      this.logger.debug('[AuthRepository] Starting password recovery', {
+        email
+      });
       const response = await this.api.post('/forgot-password', { email });
       this.ensureSuccessStatus(response);
     } catch (error) {

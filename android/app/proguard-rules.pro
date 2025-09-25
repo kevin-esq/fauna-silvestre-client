@@ -8,3 +8,11 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
+
+# Mantener todas las clases de ML Kit
+-keep class com.google.mlkit.** { *; }
+-dontwarn com.google.mlkit.**
+
+# Mantener clases usadas por react-native-camera
+-keep class org.reactnative.camera.** { *; }
+-dontwarn org.reactnative.camera.**

@@ -1,90 +1,89 @@
-import { useRef, useState, useCallback, useEffect, RefObject } from 'react';
-import { Camera } from 'react-native-vision-camera';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import {
-  CameraService,
-  CaptureCancelledError,
-  FlashMode,
-  ProcessedPhoto,
-} from '../../services/media/camera.service';
-import { Alert, InteractionManager } from 'react-native';
+  Camera,
+  useCameraDevices,
+  PhotoFile,
+  TakePhotoOptions
+} from 'react-native-vision-camera';
+import { AppState } from 'react-native';
+import { useRequestPermissions } from '../hooks/use-request-permissions.hook';
+
+export type CameraPosition = 0 | 1;
 
 export function useCamera() {
-  const cameraRef = useRef<Camera | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const processingRef = useRef(false);
+  const cameraRef = useRef<Camera>(null);
+  const [isCameraReady, setCameraReady] = useState(false);
+  const [isCapturing, setCapturing] = useState(false);
+  const [cameraPosition, setCameraPosition] = useState<CameraPosition>(0);
+  const [flashMode, setFlashMode] = useState<'on' | 'off' | 'auto'>('off');
+  const { hasPermissions, checkPermissions } = useRequestPermissions();
 
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [position, setPosition] = useState<0 | 1>(0);
-  const [flashMode, setFlashMode] = useState<FlashMode>('off');
-
-  const service = useRef(new CameraService(cameraRef as RefObject<Camera>)).current;
+  const devices = useCameraDevices();
+  const device = devices[cameraPosition];
 
   useEffect(() => {
-    return () => {
-      abortControllerRef.current?.abort();
-      processingRef.current = false;
-    };
-  }, []);
-
-  const takePhoto = useCallback(async (): Promise<string> => {
-    //flashMode encendido
-    if (processingRef.current || !cameraRef.current) {
-      throw new Error('Cámara no disponible');
-    }
-    processingRef.current = true;
-    setIsCapturing(true);
-    abortControllerRef.current = new AbortController();
-    try {
-      const photo: ProcessedPhoto = await service.takePhoto(
-        position === 0,
-        flashMode,
-        {
-        abortSignal: abortControllerRef.current.signal,
-        onCaptureProgress: (progress) => {
-          if (progress === 100) {
-            processingRef.current = false;
-          }
-          setIsCapturing(progress !== 100);
-        }
-      });
-
-      await InteractionManager.runAfterInteractions();
-      return `file://${photo.path}`;
-    } catch (err: any) {
-      if (!(err instanceof CaptureCancelledError)) {
-        Alert.alert('Error al tomar foto', err.message || 'Error desconocido');
+    checkPermissions(['camera']);
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'active') {
+        checkPermissions(['camera']);
       }
-      throw err;
-    } finally {
-      processingRef.current = false;
-      setIsCapturing(false);
-      abortControllerRef.current = null;
-    }
-  }, [position, service, flashMode]);
+    });
+    return () => subscription.remove();
+  }, [checkPermissions]);
 
-  const cancelCapture = useCallback(() => {
-    abortControllerRef.current?.abort();
-    setIsCapturing(false);
-    processingRef.current = false;
+  useEffect(() => {
+    setCameraReady(hasPermissions && !!device);
+  }, [hasPermissions, device]);
+
+  const takePhoto = useCallback(
+    async (options?: TakePhotoOptions): Promise<PhotoFile | undefined> => {
+      if (!cameraRef.current || !isCameraReady) {
+        console.log('Camera not ready or no permission');
+        return;
+      }
+      setCapturing(true);
+      try {
+        const photo = await cameraRef.current.takePhoto({
+          flash: flashMode,
+          ...options
+        });
+        return photo;
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name === 'CameraRuntimeError') {
+          console.error('Camera runtime error:', e.message);
+        } else {
+          console.error('Failed to take photo with an unexpected error:', e);
+        }
+      } finally {
+        setCapturing(false);
+      }
+    },
+    [cameraRef, isCameraReady, flashMode]
+  );
+
+  const flipCamera = useCallback(() => {
+    setCameraPosition(prev => (prev === 0 ? 1 : 0));
   }, []);
 
   const toggleFlashMode = useCallback(() => {
-    const modes: FlashMode[] = ['off', 'on', 'auto'];
-    setFlashMode((prev) => modes[(modes.indexOf(prev) + 1) % modes.length]);
+    setFlashMode(prev => {
+      if (prev === 'off') return 'on';
+      if (prev === 'on') return 'auto';
+      return 'off';
+    });
   }, []);
-
-  const flipCamera = useCallback(() => {
-    setPosition((prev) => service.flipPosition(prev));
-  }, [service]);
 
   return {
     cameraRef,
+    device,
+    isCameraReady,
     isCapturing,
-    position,
+    hasPermissions,
+    cameraPosition,
     flashMode,
     takePhoto,
-    toggleFlashMode,
     flipCamera,
-    cancelCapture,
+    toggleFlashMode,
+    checkPermissions
   };
 }

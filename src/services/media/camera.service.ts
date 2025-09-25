@@ -67,7 +67,9 @@ export class CameraService {
       const originalWidth = photo.width || 1080;
       const originalHeight = photo.height || originalWidth;
       const targetWidth = 1080;
-      const targetHeight = Math.round((originalHeight / originalWidth) * targetWidth);
+      const targetHeight = Math.round(
+        (originalHeight / originalWidth) * targetWidth
+      );
 
       const resized = await ImageResizer.createResizedImage(
         photo.path,
@@ -97,7 +99,7 @@ export class CameraService {
         width: targetWidth,
         height: targetHeight,
         metadata: photo.metadata,
-        location: location || undefined,
+        location: location || undefined
       };
     } catch (e) {
       if (e instanceof CaptureCancelledError) throw e;
