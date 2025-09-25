@@ -1,88 +1,322 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, forwardRef } from 'react';
 import {
   View,
   TextInput,
   StyleSheet,
   TextInputProps,
-  TouchableOpacity
+  TouchableOpacity,
+  Animated,
+  Text,
+  ViewStyle,
+  NativeSyntheticEvent,
+  TextInputFocusEventData
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-interface AuthTextInputProps extends TextInputProps {
+interface AuthTextInputProps extends Omit<TextInputProps, 'style'> {
   iconName: React.ComponentProps<typeof Icon>['name'];
-  error?: boolean;
+  error?: boolean | string;
+  label?: string;
+  helperText?: string;
   variables: Record<string, string>;
+  variant?: 'outlined' | 'filled';
+  size?: 'small' | 'medium' | 'large';
+  leftIcon?: string;
+  rightIcon?: string;
+  onRightIconPress?: () => void;
+  containerStyle?: ViewStyle;
+  inputStyle?: ViewStyle;
 }
 
-const AuthTextInput: React.FC<AuthTextInputProps> = ({
-  iconName,
-  error,
-  style,
-  variables,
-  ...props
-}) => {
-  const styles = useMemo(() => createStyles(variables), [variables]);
+const AuthTextInput = forwardRef<TextInput, AuthTextInputProps>(
+  (
+    {
+      iconName,
+      error = false,
+      label,
+      helperText,
+      variables,
+      variant = 'filled',
+      size = 'medium',
+      leftIcon,
+      rightIcon,
+      onRightIconPress,
+      containerStyle,
+      inputStyle,
+      onFocus,
+      onBlur,
+      value = '',
+      ...props
+    },
+    ref
+  ) => {
+    const styles = useMemo(
+      () => createStyles(variables, variant, size),
+      [variables, variant, size]
+    );
 
-  const isPasswordInput = props.secureTextEntry;
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const focusedAnim = useMemo(
+      () => new Animated.Value(value || isFocused ? 1 : 0),
+      [isFocused, value]
+    );
 
-  const togglePasswordVisibility = () => {
-    setIsPasswordVisible(prev => !prev);
+    const isPasswordInput = props.secureTextEntry;
+    const hasError = Boolean(error);
+    const errorMessage = typeof error === 'string' ? error : undefined;
+
+    const sizeConfig = {
+      small: { height: 48, fontSize: 14, iconSize: 20, padding: 16 },
+      medium: { height: 56, fontSize: 16, iconSize: 24, padding: 18 },
+      large: { height: 64, fontSize: 18, iconSize: 26, padding: 20 }
+    };
+
+    const config = sizeConfig[size];
+
+    React.useEffect(() => {
+      Animated.timing(focusedAnim, {
+        toValue: (value && value.length > 0) || isFocused ? 1 : 0,
+        duration: 200,
+        useNativeDriver: false
+      }).start();
+    }, [value, isFocused, focusedAnim]);
+
+    const togglePasswordVisibility = () => {
+      setIsPasswordVisible(prev => !prev);
+    };
+
+    const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+      setIsFocused(true);
+      onFocus?.(e);
+    };
+
+    const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+      setIsFocused(false);
+      onBlur?.(e);
+    };
+
+    const getContainerStyle = () => {
+      return [
+        styles.inputContainer,
+        isFocused && styles.focused,
+        hasError && styles.errorBorder,
+        variant === 'filled' && styles.filledVariant
+      ].filter(Boolean);
+    };
+
+    const renderIcon = (
+      iconName: string,
+      position: 'left' | 'right',
+      onPress?: () => void
+    ) => {
+      const iconSize = config.iconSize;
+      const IconComponent = (
+        <Icon
+          name={iconName}
+          size={iconSize}
+          color={
+            hasError
+              ? variables['--error']
+              : isFocused
+                ? variables['--primary']
+                : variables['--text-secondary']
+          }
+          style={[position === 'left' ? styles.leftIcon : styles.rightIcon]}
+        />
+      );
+
+      return onPress ? (
+        <TouchableOpacity onPress={onPress} style={styles.iconTouchable}>
+          {IconComponent}
+        </TouchableOpacity>
+      ) : (
+        IconComponent
+      );
+    };
+
+    return (
+      <View style={[styles.container, containerStyle]}>
+        {label && (
+          <Animated.View
+            style={[
+              styles.labelContainer,
+              {
+                transform: [
+                  {
+                    translateY: focusedAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [20, 0]
+                    })
+                  },
+                  {
+                    scale: focusedAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0.85]
+                    })
+                  }
+                ]
+              }
+            ]}
+          >
+            <Text
+              style={[
+                styles.label,
+                isFocused && styles.labelFocused,
+                hasError && styles.labelError
+              ]}
+            >
+              {label}
+            </Text>
+          </Animated.View>
+        )}
+
+        <View style={getContainerStyle()}>
+          {(leftIcon || iconName) && renderIcon(leftIcon || iconName, 'left')}
+
+          <TextInput
+            ref={ref}
+            style={[styles.input, inputStyle]}
+            placeholderTextColor={variables['--placeholder']}
+            selectionColor={variables['--primary']}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            value={value}
+            {...props}
+            secureTextEntry={isPasswordInput && !isPasswordVisible}
+          />
+
+          {isPasswordInput &&
+            renderIcon(
+              isPasswordVisible ? 'visibility-off' : 'visibility',
+              'right',
+              togglePasswordVisibility
+            )}
+
+          {rightIcon &&
+            !isPasswordInput &&
+            renderIcon(rightIcon, 'right', onRightIconPress)}
+        </View>
+
+        {(helperText || errorMessage) && (
+          <Text style={[styles.helperText, hasError && styles.errorText]}>
+            {errorMessage || helperText}
+          </Text>
+        )}
+      </View>
+    );
+  }
+);
+
+const createStyles = (
+  variables: Record<string, string>,
+  variant: 'outlined' | 'filled',
+  size: 'small' | 'medium' | 'large'
+) => {
+  const sizeConfig = {
+    small: { height: 40, fontSize: 14, iconSize: 20, padding: 12 },
+    medium: { height: 50, fontSize: 16, iconSize: 24, padding: 15 },
+    large: { height: 60, fontSize: 18, iconSize: 28, padding: 18 }
   };
 
-  return (
-    <View
-      style={[styles.inputContainer, error ? styles.errorBorder : null, style]}
-    >
-      <Icon
-        name={iconName}
-        size={24}
-        color={variables['--text-secondary']}
-        style={styles.icon}
-      />
-      <TextInput
-        style={styles.input}
-        placeholderTextColor={variables['--placeholder']}
-        {...props}
-        secureTextEntry={isPasswordInput && !isPasswordVisible}
-      />
-      {isPasswordInput && (
-        <TouchableOpacity onPress={togglePasswordVisibility}>
-          <Icon
-            name={isPasswordVisible ? 'visibility-off' : 'visibility'}
-            size={24}
-            color={variables['--text-secondary']}
-          />
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-};
+  const config = sizeConfig[size];
 
-const createStyles = (variables: Record<string, string>) =>
-  StyleSheet.create({
+  return StyleSheet.create({
+    container: {
+      marginBottom: parseInt(variables['--spacing-medium']) || 16
+    },
+    labelContainer: {
+      position: 'absolute',
+      left: config.padding + (config.iconSize + 10),
+      zIndex: 1,
+      backgroundColor:
+        variant === 'outlined' ? variables['--background'] : 'transparent',
+      paddingHorizontal: 4
+    },
+    label: {
+      fontSize: config.fontSize,
+      color: variables['--text-secondary'],
+      fontFamily: variables['--font-family-primary'],
+      fontWeight: '400'
+    },
+    labelFocused: {
+      color: variables['--primary']
+    },
+    labelError: {
+      color: variables['--error']
+    },
     inputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: variables['--surface-variant'],
-      borderRadius: 8,
-      borderWidth: 1,
+      backgroundColor:
+        variant === 'filled'
+          ? variables['--surface-variant']
+          : variables['--surface'],
+      borderRadius: parseInt(variables['--border-radius-medium']) || 8,
+      borderWidth: parseInt(variables['--border-width-hairline']) || 1,
       borderColor: variables['--border'],
-      paddingHorizontal: 15,
-      marginBottom: 16
+      paddingHorizontal: config.padding,
+      minHeight: config.height,
+      shadowColor: variables['--shadow'],
+      shadowOffset: {
+        width: 0,
+        height: 1
+      },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1
     },
-    icon: {
+    filledVariant: {
+      backgroundColor: variables['--surface-variant'],
+      borderBottomWidth: 2,
+      borderTopWidth: 0,
+      borderLeftWidth: 0,
+      borderRightWidth: 0,
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0
+    },
+    focused: {
+      borderColor: variables['--primary'],
+      borderWidth: 2,
+      shadowColor: variables['--primary'],
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2
+    },
+    errorBorder: {
+      borderColor: variables['--error'],
+      borderWidth: 2
+    },
+    leftIcon: {
       marginRight: 10
+    },
+    rightIcon: {
+      marginLeft: 10
+    },
+    iconTouchable: {
+      padding: 4,
+      borderRadius: 20
     },
     input: {
       flex: 1,
-      height: 50,
-      fontSize: 16,
-      color: variables['--text']
+      fontSize: config.fontSize,
+      color: variables['--text'],
+      fontFamily: variables['--font-family-primary'],
+      paddingVertical: 0
     },
-    errorBorder: {
-      borderColor: '#ef4444'
+    helperText: {
+      fontSize: parseInt(variables['--font-size-small']) || 12,
+      color: variables['--text-secondary'],
+      fontFamily: variables['--font-family-primary'],
+      marginTop: parseInt(variables['--spacing-tiny']) || 4,
+      marginLeft: config.padding
+    },
+    errorText: {
+      color: variables['--error']
     }
   });
+};
+
+AuthTextInput.displayName = 'AuthTextInput';
 
 export default React.memo(AuthTextInput);
