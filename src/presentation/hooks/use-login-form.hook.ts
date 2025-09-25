@@ -9,31 +9,34 @@ export const useLoginForm = () => {
 
   const [username, setUsername] = useState('MizunoCM');
   const [password, setPassword] = useState('Mizuno1508');
-  const [error, setError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleAuthError = (err: unknown) => {
-    if (err instanceof Error) {
-      switch (err.message) {
-        case 'The Username is incorrect':
-          return 'Nombre de usuario es incorrecto';
-        case 'The password is incorrect':
-          return 'La contraseña es incorrecta';
-        default:
-          return err.message || 'Error desconocido';
+  const handleUsernameChange = useCallback(
+    (value: string) => {
+      setUsername(value);
+      if (auth.error) {
+        auth.clearError();
       }
-    }
-    return 'Ocurrió un error inesperado';
-  };
+    },
+    [auth]
+  );
+
+  const handlePasswordChange = useCallback(
+    (value: string) => {
+      setPassword(value);
+      if (auth.error) {
+        auth.clearError();
+      }
+    },
+    [auth]
+  );
 
   const handleLogin = useCallback(async () => {
     if (!username || !password) {
-      setError('El nombre de usuario y la contraseña son obligatorios.');
       return;
     }
 
     showLoading();
-    setError(null);
 
     const credentials: Credentials = {
       UserName: username.trim(),
@@ -41,10 +44,14 @@ export const useLoginForm = () => {
     };
 
     try {
+      console.log(
+        '[useLoginForm] Attempting login with:',
+        credentials.UserName
+      );
       await auth.signIn(credentials, rememberMe);
+      console.log('[useLoginForm] Login successful');
     } catch (err) {
-      const errorMessage = handleAuthError(err);
-      setError(errorMessage);
+      console.log('[useLoginForm] Login failed with error:', err);
     } finally {
       hideLoading();
     }
@@ -52,10 +59,10 @@ export const useLoginForm = () => {
 
   return {
     username,
-    setUsername,
+    setUsername: handleUsernameChange,
     password,
-    setPassword,
-    error,
+    setPassword: handlePasswordChange,
+    error: auth.error,
     handleLogin,
     rememberMe,
     setRememberMe

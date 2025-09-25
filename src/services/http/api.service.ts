@@ -120,7 +120,11 @@ export class ApiService {
     const response = error.response;
     const original = error.config as CustomConfig;
 
-    if (response?.status === 401 && !original._retry) {
+    const isAuthRoute =
+      original.url?.includes('/Authentication/') ||
+      original.url?.includes('/Users/');
+
+    if (response?.status === 401 && !original._retry && !isAuthRoute) {
       original._retry = true;
 
       if (this.isRefreshing) {

@@ -50,14 +50,16 @@ export class TokenService implements ITokenService {
 
   async clearTokens(): Promise<void> {
     const storage = await getSecureStorageService();
-    await storage.clear();
+    await Promise.all([
+      storage.deleteValueFor(ACCESS_TOKEN_KEY),
+      storage.deleteValueFor(REFRESH_TOKEN_KEY)
+    ]);
   }
 
   isTokenExpired(token: string): boolean {
     try {
       const payload = decodeJwt(token);
       const currentTime = Math.floor(Date.now() / 1000);
-      // Add 5 minutes buffer for token expiration
       return payload.exp < currentTime + 300;
     } catch (error) {
       this.logger.error(

@@ -10,11 +10,10 @@ import AuthContainer from '../../components/auth/auth-container.component';
 import AuthTextInput from '../../components/auth/auth-text-input.component';
 import ErrorMessage from '../../components/auth/error-message.component';
 import CustomButton from '../../components/ui/custom-button.component';
+import SponsorsFooter from '../../components/auth/sponsors-footer.component';
 import { createStyles } from './login-screen.styles';
+import { useAuth } from '@/presentation/contexts/auth.context';
 
-/**
- * LoginScreen handles user authentication through username and password inputs.
- */
 const LoginScreen = () => {
   useDoubleBackExit();
 
@@ -34,6 +33,8 @@ const LoginScreen = () => {
   const variables = themeVariables(theme);
   const styles = createStyles(variables);
 
+  const { clearError } = useAuth();
+
   return (
     <AuthContainer
       title="¡Hola! 👋"
@@ -44,37 +45,29 @@ const LoginScreen = () => {
 
       <AuthTextInput
         iconName="person"
-        placeholder="Nombre de usuario"
+        label="Usuario"
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
         autoCorrect={false}
-        error={!!error}
+        error={error ? 'Credenciales incorrectas' : false}
         variables={variables}
-        style={[
-          styles.input,
-          {
-            color: variables['--text'],
-            borderColor: variables['--border']
-          }
-        ]}
+        variant="outlined"
+        size="large"
+        containerStyle={styles.inputContainer}
       />
 
       <AuthTextInput
-        iconName="key"
-        placeholder="Contraseña"
+        iconName="lock"
+        label="Contraseña"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        error={!!error}
+        error={error ? 'Credenciales incorrectas' : false}
         variables={variables}
-        style={[
-          styles.input,
-          {
-            color: variables['--text'],
-            borderColor: variables['--border']
-          }
-        ]}
+        variant="outlined"
+        size="large"
+        containerStyle={styles.inputContainer}
       />
 
       <View style={styles.rememberContainer}>
@@ -101,7 +94,10 @@ const LoginScreen = () => {
       />
 
       <TouchableOpacity
-        onPress={() => navigate('ForgotPassword')}
+        onPress={() => {
+          clearError();
+          navigate('ForgotPassword');
+        }}
         style={styles.forgotPassword}
       >
         <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
@@ -111,11 +107,16 @@ const LoginScreen = () => {
 
       <CustomButton
         title="Registrarse"
-        onPress={() => navigate('Register')}
+        onPress={() => {
+          clearError();
+          navigate('Register');
+        }}
         style={styles.button}
         variant="secondary"
         variables={variables}
       />
+
+      <SponsorsFooter variables={variables} />
     </AuthContainer>
   );
 };

@@ -22,22 +22,21 @@ export const useForgotPassword = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const sendResetPasswordEmail = useCallback(async () => {
     showLoading();
     try {
       const success = await auth.sendResetPasswordEmail(email.toLowerCase());
-      if (!success) {
-        setError('Error al enviar el correo');
+      if (!success && auth.error) {
+        setError(auth.error);
         hideLoading();
         return;
       }
       setMessage('Código enviado al correo electrónico');
-      setError('');
       setCurrentStep(ResetStep.CODE);
     } catch {
-      setError('Error al enviar el correo');
+      if (auth.error) setError(auth.error);
     } finally {
       hideLoading();
     }
@@ -54,17 +53,15 @@ export const useForgotPassword = () => {
         email.toLowerCase(),
         verificationCode
       );
-      if (tokenValid === 'INVALID') {
-        setError('Código inválido o expirado');
-        setToken('');
+      if (auth.error) {
+        setError(auth.error || 'Código inválido o expirado');
         return;
       }
       setToken(tokenValid);
       setMessage('Código verificado correctamente');
       setCurrentStep(ResetStep.PASSWORD);
-      setError('');
     } catch {
-      setError('Error al verificar el código');
+      if (auth.error) setError(auth.error);
       setToken('');
     } finally {
       hideLoading();
@@ -89,7 +86,7 @@ export const useForgotPassword = () => {
         [{ text: 'OK', onPress: () => navigate('Login') }]
       );
     } catch {
-      setError('Error al cambiar la contraseña');
+      if (auth.error) setError(auth.error);
     } finally {
       hideLoading();
     }
@@ -115,7 +112,7 @@ export const useForgotPassword = () => {
     confirmPassword,
     setConfirmPassword,
     message,
-    error,
+    error: error || auth.error,
     sendResetPasswordEmail,
     verifyResetCode,
     handlePasswordReset
