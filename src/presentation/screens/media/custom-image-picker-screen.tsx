@@ -14,7 +14,8 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  Alert
+  Alert,
+  RefreshControl
 } from 'react-native';
 import {
   Album,
@@ -24,7 +25,6 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Theme, themeVariables } from '../../contexts/theme.context';
 import { createStyles } from './custom-image-picker-screen.styles';
-import type { StyleProp, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { Location } from 'react-native-get-location';
 import {
   MediaLibraryService,
@@ -43,50 +43,18 @@ interface ImageItem {
   id: string;
   title: string;
   hasLocation: boolean;
+  isLoading?: boolean;
 }
 
 interface AlbumWithCover extends Album {
   coverUri?: string;
+  isLoading?: boolean;
 }
 
 interface Props {
   onConfirm: (uri: string, location: Location) => void;
   onCancel: () => void;
   theme: Theme;
-}
-
-interface Styles {
-  container: StyleProp<ViewStyle>;
-  header: StyleProp<ViewStyle>;
-  headerTitle: StyleProp<TextStyle>;
-  albumGrid: StyleProp<ViewStyle>;
-  albumItem: StyleProp<ViewStyle>;
-  albumCover: StyleProp<ImageStyle>;
-  albumTitle: StyleProp<TextStyle>;
-  albumCount: StyleProp<TextStyle>;
-  photoGrid: StyleProp<ViewStyle>;
-  photoItem: StyleProp<ViewStyle>;
-  photo: StyleProp<ImageStyle>;
-  selectionBadge: StyleProp<ViewStyle>;
-  centered: StyleProp<ViewStyle>;
-  loadingText: StyleProp<TextStyle>;
-  errorText: StyleProp<TextStyle>;
-  backButton: StyleProp<ViewStyle>;
-  confirmButton: StyleProp<ViewStyle>;
-  buttonText: StyleProp<TextStyle>;
-  selectionOverlay: StyleProp<ViewStyle>;
-  selectionText: StyleProp<TextStyle>;
-  floatingButtonContainer: StyleProp<ViewStyle>;
-  content: StyleProp<ViewStyle>;
-  disabledPhotoOverlay: StyleProp<ViewStyle>;
-  locationIcon: StyleProp<ViewStyle>;
-  infoContainer: StyleProp<ViewStyle>;
-  infoText: StyleProp<TextStyle>;
-  retryButton: StyleProp<ViewStyle>;
-  emptyStateContainer: StyleProp<ViewStyle>;
-  emptyStateIcon: StyleProp<ViewStyle>;
-  emptyStateTitle: StyleProp<TextStyle>;
-  emptyStateSubtitle: StyleProp<TextStyle>;
 }
 
 const parseCoordinate = (value: unknown): number => {
@@ -110,6 +78,45 @@ async function hasValidLocation(
     return false;
   }
 }
+
+const ShimmerItem = memo<{
+  style: ReturnType<typeof createStyles>;
+  variables: Record<string, string>;
+  width?: number;
+  height?: number;
+  variants: 'photo' | 'cover';
+}>(({ style, variables, width, height, variants }) => {
+  const baseStyle = variants === 'photo' ? style.photo : style.albumCover;
+
+  return (
+    <View
+      style={[
+        baseStyle,
+        {
+          backgroundColor: variables['--surface-variant'],
+          opacity: 0.6,
+          ...(width && { width }),
+          ...(height && { height })
+        }
+      ]}
+    >
+      <ActivityIndicator
+        size="small"
+        color={variables['--text-secondary']}
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          marginTop: -10,
+          marginLeft: -10
+        }}
+      />
+    </View>
+  );
+});
+
+ShimmerItem.displayName = 'ShimmerItem';
+
 function useCameraRoll() {
   const [albums, setAlbums] = useState<AlbumWithCover[]>([]);
   const [photos, setPhotos] = useState<ImageItem[]>([]);
@@ -118,63 +125,92 @@ function useCameraRoll() {
   );
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [endCursor, setEndCursor] = useState<string | null>(null);
   const [hasNextPage, setHasNextPage] = useState(true);
+  const [processedCount, setProcessedCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const loadAlbums = useCallback(async () => {
-    if (loading) return;
+  const loadAlbums = useCallback(
+    async (isRefresh = false) => {
+      if (loading && !isRefresh) return;
 
-    try {
-      setLoading(true);
-      setError(null);
+      try {
+        if (isRefresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+        setError(null);
 
-      const fetchedAlbums = await CameraRoll.getAlbums({
-        assetType: 'Photos'
-      });
+        const fetchedAlbums = await CameraRoll.getAlbums({
+          assetType: 'Photos'
+        });
 
-      if (!fetchedAlbums?.length) {
-        setError('No se encontraron álbumes');
-        return;
-      }
+        if (!fetchedAlbums?.length) {
+          setError('No se encontraron álbumes en tu dispositivo');
+          return;
+        }
 
-      const albumsWithCovers = await Promise.allSettled(
-        fetchedAlbums.map(async album => {
-          try {
-            const photos = await CameraRoll.getPhotos({
-              first: 1,
-              groupName: album.title,
-              assetType: 'Photos'
-            });
+        const albumsWithPlaceholders: AlbumWithCover[] = fetchedAlbums.map(
+          album => ({
+            ...album,
+            coverUri: undefined,
+            isLoading: true
+          })
+        );
+        setAlbums(albumsWithPlaceholders);
 
-            return {
-              ...album,
-              coverUri: photos.edges[0]?.node.image.uri
-            };
-          } catch {
-            return { ...album, coverUri: undefined };
+        const albumPromises = fetchedAlbums.map(
+          async (album, index): Promise<AlbumWithCover> => {
+            try {
+              const photos = await CameraRoll.getPhotos({
+                first: 1,
+                groupName: album.title,
+                assetType: 'Photos'
+              });
+
+              const updatedAlbum: AlbumWithCover = {
+                ...album,
+                coverUri: photos.edges[0]?.node.image.uri,
+                isLoading: false
+              };
+
+              setAlbums(prev =>
+                prev.map((a, i) => (i === index ? updatedAlbum : a))
+              );
+
+              return updatedAlbum;
+            } catch {
+              return { ...album, coverUri: undefined, isLoading: false };
+            }
           }
-        })
-      );
+        );
 
-      const validAlbums = albumsWithCovers
-        .filter(
-          (result): result is PromiseFulfilledResult<AlbumWithCover> =>
-            result.status === 'fulfilled'
-        )
-        .map(result => result.value);
+        const albumsWithCovers = await Promise.allSettled(albumPromises);
 
-      setAlbums(validAlbums);
-    } catch (err) {
-      console.error('Failed to load albums:', err);
-      setError('Error al cargar álbumes. Intenta nuevamente.');
-    } finally {
-      setLoading(false);
-    }
-  }, [loading]);
+        const validAlbums = albumsWithCovers
+          .filter(
+            (result): result is PromiseFulfilledResult<AlbumWithCover> =>
+              result.status === 'fulfilled'
+          )
+          .map(result => result.value);
+
+        setAlbums(validAlbums);
+      } catch (err) {
+        console.error('Failed to load albums:', err);
+        setError('Error al cargar álbumes. Verifica los permisos de galería.');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [loading]
+  );
 
   const loadAlbumPhotos = useCallback(
-    async (album: Album, after?: string) => {
+    async (album: AlbumWithCover, after?: string) => {
       if ((!hasNextPage && after) || (loadingMore && after)) return;
 
       try {
@@ -183,6 +219,8 @@ function useCameraRoll() {
         } else {
           setLoading(true);
           setPhotos([]);
+          setProcessedCount(0);
+          setTotalCount(0);
         }
 
         setError(null);
@@ -195,38 +233,64 @@ function useCameraRoll() {
           include: ['filename', 'location', 'imageSize']
         });
 
-        const newPhotosPromises = result.edges.map(
-          async (edge: PhotoIdentifier, index: number) => {
-            try {
-              const metadata = await MediaLibraryService.extractMetadata(
-                edge.node.image.uri
-              );
-              return {
-                uri: edge.node.image.uri,
-                id:
-                  edge.node.image.filename ||
-                  `${edge.node.timestamp}-${index}-${album.title}`,
-                title: album.title,
-                hasLocation: await Promise.resolve(
-                  hasValidLocation(Promise.resolve(metadata))
-                )
-              };
-            } catch {
-              return {
-                uri: edge.node.image.uri,
-                id:
-                  edge.node.image.filename ||
-                  `${edge.node.timestamp}-${index}-${album.title}`,
-                title: album.title,
-                hasLocation: false
-              };
-            }
-          }
+        if (!after) {
+          setTotalCount(result.edges.length);
+        }
+
+        const initialPhotos = result.edges.map(
+          (edge: PhotoIdentifier, index: number) => ({
+            uri: edge.node.image.uri,
+            id:
+              edge.node.image.filename ||
+              `${edge.node.timestamp}-${index}-${album.title}`,
+            title: album.title,
+            hasLocation: false,
+            isLoading: true
+          })
         );
 
-        const newPhotos = await Promise.all(newPhotosPromises);
+        setPhotos(prev =>
+          after ? [...prev, ...initialPhotos] : initialPhotos
+        );
 
-        setPhotos(prev => (after ? [...prev, ...newPhotos] : newPhotos));
+        result.edges.forEach(async (edge: PhotoIdentifier, index: number) => {
+          try {
+            const metadata = await MediaLibraryService.extractMetadata(
+              edge.node.image.uri
+            );
+            const photoId =
+              edge.node.image.filename ||
+              `${edge.node.timestamp}-${index}-${album.title}`;
+            const hasLocation = await hasValidLocation(
+              Promise.resolve(metadata)
+            );
+
+            setPhotos(prev =>
+              prev.map(photo =>
+                photo.id === photoId
+                  ? { ...photo, hasLocation, isLoading: false }
+                  : photo
+              )
+            );
+
+            setProcessedCount(prev => prev + 1);
+          } catch {
+            const photoId =
+              edge.node.image.filename ||
+              `${edge.node.timestamp}-${index}-${album.title}`;
+
+            setPhotos(prev =>
+              prev.map(photo =>
+                photo.id === photoId
+                  ? { ...photo, hasLocation: false, isLoading: false }
+                  : photo
+              )
+            );
+
+            setProcessedCount(prev => prev + 1);
+          }
+        });
+
         setEndCursor(result.page_info.end_cursor || null);
         setHasNextPage(result.page_info.has_next_page);
       } catch (err) {
@@ -245,7 +309,13 @@ function useCameraRoll() {
     setEndCursor(null);
     setHasNextPage(true);
     setError(null);
+    setProcessedCount(0);
+    setTotalCount(0);
   }, []);
+
+  const refreshAlbums = useCallback(() => {
+    loadAlbums(true);
+  }, [loadAlbums]);
 
   return {
     albums,
@@ -255,11 +325,15 @@ function useCameraRoll() {
     loadAlbums,
     loadAlbumPhotos,
     resetPhotos,
+    refreshAlbums,
     endCursor,
     hasNextPage,
     loading,
     loadingMore,
-    error
+    refreshing,
+    error,
+    processedCount,
+    totalCount
   };
 }
 
@@ -267,71 +341,100 @@ const PhotoItem = memo<{
   uri: string;
   selected: boolean;
   hasLocation: boolean;
+  isLoading?: boolean;
   onPress: () => void;
   styles: ReturnType<typeof createStyles>;
   itemSize: number;
-}>(({ uri, selected, hasLocation, onPress, styles, itemSize }) => (
-  <TouchableOpacity
-    style={[
-      styles.photoItem,
-      { width: itemSize, height: itemSize },
-      !hasLocation && { opacity: 0.5 }
-    ]}
-    onPress={onPress}
-    activeOpacity={hasLocation ? 0.8 : 0.3}
-    disabled={!hasLocation}
-  >
-    <Image
-      source={{ uri }}
-      style={[styles.photo, { width: itemSize, height: itemSize }]}
-      resizeMode="cover"
-    />
-
-    <View
+  variables: Record<string, string>;
+}>(
+  ({
+    uri,
+    selected,
+    hasLocation,
+    isLoading = false,
+    onPress,
+    styles,
+    itemSize,
+    variables
+  }) => (
+    <TouchableOpacity
       style={[
-        styles.locationIcon,
-        {
-          backgroundColor: hasLocation ? '#4CAF50' : '#F44336',
-          opacity: 0.9
-        }
+        styles.photoItem,
+        { width: itemSize, height: itemSize },
+        !hasLocation && !isLoading && { opacity: 0.5 }
       ]}
+      onPress={onPress}
+      activeOpacity={hasLocation || isLoading ? 0.8 : 0.3}
+      disabled={(!hasLocation && !isLoading) || isLoading}
     >
-      <Ionicons
-        name={hasLocation ? 'location' : 'location-outline'}
-        size={12}
-        color="white"
-      />
-    </View>
+      {isLoading ? (
+        <ShimmerItem
+          style={styles}
+          variables={variables}
+          variants="photo"
+          width={itemSize}
+          height={itemSize}
+        />
+      ) : (
+        <Image
+          source={{ uri }}
+          style={[styles.photo, { width: itemSize, height: itemSize }]}
+          resizeMode="cover"
+        />
+      )}
 
-    {selected && hasLocation && (
-      <View style={styles.selectionOverlay}>
-        <View style={styles.selectionBadge}>
-          <Ionicons name="checkmark-circle" size={28} color="#007AFF" />
+      {!isLoading && (
+        <View
+          style={[
+            styles.locationIcon,
+            {
+              backgroundColor: hasLocation ? '#4CAF50' : '#F44336',
+              opacity: 0.9
+            }
+          ]}
+        >
+          <Ionicons
+            name={hasLocation ? 'location' : 'location-outline'}
+            size={12}
+            color="white"
+          />
         </View>
-      </View>
-    )}
+      )}
 
-    {!hasLocation && (
-      <View style={styles.disabledPhotoOverlay}>
-        <Ionicons name="ban" size={24} color="#F44336" />
-      </View>
-    )}
-  </TouchableOpacity>
-));
+      {selected && hasLocation && !isLoading && (
+        <View style={styles.selectionOverlay}>
+          <View style={styles.selectionBadge}>
+            <Ionicons name="checkmark-circle" size={28} color="#007AFF" />
+          </View>
+        </View>
+      )}
+
+      {!hasLocation && !isLoading && (
+        <View style={styles.disabledPhotoOverlay}>
+          <Ionicons name="ban" size={24} color="#F44336" />
+        </View>
+      )}
+    </TouchableOpacity>
+  )
+);
 
 PhotoItem.displayName = 'PhotoItem';
 
 const AlbumItem = memo<{
   album: AlbumWithCover;
   onPress: () => void;
-  styles: Styles;
-}>(({ album, onPress, styles }) => (
+  styles: ReturnType<typeof createStyles>;
+  variables: Record<string, string>;
+}>(({ album, onPress, styles, variables }) => (
   <TouchableOpacity
     style={styles.albumItem}
     onPress={onPress}
     activeOpacity={0.7}
+    disabled={album.isLoading}
   >
-    {album.coverUri ? (
+    {album.isLoading ? (
+      <ShimmerItem style={styles} variables={variables} variants="cover" />
+    ) : album.coverUri ? (
       <Image
         source={{ uri: album.coverUri }}
         style={styles.albumCover}
@@ -342,13 +445,17 @@ const AlbumItem = memo<{
         style={[
           styles.albumCover,
           {
-            backgroundColor: '#f5f5f5',
+            backgroundColor: variables['--surface-variant'],
             justifyContent: 'center',
             alignItems: 'center'
           }
         ]}
       >
-        <Ionicons name="images" size={40} color="#bbb" />
+        <Ionicons
+          name="images"
+          size={40}
+          color={variables['--text-secondary']}
+        />
       </View>
     )}
     <Text style={styles.albumTitle} numberOfLines={1}>
@@ -361,6 +468,39 @@ const AlbumItem = memo<{
 ));
 
 AlbumItem.displayName = 'AlbumItem';
+
+const ProgressIndicator = memo<{
+  processed: number;
+  total: number;
+  styles: ReturnType<typeof createStyles>;
+  variables: Record<string, string>;
+}>(({ processed, total, styles, variables }) => {
+  const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+
+  return (
+    <View style={styles.progressContainer}>
+      <View style={styles.progressBar}>
+        <View
+          style={[
+            styles.progressBar,
+            {
+              width: `${percentage}%`,
+              backgroundColor: variables['--primary'],
+              position: 'absolute',
+              left: 0,
+              top: 0
+            }
+          ]}
+        />
+      </View>
+      <Text style={styles.progressText}>
+        Analizando ubicaciones: {processed}/{total} ({percentage}%)
+      </Text>
+    </View>
+  );
+});
+
+ProgressIndicator.displayName = 'ProgressIndicator';
 
 const CustomImagePickerScreen: React.FC<Props> = ({
   onConfirm,
@@ -375,11 +515,15 @@ const CustomImagePickerScreen: React.FC<Props> = ({
     loadAlbums,
     loadAlbumPhotos,
     resetPhotos,
+    refreshAlbums,
     endCursor,
     hasNextPage,
     loading,
     loadingMore,
-    error
+    refreshing,
+    error,
+    processedCount,
+    totalCount
   } = useCameraRoll();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -390,8 +534,13 @@ const CustomImagePickerScreen: React.FC<Props> = ({
   const isMountedRef = useRef(true);
 
   const photosWithLocation = useMemo(
-    () => photos.filter(photo => photo.hasLocation).length,
+    () => photos.filter(photo => photo.hasLocation && !photo.isLoading).length,
     [photos]
+  );
+
+  const isProcessing = useMemo(
+    () => processedCount < totalCount && totalCount > 0,
+    [processedCount, totalCount]
   );
 
   useEffect(() => {
@@ -411,10 +560,11 @@ const CustomImagePickerScreen: React.FC<Props> = ({
         const isValidLocation = await hasValidLocation(
           Promise.resolve(metadata)
         );
+
         if (!isValidLocation) {
           Alert.alert(
-            'Sin ubicación',
-            'Esta imagen no contiene información de ubicación válida.',
+            'Sin ubicación GPS',
+            'Esta imagen no contiene información de ubicación válida. Por favor, selecciona una imagen con datos GPS.',
             [{ text: 'Entendido', style: 'default' }]
           );
           return;
@@ -436,8 +586,8 @@ const CustomImagePickerScreen: React.FC<Props> = ({
       } catch (err) {
         console.error('Error processing photo:', err);
         Alert.alert(
-          'Error',
-          'No se pudo procesar la imagen. Intenta con otra.',
+          'Error de procesamiento',
+          'No se pudo procesar la imagen seleccionada. Por favor, intenta con otra.',
           [{ text: 'Entendido', style: 'default' }]
         );
       }
@@ -446,7 +596,8 @@ const CustomImagePickerScreen: React.FC<Props> = ({
   );
 
   const handleAlbumSelect = useCallback(
-    (album: Album) => {
+    (album: AlbumWithCover) => {
+      if (album.isLoading) return;
       resetPhotos();
       setSelectedAlbum(album);
       setSelectedId(null);
@@ -455,22 +606,31 @@ const CustomImagePickerScreen: React.FC<Props> = ({
     [setSelectedAlbum, resetPhotos, loadAlbumPhotos]
   );
 
-  const handlePhotoSelect = useCallback((id: string, hasLocation: boolean) => {
-    if (!hasLocation) {
-      Alert.alert(
-        'Imagen sin ubicación',
-        'Esta imagen no contiene información de ubicación GPS. Solo puedes seleccionar imágenes que tengan datos de ubicación.',
-        [{ text: 'Entendido', style: 'default' }]
-      );
-      return;
-    }
-    setSelectedId(prev => (prev === id ? null : id));
-  }, []);
+  const handlePhotoSelect = useCallback(
+    (id: string, hasLocation: boolean, isLoading: boolean) => {
+      if (isLoading) return;
+
+      if (!hasLocation) {
+        Alert.alert(
+          'Imagen sin ubicación GPS',
+          'Esta imagen no contiene información de ubicación GPS. Solo puedes seleccionar imágenes que tengan datos de ubicación válidos.',
+          [{ text: 'Entendido', style: 'default' }]
+        );
+        return;
+      }
+      setSelectedId(prev => (prev === id ? null : id));
+    },
+    []
+  );
 
   const handleConfirm = useCallback(() => {
     if (!selectedId) return;
     const selectedPhoto = photos.find(photo => photo.id === selectedId);
-    if (selectedPhoto && selectedPhoto.hasLocation) {
+    if (
+      selectedPhoto &&
+      selectedPhoto.hasLocation &&
+      !selectedPhoto.isLoading
+    ) {
       confirmPhoto(selectedPhoto.uri);
     }
   }, [selectedId, photos, confirmPhoto]);
@@ -486,10 +646,23 @@ const CustomImagePickerScreen: React.FC<Props> = ({
   }, [selectedAlbum, setSelectedAlbum, resetPhotos, onCancel]);
 
   const handleEndReached = useCallback(() => {
-    if (selectedAlbum && hasNextPage && endCursor && !loadingMore) {
+    if (
+      selectedAlbum &&
+      hasNextPage &&
+      endCursor &&
+      !loadingMore &&
+      !isProcessing
+    ) {
       loadAlbumPhotos(selectedAlbum, endCursor);
     }
-  }, [selectedAlbum, endCursor, hasNextPage, loadAlbumPhotos, loadingMore]);
+  }, [
+    selectedAlbum,
+    endCursor,
+    hasNextPage,
+    loadAlbumPhotos,
+    loadingMore,
+    isProcessing
+  ]);
 
   const photoKeyExtractor = useCallback((item: ImageItem) => item.id, []);
 
@@ -503,12 +676,16 @@ const CustomImagePickerScreen: React.FC<Props> = ({
         uri={item.uri}
         selected={item.id === selectedId}
         hasLocation={item.hasLocation}
-        onPress={() => handlePhotoSelect(item.id, item.hasLocation)}
+        isLoading={item.isLoading}
+        onPress={() =>
+          handlePhotoSelect(item.id, item.hasLocation, item.isLoading || false)
+        }
         styles={styles}
         itemSize={PHOTO_ITEM_SIZE}
+        variables={variables}
       />
     ),
-    [selectedId, handlePhotoSelect, styles]
+    [selectedId, handlePhotoSelect, styles, variables]
   );
 
   const renderAlbumItem = useCallback(
@@ -517,9 +694,10 @@ const CustomImagePickerScreen: React.FC<Props> = ({
         album={item}
         onPress={() => handleAlbumSelect(item)}
         styles={styles}
+        variables={variables}
       />
     ),
-    [handleAlbumSelect, styles]
+    [handleAlbumSelect, styles, variables]
   );
 
   const retryAction = useCallback(() => {
@@ -535,19 +713,15 @@ const CustomImagePickerScreen: React.FC<Props> = ({
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={onCancel}>
-            <Ionicons
-              name="close"
-              size={24}
-              color={variables['--text-on-primary']}
-            />
+            <Ionicons name="close" size={24} color={variables['--text']} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Error</Text>
         </View>
         <View style={styles.emptyStateContainer}>
           <View style={styles.emptyStateIcon}>
-            <Ionicons name="warning" size={48} color="#ff5555" />
+            <Ionicons name="warning" size={48} color={variables['--error']} />
           </View>
-          <Text style={styles.emptyStateTitle}>¡Ups! Algo salió mal</Text>
+          <Text style={styles.emptyStateTitle}>Error de acceso</Text>
           <Text style={styles.emptyStateSubtitle}>{error}</Text>
           <TouchableOpacity onPress={retryAction} style={styles.retryButton}>
             <Ionicons name="refresh" size={20} color="white" />
@@ -577,15 +751,29 @@ const CustomImagePickerScreen: React.FC<Props> = ({
 
       {selectedAlbum && photos.length > 0 && (
         <View style={styles.infoContainer}>
-          <Ionicons name="information-circle" size={16} color="#666" />
+          <Ionicons
+            name="information-circle"
+            size={16}
+            color={variables['--primary']}
+          />
           <Text style={styles.infoText}>
-            {photosWithLocation} de {photos.length} fotos tienen ubicación GPS
+            {photosWithLocation} de {photos.filter(p => !p.isLoading).length}{' '}
+            fotos tienen ubicación GPS
           </Text>
         </View>
       )}
 
+      {isProcessing && totalCount > 0 && (
+        <ProgressIndicator
+          processed={processedCount}
+          total={totalCount}
+          styles={styles}
+          variables={variables}
+        />
+      )}
+
       <View style={styles.content}>
-        {loading && !selectedAlbum ? (
+        {loading && !selectedAlbum && !refreshing ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color={variables['--primary']} />
             <Text style={styles.loadingText}>Cargando álbumes...</Text>
@@ -620,12 +808,16 @@ const CustomImagePickerScreen: React.FC<Props> = ({
             removeClippedSubviews
             updateCellsBatchingPeriod={50}
             ListEmptyComponent={
-              !loading ? (
+              !loading && !isProcessing ? (
                 <View style={styles.emptyStateContainer}>
                   <View style={styles.emptyStateIcon}>
-                    <Ionicons name="images-outline" size={48} color="#ccc" />
+                    <Ionicons
+                      name="images-outline"
+                      size={48}
+                      color={variables['--text-secondary']}
+                    />
                   </View>
-                  <Text style={styles.emptyStateTitle}>No hay fotos</Text>
+                  <Text style={styles.emptyStateTitle}>Álbum vacío</Text>
                   <Text style={styles.emptyStateSubtitle}>
                     Este álbum no contiene fotos
                   </Text>
@@ -644,13 +836,27 @@ const CustomImagePickerScreen: React.FC<Props> = ({
             renderItem={renderAlbumItem}
             showsVerticalScrollIndicator={false}
             columnWrapperStyle={{ justifyContent: 'space-between' }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={refreshAlbums}
+                colors={[variables['--primary']]}
+                tintColor={variables['--primary']}
+                title="Actualizando álbumes..."
+                titleColor={variables['--text-secondary']}
+              />
+            }
             ListEmptyComponent={
-              !loading ? (
+              !loading && !refreshing ? (
                 <View style={styles.emptyStateContainer}>
                   <View style={styles.emptyStateIcon}>
-                    <Ionicons name="folder-outline" size={48} color="#ccc" />
+                    <Ionicons
+                      name="folder-outline"
+                      size={48}
+                      color={variables['--text-secondary']}
+                    />
                   </View>
-                  <Text style={styles.emptyStateTitle}>No hay álbumes</Text>
+                  <Text style={styles.emptyStateTitle}>Sin álbumes</Text>
                   <Text style={styles.emptyStateSubtitle}>
                     No se encontraron álbumes de fotos
                   </Text>
