@@ -18,7 +18,6 @@ const mapCameraPermissionToStandard = (
     case 'granted':
       return RESULTS.GRANTED;
     case 'denied':
-      return RESULTS.DENIED;
     case 'not-determined':
       return RESULTS.DENIED;
     case 'restricted':
@@ -30,33 +29,30 @@ const mapCameraPermissionToStandard = (
 
 const getPermissionsByType = (
   types: ('camera' | 'gallery' | 'location')[]
-): Permission[] => {
-  const permissions: Permission[] = [];
+): Record<string, Permission | null> => {
+  const map: Record<string, Permission | null> = {};
 
   for (const type of types) {
     switch (type) {
       case 'camera':
+        map['camera'] = null;
         break;
       case 'gallery':
-        permissions.push(
-          Platform.select({
-            android: PERMISSIONS.ANDROID.READ_MEDIA_IMAGES,
-            ios: PERMISSIONS.IOS.PHOTO_LIBRARY
-          })!
-        );
+        map['gallery'] = Platform.select({
+          android: PERMISSIONS.ANDROID.READ_MEDIA_IMAGES,
+          ios: PERMISSIONS.IOS.PHOTO_LIBRARY
+        })!;
         break;
       case 'location':
-        permissions.push(
-          Platform.select({
-            android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-            ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
-          })!
-        );
+        map['location'] = Platform.select({
+          android: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+          ios: PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
+        })!;
         break;
     }
   }
 
-  return permissions;
+  return map;
 };
 
 export const useRequestPermissions = () => {
@@ -69,18 +65,24 @@ export const useRequestPermissions = () => {
     async (types: ('camera' | 'gallery' | 'location')[]) => {
       try {
         const statusMap: Record<string, PermissionStatus> = {};
+        const permissionsMap = getPermissionsByType(types);
 
         if (types.includes('camera')) {
           const cameraStatus = await Camera.requestCameraPermission();
-          statusMap['camera'] = cameraStatus;
+          statusMap['camera'] = mapCameraPermissionToStandard(cameraStatus);
         }
 
-        const permissions = getPermissionsByType(types);
+        const requests = Object.entries(permissionsMap)
+          //eslint-disable-next-line @typescript-eslint/no-unused-vars
+          .filter(([_, perm]) => perm)
+          .map(async ([key, perm]) => {
+            if (perm) {
+              const result = await request(perm);
+              statusMap[key] = result;
+            }
+          });
 
-        for (const perm of permissions) {
-          const result = await request(perm);
-          statusMap[perm] = result;
-        }
+        await Promise.all(requests);
 
         setPermissionStatus(statusMap);
 
@@ -114,19 +116,24 @@ export const useRequestPermissions = () => {
   const checkPermissions = useCallback(
     async (types: ('camera' | 'gallery' | 'location')[]) => {
       const statusMap: Record<string, PermissionStatus> = {};
+      const permissionsMap = getPermissionsByType(types);
 
       if (types.includes('camera')) {
-        const cameraStatus = Camera.getCameraPermissionStatus();
-        const mappedStatus = mapCameraPermissionToStandard(cameraStatus);
-        statusMap['camera'] = mappedStatus;
+        const cameraStatus = await Camera.getCameraPermissionStatus();
+        statusMap['camera'] = mapCameraPermissionToStandard(cameraStatus);
       }
 
-      const permissions = getPermissionsByType(types);
+      const checks = Object.entries(permissionsMap)
+        //eslint-disable-next-line @typescript-eslint/no-unused-vars
+        .filter(([_, perm]) => perm)
+        .map(async ([key, perm]) => {
+          if (perm) {
+            const result = await check(perm);
+            statusMap[key] = result;
+          }
+        });
 
-      for (const perm of permissions) {
-        const result = await check(perm);
-        statusMap[perm] = result;
-      }
+      await Promise.all(checks);
 
       const allGranted = Object.values(statusMap).every(
         status => status === RESULTS.GRANTED
