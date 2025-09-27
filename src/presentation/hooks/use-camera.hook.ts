@@ -16,7 +16,9 @@ export function useCamera() {
   const [isCapturing, setCapturing] = useState(false);
   const [cameraPosition, setCameraPosition] = useState<CameraPosition>(0);
   const [flashMode, setFlashMode] = useState<'on' | 'off' | 'auto'>('off');
-  const { hasPermissions, checkPermissions } = useRequestPermissions();
+
+  const { hasPermissions, checkPermissions, requestPermissions } =
+    useRequestPermissions();
 
   const devices = useCameraDevices();
   const device = devices[cameraPosition];
@@ -84,6 +86,7 @@ export function useCamera() {
     takePhoto,
     flipCamera,
     toggleFlashMode,
-    checkPermissions
+    checkPermissions,
+    requestPermissions
   };
 }

@@ -2,7 +2,7 @@ export type PublicationStatus = 'pending' | 'accepted' | 'rejected';
 
 export interface PublicationData {
   commonNoun: string;
-  catalogId: number;
+  catalogId: number | null | undefined;
   animalState: number;
   description: string;
   location: string;
