@@ -422,7 +422,7 @@ const lightTheme: Theme = {
   publicationCardButtonBackground: '#007A33',
   publicationCardButtonText: '#FFFFFF',
   modalBackground: '#FFFFFF',
-  overlay: 'rgba(0, 0, 0, 0.6)',
+  overlay: 'rgba(0, 0, 0, 0.4)',
   cardBackground: '#FFFFFF',
   chipBackground: '#F1F8E9',
   forest: '#007A33',

@@ -17,25 +17,16 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Keyboard
+  ActivityIndicator
 } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import ImageViewer from 'react-native-image-zoom-viewer';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
 import { useLoading } from '../../contexts/loading.context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { publicationService } from '../../../services/publication/publication.service';
-import {
-  useTheme,
-  themeVariables,
-  Theme,
-  ThemeVariablesType
-} from '../../contexts/theme.context';
+import { useTheme, themeVariables } from '../../contexts/theme.context';
 import { createStyles } from './publication-form-screen.styles';
 import {
   SafeAreaProvider,
@@ -52,46 +43,19 @@ enum AnimalState {
   Dead = 2
 }
 
-interface Location {
-  latitude: number;
-  longitude: number;
-}
-
 interface PublicationFormScreenProps {
   imageUri: string;
-  location?: Location;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
 }
-
-interface FormState {
-  description: string;
-  selectedAnimal: CommonNounResponse | null;
-  customAnimalName: string;
-  animalState: AnimalState;
-  isImageExpanded: boolean;
-  isKeyboardVisible: boolean;
-  keyboardHeight: number;
-}
-
-type RouteParams = {
-  PublicationForm: PublicationFormScreenProps;
-};
-
-type PublicationFormRouteProp = RouteProp<RouteParams, 'PublicationForm'>;
-
-const UNKNOWN_ANIMAL: CommonNounResponse = {
-  catalogId: -1,
-  commonNoun: 'Desconocido'
-};
 
 const PublicationFormScreen: React.FC = () => {
-  const route = useRoute<PublicationFormRouteProp>();
+  const route = useRoute();
   const { showLoading, hideLoading } = useLoading();
   const { navigate, goBack } = useNavigationActions();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scrollViewRef = useRef<ScrollView>(null);
-  const descriptionInputRef = useRef<TextInput>(null);
-  const customAnimalInputRef = useRef<TextInput>(null);
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const insets = useSafeAreaInsets();
@@ -99,6 +63,8 @@ const PublicationFormScreen: React.FC = () => {
     () => createStyles(variables, width, height, insets),
     [variables, insets]
   );
+
+  // Hook para cargar nombres comunes desde el API
   const {
     commonNouns,
     isLoading: isLoadingAnimals,
@@ -106,236 +72,97 @@ const PublicationFormScreen: React.FC = () => {
     refetch
   } = useCommonNouns();
 
-  const [formState, setFormState] = useState<FormState>({
+  const [formState, setFormState] = useState<{
+    description: string;
+    selectedAnimal: CommonNounResponse | null;
+    animalState: AnimalState;
+    isImageExpanded: boolean;
+  }>({
     description: '',
-    selectedAnimal: UNKNOWN_ANIMAL,
-    customAnimalName: '',
+    selectedAnimal: null,
     animalState: AnimalState.Alive,
-    isImageExpanded: false,
-    isKeyboardVisible: false,
-    keyboardHeight: 0
+    isImageExpanded: false
   });
 
-  const { imageUri, location } = route.params;
-
-  const animalOptions = useMemo(() => {
-    const options = [UNKNOWN_ANIMAL, ...commonNouns];
-    return options;
-  }, [commonNouns]);
+  const { imageUri, location } = route.params as PublicationFormScreenProps;
 
   useEffect(() => {
-    if (
-      commonNouns.length > 0 &&
-      formState.selectedAnimal?.catalogId.toString() === '-1'
-    ) {
-      setFormState(prev => ({
-        ...prev,
-        selectedAnimal: UNKNOWN_ANIMAL
-      }));
-    }
-  }, [commonNouns, formState.selectedAnimal]);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true
+    }).start();
+  }, [fadeAnim]);
 
-  useEffect(() => {
-    const keyboardWillShow = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      e => {
-        const keyboardHeight = e.endCoordinates.height;
-        setFormState(prev => ({
-          ...prev,
-          isKeyboardVisible: true,
-          keyboardHeight
-        }));
-      }
-    );
+  const handleSubmit = useCallback(async () => {
+    const { description, selectedAnimal, animalState } = formState;
 
-    const keyboardWillHide = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        setFormState(prev => ({
-          ...prev,
-          isKeyboardVisible: false,
-          keyboardHeight: 0
-        }));
-      }
-    );
-
-    return () => {
-      keyboardWillShow.remove();
-      keyboardWillHide.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 80,
-        friction: 8,
-        useNativeDriver: true
-      })
-    ]).start();
-  }, [fadeAnim, slideAnim]);
-
-  const validateForm = useCallback((): string | null => {
     if (!imageUri) {
-      return 'Por favor, selecciona una imagen.';
-    }
-    return null;
-  }, [imageUri]);
-
-  const getAnimalNameForSubmission = useCallback(() => {
-    const { selectedAnimal, customAnimalName } = formState;
-
-    if (selectedAnimal?.catalogId === -1 && customAnimalName.trim()) {
-      return customAnimalName.trim();
-    }
-
-    if (selectedAnimal?.catalogId.toString() === '-1') {
-      return 'Desconocido';
-    }
-
-    return selectedAnimal?.commonNoun || 'Desconocido';
-  }, [formState]);
-
-  const handleSubmit = useCallback(async (): Promise<void> => {
-    const validationError = validateForm();
-    if (validationError) {
-      Alert.alert('Formulario incompleto', validationError);
+      Alert.alert('Imagen requerida', 'Por favor, selecciona una imagen.');
       return;
     }
 
-    const { description, selectedAnimal, animalState } = formState;
-    const animalName = getAnimalNameForSubmission();
+    if (!selectedAnimal) {
+      Alert.alert('Animal requerido', 'Por favor, selecciona un animal.');
+      return;
+    }
+
+    if (!description.trim()) {
+      Alert.alert(
+        'Descripción requerida',
+        'Por favor, ingresa una descripción.'
+      );
+      return;
+    }
 
     showLoading();
     try {
       const base64Image = await imageUrlToBase64(imageUri);
       const data: PublicationData = {
         description: description.trim(),
-        commonNoun: animalName,
-        catalogId:
-          selectedAnimal?.catalogId === -1 || !selectedAnimal
-            ? 0
-            : selectedAnimal.catalogId,
+        commonNoun: selectedAnimal.commonNoun,
+        catalogId: selectedAnimal.catalogId,
         animalState: animalState,
-        location: location ? `${location.latitude},${location.longitude}` : '',
+        location: `${location?.latitude},${location?.longitude}`,
         img: base64Image
       };
 
       await publicationService.createPublication(data);
-
-      Alert.alert(
-        '✅ Publicación creada exitosamente',
-        'Gracias por tu contribución a la comunidad.',
-        [
-          {
-            text: 'Continuar',
-            onPress: () => navigate('HomeTabs')
-          }
-        ]
-      );
+      Alert.alert('✅ Publicación creada', 'Gracias por tu contribución.');
+      navigate('HomeTabs');
     } catch (error) {
       console.error('Error al publicar:', error);
       Alert.alert(
         '❌ Error',
-        'Ocurrió un problema al crear la publicación. Verifica tu conexión e intenta de nuevo.',
-        [
-          {
-            text: 'Reintentar',
-            onPress: handleSubmit
-          },
-          {
-            text: 'Cancelar',
-            style: 'cancel'
-          }
-        ]
+        'Ocurrió un problema al crear la publicación. Intenta de nuevo.'
       );
     } finally {
       hideLoading();
     }
-  }, [
-    formState,
-    imageUri,
-    location,
-    showLoading,
-    hideLoading,
-    navigate,
-    validateForm,
-    getAnimalNameForSubmission
-  ]);
+  }, [formState, imageUri, location, showLoading, hideLoading, navigate]);
 
-  const imageUrlToBase64 = async (url: string): Promise<string> => {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const blob = await response.blob();
+  async function imageUrlToBase64(url: string): Promise<string> {
+    const response = await fetch(url);
+    const blob = await response.blob();
 
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (typeof reader.result === 'string') {
-            const base64 = reader.result.replace(
-              /^data:image\/[a-zA-Z0-9+\/]+;base64,/,
-              ''
-            );
-            resolve(base64);
-          } else {
-            reject(new Error('FileReader no devolvió una cadena.'));
-          }
-        };
-        reader.onerror = () =>
-          reject(new Error('Error leyendo blob como data URL'));
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      throw new Error(`Error procesando imagen: ${error}`);
-    }
-  };
-
-  const scrollToInput = useCallback(
-    (inputRef: React.RefObject<TextInput | null>) => {
-      if (inputRef.current && scrollViewRef.current) {
-        setTimeout(() => {
-          inputRef.current?.measureLayout(
-            scrollViewRef.current as never,
-            (x, y, width, height) => {
-              const screenHeight = Dimensions.get('window').height;
-              const keyboardHeight = formState.keyboardHeight;
-              const availableHeight = screenHeight - keyboardHeight - 100;
-              const inputBottomPosition = y + height;
-
-              if (
-                y > availableHeight * 0.4 ||
-                inputBottomPosition > availableHeight
-              ) {
-                const scrollToY = Math.max(0, y - 50);
-                scrollViewRef.current?.scrollTo({
-                  y: scrollToY,
-                  animated: true
-                });
-              } else {
-                if (y < 100) {
-                  scrollViewRef.current?.scrollTo({
-                    y: Math.max(0, y - 20),
-                    animated: true
-                  });
-                }
-              }
-            },
-            () => {}
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          const base64 = reader.result.replace(
+            /^data:image\/[a-zA-Z0-9+\/]+;base64,/,
+            ''
           );
-        }, 150);
-      }
-    },
-    [formState.keyboardHeight]
-  );
+          resolve(base64);
+        } else {
+          reject(new Error('FileReader no devolvió una cadena.'));
+        }
+      };
+      reader.onerror = () =>
+        reject(new Error('Error leyendo blob como data URL'));
+      reader.readAsDataURL(blob);
+    });
+  }
 
   const toggleImageExpand = useCallback(() => {
     setFormState(prev => ({ ...prev, isImageExpanded: !prev.isImageExpanded }));
@@ -343,18 +170,10 @@ const PublicationFormScreen: React.FC = () => {
 
   const handleAnimalSelect = useCallback(
     (animal: CommonNounResponse | null) => {
-      setFormState(prev => ({
-        ...prev,
-        selectedAnimal: animal || UNKNOWN_ANIMAL,
-        customAnimalName: animal?.catalogId === -1 ? prev.customAnimalName : ''
-      }));
+      setFormState(prev => ({ ...prev, selectedAnimal: animal }));
     },
     []
   );
-
-  const handleCustomAnimalNameChange = useCallback((text: string) => {
-    setFormState(prev => ({ ...prev, customAnimalName: text }));
-  }, []);
 
   const handleDescriptionChange = useCallback((text: string) => {
     setFormState(prev => ({ ...prev, description: text }));
@@ -364,264 +183,147 @@ const PublicationFormScreen: React.FC = () => {
     setFormState(prev => ({ ...prev, animalState: state }));
   }, []);
 
-  const handleGoBack = useCallback(() => {
-    if (formState.description.trim() || formState.customAnimalName.trim()) {
-      Alert.alert(
-        'Descartar cambios',
-        '¿Estás seguro de que quieres salir? Se perderán los cambios no guardados.',
-        [
-          {
-            text: 'Cancelar',
-            style: 'cancel'
-          },
-          {
-            text: 'Salir',
-            style: 'destructive',
-            onPress: goBack
-          }
-        ]
-      );
-    } else {
-      goBack();
-    }
-  }, [formState, goBack]);
-
-  const handleInputFocus = useCallback(
-    (inputRef: React.RefObject<TextInput | null>) => {
-      scrollToInput(inputRef);
-    },
-    [scrollToInput]
-  );
-
-  const contentContainerStyle = useMemo(() => {
-    return [
-      styles.scrollContainer,
-      formState.isKeyboardVisible && {
-        paddingBottom: Math.max(formState.keyboardHeight - 100, 50)
-      }
-    ];
-  }, [
-    styles.scrollContainer,
-    formState.isKeyboardVisible,
-    formState.keyboardHeight
-  ]);
-
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-          enabled={Platform.OS === 'ios'}
-        >
-          <Animated.View
-            style={[
-              styles.container,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }]
-              }
-            ]}
+        <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContainer}
+            keyboardShouldPersistTaps="handled"
           >
-            <ScrollView
-              ref={scrollViewRef}
-              contentContainerStyle={contentContainerStyle}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-              nestedScrollEnabled={true}
-              bounces={true}
-              alwaysBounceVertical={false}
-              overScrollMode="auto"
-              scrollEventThrottle={16}
-              keyboardDismissMode="on-drag"
-              automaticallyAdjustContentInsets={false}
-              contentInsetAdjustmentBehavior="never"
-            >
-              <ScreenHeader
-                title="Nueva Publicación"
-                onBack={handleGoBack}
-                styles={styles}
-                varsiables={variables}
-              />
-
-              <ImagePreview
-                uri={imageUri}
-                isExpanded={formState.isImageExpanded}
-                onToggleExpand={toggleImageExpand}
-                styles={styles}
-              />
-
-              <FormSection
-                description={formState.description}
-                selectedAnimal={formState.selectedAnimal}
-                customAnimalName={formState.customAnimalName}
-                animalState={formState.animalState}
-                onDescriptionChange={handleDescriptionChange}
-                onAnimalSelect={handleAnimalSelect}
-                onCustomAnimalNameChange={handleCustomAnimalNameChange}
-                onAnimalStateSelect={handleAnimalStateSelect}
-                location={location}
-                theme={theme}
-                styles={styles}
-                commonNouns={animalOptions}
-                isLoadingAnimals={isLoadingAnimals}
-                animalsError={animalsError}
-                refetch={refetch}
-                validateForm={validateForm}
-                descriptionInputRef={descriptionInputRef}
-                customAnimalInputRef={customAnimalInputRef}
-                onInputFocus={handleInputFocus}
-              />
-            </ScrollView>
-
-            {!formState.isKeyboardVisible && (
-              <FooterButtons
-                onCancel={handleGoBack}
-                onSubmit={handleSubmit}
-                styles={styles}
-                isValid={validateForm() === null}
-              />
-            )}
-          </Animated.View>
-        </KeyboardAvoidingView>
+            <ScreenHeader
+              title="Nueva Publicación"
+              onBack={goBack}
+              styles={styles}
+            />
+            <ImagePreview
+              uri={imageUri}
+              isExpanded={formState.isImageExpanded}
+              onToggleExpand={toggleImageExpand}
+              styles={styles}
+            />
+            <FormSection
+              description={formState.description}
+              selectedAnimal={formState.selectedAnimal}
+              animalState={formState.animalState}
+              onDescriptionChange={handleDescriptionChange}
+              onAnimalSelect={handleAnimalSelect}
+              onAnimalStateSelect={handleAnimalStateSelect}
+              location={location}
+              theme={theme}
+              styles={styles}
+              commonNouns={commonNouns}
+              isLoadingAnimals={isLoadingAnimals}
+              animalsError={animalsError}
+              refetch={refetch}
+            />
+          </ScrollView>
+          <FooterButtons
+            onCancel={goBack}
+            onSubmit={handleSubmit}
+            styles={styles}
+          />
+        </Animated.View>
       </SafeAreaView>
     </SafeAreaProvider>
   );
 };
 
-interface ScreenHeaderProps {
+const ScreenHeader: React.FC<{
   title: string;
   onBack: () => void;
   styles: ReturnType<typeof createStyles>;
-  varsiables: ThemeVariablesType;
-}
-
-const ScreenHeader: React.FC<ScreenHeaderProps> = ({
-  title,
-  onBack,
-  styles,
-  varsiables
-}) => (
+}> = ({ title, onBack, styles }) => (
   <View style={styles.header}>
     <TouchableOpacity
       onPress={onBack}
       style={styles.backButton}
-      activeOpacity={0.7}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      activeOpacity={0.8}
     >
-      <Ionicons name="arrow-back" size={24} color={varsiables['--primary']} />
+      <Ionicons name="arrow-back" size={24} color="#007AFF" />
     </TouchableOpacity>
     <Text style={styles.headerTitle}>{title}</Text>
     <View style={{ width: 24 }} />
   </View>
 );
 
-interface ImagePreviewProps {
+const ImagePreview: React.FC<{
   uri: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
   styles: ReturnType<typeof createStyles>;
-}
-
-const ImagePreview: React.FC<ImagePreviewProps> = ({
-  uri,
-  isExpanded,
-  onToggleExpand,
-  styles
-}) => (
+}> = ({ uri, isExpanded, onToggleExpand, styles }) => (
   <>
-    <TouchableOpacity
-      onPress={onToggleExpand}
-      activeOpacity={0.9}
-      style={styles.imageContainer}
-    >
+    <TouchableOpacity onPress={onToggleExpand} activeOpacity={0.9}>
       <Image source={{ uri }} style={styles.image} resizeMode="cover" />
       <View style={styles.expandIconContainer}>
-        <MaterialIcons name="zoom-in" size={20} color="white" />
-      </View>
-      <View style={styles.imageOverlay}>
-        <Text style={styles.imageOverlayText}>Toca para ampliar</Text>
+        <MaterialIcons name="zoom-in" size={24} color="white" />
       </View>
     </TouchableOpacity>
-
     <Modal visible={isExpanded} transparent animationType="fade">
-      <ImageViewer
-        imageUrls={[{ url: uri }]}
-        enableImageZoom={true}
-        enableSwipeDown={true}
-        onSwipeDown={onToggleExpand}
-        onCancel={onToggleExpand}
-        backgroundColor="rgba(0,0,0,0.95)"
-        renderHeader={() => (
-          <TouchableOpacity
-            style={styles.modalCloseButton}
-            onPress={onToggleExpand}
-            activeOpacity={0.8}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-          >
-            <Ionicons name="close" size={28} color="#fff" />
-          </TouchableOpacity>
-        )}
-      />
+      <View style={styles.modalContainer}>
+        <TouchableOpacity
+          style={styles.modalCloseButton}
+          onPress={onToggleExpand}
+          activeOpacity={0.9}
+        >
+          <Ionicons name="close" size={30} color="white" />
+        </TouchableOpacity>
+        <Image
+          source={{ uri }}
+          style={styles.expandedImage}
+          resizeMode="contain"
+        />
+      </View>
     </Modal>
   </>
 );
 
-interface AnimalStateSelectorProps {
+const AnimalStateSelector: React.FC<{
   selected: AnimalState;
   onSelect: (state: AnimalState) => void;
   styles: ReturnType<typeof createStyles>;
-}
-
-const AnimalStateSelector: React.FC<AnimalStateSelectorProps> = ({
-  selected,
-  onSelect,
-  styles
-}) => {
+}> = ({ selected, onSelect, styles }) => {
   const options = [
-    {
-      label: 'Vivo',
-      value: AnimalState.Alive,
-      icon: '🟢',
-      color: '#4CAF50'
-    },
-    {
-      label: 'Muerto',
-      value: AnimalState.Dead,
-      icon: '🔴',
-      color: '#F44336'
-    }
+    { label: '🟢 Vivo', value: AnimalState.Alive },
+    { label: '🔴 Muerto', value: AnimalState.Dead }
   ];
 
   return (
-    <View style={styles.stateSelectorContainer}>
-      {options.map(({ label, value, icon, color }, index) => {
+    <View
+      style={[
+        styles.stateSelectorContainer,
+        {
+          flexDirection: 'row',
+          borderRadius: 8,
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: '#ccc'
+        }
+      ]}
+    >
+      {options.map(({ label, value }, index) => {
         const isSelected = selected === value;
         return (
           <TouchableOpacity
             key={value}
             onPress={() => onSelect(value)}
-            activeOpacity={0.8}
-            style={[
-              styles.stateOption,
-              {
-                backgroundColor: isSelected ? color : 'transparent',
-                borderColor: color,
-                borderRightWidth: index === 0 ? 1 : 0,
-                borderRightColor: '#E0E0E0'
-              }
-            ]}
+            activeOpacity={0.9}
+            style={{
+              flex: 1,
+              backgroundColor: isSelected ? '#4CAF50' : '#fff',
+              paddingVertical: 12,
+              alignItems: 'center',
+              borderRightWidth: index === 0 ? 1 : 0,
+              borderRightColor: '#ccc'
+            }}
           >
-            <Text style={styles.stateIcon}>{icon}</Text>
             <Text
-              style={[
-                styles.stateLabel,
-                {
-                  color: isSelected ? 'white' : color,
-                  fontWeight: isSelected ? '600' : '500'
-                }
-              ]}
+              style={{
+                color: isSelected ? 'white' : '#333',
+                fontWeight: isSelected ? 'bold' : 'normal',
+                fontSize: 14
+              }}
             >
               {label}
             </Text>
@@ -632,37 +334,27 @@ const AnimalStateSelector: React.FC<AnimalStateSelectorProps> = ({
   );
 };
 
-interface FormSectionProps {
+const FormSection: React.FC<{
   description: string;
   selectedAnimal: CommonNounResponse | null;
-  customAnimalName: string;
   animalState: AnimalState;
   onDescriptionChange: (text: string) => void;
   onAnimalSelect: (animal: CommonNounResponse | null) => void;
-  onCustomAnimalNameChange: (text: string) => void;
   onAnimalStateSelect: (state: AnimalState) => void;
-  location?: Location;
+  location?: { latitude: number; longitude: number };
   styles: ReturnType<typeof createStyles>;
-  theme: Theme;
+  theme: ReturnType<typeof useTheme>['theme'];
   commonNouns: CommonNounResponse[];
   isLoadingAnimals: boolean;
   animalsError: string | null;
   refetch: () => void;
-  validateForm: () => string | null;
-  descriptionInputRef: React.RefObject<TextInput | null>;
-  customAnimalInputRef: React.RefObject<TextInput | null>;
-  onInputFocus: (inputRef: React.RefObject<TextInput | null>) => void;
-}
-
-const FormSection: React.FC<FormSectionProps> = React.memo(
+}> = React.memo(
   ({
     description,
     selectedAnimal,
-    customAnimalName,
     animalState,
     onDescriptionChange,
     onAnimalSelect,
-    onCustomAnimalNameChange,
     onAnimalStateSelect,
     location,
     styles,
@@ -670,126 +362,65 @@ const FormSection: React.FC<FormSectionProps> = React.memo(
     commonNouns,
     isLoadingAnimals,
     animalsError,
-    refetch,
-    validateForm,
-    descriptionInputRef,
-    customAnimalInputRef,
-    onInputFocus
+    refetch
   }) => {
     const variables = useMemo(() => themeVariables(theme), [theme]);
-    const characterCount = description.length;
-    const maxCharacters = 500;
 
     return (
-      <View style={[styles.formContainer]}>
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>📝 Descripción</Text>
-          <TextInput
-            ref={descriptionInputRef}
-            style={[styles.textArea]}
-            placeholder="Describe detalladamente el avistamiento: comportamiento, ubicación específica, condiciones del entorno... (opcional)"
-            placeholderTextColor={variables['--placeholder']}
-            value={description}
-            onChangeText={onDescriptionChange}
-            onFocus={() => onInputFocus(descriptionInputRef)}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            maxLength={maxCharacters}
-            blurOnSubmit={true}
-            returnKeyType="done"
-          />
-          <View style={styles.characterCounter}>
-            <Text style={[styles.characterCountText]}>
-              {characterCount}/{maxCharacters} caracteres
-            </Text>
+      <View style={styles.formContainer}>
+        <Text style={styles.label}>📝 Descripción*</Text>
+        <TextInput
+          style={styles.textArea}
+          placeholder="Describe el avistamiento..."
+          placeholderTextColor="#888"
+          value={description}
+          onChangeText={onDescriptionChange}
+          multiline
+          numberOfLines={4}
+          textAlignVertical="top"
+        />
+
+        <Text style={styles.label}>🐾 Animal*</Text>
+        {isLoadingAnimals ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={variables['--primary']} />
+            <Text style={styles.loadingText}>Cargando animales...</Text>
           </View>
-        </View>
-
-        <View style={[styles.fieldContainer]}>
-          <Text style={styles.label}>🐾 Animal</Text>
-          {isLoadingAnimals ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={variables['--primary']} />
-              <Text style={styles.loadingText}>
-                Cargando lista de animales...
-              </Text>
-            </View>
-          ) : animalsError ? (
-            <TouchableOpacity
-              style={styles.errorContainer}
-              onPress={refetch}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="error-outline" size={20} color="#F44336" />
-              <Text style={styles.errorText}>
-                Error al cargar animales. Toca para reintentar.
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <AnimalSearchableDropdown
-              selectedValue={selectedAnimal}
-              options={commonNouns}
-              onValueChange={onAnimalSelect}
-              placeholder="Buscar y seleccionar animal..."
-              theme={theme}
-            />
-          )}
-
-          {selectedAnimal?.catalogId === -1 && (
-            <View style={styles.customAnimalContainer}>
-              <Text style={styles.customAnimalLabel}>
-                💭 Especifica el animal (opcional)
-              </Text>
-              <TextInput
-                ref={customAnimalInputRef}
-                style={styles.customAnimalInput}
-                placeholder="Ej: Ave pequeña, Mamífero mediano, Reptil desconocido..."
-                placeholderTextColor={variables['--placeholder']}
-                value={customAnimalName}
-                onChangeText={onCustomAnimalNameChange}
-                onFocus={() => onInputFocus(customAnimalInputRef)}
-                maxLength={100}
-                returnKeyType="done"
-                blurOnSubmit={true}
-              />
-              <Text style={styles.customAnimalHint}>
-                Si conoces más detalles sobre el animal, puedes especificarlos
-                aquí
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View style={[styles.fieldContainer]}>
-          <Text style={styles.label}>📍 Estado del animal*</Text>
-          <AnimalStateSelector
-            selected={animalState}
-            onSelect={onAnimalStateSelect}
-            styles={styles}
+        ) : animalsError ? (
+          <TouchableOpacity
+            style={styles.errorContainer}
+            onPress={() => {
+              refetch();
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.errorText}>
+              Error al cargar animales. Toca para reintentar.
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <AnimalSearchableDropdown
+            selectedValue={selectedAnimal}
+            options={commonNouns}
+            onValueChange={onAnimalSelect}
+            placeholder="Selecciona un animal"
+            theme={theme}
           />
-        </View>
-
-        {location && (
-          <View style={[styles.locationContainer]}>
-            <View style={styles.locationHeader}>
-              <Ionicons name="location-sharp" size={18} color="#4CAF50" />
-              <Text style={styles.locationTitle}>Ubicación registrada</Text>
-            </View>
-            <Text style={styles.locationText}>
-              Lat: {location.latitude.toFixed(6)}, Lon:{' '}
-              {location.longitude.toFixed(6)}
-            </Text>
-            <Text style={styles.locationSubtext}>
-              Esta ubicación se incluirá con tu publicación
-            </Text>
-          </View>
         )}
 
-        {validateForm() && (
-          <View style={[styles.validationContainer]}>
-            <MaterialIcons name="info-outline" size={18} color="#FF9800" />
-            <Text style={styles.validationText}>{validateForm()}</Text>
+        <Text style={styles.label}>📍 Estado del animal*</Text>
+        <AnimalStateSelector
+          selected={animalState}
+          onSelect={onAnimalStateSelect}
+          styles={styles}
+        />
+
+        {location && (
+          <View style={styles.locationContainer}>
+            <Ionicons name="location-sharp" size={16} color="#555" />
+            <Text
+              style={styles.locationText}
+            >{`Lat: ${location.latitude.toFixed(4)}, Lon: ${location.longitude.toFixed(4)}`}</Text>
           </View>
         )}
       </View>
@@ -797,44 +428,27 @@ const FormSection: React.FC<FormSectionProps> = React.memo(
   }
 );
 
-interface FooterButtonsProps {
+const FooterButtons: React.FC<{
   onCancel: () => void;
   onSubmit: () => void;
   styles: ReturnType<typeof createStyles>;
-  isValid: boolean;
-}
-
-const FooterButtons: React.FC<FooterButtonsProps> = ({
-  onCancel,
-  onSubmit,
-  styles,
-  isValid
-}) => (
+}> = ({ onCancel, onSubmit, styles }) => (
   <View style={styles.footer}>
     <TouchableOpacity
       style={styles.cancelButton}
       onPress={onCancel}
       activeOpacity={0.8}
     >
-      <Ionicons name="close-circle-outline" size={20} color="#666" />
+      <Ionicons name="close-circle" size={18} color="#D32F2F" />
       <Text style={styles.cancelButtonText}>Cancelar</Text>
     </TouchableOpacity>
-
     <TouchableOpacity
-      style={[styles.submitButton, !isValid && styles.submitButtonDisabled]}
+      style={styles.submitButton}
       onPress={onSubmit}
-      activeOpacity={isValid ? 0.8 : 0.5}
-      disabled={!isValid}
+      activeOpacity={0.8}
     >
-      <Text
-        style={[
-          styles.submitButtonText,
-          !isValid && styles.submitButtonTextDisabled
-        ]}
-      >
-        Publicar
-      </Text>
-      <Ionicons name="send" size={18} color={isValid ? 'white' : '#999'} />
+      <Text style={styles.submitButtonText}>Publicar</Text>
+      <Ionicons name="send" size={18} color="white" />
     </TouchableOpacity>
   </View>
 );
