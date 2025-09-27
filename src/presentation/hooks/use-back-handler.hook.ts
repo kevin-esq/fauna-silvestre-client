@@ -1,38 +1,25 @@
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useEffect } from 'react';
 import { BackHandler } from 'react-native';
-import { useNavigationActions } from '../navigation/navigation-provider';
+import { useNavigation } from '@react-navigation/native';
 
-export const useBackHandler = (
-  isModalOpen: boolean,
-  closeModal: () => void
-) => {
+const useBackHandler = () => {
   const navigation = useNavigation();
-  const { navigate, goBack } = useNavigationActions();
 
-  useFocusEffect(() => {
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      () => {
-        if (isModalOpen) {
-          closeModal();
-          return true;
-        }
-        if (navigation.canGoBack()) {
-          goBack();
-          return true;
-        } else {
-          navigate('HomeTabs');
-          return true;
-        }
+  useEffect(() => {
+    const onBackPress = () => {
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+        return true;
       }
+      return false;
+    };
+
+    const backHandlerListener = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
     );
-
-    return () => backHandler.remove();
-  });
-
-  const handleBackPress = () => {
-    navigate('HomeTabs');
-  };
-
-  return { handleBackPress };
+    return () => backHandlerListener.remove();
+  }, [navigation]);
 };
+
+export default useBackHandler;
