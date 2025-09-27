@@ -13,7 +13,8 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Image,
-  Dimensions
+  Dimensions,
+  Alert
 } from 'react-native';
 import {
   Album,
@@ -25,21 +26,23 @@ import { Theme, themeVariables } from '../../contexts/theme.context';
 import { createStyles } from './custom-image-picker-screen.styles';
 import type { StyleProp, ViewStyle, TextStyle, ImageStyle } from 'react-native';
 import { Location } from 'react-native-get-location';
-import { MediaLibraryService } from '../../../services/media/media-library.service';
+import {
+  MediaLibraryService,
+  MediaMetadata
+} from '../../../services/media/media-library.service';
 
-// Constants
 const PAGE_SIZE = 50;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PHOTO_ITEM_SIZE = (SCREEN_WIDTH - 6) / 3;
+const PHOTO_ITEM_SIZE = (SCREEN_WIDTH - 12) / 3;
 const INITIAL_RENDER_COUNT = 15;
 const MAX_RENDER_PER_BATCH = 12;
 const WINDOW_SIZE = 5;
 
-// Types
 interface ImageItem {
   uri: string;
   id: string;
   title: string;
+  hasLocation: boolean;
 }
 
 interface AlbumWithCover extends Album {
@@ -75,6 +78,15 @@ interface Styles {
   selectionText: StyleProp<TextStyle>;
   floatingButtonContainer: StyleProp<ViewStyle>;
   content: StyleProp<ViewStyle>;
+  disabledPhotoOverlay: StyleProp<ViewStyle>;
+  locationIcon: StyleProp<ViewStyle>;
+  infoContainer: StyleProp<ViewStyle>;
+  infoText: StyleProp<TextStyle>;
+  retryButton: StyleProp<ViewStyle>;
+  emptyStateContainer: StyleProp<ViewStyle>;
+  emptyStateIcon: StyleProp<ViewStyle>;
+  emptyStateTitle: StyleProp<TextStyle>;
+  emptyStateSubtitle: StyleProp<TextStyle>;
 }
 
 const parseCoordinate = (value: unknown): number => {
@@ -84,7 +96,20 @@ const parseCoordinate = (value: unknown): number => {
   return isNaN(num) ? 0 : num;
 };
 
-// Custom Hook para Camera Roll
+async function hasValidLocation(
+  metadataPromise: Promise<MediaMetadata | null>
+): Promise<boolean> {
+  try {
+    const metadata = await metadataPromise;
+    if (!metadata) return false;
+    const lat = parseCoordinate(metadata.latitude);
+    const lng = parseCoordinate(metadata.longitude);
+    return lat !== 0 && lng !== 0;
+  } catch (error) {
+    console.error('Error fetching metadata:', error);
+    return false;
+  }
+}
 function useCameraRoll() {
   const [albums, setAlbums] = useState<AlbumWithCover[]>([]);
   const [photos, setPhotos] = useState<ImageItem[]>([]);
@@ -109,11 +134,10 @@ function useCameraRoll() {
       });
 
       if (!fetchedAlbums?.length) {
-        setError('No albums found');
+        setError('No se encontraron álbumes');
         return;
       }
 
-      // Cargar covers con manejo de errores
       const albumsWithCovers = await Promise.allSettled(
         fetchedAlbums.map(async album => {
           try {
@@ -143,7 +167,7 @@ function useCameraRoll() {
       setAlbums(validAlbums);
     } catch (err) {
       console.error('Failed to load albums:', err);
-      setError('Error loading albums. Please try again.');
+      setError('Error al cargar álbumes. Intenta nuevamente.');
     } finally {
       setLoading(false);
     }
@@ -171,22 +195,43 @@ function useCameraRoll() {
           include: ['filename', 'location', 'imageSize']
         });
 
-        const newPhotos = result.edges.map(
-          (edge: PhotoIdentifier, index: number) => ({
-            uri: edge.node.image.uri,
-            id:
-              edge.node.image.filename ||
-              `${edge.node.timestamp}-${index}-${album.title}`,
-            title: album.title
-          })
+        const newPhotosPromises = result.edges.map(
+          async (edge: PhotoIdentifier, index: number) => {
+            try {
+              const metadata = await MediaLibraryService.extractMetadata(
+                edge.node.image.uri
+              );
+              return {
+                uri: edge.node.image.uri,
+                id:
+                  edge.node.image.filename ||
+                  `${edge.node.timestamp}-${index}-${album.title}`,
+                title: album.title,
+                hasLocation: await Promise.resolve(
+                  hasValidLocation(Promise.resolve(metadata))
+                )
+              };
+            } catch {
+              return {
+                uri: edge.node.image.uri,
+                id:
+                  edge.node.image.filename ||
+                  `${edge.node.timestamp}-${index}-${album.title}`,
+                title: album.title,
+                hasLocation: false
+              };
+            }
+          }
         );
+
+        const newPhotos = await Promise.all(newPhotosPromises);
 
         setPhotos(prev => (after ? [...prev, ...newPhotos] : newPhotos));
         setEndCursor(result.page_info.end_cursor || null);
         setHasNextPage(result.page_info.has_next_page);
       } catch (err) {
         console.error('Failed to load photos:', err);
-        setError('Error loading photos. Please try again.');
+        setError('Error al cargar fotos. Intenta nuevamente.');
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -218,29 +263,57 @@ function useCameraRoll() {
   };
 }
 
-// Componente PhotoItem
 const PhotoItem = memo<{
   uri: string;
   selected: boolean;
+  hasLocation: boolean;
   onPress: () => void;
-  styles: Styles;
+  styles: ReturnType<typeof createStyles>;
   itemSize: number;
-}>(({ uri, selected, onPress, styles, itemSize }) => (
+}>(({ uri, selected, hasLocation, onPress, styles, itemSize }) => (
   <TouchableOpacity
-    style={[styles.photoItem, { width: itemSize, height: itemSize }]}
+    style={[
+      styles.photoItem,
+      { width: itemSize, height: itemSize },
+      !hasLocation && { opacity: 0.5 }
+    ]}
     onPress={onPress}
-    activeOpacity={0.8}
+    activeOpacity={hasLocation ? 0.8 : 0.3}
+    disabled={!hasLocation}
   >
     <Image
       source={{ uri }}
       style={[styles.photo, { width: itemSize, height: itemSize }]}
       resizeMode="cover"
     />
-    {selected && (
+
+    <View
+      style={[
+        styles.locationIcon,
+        {
+          backgroundColor: hasLocation ? '#4CAF50' : '#F44336',
+          opacity: 0.9
+        }
+      ]}
+    >
+      <Ionicons
+        name={hasLocation ? 'location' : 'location-outline'}
+        size={12}
+        color="white"
+      />
+    </View>
+
+    {selected && hasLocation && (
       <View style={styles.selectionOverlay}>
         <View style={styles.selectionBadge}>
           <Ionicons name="checkmark-circle" size={28} color="#007AFF" />
         </View>
+      </View>
+    )}
+
+    {!hasLocation && (
+      <View style={styles.disabledPhotoOverlay}>
+        <Ionicons name="ban" size={24} color="#F44336" />
       </View>
     )}
   </TouchableOpacity>
@@ -248,7 +321,6 @@ const PhotoItem = memo<{
 
 PhotoItem.displayName = 'PhotoItem';
 
-// Componente AlbumItem
 const AlbumItem = memo<{
   album: AlbumWithCover;
   onPress: () => void;
@@ -257,7 +329,7 @@ const AlbumItem = memo<{
   <TouchableOpacity
     style={styles.albumItem}
     onPress={onPress}
-    activeOpacity={0.8}
+    activeOpacity={0.7}
   >
     {album.coverUri ? (
       <Image
@@ -270,25 +342,26 @@ const AlbumItem = memo<{
         style={[
           styles.albumCover,
           {
-            backgroundColor: '#f0f0f0',
+            backgroundColor: '#f5f5f5',
             justifyContent: 'center',
             alignItems: 'center'
           }
         ]}
       >
-        <Ionicons name="images" size={40} color="#888" />
+        <Ionicons name="images" size={40} color="#bbb" />
       </View>
     )}
     <Text style={styles.albumTitle} numberOfLines={1}>
       {album.title}
     </Text>
-    <Text style={styles.albumCount}>{album.count} photos</Text>
+    <Text style={styles.albumCount}>
+      {album.count} {album.count === 1 ? 'foto' : 'fotos'}
+    </Text>
   </TouchableOpacity>
 ));
 
 AlbumItem.displayName = 'AlbumItem';
 
-// Componente principal
 const CustomImagePickerScreen: React.FC<Props> = ({
   onConfirm,
   onCancel,
@@ -316,7 +389,11 @@ const CustomImagePickerScreen: React.FC<Props> = ({
   const albumListRef = useRef<FlatList>(null);
   const isMountedRef = useRef(true);
 
-  // Cargar albums al montar, pero solo si no existen
+  const photosWithLocation = useMemo(
+    () => photos.filter(photo => photo.hasLocation).length,
+    [photos]
+  );
+
   useEffect(() => {
     isMountedRef.current = true;
     if (albums.length === 0) {
@@ -325,13 +402,24 @@ const CustomImagePickerScreen: React.FC<Props> = ({
     return () => {
       isMountedRef.current = false;
     };
-    //eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadAlbums, albums.length]);
 
   const confirmPhoto = useCallback(
     async (uri: string) => {
       try {
         const metadata = await MediaLibraryService.extractMetadata(uri);
+        const isValidLocation = await hasValidLocation(
+          Promise.resolve(metadata)
+        );
+        if (!isValidLocation) {
+          Alert.alert(
+            'Sin ubicación',
+            'Esta imagen no contiene información de ubicación válida.',
+            [{ text: 'Entendido', style: 'default' }]
+          );
+          return;
+        }
+
         const location: Location = {
           latitude: parseCoordinate(metadata?.latitude),
           longitude: parseCoordinate(metadata?.longitude),
@@ -347,20 +435,11 @@ const CustomImagePickerScreen: React.FC<Props> = ({
         onConfirm(uri, location);
       } catch (err) {
         console.error('Error processing photo:', err);
-        // Fallback: confirmar sin ubicación
-        const fallbackLocation: Location = {
-          latitude: 0,
-          longitude: 0,
-          altitude: 0,
-          accuracy: 0,
-          speed: 0,
-          time: Date.now(),
-          bearing: 0,
-          provider: 0,
-          verticalAccuracy: 0,
-          course: 0
-        };
-        onConfirm(uri, fallbackLocation);
+        Alert.alert(
+          'Error',
+          'No se pudo procesar la imagen. Intenta con otra.',
+          [{ text: 'Entendido', style: 'default' }]
+        );
       }
     },
     [onConfirm]
@@ -376,14 +455,22 @@ const CustomImagePickerScreen: React.FC<Props> = ({
     [setSelectedAlbum, resetPhotos, loadAlbumPhotos]
   );
 
-  const handlePhotoSelect = useCallback((id: string) => {
+  const handlePhotoSelect = useCallback((id: string, hasLocation: boolean) => {
+    if (!hasLocation) {
+      Alert.alert(
+        'Imagen sin ubicación',
+        'Esta imagen no contiene información de ubicación GPS. Solo puedes seleccionar imágenes que tengan datos de ubicación.',
+        [{ text: 'Entendido', style: 'default' }]
+      );
+      return;
+    }
     setSelectedId(prev => (prev === id ? null : id));
   }, []);
 
   const handleConfirm = useCallback(() => {
     if (!selectedId) return;
     const selectedPhoto = photos.find(photo => photo.id === selectedId);
-    if (selectedPhoto) {
+    if (selectedPhoto && selectedPhoto.hasLocation) {
       confirmPhoto(selectedPhoto.uri);
     }
   }, [selectedId, photos, confirmPhoto]);
@@ -404,7 +491,6 @@ const CustomImagePickerScreen: React.FC<Props> = ({
     }
   }, [selectedAlbum, endCursor, hasNextPage, loadAlbumPhotos, loadingMore]);
 
-  // ✅ Diferentes keyExtractors para diferentes tipos de datos
   const photoKeyExtractor = useCallback((item: ImageItem) => item.id, []);
 
   const albumKeyExtractor = useCallback((item: AlbumWithCover) => {
@@ -416,7 +502,8 @@ const CustomImagePickerScreen: React.FC<Props> = ({
       <PhotoItem
         uri={item.uri}
         selected={item.id === selectedId}
-        onPress={() => handlePhotoSelect(item.id)}
+        hasLocation={item.hasLocation}
+        onPress={() => handlePhotoSelect(item.id, item.hasLocation)}
         styles={styles}
         itemSize={PHOTO_ITEM_SIZE}
       />
@@ -456,11 +543,17 @@ const CustomImagePickerScreen: React.FC<Props> = ({
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Error</Text>
         </View>
-        <View style={styles.centered}>
-          <Ionicons name="warning" size={48} color="#ff5555" />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={retryAction} style={styles.confirmButton}>
-            <Text style={styles.buttonText}>Retry</Text>
+        <View style={styles.emptyStateContainer}>
+          <View style={styles.emptyStateIcon}>
+            <Ionicons name="warning" size={48} color="#ff5555" />
+          </View>
+          <Text style={styles.emptyStateTitle}>¡Ups! Algo salió mal</Text>
+          <Text style={styles.emptyStateSubtitle}>{error}</Text>
+          <TouchableOpacity onPress={retryAction} style={styles.retryButton}>
+            <Ionicons name="refresh" size={20} color="white" />
+            <Text style={[styles.buttonText, { marginLeft: 8 }]}>
+              Reintentar
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -469,34 +562,37 @@ const CustomImagePickerScreen: React.FC<Props> = ({
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Ionicons
             name={selectedAlbum ? 'arrow-back' : 'close'}
             size={24}
-            color={variables['--text-on-primary']}
+            color={variables['--text']}
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {selectedAlbum ? selectedAlbum.title : 'Select Album'}
+          {selectedAlbum ? selectedAlbum.title : 'Seleccionar Álbum'}
         </Text>
       </View>
 
-      {/* Content */}
+      {selectedAlbum && photos.length > 0 && (
+        <View style={styles.infoContainer}>
+          <Ionicons name="information-circle" size={16} color="#666" />
+          <Text style={styles.infoText}>
+            {photosWithLocation} de {photos.length} fotos tienen ubicación GPS
+          </Text>
+        </View>
+      )}
+
       <View style={styles.content}>
         {loading && !selectedAlbum ? (
           <View style={styles.centered}>
-            <ActivityIndicator
-              size="large"
-              color={variables['--text-on-primary']}
-            />
-            <Text style={styles.loadingText}>Loading albums...</Text>
+            <ActivityIndicator size="large" color={variables['--primary']} />
+            <Text style={styles.loadingText}>Cargando álbumes...</Text>
           </View>
         ) : selectedAlbum ? (
-          // ✅ FlatList específico para fotos con key única
           <FlatList
-            key="photos-list" // ✅ Key única para fotos
+            key="photos-list"
             ref={photoListRef}
             data={photos}
             keyExtractor={photoKeyExtractor}
@@ -506,13 +602,15 @@ const CustomImagePickerScreen: React.FC<Props> = ({
             contentContainerStyle={styles.photoGrid}
             renderItem={renderPhotoItem}
             showsVerticalScrollIndicator={false}
+            columnWrapperStyle={{ justifyContent: 'space-between' }}
             ListFooterComponent={
               loadingMore ? (
                 <View style={[styles.centered, { height: 60 }]}>
                   <ActivityIndicator
                     size="small"
-                    color={variables['--text-on-primary']}
+                    color={variables['--primary']}
                   />
+                  <Text style={styles.loadingText}>Cargando más fotos...</Text>
                 </View>
               ) : null
             }
@@ -523,16 +621,21 @@ const CustomImagePickerScreen: React.FC<Props> = ({
             updateCellsBatchingPeriod={50}
             ListEmptyComponent={
               !loading ? (
-                <View style={styles.centered}>
-                  <Text style={styles.errorText}>No photos found</Text>
+                <View style={styles.emptyStateContainer}>
+                  <View style={styles.emptyStateIcon}>
+                    <Ionicons name="images-outline" size={48} color="#ccc" />
+                  </View>
+                  <Text style={styles.emptyStateTitle}>No hay fotos</Text>
+                  <Text style={styles.emptyStateSubtitle}>
+                    Este álbum no contiene fotos
+                  </Text>
                 </View>
               ) : null
             }
           />
         ) : (
-          // ✅ FlatList específico para álbumes con key única
           <FlatList
-            key="albums-list" // ✅ Key única para álbumes
+            key="albums-list"
             ref={albumListRef}
             data={albums}
             keyExtractor={albumKeyExtractor}
@@ -540,10 +643,17 @@ const CustomImagePickerScreen: React.FC<Props> = ({
             contentContainerStyle={styles.albumGrid}
             renderItem={renderAlbumItem}
             showsVerticalScrollIndicator={false}
+            columnWrapperStyle={{ justifyContent: 'space-between' }}
             ListEmptyComponent={
               !loading ? (
-                <View style={styles.centered}>
-                  <Text style={styles.errorText}>No albums found</Text>
+                <View style={styles.emptyStateContainer}>
+                  <View style={styles.emptyStateIcon}>
+                    <Ionicons name="folder-outline" size={48} color="#ccc" />
+                  </View>
+                  <Text style={styles.emptyStateTitle}>No hay álbumes</Text>
+                  <Text style={styles.emptyStateSubtitle}>
+                    No se encontraron álbumes de fotos
+                  </Text>
                 </View>
               ) : null
             }
@@ -551,7 +661,6 @@ const CustomImagePickerScreen: React.FC<Props> = ({
         )}
       </View>
 
-      {/* Floating Confirm Button */}
       {selectedId && (
         <View style={styles.floatingButtonContainer}>
           <TouchableOpacity
@@ -559,7 +668,10 @@ const CustomImagePickerScreen: React.FC<Props> = ({
             onPress={handleConfirm}
             activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>Select Photo</Text>
+            <Ionicons name="checkmark" size={20} color="white" />
+            <Text style={[styles.buttonText, { marginLeft: 8 }]}>
+              Seleccionar Foto
+            </Text>
           </TouchableOpacity>
         </View>
       )}

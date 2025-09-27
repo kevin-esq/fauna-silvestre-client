@@ -2,12 +2,11 @@ import React, { useCallback, useMemo } from 'react';
 import {
   View,
   FlatList,
-  TouchableOpacity,
   Image,
   StyleSheet,
   Dimensions,
-  ImageErrorEventData,
-  NativeSyntheticEvent
+  NativeSyntheticEvent,
+  Pressable
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -30,51 +29,32 @@ interface ThumbnailItemProps {
 
 const ThumbnailItem = React.memo<ThumbnailItemProps>(
   ({ uri, isActive, onPress }) => {
-    const handlePress = useCallback(() => {
-      onPress(uri);
-    }, [uri, onPress]);
-
     const handleImageError = useCallback(
-      (error: NativeSyntheticEvent<ImageErrorEventData>) => {
+      (error: NativeSyntheticEvent<{ error: string }>) => {
         console.warn('Failed to load thumbnail:', uri, error.nativeEvent.error);
       },
       [uri]
     );
 
-    const thumbnailStyle = useMemo(
-      () => [styles.thumbnail, isActive && styles.thumbnailActive],
-      [isActive]
-    );
-
-    const imageStyle = useMemo(
-      () => [styles.image, isActive && styles.imageActive],
-      [isActive]
-    );
-
     return (
-      <TouchableOpacity
-        onPress={handlePress}
-        style={thumbnailStyle}
-        activeOpacity={0.8}
-        accessible
-        accessibilityRole="button"
-        accessibilityLabel="Ver imagen en pantalla completa"
-      >
-        <Image
-          source={{ uri }}
-          style={imageStyle}
-          resizeMode="cover"
-          onError={handleImageError}
-        />
-        <View style={styles.overlay}>
-          <MaterialIcons
-            name="zoom-in"
-            size={18}
-            color="white"
-            style={styles.zoomIcon}
+      <Pressable onPress={() => onPress(uri)}>
+        <View style={[styles.thumbnail, isActive && styles.thumbnailActive]}>
+          <Image
+            source={{ uri }}
+            style={[styles.image, isActive && styles.imageActive]}
+            resizeMode="cover"
+            onError={handleImageError}
           />
+          <View style={styles.overlay}>
+            <MaterialIcons
+              name="zoom-in"
+              size={18}
+              color="white"
+              style={styles.zoomIcon}
+            />
+          </View>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 );
@@ -106,7 +86,7 @@ export const ThumbnailList: React.FC<ThumbnailListProps> = ({
   );
 
   const getItemLayout = useCallback(
-    (data: ArrayLike<string> | null | undefined, index: number) => ({
+    (_: ArrayLike<string> | null | undefined, index: number) => ({
       length: THUMBNAIL_SIZE + THUMBNAIL_MARGIN * 2,
       offset: (THUMBNAIL_SIZE + THUMBNAIL_MARGIN * 2) * index,
       index
@@ -127,15 +107,14 @@ export const ThumbnailList: React.FC<ThumbnailListProps> = ({
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
-        snapToInterval={THUMBNAIL_SIZE + THUMBNAIL_MARGIN * 2}
-        snapToAlignment="start"
-        decelerationRate="fast"
         getItemLayout={getItemLayout}
-        removeClippedSubviews
-        maxToRenderPerBatch={5}
-        windowSize={10}
-        initialNumToRender={3}
+        removeClippedSubviews={false}
+        maxToRenderPerBatch={8}
+        windowSize={15}
+        initialNumToRender={5}
         scrollEventThrottle={16}
+        bounces
+        alwaysBounceHorizontal
       />
     </View>
   );
@@ -161,10 +140,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.22,
     shadowRadius: 2.22
   },

@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
-import {
-  CameraRoll,
-  PhotoIdentifier
-} from '@react-native-camera-roll/camera-roll';
+import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import { Platform } from 'react-native';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import { MediaLibraryService } from '@/services/media/media-library.service';
 
-export function useRecentImages() {
-  const [images, setImages] = useState<string[]>([]);
+export interface RecentImage {
+  uri: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export function useRecentImagesWithLocation() {
+  const [images, setImages] = useState<RecentImage[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -26,12 +30,25 @@ export function useRecentImages() {
 
       try {
         const result = await CameraRoll.getPhotos({
-          first: 20,
+          first: 50,
           assetType: 'Photos'
         });
-        setImages(
-          result.edges.map((edge: PhotoIdentifier) => edge.node.image.uri)
-        );
+
+        const withLocation: RecentImage[] = [];
+        for (const edge of result.edges) {
+          const uri = edge.node.image.uri;
+          const metadata = await MediaLibraryService.extractMetadata(uri);
+
+          if (metadata?.latitude && metadata?.longitude) {
+            withLocation.push({
+              uri,
+              latitude: metadata.latitude,
+              longitude: metadata.longitude
+            });
+          }
+        }
+
+        setImages(withLocation);
       } catch (error) {
         console.error('Error cargando imágenes recientes:', error);
       }
