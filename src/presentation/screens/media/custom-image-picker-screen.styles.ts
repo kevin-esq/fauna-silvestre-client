@@ -292,5 +292,68 @@ export const createStyles = (variables: Record<string, string>) =>
       color: variables['--text-on-primary'],
       textAlign: 'center',
       fontFamily: variables['--font-family-primary']
+    },
+
+    shimmerContainer: {
+      backgroundColor: variables['--surface-variant'],
+      borderRadius: parseValue(variables['--border-radius-small']),
+      overflow: 'hidden'
+    },
+    shimmerItem: {
+      backgroundColor: variables['--surface-variant'],
+      opacity: 0.6,
+      borderRadius: parseValue(variables['--border-radius-small']),
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: parseValue(variables['--border-radius-small'])
+    },
+
+    progressContainer: {
+      paddingHorizontal: parseValue(variables['--spacing-medium']),
+      paddingVertical: parseValue(variables['--spacing-small']),
+      backgroundColor: variables['--surface'],
+      borderBottomWidth: parseValue(variables['--border-width-hairline']),
+      borderBottomColor: variables['--divider']
+    },
+    progressBar: {
+      height: 4,
+      backgroundColor: variables['--surface-variant'],
+      borderRadius: 2,
+      marginBottom: parseValue(variables['--spacing-small']),
+      overflow: 'hidden'
+    },
+    progressText: {
+      fontSize: parseValue(variables['--font-size-small']),
+      color: variables['--text-secondary'],
+      textAlign: 'center',
+      fontFamily: variables['--font-family-primary']
+    },
+
+    statusBadge: {
+      position: 'absolute',
+      top: parseValue(variables['--spacing-small']),
+      left: parseValue(variables['--spacing-small']),
+      paddingHorizontal: parseValue(variables['--spacing-small']),
+      paddingVertical: parseValue(variables['--spacing-tiny']),
+      backgroundColor: variables['--primary'],
+      borderRadius: parseValue(variables['--border-radius-small']),
+      elevation: 2,
+      shadowColor: variables['--shadow'],
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.3,
+      shadowRadius: 2
+    },
+    statusText: {
+      fontSize: parseValue(variables['--font-size-small']),
+      fontWeight: parseFontWeight(variables['--font-weight-medium']),
+      color: variables['--text-on-primary'],
+      fontFamily: variables['--font-family-primary']
     }
   });
