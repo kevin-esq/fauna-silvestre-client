@@ -10,11 +10,13 @@ import {
   FlatList,
   Text,
   RefreshControl,
-  Alert,
   ActivityIndicator,
-  TouchableOpacity
+  TouchableOpacity,
+  Animated,
+  NativeSyntheticEvent,
+  NativeScrollEvent
 } from 'react-native';
-import { useTheme, themeVariables } from '../../contexts/theme.context';
+import { useTheme } from '../../contexts/theme.context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicationModelResponse } from '../../../domain/models/publication.models';
 import { usePublications } from '../../contexts/publication.context';
@@ -24,155 +26,424 @@ import PublicationCard, {
 } from '../../components/publication/publication-card.component';
 import PublicationSkeleton from '../../components/ui/publication-skeleton.component';
 import SearchBar from '../../components/ui/search-bar.component';
-import RejectionModal from '../../components/publication/rejection-modal.component';
-import { createStyles } from './review-publications-screen.styles';
+import PublicationFilters, {
+  FilterOptions
+} from '../../components/publication/publication-filters.component';
+import { createReviewStyles } from './review-publications-screen.styles';
 import { PublicationStatus } from '@/services/publication/publication.service';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
 
-const LOAD_CONFIG = {
-  DEBOUNCE_TIME: 300,
-  END_REACHED_THRESHOLD: 0.8,
-  RETRY_DELAY: 2000
+const CONFIG = {
+  SCROLL: {
+    DEBOUNCE_TIME: 300,
+    END_REACHED_THRESHOLD: 0.8,
+    PADDING_TO_BOTTOM: 20,
+    FAST_THRESHOLD: 2
+  },
+  UI: {
+    SKELETON_COUNT: 5,
+    INITIAL_RENDER_COUNT: 10
+  },
+  PERFORMANCE: {
+    MAX_RENDER_BATCH: 10,
+    WINDOW_SIZE: 5,
+    UPDATE_BATCHING_PERIOD: 50
+  },
+  LOADING: {
+    INITIAL_LOAD_DELAY: 100,
+    RETRY_DELAY: 2000
+  },
+  ANIMATION: {
+    DURATION: 400
+  }
 } as const;
 
-const ReviewPublicationsScreen: React.FC = () => {
-  const { theme } = useTheme();
-  const variables = useMemo(() => themeVariables(theme), [theme]);
-  const styles = useMemo(() => createStyles(variables), [variables]);
-  const insets = useSafeAreaInsets();
+const CARD_MARGIN = 16;
+const ACTUAL_ITEM_HEIGHT = ITEM_HEIGHT + CARD_MARGIN;
 
+const usePublicationLoader = () => {
+  const { loadStatus, getStatusData } = usePublications();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const loadAttemptRef = useRef(0);
+  const lastLoadTimeRef = useRef<number>(0);
+
+  const statusData = getStatusData(PublicationStatus.PENDING);
+
+  const shouldLoadData = useCallback((): boolean => {
+    const now = Date.now();
+
+    if (now - lastLoadTimeRef.current < 1000) {
+      return false;
+    }
+
+    if (statusData.publications.length > 0 && !statusData.error) {
+      return false;
+    }
+
+    if (statusData.isLoading || statusData.isRefreshing) {
+      return false;
+    }
+
+    if (statusData.error && loadAttemptRef.current >= 3) {
+      return false;
+    }
+
+    return true;
+  }, [statusData]);
+
+  const loadData = useCallback(
+    async (force = false): Promise<void> => {
+      if (!force && !shouldLoadData()) {
+        return;
+      }
+
+      const now = Date.now();
+      lastLoadTimeRef.current = now;
+      loadAttemptRef.current += 1;
+
+      try {
+        await loadStatus(PublicationStatus.PENDING, {
+          forceRefresh: force,
+          searchQuery: ''
+        });
+
+        loadAttemptRef.current = 0;
+      } catch (error) {
+        console.warn('[ReviewLoader] Error loading publications:', error);
+      } finally {
+        if (isInitialLoad) {
+          setIsInitialLoad(false);
+        }
+      }
+    },
+    [loadStatus, shouldLoadData, isInitialLoad]
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isInitialLoad) {
+        loadData(true);
+      }
+    }, CONFIG.LOADING.INITIAL_LOAD_DELAY);
+
+    return () => clearTimeout(timer);
+  }, [isInitialLoad, loadData]);
+
+  return {
+    loadData,
+    isInitialLoad,
+    loadAttempts: loadAttemptRef.current
+  };
+};
+
+const useSearch = (publications: PublicationModelResponse[]) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const searchTimeoutRef = useRef<number | null>(null);
+
+  const filteredPublications = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return publications;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return publications.filter(pub => {
+      const title = pub.commonNoun?.toLowerCase() || '';
+      const description = pub.description?.toLowerCase() || '';
+      const location = pub.location?.toLowerCase() || '';
+
+      return (
+        title.includes(query) ||
+        description.includes(query) ||
+        location.includes(query)
+      );
+    });
+  }, [publications, searchQuery]);
+
+  const handleSearchChange = useCallback((text: string) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchQuery(text);
+    }, 300);
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  return {
+    searchQuery,
+    setSearchQuery,
+    filteredPublications,
+    handleSearchChange,
+    clearSearch,
+    isFocused,
+    setIsFocused
+  };
+};
+
+const usePublicationOperations = () => {
   const {
-    loadStatus,
     loadMoreStatus,
     refreshStatus,
     acceptPublication,
     rejectPublication,
-    canLoadMore,
-    getStatusData
+    canLoadMore
   } = usePublications();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentId, setCurrentId] = useState<string | null>(null);
-  const [reason, setReason] = useState('');
-  const [hasInitialLoad, setHasInitialLoad] = useState(false);
+  const operationsInProgress = useRef<Set<string>>(new Set());
 
-  const loadMoreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const executeOperation = useCallback(
+    async (operation: string, action: () => Promise<void>): Promise<void> => {
+      if (operationsInProgress.current.has(operation)) {
+        return;
+      }
+
+      operationsInProgress.current.add(operation);
+      try {
+        await action();
+      } finally {
+        operationsInProgress.current.delete(operation);
+      }
+    },
+    []
+  );
+
+  const handleLoadMore = useCallback(async () => {
+    await executeOperation('loadMore', () =>
+      loadMoreStatus(PublicationStatus.PENDING)
+    );
+  }, [executeOperation, loadMoreStatus]);
+
+  const handleRefresh = useCallback(async () => {
+    await executeOperation('refresh', () =>
+      refreshStatus(PublicationStatus.PENDING)
+    );
+  }, [executeOperation, refreshStatus]);
+
+  const handleApprove = useCallback(
+    async (publicationId: string) => {
+      await executeOperation('approve', () =>
+        acceptPublication(publicationId, PublicationStatus.PENDING)
+      );
+    },
+    [executeOperation, acceptPublication]
+  );
+
+  const handleReject = useCallback(
+    async (publicationId: string) => {
+      await executeOperation('reject', () =>
+        rejectPublication(publicationId, PublicationStatus.PENDING)
+      );
+    },
+    [executeOperation, rejectPublication]
+  );
+
+  useEffect(() => {
+    const operationsInProgressCopy = operationsInProgress.current;
+
+    return () => {
+      operationsInProgressCopy?.clear();
+    };
+  }, []);
+
+  return {
+    handleLoadMore,
+    handleRefresh,
+    handleApprove,
+    handleReject,
+    canLoadMore: canLoadMore(PublicationStatus.PENDING)
+  };
+};
+
+const useScrollOptimization = (
+  canLoadMore: boolean,
+  isLoadingMore: boolean,
+  onLoadMore: () => void,
+  onHeaderVisibilityChange?: (visible: boolean) => void
+) => {
+  const lastScrollY = useRef(0);
+  const scrollDirectionRef = useRef<'up' | 'down'>('down');
+  const loadMoreTriggeredRef = useRef(false);
+  const lastLoadMoreTimeRef = useRef(0);
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, contentSize, layoutMeasurement } =
+        event.nativeEvent;
+      const currentY = contentOffset.y;
+
+      const scrollDelta = currentY - lastScrollY.current;
+      if (Math.abs(scrollDelta) > 5) {
+        const newDirection = scrollDelta > 0 ? 'down' : 'up';
+        if (newDirection !== scrollDirectionRef.current) {
+          scrollDirectionRef.current = newDirection;
+          if (newDirection === 'down' && currentY > 50) {
+            onHeaderVisibilityChange?.(false);
+          }
+        }
+      }
+
+      const distanceFromEnd =
+        contentSize.height - layoutMeasurement.height - currentY;
+
+      const isNearEnd = distanceFromEnd < layoutMeasurement.height * 0.5;
+      const canTriggerLoadMore =
+        canLoadMore &&
+        !isLoadingMore &&
+        !loadMoreTriggeredRef.current &&
+        Date.now() - lastLoadMoreTimeRef.current > 1000;
+
+      if (isNearEnd && canTriggerLoadMore) {
+        loadMoreTriggeredRef.current = true;
+        lastLoadMoreTimeRef.current = Date.now();
+        onLoadMore();
+
+        setTimeout(() => {
+          loadMoreTriggeredRef.current = false;
+        }, 2000);
+      }
+
+      lastScrollY.current = currentY;
+    },
+    [canLoadMore, isLoadingMore, onLoadMore, onHeaderVisibilityChange]
+  );
+
+  return { handleScroll };
+};
+
+const ReviewPublicationsScreen: React.FC = () => {
+  const ThemeContext = useTheme();
+  const { theme } = ThemeContext;
+  const styles = useMemo(() => createReviewStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
+  const { navigate } = useNavigationActions();
+
+  const { getStatusData, getTotalCount } = usePublications();
+  const publicationLoader = usePublicationLoader();
+  const operations = usePublicationOperations();
+
+  const [isHeaderVisible, setIsHeaderVisible] = useState(false);
+  const [filteredAndSorted, setFilteredAndSorted] = useState<
+    PublicationModelResponse[]
+  >([]);
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    sortBy: 'date-desc',
+    filterByState: 'all'
+  });
+
   const listRef = useRef<FlatList<PublicationModelResponse>>(null);
+  const contentAnim = useRef(new Animated.Value(0)).current;
+  const headerTranslateY = useRef(new Animated.Value(-300)).current;
 
   const pendingData = getStatusData(PublicationStatus.PENDING);
   const publications = pendingData.publications;
+  const filteredPublications = pendingData.filteredPublications;
   const isLoading = pendingData.isLoading;
   const isLoadingMore = pendingData.isLoadingMore;
   const isRefreshing = pendingData.isRefreshing;
   const isEmpty = pendingData.isEmpty;
   const error = pendingData.error;
+  const totalCount = getTotalCount(PublicationStatus.PENDING);
 
-  const filteredPublications = useMemo(() => {
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) return publications;
+  const search = useSearch(publications);
 
-    return publications.filter(
-      pub =>
-        pub.commonNoun?.toLowerCase().includes(query) ||
-        pub.description?.toLowerCase().includes(query) ||
-        pub.location?.toLowerCase().includes(query)
-    );
-  }, [publications, searchQuery]);
-
-  useEffect(() => {
-    if (!hasInitialLoad && publications.length === 0 && !isLoading && !error) {
-      console.log('[ReviewPublications] Initial load');
-      setHasInitialLoad(true);
-      loadStatus(PublicationStatus.PENDING);
-    }
-  }, [hasInitialLoad, publications.length, isLoading, error, loadStatus]);
-
-  const handleRefresh = useCallback(async () => {
-    console.log('[ReviewPublications] Manual refresh');
-    await refreshStatus(PublicationStatus.PENDING);
-
-    if (listRef.current) {
-      listRef.current.scrollToOffset({ offset: 0, animated: false });
-    }
-  }, [refreshStatus]);
-
-  const handleLoadMore = useCallback(() => {
-    if (
-      !canLoadMore(PublicationStatus.PENDING) ||
-      isLoadingMore ||
-      loadMoreTimeoutRef.current
-    ) {
-      return;
+  const finalPublications = useMemo(() => {
+    if (search.searchQuery.trim()) {
+      return search.filteredPublications;
     }
 
-    console.log('[ReviewPublications] Load more triggered');
+    if (filteredAndSorted.length > 0) {
+      return filteredAndSorted;
+    }
 
-    loadMoreTimeoutRef.current = setTimeout(() => {
-      if (canLoadMore(PublicationStatus.PENDING) && !isLoadingMore) {
-        loadMoreStatus(PublicationStatus.PENDING);
-      }
-      loadMoreTimeoutRef.current = null;
-    }, LOAD_CONFIG.DEBOUNCE_TIME);
-  }, [canLoadMore, isLoadingMore, loadMoreStatus]);
+    return filteredPublications;
+  }, [
+    search.filteredPublications,
+    filteredAndSorted,
+    search.searchQuery,
+    filteredPublications
+  ]);
 
-  const handleRetry = useCallback(() => {
-    if (retryTimeoutRef.current) return;
-
-    console.log('[ReviewPublications] Retry after error');
-
-    retryTimeoutRef.current = setTimeout(() => {
-      loadStatus(PublicationStatus.PENDING, { forceRefresh: true });
-      retryTimeoutRef.current = null;
-    }, LOAD_CONFIG.RETRY_DELAY);
-  }, [loadStatus]);
-
-  useEffect(() => {
-    return () => {
-      if (loadMoreTimeoutRef.current) {
-        clearTimeout(loadMoreTimeoutRef.current);
-      }
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleApprove = useCallback(
-    (id: string) => {
-      Alert.alert(
-        'Aprobar publicación',
-        '¿Confirmas aprobación?',
-        [
-          {
-            text: 'Cancelar',
-            style: 'cancel'
-          },
-          {
-            text: 'Aprobar',
-            onPress: () => acceptPublication(id, PublicationStatus.PENDING),
-            style: 'default'
-          }
-        ],
-        { cancelable: true }
-      );
+  const handleFilterChange = useCallback(
+    (filtered: PublicationModelResponse[], options: FilterOptions) => {
+      setFilteredAndSorted(filtered);
+      setFilterOptions(options);
     },
-    [acceptPublication]
+    []
   );
 
-  const handleReject = useCallback((id: string) => {
-    setCurrentId(id);
-    setReason('');
-  }, []);
+  const handleHeaderVisibilityChange = useCallback(
+    (visible: boolean) => {
+      setIsHeaderVisible(visible);
+      Animated.timing(headerTranslateY, {
+        toValue: visible ? 0 : -300,
+        duration: 300,
+        useNativeDriver: true
+      }).start();
+    },
+    [headerTranslateY]
+  );
 
-  const confirmReject = useCallback(() => {
-    if (!reason.trim()) {
-      Alert.alert('Error', 'Por favor ingresa una razón para el rechazo');
-      return;
+  const { handleScroll } = useScrollOptimization(
+    operations.canLoadMore,
+    isLoadingMore,
+    operations.handleLoadMore,
+    handleHeaderVisibilityChange
+  );
+
+  useEffect(() => {
+    const shouldAutoLoad =
+      publications.length === 0 &&
+      !isLoading &&
+      !error &&
+      !pendingData.lastUpdated;
+
+    if (shouldAutoLoad) {
+      console.log('[ReviewScreen] Auto-loading publications');
+      publicationLoader.loadData(true);
     }
-    rejectPublication(currentId!, PublicationStatus.PENDING);
-    setCurrentId(null);
-    setReason('');
-  }, [currentId, reason, rejectPublication]);
+  }, [
+    publications.length,
+    isLoading,
+    error,
+    pendingData.lastUpdated,
+    publicationLoader
+  ]);
+
+  useEffect(() => {
+    Animated.timing(contentAnim, {
+      toValue: 1,
+      duration: CONFIG.ANIMATION.DURATION,
+      useNativeDriver: true
+    }).start();
+  }, [contentAnim]);
+
+  const handlePress = useCallback(
+    (item: PublicationModelResponse) => {
+      navigate('PublicationDetails', {
+        publication: item,
+        status: PublicationStatus.PENDING
+      });
+    },
+    [navigate]
+  );
+
+  const handleRetry = useCallback(() => {
+    console.log('[ReviewScreen] Reintentando carga...');
+    publicationLoader.loadData(true);
+  }, [publicationLoader]);
 
   const renderPublicationItem = useCallback(
     ({ item }: { item: PublicationModelResponse }) => (
@@ -180,55 +451,75 @@ const ReviewPublicationsScreen: React.FC = () => {
         publication={item}
         status={PublicationStatus.PENDING}
         reviewActions={{
-          onApprove: () => handleApprove(item.recordId.toString()),
-          onReject: () => handleReject(item.recordId.toString())
+          onApprove: () => operations.handleApprove(item.recordId.toString()),
+          onReject: () => operations.handleReject(item.recordId.toString())
         }}
+        onPress={() => handlePress(item)}
         viewMode="presentation"
       />
     ),
-    [handleApprove, handleReject]
+    [operations, handlePress]
+  );
+
+  const renderSkeletons = useCallback(
+    () => (
+      <View style={styles.skeletonContainer}>
+        {Array.from({ length: CONFIG.UI.SKELETON_COUNT }).map((_, index) => (
+          <PublicationSkeleton
+            key={`skeleton-${index}`}
+            viewMode="card"
+            style={styles.skeletonItem}
+          />
+        ))}
+      </View>
+    ),
+    [styles]
   );
 
   const renderFooter = useCallback(() => {
     if (isLoadingMore) {
       return (
-        <View style={styles.footer}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text style={[styles.loadingText, { color: theme.colors.text }]}>
-            Cargando más publicaciones...
-          </Text>
+        <View style={styles.listFooter}>
+          <View style={styles.footerLoadingContainer}>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+            <Text style={styles.footerLoadingText}>
+              Cargando más publicaciones...
+            </Text>
+          </View>
         </View>
       );
     }
 
     if (error) {
       return (
-        <View style={styles.footer}>
-          <Text style={[styles.errorText, { color: theme.colors.error }]}>
-            {error}
-          </Text>
-          <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
-            <Text
-              style={[styles.retryButtonText, { color: theme.colors.primary }]}
+        <View style={styles.listFooter}>
+          <View style={styles.footerErrorContainer}>
+            <View style={styles.errorIconContainer}>
+              <Text style={styles.errorIcon}>⚠️</Text>
+            </View>
+            <Text style={styles.footerErrorText}>{error}</Text>
+            <TouchableOpacity
+              onPress={handleRetry}
+              style={styles.retryButton}
+              activeOpacity={0.7}
             >
-              Reintentar
-            </Text>
-          </TouchableOpacity>
+              <Text style={styles.retryButtonText}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       );
     }
 
-    if (
-      !canLoadMore(PublicationStatus.PENDING) &&
-      filteredPublications.length > 0
-    ) {
+    if (!operations.canLoadMore && finalPublications.length > 0) {
       return (
-        <View style={styles.footer}>
-          <Text
-            style={[styles.loadingText, { color: theme.colors.textSecondary }]}
-          >
-            Has visto todas las publicaciones pendientes
-          </Text>
+        <View style={styles.listFooter}>
+          <View style={styles.footerEndContainer}>
+            <View style={styles.endDivider} />
+            <Text style={styles.footerEndText}>
+              Has revisado todas las publicaciones
+            </Text>
+            <View style={styles.endDivider} />
+          </View>
         </View>
       );
     }
@@ -237,134 +528,216 @@ const ReviewPublicationsScreen: React.FC = () => {
   }, [
     isLoadingMore,
     error,
-    canLoadMore,
-    filteredPublications.length,
+    operations.canLoadMore,
+    finalPublications.length,
     theme,
     handleRetry,
     styles
   ]);
 
-  const renderEmptyComponent = useCallback(() => {
+  const renderEmpty = useCallback(() => {
     if (isLoading && publications.length === 0) {
-      return (
-        <View style={styles.skeletonContainer}>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <PublicationSkeleton
-              key={index}
-              viewMode="card"
-              style={{ marginBottom: 16 }}
-            />
-          ))}
-        </View>
-      );
+      return renderSkeletons();
     }
 
     return (
-      <View style={styles.centered}>
-        <Text style={[styles.emptyText, { color: theme.colors.text }]}>
-          {isEmpty ? 'No hay publicaciones pendientes.' : 'Sin resultados'}
-        </Text>
+      <View style={styles.emptyStateContainer}>
+        <View style={styles.emptyStateContent}>
+          <View style={styles.emptyStateIconContainer}>
+            <Text style={styles.emptyStateIcon}>
+              {search.searchQuery.trim() ||
+              filterOptions.filterByState !== 'all'
+                ? '🔍'
+                : isEmpty
+                  ? '✅'
+                  : '📭'}
+            </Text>
+          </View>
+          <Text style={styles.emptyStateTitle}>
+            {search.searchQuery.trim() || filterOptions.filterByState !== 'all'
+              ? 'No se encontraron resultados'
+              : isEmpty
+                ? '¡Todo revisado!'
+                : 'No hay publicaciones'}
+          </Text>
+          <Text style={styles.emptyStateDescription}>
+            {search.searchQuery.trim()
+              ? `No hay publicaciones pendientes que coincidan con "${search.searchQuery}"`
+              : filterOptions.filterByState !== 'all'
+                ? 'No hay publicaciones con los filtros seleccionados'
+                : isEmpty
+                  ? 'No hay publicaciones pendientes por revisar en este momento'
+                  : 'Las publicaciones pendientes aparecerán aquí'}
+          </Text>
+        </View>
       </View>
     );
-  }, [isLoading, publications.length, isEmpty, theme, styles]);
+  }, [
+    isLoading,
+    publications.length,
+    isEmpty,
+    search.searchQuery,
+    filterOptions,
+    styles,
+    renderSkeletons
+  ]);
 
-  const renderResultCount = useCallback(() => {
-    if (filteredPublications.length === 0) return null;
-
+  const renderStats = useCallback(() => {
     return (
-      <View style={styles.resultsContainer}>
-        <Text
-          style={[styles.resultText, { color: theme.colors.textSecondary }]}
-        >
-          {filteredPublications.length}{' '}
-          {filteredPublications.length === 1 ? 'resultado' : 'resultados'}
-        </Text>
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{totalCount}</Text>
+          <Text style={styles.statLabel}>Total</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{publications.length}</Text>
+          <Text style={styles.statLabel}>Cargadas</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statNumber}>{finalPublications.length}</Text>
+          <Text style={styles.statLabel}>Mostradas</Text>
+        </View>
       </View>
     );
-  }, [filteredPublications.length, theme, styles]);
+  }, [totalCount, publications.length, finalPublications.length, styles]);
 
-  const keyExtractor = useCallback(
-    (item: PublicationModelResponse, index: number) => {
-      const id = item.recordId?.toString() || `unknown-${index}`;
-      return `pending-${id}-${index}`;
-    },
-    []
-  );
+  const keyExtractor = useCallback((item: PublicationModelResponse) => {
+    return `review-pub-${item.recordId}`;
+  }, []);
 
   const getItemLayout = useCallback(
     (_: unknown, index: number) => ({
-      length: ITEM_HEIGHT,
-      offset: ITEM_HEIGHT * index,
+      length: ACTUAL_ITEM_HEIGHT,
+      offset: ACTUAL_ITEM_HEIGHT * index,
       index
     }),
     []
   );
 
+  const flatListOptimizations = useMemo(
+    () => ({
+      removeClippedSubviews: true,
+      initialNumToRender: CONFIG.UI.INITIAL_RENDER_COUNT,
+      maxToRenderPerBatch: CONFIG.PERFORMANCE.MAX_RENDER_BATCH,
+      windowSize: CONFIG.PERFORMANCE.WINDOW_SIZE,
+      updateCellsBatchingPeriod: CONFIG.PERFORMANCE.UPDATE_BATCHING_PERIOD,
+      maintainVisibleContentPosition: {
+        minIndexForVisible: 0,
+        autoscrollToTopThreshold: 10
+      },
+      extraData: `${finalPublications.length}-${isLoadingMore}-${search.searchQuery}`
+    }),
+    [finalPublications.length, isLoadingMore, search.searchQuery]
+  );
+
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: insets.top,
-          backgroundColor: theme.colors.background
-        }
-      ]}
-    >
-      <SearchBar
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholder="Buscar publicaciones..."
-        theme={theme}
-        onClear={() => setSearchQuery('')}
-      />
-
-      {renderResultCount()}
-
-      <FlatList
-        ref={listRef}
-        data={filteredPublications as PublicationModelResponse[]}
-        keyExtractor={keyExtractor}
-        renderItem={renderPublicationItem}
-        contentContainerStyle={[
-          styles.listContent,
-          filteredPublications.length === 0 &&
-            !isLoading &&
-            styles.emptyListContent
+    <View style={styles.container}>
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top + 12,
+            transform: [{ translateY: headerTranslateY }],
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000
+          }
         ]}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
-            progressBackgroundColor={theme.colors.background}
-          />
-        }
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={LOAD_CONFIG.END_REACHED_THRESHOLD}
-        ListFooterComponent={renderFooter}
-        ListEmptyComponent={renderEmptyComponent}
-        getItemLayout={getItemLayout}
-        removeClippedSubviews={true}
-        initialNumToRender={5}
-        maxToRenderPerBatch={5}
-        windowSize={5}
-        updateCellsBatchingPeriod={100}
-        keyboardShouldPersistTaps="handled"
-        extraData={searchQuery}
-      />
+      >
+        <TouchableOpacity
+          style={styles.collapseHeaderButton}
+          onPress={() => handleHeaderVisibilityChange(false)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.collapseHeaderIcon}>▲</Text>
+          <Text style={styles.collapseHeaderText}>Ocultar</Text>
+        </TouchableOpacity>
 
-      <RejectionModal
-        visible={!!currentId}
-        rejectionReason={reason}
-        setRejectionReason={setReason}
-        onConfirm={confirmReject}
-        onDismiss={() => {
-          setCurrentId(null);
-          setReason('');
-        }}
-        theme={theme}
-      />
+        <View style={styles.searchContainer}>
+          <SearchBar
+            value={search.searchQuery}
+            onChangeText={search.handleSearchChange}
+            placeholder="Buscar publicaciones..."
+            theme={theme}
+            onClear={search.clearSearch}
+          />
+        </View>
+
+        <PublicationFilters
+          publications={search.filteredPublications}
+          onFilterChange={handleFilterChange}
+          theme={ThemeContext}
+          isVisible={isHeaderVisible}
+        />
+
+        {renderStats()}
+      </Animated.View>
+
+      {!isHeaderVisible && (
+        <TouchableOpacity
+          style={[styles.floatingHeaderButton, { top: insets.top + 12 }]}
+          onPress={() => handleHeaderVisibilityChange(true)}
+          activeOpacity={0.9}
+        >
+          <View style={styles.floatingHeaderButtonInner}>
+            <Text style={styles.floatingHeaderButtonIcon}>▼</Text>
+            <Text style={styles.floatingHeaderButtonText}>Mostrar filtros</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      <Animated.View
+        style={[
+          styles.contentContainer,
+          {
+            paddingTop: insets.top + 12,
+            opacity: contentAnim,
+            transform: [
+              {
+                translateY: contentAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0]
+                })
+              }
+            ]
+          }
+        ]}
+      >
+        <FlatList
+          ref={listRef}
+          data={finalPublications}
+          keyExtractor={keyExtractor}
+          renderItem={renderPublicationItem}
+          getItemLayout={getItemLayout}
+          {...flatListOptimizations}
+          contentContainerStyle={[
+            styles.listContent,
+            finalPublications.length === 0 &&
+              !isLoading &&
+              styles.listContentEmpty
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={operations.handleRefresh}
+              colors={[theme.colors.primary]}
+              tintColor={theme.colors.primary}
+              title="Actualizando..."
+              titleColor={theme.colors.textSecondary}
+            />
+          }
+          onEndReached={operations.handleLoadMore}
+          onEndReachedThreshold={CONFIG.SCROLL.END_REACHED_THRESHOLD}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          ListFooterComponent={renderFooter}
+          ListEmptyComponent={renderEmpty}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={true}
+        />
+      </Animated.View>
     </View>
   );
 };

@@ -16,7 +16,6 @@ export const validateLoginFields = (
     return 'La contraseña es obligatoria';
   }
 
-  // La contraseña debe tener al menos 8 caracteres, 1 letra y 1 dígito.
   const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{8,}$/;
   if (!passwordRegex.test(password)) {
     return 'Contraeña Incorrecta';

@@ -1,4 +1,3 @@
-// navigation/navigation-provider.tsx
 import React, {
   createContext,
   useContext,
@@ -115,7 +114,6 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
     []
   );
 
-  // Catalog Management specific navigation functions
   const navigateToAnimalForm = useCallback(
     (animal?: AnimalModelResponse) => {
       navigate('AnimalForm', { animal });

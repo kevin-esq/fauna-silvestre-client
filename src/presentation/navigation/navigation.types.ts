@@ -4,14 +4,11 @@ import type { Location } from 'react-native-get-location';
 import { AnimalModelResponse } from '../../domain/models/animal.models';
 import { PublicationStatus } from '@/services/publication/publication.service';
 
-// Única fuente de verdad para todas las rutas de la aplicación.
 export type RootStackParamList = {
-  // Auth
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
 
-  // Tabs (principal)
   AdminHome: undefined;
   Home: undefined;
   Publications: undefined;
@@ -26,12 +23,10 @@ export type RootStackParamList = {
   AnimalDetails: { animal: AnimalModelResponse };
   AddPublication: undefined;
 
-  // Catalog Management
   AnimalForm: { animal?: AnimalModelResponse };
   ImageEditor: { animal: AnimalModelResponse; refresh?: boolean };
   Catalog: undefined;
 
-  // Stack anidado para "Agregar Publicación"
   CameraGallery: undefined;
   ImagePreview: { imageUri: string; location?: Location };
   PublicationForm: { imageUri: string; location?: Location };
@@ -64,7 +59,6 @@ export type RootStackParamList = {
   };
 };
 
-// Tipos para los props de cada pantalla, basados en el RootStackParamList
 export type PublicationDetailsScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'PublicationDetails'

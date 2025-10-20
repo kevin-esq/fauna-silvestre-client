@@ -1,129 +1,112 @@
-import React, { useMemo } from 'react';
+import { Theme } from '@/presentation/contexts/theme.context';
+import React, { useEffect, useRef } from 'react';
 import {
-  Pressable,
+  Animated as RNAnimated,
   Text,
-  StyleProp,
-  ViewStyle,
-  StyleSheet
+  TouchableOpacity,
+  Platform
 } from 'react-native';
-import { MotiView } from 'moti';
-import { useTheme, themeVariables } from '../../contexts/theme.context';
-
-interface FloatingActionButtonProps {
-  onPress: () => void;
-  icon: React.ReactNode;
-  label?: string;
-  style?: StyleProp<ViewStyle>;
-  accessibilityLabel?: string;
-  visible?: boolean;
-}
 
 const FloatingActionButton = ({
   onPress,
-  icon,
-  label,
-  style,
-  accessibilityLabel,
-  visible
-}: FloatingActionButtonProps) => {
-  const { theme } = useTheme();
-  const variables = useMemo(() => themeVariables(theme), [theme]);
-  const styles = useMemo(
-    () => createStyles(variables, visible || true),
-    [variables, visible]
-  );
+  theme
+}: {
+  onPress: () => void;
+  theme: Theme;
+}) => {
+  const scaleAnim = useRef(new RNAnimated.Value(0)).current;
+  const rotateAnim = useRef(new RNAnimated.Value(0)).current;
+
+  useEffect(() => {
+    RNAnimated.parallel([
+      RNAnimated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 6,
+        tension: 40,
+        useNativeDriver: true
+      }),
+      RNAnimated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true
+      })
+    ]).start();
+  }, [scaleAnim, rotateAnim]);
+
+  const handlePressIn = () => {
+    RNAnimated.spring(scaleAnim, {
+      toValue: 0.9,
+      useNativeDriver: true
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    RNAnimated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true
+    }).start();
+  };
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg']
+  });
 
   return (
-    <MotiView
-      from={{ opacity: 0, scale: 0.8, translateY: 20 }}
-      animate={{ opacity: 1, scale: 1, translateY: 0 }}
-      exit={{ opacity: 0, scale: 0.8, translateY: 20 }}
-      transition={{ type: 'spring', damping: 15 }}
-      style={[styles.wrapper, style]}
+    <RNAnimated.View
+      style={[
+        {
+          position: 'absolute',
+          right: -8,
+          top: -8,
+          transform: [{ scale: scaleAnim }, { rotate }]
+        }
+      ]}
     >
-      <Pressable
+      <TouchableOpacity
         onPress={onPress}
-        style={({ pressed }) => [
-          styles.fab,
-          label ? styles.fabWithLabel : styles.fabIconOnly,
-          pressed && styles.fabPressed
-        ]}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: theme.colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 3,
+          borderColor: theme.colors.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: theme.colors.shadow,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8
+            },
+            android: {
+              elevation: 8
+            }
+          })
+        }}
+        activeOpacity={1}
+        accessibilityLabel="Crear nueva publicación"
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel || label}
-        accessibilityHint="Double tap to activate"
-        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
       >
-        <MotiView
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ loop: true, duration: 2000 }}
-          style={styles.iconContainer}
+        <Text
+          style={{
+            color: theme.colors.textOnPrimary,
+            fontSize: 28,
+            fontWeight: '700',
+            marginTop: -2
+          }}
         >
-          {icon}
-        </MotiView>
-        {label && (
-          <Text
-            style={styles.label}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.8}
-          >
-            {label}
-          </Text>
-        )}
-      </Pressable>
-    </MotiView>
+          +
+        </Text>
+      </TouchableOpacity>
+    </RNAnimated.View>
   );
 };
 
-export default FloatingActionButton;
-
-const createStyles = (vars: Record<string, string>, visible: boolean) =>
-  StyleSheet.create({
-    wrapper: {
-      position: 'absolute',
-      bottom: 40,
-      right: 20,
-      zIndex: 100,
-      opacity: visible ? 1 : 0
-    },
-    fab: {
-      backgroundColor: vars['--primary'],
-      borderRadius: 28,
-      elevation: 8,
-      shadowColor: vars['--shadow-color'],
-      shadowOpacity: 0.4,
-      shadowOffset: { width: 0, height: 6 },
-      shadowRadius: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'row',
-      opacity: visible ? 1 : 0
-    },
-    fabWithLabel: {
-      paddingVertical: 16,
-      paddingHorizontal: 24,
-      minWidth: 120
-    },
-    fabIconOnly: {
-      height: 56,
-      width: 56,
-      borderRadius: 28
-    },
-    fabPressed: {
-      transform: [{ scale: 0.92 }],
-      backgroundColor: vars['--primary-dark']
-    },
-    iconContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 8,
-      opacity: visible ? 1 : 0
-    },
-    label: {
-      color: vars['--on-primary'],
-      fontSize: 16,
-      fontWeight: '600',
-      marginLeft: 12,
-      maxWidth: 150
-    }
-  });
+export default React.memo(FloatingActionButton);

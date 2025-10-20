@@ -1,4 +1,3 @@
-// services/image-picker/image-picker.service.ts
 import * as ImagePicker from '@react-native-camera-roll/camera-roll';
 
 export class ImagePickerService {

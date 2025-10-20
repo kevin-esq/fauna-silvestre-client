@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Switch } from 'react-native';
 
 import { useNavigationActions } from '../../navigation/navigation-provider';
-import useDoubleBackExit from '../../hooks/use-double-back-exit.hook';
+import { useDoubleBackExit } from '../../hooks/use-double-back-exit.hook';
 import { useLoginForm } from '../../hooks/use-login-form.hook';
 import { useTheme, themeVariables } from '../../contexts/theme.context';
 

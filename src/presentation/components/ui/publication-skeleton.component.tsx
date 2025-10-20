@@ -89,18 +89,14 @@ const PublicationSkeleton: React.FC<PublicationSkeletonProps> = ({
         style
       ]}
     >
-      {/* Imagen skeleton - misma altura que PublicationImage */}
       <ImageSkeleton width="100%" height={180} borderRadius={0} />
 
       <View style={styles.cardContent}>
-        {/* Título */}
         <SkeletonLine width="80%" height={18} marginBottom={8} />
 
-        {/* Descripción */}
         <SkeletonLine width="100%" height={14} marginBottom={4} />
         <SkeletonLine width="85%" height={14} marginBottom={12} />
 
-        {/* Status rows */}
         <View style={styles.statusRow}>
           <View style={styles.statusIcon} />
           <SkeletonLine width="30%" height={14} marginBottom={8} />

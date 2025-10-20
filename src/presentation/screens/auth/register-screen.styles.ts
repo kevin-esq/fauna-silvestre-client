@@ -1,6 +1,7 @@
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 import { StyleSheet } from 'react-native';
 
-export const createStyles = (variables: Record<string, string>) => {
+export const createStyles = (variables: ThemeVariablesType) => {
   return StyleSheet.create({
     stepTitle: {
       fontSize: 20,

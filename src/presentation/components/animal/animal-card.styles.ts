@@ -1,13 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { Theme } from '../../contexts/theme.context';
 
-// Función mejorada para sombras con mejor rendimiento
-const createNatureShadow = (
-  elevation: number,
-  color = '#007A33',
-  opacity = 0.15
-) => ({
-  shadowColor: color,
+const createShadow = (elevation: number, theme: Theme, opacity = 0.15) => ({
+  shadowColor: theme.colors.shadow,
   shadowOffset: {
     width: 0,
     height: Math.max(1, elevation / 2)
@@ -26,11 +21,10 @@ export const createStyles = (theme: Theme) =>
       marginHorizontal: theme.spacing.small,
       overflow: 'hidden',
       borderLeftWidth: theme.borderWidths.small,
-      borderLeftColor: theme.colors.forest,
+      borderLeftColor: theme.colors.primary,
       borderBottomWidth: theme.borderWidth.hairline,
-      borderBottomColor: theme.colors.surfaceVariant,
-      transform: [{ scale: 1 }],
-      ...createNatureShadow(6, theme.colors.forest, 0.12)
+      borderBottomColor: theme.colors.border,
+      ...createShadow(6, theme, 0.12)
     },
 
     animalImageContainer: {
@@ -62,7 +56,7 @@ export const createStyles = (theme: Theme) =>
       bottom: 0,
       left: 0,
       right: 0,
-      backgroundColor: `linear-gradient(transparent, ${theme.colors.forest})`, // Gradiente mejorado
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
       paddingVertical: theme.spacing.medium,
       paddingHorizontal: theme.spacing.large
     },
@@ -77,9 +71,9 @@ export const createStyles = (theme: Theme) =>
       color: theme.colors.textOnPrimary,
       flex: 1,
       marginRight: theme.spacing.medium,
-      textShadowColor: theme.colors.textSecondary,
+      textShadowColor: 'rgba(0, 0, 0, 0.75)',
       textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 2
+      textShadowRadius: 3
     },
 
     imageActions: {
@@ -93,9 +87,9 @@ export const createStyles = (theme: Theme) =>
       borderRadius: theme.iconSizes.xlarge / 2,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: theme.colors.surfaceVariant,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
       borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.textSecondary
+      borderColor: 'rgba(255, 255, 255, 0.3)'
     },
 
     animalImageBadge: {
@@ -107,19 +101,19 @@ export const createStyles = (theme: Theme) =>
       paddingVertical: theme.spacing.small,
       borderRadius: theme.borderRadius.medium,
       borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.textSecondary,
-      ...createNatureShadow(3, theme.colors.leaf, 0.2)
+      borderColor: 'rgba(255, 255, 255, 0.3)',
+      ...createShadow(3, theme, 0.2)
     },
 
     animalImageBadgeText: {
       color: theme.colors.textOnPrimary,
       fontSize: theme.typography.fontSize.small,
-      fontWeight: '700',
+      fontWeight: theme.typography.fontWeight.bold,
       textTransform: 'uppercase',
       letterSpacing: 0.8,
-      textShadowColor: theme.colors.textSecondary,
+      textShadowColor: 'rgba(0, 0, 0, 0.5)',
       textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 1
+      textShadowRadius: 2
     },
 
     animalCardContent: {
@@ -142,8 +136,8 @@ export const createStyles = (theme: Theme) =>
 
     animalName: {
       fontSize: theme.typography.fontSize.large,
-      fontWeight: '800',
-      color: theme.colors.forest,
+      fontWeight: theme.typography.fontWeight.black,
+      color: theme.colors.primary,
       marginBottom: theme.spacing.small,
       letterSpacing: -0.3,
       lineHeight: theme.typography.lineHeight.large
@@ -164,9 +158,9 @@ export const createStyles = (theme: Theme) =>
       fontSize: theme.typography.fontSize.medium,
       fontStyle: 'italic',
       marginLeft: theme.spacing.small,
-      fontWeight: '500',
+      fontWeight: theme.typography.fontWeight.medium,
       lineHeight: theme.typography.lineHeight.medium,
-      color: theme.colors.textSecondary
+      color: theme.colors.earth
     },
 
     animalCategoryContainer: {
@@ -175,7 +169,7 @@ export const createStyles = (theme: Theme) =>
 
     animalCategory: {
       fontSize: theme.typography.fontSize.small,
-      fontWeight: '600',
+      fontWeight: theme.typography.fontWeight.bold,
       color: theme.colors.leaf,
       textTransform: 'capitalize',
       backgroundColor: theme.colors.surfaceVariant,
@@ -183,7 +177,7 @@ export const createStyles = (theme: Theme) =>
       paddingVertical: theme.spacing.small,
       borderRadius: theme.borderRadius.medium,
       borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.textSecondary,
+      borderColor: theme.colors.border,
       letterSpacing: 0.3
     },
 
@@ -199,26 +193,26 @@ export const createStyles = (theme: Theme) =>
       borderRadius: theme.iconSizes.xlarge / 2,
       justifyContent: 'center',
       alignItems: 'center',
-      overflow: 'hidden', // Para ripple effect
-      ...createNatureShadow(4, theme.colors.textSecondary, 0.1)
+      overflow: 'hidden',
+      ...createShadow(4, theme, 0.1)
     },
 
     editButton: {
       backgroundColor: theme.colors.water,
       borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.textSecondary
+      borderColor: theme.colors.border
     },
 
     imageButton: {
       backgroundColor: theme.colors.surface,
       borderWidth: theme.borderWidths.medium,
-      borderColor: theme.colors.forest
+      borderColor: theme.colors.primary
     },
 
     deleteButton: {
       backgroundColor: theme.colors.error,
       borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.textSecondary
+      borderColor: theme.colors.border
     },
 
     animalDescription: {
@@ -226,7 +220,7 @@ export const createStyles = (theme: Theme) =>
       color: theme.colors.textSecondary,
       lineHeight: theme.typography.lineHeight.medium,
       marginBottom: theme.spacing.large,
-      fontWeight: '400',
+      fontWeight: theme.typography.fontWeight.regular,
       paddingHorizontal: theme.spacing.small,
       textAlign: 'justify'
     },
@@ -238,7 +232,7 @@ export const createStyles = (theme: Theme) =>
       marginBottom: theme.spacing.large,
       paddingTop: theme.spacing.medium,
       borderTopWidth: theme.borderWidths.hairline,
-      borderTopColor: theme.colors.textSecondary
+      borderTopColor: theme.colors.border
     },
 
     animalStats: {
@@ -254,7 +248,7 @@ export const createStyles = (theme: Theme) =>
       paddingVertical: theme.spacing.small,
       borderRadius: theme.borderRadius.medium,
       borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.textSecondary
+      borderColor: theme.colors.border
     },
 
     animalStatText: {
@@ -262,7 +256,7 @@ export const createStyles = (theme: Theme) =>
       color: theme.colors.textSecondary,
       marginLeft: theme.spacing.small,
       flex: 1,
-      fontWeight: '500',
+      fontWeight: theme.typography.fontWeight.medium,
       lineHeight: theme.typography.lineHeight.small
     },
 
@@ -272,14 +266,14 @@ export const createStyles = (theme: Theme) =>
       paddingVertical: theme.spacing.small,
       borderRadius: theme.borderRadius.large,
       borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.textSecondary,
-      ...createNatureShadow(1, theme.colors.forest, 0.05)
+      borderColor: theme.colors.border,
+      ...createShadow(1, theme, 0.05)
     },
 
     animalIdText: {
       fontSize: theme.typography.fontSize.small,
-      fontWeight: '700',
-      color: theme.colors.forest,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: theme.colors.primary,
       letterSpacing: 0.8,
       textTransform: 'uppercase'
     },
@@ -300,7 +294,7 @@ export const createStyles = (theme: Theme) =>
       borderWidth: theme.borderWidths.medium,
       backgroundColor: theme.colors.surface,
       minHeight: theme.iconSizes.large,
-      ...createNatureShadow(2, theme.colors.textSecondary, 0.06)
+      ...createShadow(2, theme, 0.06)
     },
 
     infoChipEmoji: {
@@ -314,20 +308,18 @@ export const createStyles = (theme: Theme) =>
 
     infoChipLabel: {
       fontSize: theme.typography.fontSize.small,
-      fontWeight: '700',
+      fontWeight: theme.typography.fontWeight.bold,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
       marginBottom: 2,
-      opacity: 0.8,
-      color: theme.colors.textSecondary
+      opacity: 0.8
     },
 
     infoChipText: {
       fontSize: theme.typography.fontSize.small,
-      fontWeight: '600',
+      fontWeight: theme.typography.fontWeight.bold,
       letterSpacing: 0.2,
-      lineHeight: theme.typography.lineHeight.small,
-      color: theme.colors.textSecondary
+      lineHeight: theme.typography.lineHeight.small
     },
 
     loadingOverlay: {
@@ -336,7 +328,7 @@ export const createStyles = (theme: Theme) =>
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: theme.colors.surfaceVariant,
+      backgroundColor: theme.colors.overlay,
       justifyContent: 'center',
       alignItems: 'center',
       borderRadius: theme.borderRadius.large
@@ -344,15 +336,15 @@ export const createStyles = (theme: Theme) =>
 
     loadingText: {
       fontSize: theme.typography.fontSize.small,
-      color: theme.colors.textSecondary,
+      color: theme.colors.text,
       marginTop: theme.spacing.small,
-      fontWeight: '500'
+      fontWeight: theme.typography.fontWeight.medium
     },
 
     emptyImageContainer: {
       backgroundColor: theme.colors.surfaceVariant,
       borderWidth: theme.borderWidths.medium,
-      borderColor: theme.colors.textSecondary,
+      borderColor: theme.colors.border,
       borderStyle: 'dashed',
       borderRadius: theme.borderRadius.medium,
       margin: theme.spacing.small
@@ -360,10 +352,10 @@ export const createStyles = (theme: Theme) =>
 
     emptyImageText: {
       fontSize: theme.typography.fontSize.medium,
-      color: theme.colors.textSecondary,
+      color: theme.colors.placeholder,
       textAlign: 'center',
       marginTop: theme.spacing.small,
-      fontWeight: '500',
+      fontWeight: theme.typography.fontWeight.medium,
       lineHeight: theme.typography.lineHeight.medium
     },
 
@@ -373,16 +365,16 @@ export const createStyles = (theme: Theme) =>
       marginTop: theme.spacing.medium,
       paddingHorizontal: theme.spacing.medium,
       paddingVertical: theme.spacing.small,
-      backgroundColor: theme.colors.surfaceVariant,
+      backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.medium,
       borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.forest
+      borderColor: theme.colors.primary
     },
 
     retryButtonText: {
       fontSize: theme.typography.fontSize.small,
-      color: theme.colors.forest,
+      color: theme.colors.primary,
       marginLeft: theme.spacing.tiny,
-      fontWeight: '600'
+      fontWeight: theme.typography.fontWeight.bold
     }
   });

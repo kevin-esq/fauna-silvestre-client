@@ -1,8 +1,9 @@
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 import { StyleSheet } from 'react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
 
 export const createStyles = (
-  vars: Record<string, string>,
+  vars: ThemeVariablesType,
   width: number,
   height: number,
   insets: EdgeInsets
@@ -340,8 +341,6 @@ export const createStyles = (
       padding: 12,
       elevation: 5
     },
-    // Agregar estos estilos a tu archivo publication-form-screen.styles.ts
-    // Al final del objeto StyleSheet.create, antes del cierre:
 
     customAnimalContainer: {
       marginTop: 12,
@@ -349,7 +348,7 @@ export const createStyles = (
       backgroundColor: vars['--surface-variant'] || '#F5F5F5',
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: vars['--border-light'] || '#E0E0E0'
+      borderColor: vars['--border'] || '#E0E0E0'
     },
 
     customAnimalLabel: {

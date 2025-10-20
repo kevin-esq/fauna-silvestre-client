@@ -9,7 +9,7 @@ import {
   ViewStyle,
   TextStyle
 } from 'react-native';
-import { useTheme } from '../../contexts/theme.context';
+import { ThemeVariablesType, useTheme } from '../../contexts/theme.context';
 import { themeVariables } from '../../contexts/theme.context';
 import { PublicationStatus } from '@/services/publication/publication.service';
 
@@ -74,7 +74,7 @@ const StatusTabs: React.FC<StatusTabsProps> = ({
 StatusTabs.displayName = 'StatusTabs';
 
 const getTabButtonStyle = (
-  vars: Record<string, string>,
+  vars: ThemeVariablesType,
   isActive: boolean,
   isLast: boolean
 ): StyleProp<ViewStyle> => ({
@@ -90,7 +90,7 @@ const getTabButtonStyle = (
 });
 
 const getTabTextStyle = (
-  vars: Record<string, string>,
+  vars: ThemeVariablesType,
   isActive: boolean
 ): StyleProp<TextStyle> => ({
   color: isActive ? vars['--text-on-primary'] : vars['--text-secondary'],

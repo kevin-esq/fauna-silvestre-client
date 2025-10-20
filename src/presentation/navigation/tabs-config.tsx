@@ -78,5 +78,4 @@ export const userTabs: TabConfig<RootStackParamList>[] = [
       <FontAwesome5 name="book-open" solid={focused} size={24} color={color} />
     )
   }
-  // Removed DownloadedFiles tab - user will access it through navigation
 ];

@@ -10,12 +10,13 @@ import {
   StatusBar
 } from 'react-native';
 import icon from '../../../assets/icon.png';
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 
 interface AuthContainerProps {
   children: React.ReactNode;
   title: string;
   subtitle: string;
-  variables: Record<string, string>;
+  variables: ThemeVariablesType;
 }
 
 const AuthContainer: React.FC<AuthContainerProps> = ({
@@ -56,7 +57,7 @@ const AuthContainer: React.FC<AuthContainerProps> = ({
   );
 };
 
-const createStyles = (variables: Record<string, string>) =>
+const createStyles = (variables: ThemeVariablesType) =>
   StyleSheet.create({
     container: {
       flexGrow: 1,

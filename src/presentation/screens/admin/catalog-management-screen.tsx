@@ -8,7 +8,9 @@ import {
   RefreshControl,
   ActivityIndicator,
   SafeAreaView,
-  ListRenderItem
+  ListRenderItem,
+  ScrollView,
+  Animated
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useCatalogManagement } from '../../hooks/use-catalog-management.hook';
@@ -16,9 +18,30 @@ import { useTheme, Theme } from '../../contexts/theme.context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { AnimalModelResponse } from '@/domain/models/animal.models';
 import { SkeletonLoader } from '../../components/ui/skeleton-loader.component';
-import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
 import AnimalCard from '../../components/animal/animal-card.component';
 import { createStyles } from './catalog-management-screen.styles';
+
+const VERTEBRATE_CLASSES = [
+  'Mamíferos',
+  'Aves',
+  'Reptiles',
+  'Anfibios',
+  'Peces'
+];
+
+const SORT_OPTIONS = [
+  { id: 'name', label: 'Nombre', icon: 'text' },
+  { id: 'specie', label: 'Especie', icon: 'leaf' },
+  { id: 'class', label: 'Clase', icon: 'layers' },
+  { id: 'date', label: 'Fecha', icon: 'calendar' }
+] as const;
+
+const HABITAT_OPTIONS = [
+  { id: 'all', label: 'Todos', icon: 'globe' },
+  { id: 'terrestrial', label: 'Terrestre', icon: 'walk' },
+  { id: 'aquatic', label: 'Acuático', icon: 'water' },
+  { id: 'aerial', label: 'Aéreo', icon: 'airplane' }
+] as const;
 
 interface CatalogHeaderProps {
   onAddPress: () => void;
@@ -28,12 +51,12 @@ interface CatalogHeaderProps {
   styles: ReturnType<typeof createStyles>;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  activeFiltersCount: number;
 }
 
 interface FiltersSectionProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  categories: string[];
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
   visible: boolean;
@@ -52,25 +75,20 @@ interface SearchBarProps {
   styles: ReturnType<typeof createStyles>;
 }
 
-interface FilterProps {
+interface FilterChipProps {
+  label: string;
+  icon: string;
+  isSelected: boolean;
+  onPress: () => void;
   theme: Theme;
   styles: ReturnType<typeof createStyles>;
+  color?: string;
 }
 
-interface CategoryFilterProps extends FilterProps {
-  categories: string[];
-  selectedCategory: string;
-  onCategoryChange: (category: string) => void;
-}
-
-interface SortFilterProps extends FilterProps {
-  selectedSort: string;
-  onSortChange: (sort: string) => void;
-}
-
-interface HabitatFilterProps extends FilterProps {
-  selectedHabitat: string;
-  onHabitatChange: (habitat: string) => void;
+interface FilterSectionProps {
+  title: string;
+  children: React.ReactNode;
+  styles: ReturnType<typeof createStyles>;
 }
 
 interface AnimalInfoChipsProps {
@@ -109,35 +127,18 @@ interface QuickFiltersBarProps {
   onClearHabitat: () => void;
   onClearAll: () => void;
   styles: ReturnType<typeof createStyles>;
-}
-
-interface DropdownOption {
-  catalogId: number;
-  commonNoun: string;
+  theme: Theme;
 }
 
 const FILTER_CONSTANTS = {
   DEFAULT_CATEGORY: 'Todas',
-  DEFAULT_SORT: 'Nombre',
-  DEFAULT_HABITAT: 'Todos',
+  DEFAULT_SORT: 'name',
+  DEFAULT_HABITAT: 'all',
   MAX_SEARCH_DISPLAY: 15,
   MAX_INFO_CHIP_LENGTH: 20,
   PAGINATION_THRESHOLD: 0.1
 } as const;
 
-const SORT_OPTIONS: DropdownOption[] = [
-  { catalogId: 0, commonNoun: 'Nombre' },
-  { catalogId: 1, commonNoun: 'Especie' },
-  { catalogId: 2, commonNoun: 'Categoría' }
-] as const;
-
-const HABITAT_OPTIONS: DropdownOption[] = [
-  { catalogId: 0, commonNoun: 'Todos' },
-  { catalogId: 1, commonNoun: 'Terrestre' },
-  { catalogId: 2, commonNoun: 'Acuático' }
-] as const;
-
-// Utility functions
 const hasActiveFilters = (
   searchQuery: string,
   selectedCategory: string,
@@ -152,37 +153,87 @@ const hasActiveFilters = (
   );
 };
 
+const getActiveFiltersCount = (
+  searchQuery: string,
+  selectedCategory: string,
+  selectedSort: string,
+  selectedHabitat: string
+): number => {
+  let count = 0;
+  if (searchQuery.length > 0) count++;
+  if (selectedCategory !== FILTER_CONSTANTS.DEFAULT_CATEGORY) count++;
+  if (selectedSort !== FILTER_CONSTANTS.DEFAULT_SORT) count++;
+  if (selectedHabitat !== FILTER_CONSTANTS.DEFAULT_HABITAT) count++;
+  return count;
+};
+
 const truncateText = (text: string, maxLength: number): string => {
   return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
 };
 
+const FilterChip = React.memo<FilterChipProps>(
+  ({ label, icon, isSelected, onPress, theme, styles, color }) => (
+    <TouchableOpacity
+      style={[
+        styles.filterChip,
+        isSelected && styles.filterChipSelected,
+        isSelected && color && { backgroundColor: color }
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Ionicons
+        name={icon}
+        size={16}
+        color={
+          isSelected ? theme.colors.textOnPrimary : theme.colors.textSecondary
+        }
+      />
+      <Text
+        style={[
+          styles.filterChipText,
+          isSelected && styles.filterChipTextSelected
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  )
+);
+
+const FilterSection = React.memo<FilterSectionProps>(
+  ({ title, children, styles }) => (
+    <View style={styles.filterSection}>
+      <Text style={styles.filterSectionTitle}>{title}</Text>
+      <View style={styles.filterSectionContent}>{children}</View>
+    </View>
+  )
+);
+
 const CatalogHeader = React.memo<CatalogHeaderProps>(
-  ({ onAddPress, onToggleFilters, filtersVisible, theme, styles }) => (
+  ({
+    onAddPress,
+    onToggleFilters,
+    filtersVisible,
+    theme,
+    styles,
+    activeFiltersCount
+  }) => (
     <View style={styles.header}>
-      <View style={styles.headerActions}>
+      <View style={styles.headerTop}>
         <TouchableOpacity
           style={[
             styles.toggleFiltersButton,
-            filtersVisible && styles.toggleFiltersButtonActive
+            filtersVisible && styles.toggleFiltersButtonActive,
+            activeFiltersCount > 0 && styles.toggleFiltersButtonWithBadge
           ]}
           onPress={onToggleFilters}
-          accessibilityRole="button"
-          accessibilityLabel={
-            filtersVisible ? 'Ocultar filtros' : 'Mostrar filtros'
-          }
-          accessibilityHint={
-            filtersVisible
-              ? 'Toca para ocultar las opciones de filtrado'
-              : 'Toca para mostrar las opciones de filtrado'
-          }
         >
           <Ionicons
             name={filtersVisible ? 'filter' : 'filter-outline'}
             size={20}
             color={
-              filtersVisible
-                ? theme.colors.textOnPrimary
-                : theme.colors.textSecondary
+              filtersVisible ? theme.colors.textOnPrimary : theme.colors.text
             }
           />
           <Text
@@ -191,20 +242,19 @@ const CatalogHeader = React.memo<CatalogHeaderProps>(
               {
                 color: filtersVisible
                   ? theme.colors.textOnPrimary
-                  : theme.colors.textSecondary
+                  : theme.colors.text
               }
             ]}
           >
             Filtros
           </Text>
+          {activeFiltersCount > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={onAddPress}
-          accessibilityRole="button"
-          accessibilityLabel="Agregar nuevo animal"
-          accessibilityHint="Toca para crear un nuevo registro de animal"
-        >
+        <TouchableOpacity style={styles.addButton} onPress={onAddPress}>
           <Ionicons name="add" size={24} color={theme.colors.textOnPrimary} />
         </TouchableOpacity>
       </View>
@@ -214,103 +264,35 @@ const CatalogHeader = React.memo<CatalogHeaderProps>(
 
 const SearchBar = React.memo<SearchBarProps>(
   ({ searchQuery, onSearchChange, theme, styles }) => (
-    <View
-      style={[
-        styles.searchContainer,
-        searchQuery.length > 0 && styles.searchActiveContainer
-      ]}
-    >
-      <Ionicons
-        name="search"
-        size={20}
-        color={theme.colors.forest}
-        style={styles.searchIcon}
-      />
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Buscar por nombre, especie o categoría..."
-        placeholderTextColor={theme.colors.placeholder}
-        value={searchQuery}
-        onChangeText={onSearchChange}
-        accessibilityLabel="Campo de búsqueda avanzada"
-        accessibilityHint="Busca por nombre, especie o categoría del animal"
-      />
-      {searchQuery.length > 0 && (
-        <TouchableOpacity
-          onPress={() => onSearchChange('')}
-          style={styles.clearButton}
-          accessibilityRole="button"
-          accessibilityLabel="Limpiar búsqueda"
-          accessibilityHint="Toca para borrar el texto de búsqueda"
-        >
-          <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
-        </TouchableOpacity>
-      )}
-    </View>
-  )
-);
-
-const CategoryFilter = React.memo<CategoryFilterProps>(
-  ({ categories, selectedCategory, onCategoryChange, theme, styles }) => (
-    <View style={styles.filterContainer}>
-      <Text style={styles.filterLabel}>Filtrar por categoría:</Text>
-      <AnimalSearchableDropdown
-        options={categories.map((cat, index) => ({
-          catalogId: index,
-          commonNoun: cat
-        }))}
-        selectedValue={{
-          catalogId: 0,
-          commonNoun: selectedCategory
-        }}
-        onValueChange={value =>
-          onCategoryChange(
-            value?.commonNoun || FILTER_CONSTANTS.DEFAULT_CATEGORY
-          )
-        }
-        placeholder="Seleccionar categoría..."
-        theme={theme}
-      />
-    </View>
-  )
-);
-
-const SortFilter = React.memo<SortFilterProps>(
-  ({ selectedSort, onSortChange, theme, styles }) => (
-    <View style={styles.filterContainer}>
-      <Text style={styles.filterLabel}>Ordenar por:</Text>
-      <AnimalSearchableDropdown
-        options={SORT_OPTIONS}
-        selectedValue={{
-          catalogId: 0,
-          commonNoun: selectedSort
-        }}
-        onValueChange={value =>
-          onSortChange(value?.commonNoun || FILTER_CONSTANTS.DEFAULT_SORT)
-        }
-        placeholder="Seleccionar orden..."
-        theme={theme}
-      />
-    </View>
-  )
-);
-
-const HabitatFilter = React.memo<HabitatFilterProps>(
-  ({ selectedHabitat, onHabitatChange, theme, styles }) => (
-    <View style={styles.filterContainer}>
-      <Text style={styles.filterLabel}>Hábitat:</Text>
-      <AnimalSearchableDropdown
-        options={HABITAT_OPTIONS}
-        selectedValue={{
-          catalogId: 0,
-          commonNoun: selectedHabitat
-        }}
-        onValueChange={value =>
-          onHabitatChange(value?.commonNoun || FILTER_CONSTANTS.DEFAULT_HABITAT)
-        }
-        placeholder="Seleccionar hábitat..."
-        theme={theme}
-      />
+    <View style={styles.searchContainer}>
+      <View style={styles.searchInputContainer}>
+        <Ionicons
+          name="search"
+          size={20}
+          color={theme.colors.textSecondary}
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar animales..."
+          placeholderTextColor={theme.colors.placeholder}
+          value={searchQuery}
+          onChangeText={onSearchChange}
+          returnKeyType="search"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity
+            onPress={() => onSearchChange('')}
+            style={styles.clearButton}
+          >
+            <Ionicons
+              name="close-circle"
+              size={20}
+              color={theme.colors.textSecondary}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   )
 );
@@ -319,7 +301,6 @@ const FiltersSection = React.memo<FiltersSectionProps>(
   ({
     searchQuery,
     onSearchChange,
-    categories,
     selectedCategory,
     onCategoryChange,
     visible,
@@ -331,62 +312,76 @@ const FiltersSection = React.memo<FiltersSectionProps>(
     selectedHabitat
   }) => {
     if (!visible) {
-      return <View style={styles.filtersSectionCollapsed} />;
+      return null;
     }
 
-    const filtersActive = hasActiveFilters(
-      searchQuery,
-      selectedCategory,
-      selectedSort,
-      selectedHabitat
-    );
-
     return (
-      <View style={styles.filtersSection}>
-        <View style={styles.filtersContent}>
-          <View style={styles.filtersHeader}>
-            <Text style={styles.filtersTitle}>
-              Filtros Avanzados {filtersActive && '🔍'}
-            </Text>
-            <Text style={styles.filtersSubtitle}>
-              Refina tu búsqueda para encontrar exactamente lo que buscas
-            </Text>
-          </View>
-
-          <View style={styles.advancedSearchContainer}>
+      <Animated.View style={styles.filtersSection}>
+        <ScrollView
+          style={styles.filtersScroll}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.filtersContent}>
             <SearchBar
               searchQuery={searchQuery}
               onSearchChange={onSearchChange}
               theme={theme}
               styles={styles}
             />
+
+            <FilterSection title="Clase de Animal" styles={styles}>
+              <View style={styles.filterChipsContainer}>
+                {VERTEBRATE_CLASSES.map(category => (
+                  <FilterChip
+                    key={category}
+                    label={category}
+                    icon="paw"
+                    isSelected={selectedCategory === category}
+                    onPress={() => onCategoryChange(category)}
+                    theme={theme}
+                    styles={styles}
+                    color={theme.colors.primary}
+                  />
+                ))}
+              </View>
+            </FilterSection>
+
+            <FilterSection title="Ordenar por" styles={styles}>
+              <View style={styles.filterChipsContainer}>
+                {SORT_OPTIONS.map(option => (
+                  <FilterChip
+                    key={option.id}
+                    label={option.label}
+                    icon={option.icon}
+                    isSelected={selectedSort === option.id}
+                    onPress={() => onSortChange(option.id)}
+                    theme={theme}
+                    styles={styles}
+                    color={theme.colors.secondary}
+                  />
+                ))}
+              </View>
+            </FilterSection>
+
+            <FilterSection title="Tipo de Hábitat" styles={styles}>
+              <View style={styles.filterChipsContainer}>
+                {HABITAT_OPTIONS.map(habitat => (
+                  <FilterChip
+                    key={habitat.id}
+                    label={habitat.label}
+                    icon={habitat.icon}
+                    isSelected={selectedHabitat === habitat.id}
+                    onPress={() => onHabitatChange(habitat.id)}
+                    theme={theme}
+                    styles={styles}
+                    color={theme.colors.forest}
+                  />
+                ))}
+              </View>
+            </FilterSection>
           </View>
-
-          <View style={styles.filtersGrid}>
-            <CategoryFilter
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={onCategoryChange}
-              theme={theme}
-              styles={styles}
-            />
-
-            <SortFilter
-              selectedSort={selectedSort}
-              onSortChange={onSortChange}
-              theme={theme}
-              styles={styles}
-            />
-
-            <HabitatFilter
-              selectedHabitat={selectedHabitat}
-              onHabitatChange={onHabitatChange}
-              theme={theme}
-              styles={styles}
-            />
-          </View>
-        </View>
-      </View>
+        </ScrollView>
+      </Animated.View>
     );
   }
 );
@@ -476,13 +471,7 @@ const EmptyState = React.memo<EmptyStateProps>(
             : 'Comienza agregando tu primer animal al catálogo de fauna silvestre'}
         </Text>
         {!hasFilters && (
-          <TouchableOpacity
-            style={styles.emptyButton}
-            onPress={onAddPress}
-            accessibilityRole="button"
-            accessibilityLabel="Agregar primer animal"
-            accessibilityHint="Toca para crear el primer registro de animal en el catálogo"
-          >
+          <TouchableOpacity style={styles.emptyButton} onPress={onAddPress}>
             <Text style={styles.emptyButtonText}>Agregar Animal</Text>
           </TouchableOpacity>
         )}
@@ -499,12 +488,7 @@ const LoadingFooter = React.memo<LoadingFooterProps>(
           <Text style={styles.errorDisplayText}>
             Error al cargar más animales
           </Text>
-          <TouchableOpacity
-            onPress={onRetry}
-            accessibilityRole="button"
-            accessibilityLabel="Reintentar carga"
-            accessibilityHint="Toca para intentar cargar más animales nuevamente"
-          >
+          <TouchableOpacity onPress={onRetry}>
             <Text style={styles.errorDisplayRetryButton}>Reintentar</Text>
           </TouchableOpacity>
         </View>
@@ -545,7 +529,8 @@ const QuickFiltersBar = React.memo<QuickFiltersBarProps>(
     onClearSort,
     onClearHabitat,
     onClearAll,
-    styles
+    styles,
+    theme
   }) => {
     const filtersActive = hasActiveFilters(
       searchQuery,
@@ -556,76 +541,106 @@ const QuickFiltersBar = React.memo<QuickFiltersBarProps>(
 
     if (!filtersActive) return null;
 
+    const getSortLabel = (sortId: string) => {
+      return SORT_OPTIONS.find(opt => opt.id === sortId)?.label || sortId;
+    };
+
+    const getHabitatLabel = (habitatId: string) => {
+      return (
+        HABITAT_OPTIONS.find(opt => opt.id === habitatId)?.label || habitatId
+      );
+    };
+
     return (
       <View style={styles.quickFiltersBar}>
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            style={styles.quickFilterChip}
-            onPress={onClearSearch}
-            accessibilityRole="button"
-            accessibilityLabel={`Quitar búsqueda: ${searchQuery}`}
-            accessibilityHint="Toca para eliminar el filtro de búsqueda"
-          >
-            <Text style={styles.quickFilterChipText}>
-              🔍 "
-              {truncateText(searchQuery, FILTER_CONSTANTS.MAX_SEARCH_DISPLAY)}"
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {selectedCategory !== FILTER_CONSTANTS.DEFAULT_CATEGORY && (
-          <TouchableOpacity
-            style={styles.quickFilterChip}
-            onPress={onClearCategory}
-            accessibilityRole="button"
-            accessibilityLabel={`Quitar categoría: ${selectedCategory}`}
-            accessibilityHint="Toca para eliminar el filtro de categoría"
-          >
-            <Text style={styles.quickFilterChipText}>
-              📂 {selectedCategory}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {selectedSort !== FILTER_CONSTANTS.DEFAULT_SORT && (
-          <TouchableOpacity
-            style={styles.quickFilterChip}
-            onPress={onClearSort}
-            accessibilityRole="button"
-            accessibilityLabel={`Quitar orden: ${selectedSort}`}
-            accessibilityHint="Toca para eliminar el filtro de ordenamiento"
-          >
-            <Text style={styles.quickFilterChipText}>🔤 {selectedSort}</Text>
-          </TouchableOpacity>
-        )}
-
-        {selectedHabitat !== FILTER_CONSTANTS.DEFAULT_HABITAT && (
-          <TouchableOpacity
-            style={styles.quickFilterChip}
-            onPress={onClearHabitat}
-            accessibilityRole="button"
-            accessibilityLabel={`Quitar hábitat: ${selectedHabitat}`}
-            accessibilityHint="Toca para eliminar el filtro de hábitat"
-          >
-            <Text style={styles.quickFilterChipText}>🌿 {selectedHabitat}</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={styles.clearFiltersButton}
-          onPress={onClearAll}
-          accessibilityRole="button"
-          accessibilityLabel="Limpiar todos los filtros"
-          accessibilityHint="Toca para eliminar todos los filtros aplicados"
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.quickFiltersScroll}
         >
-          <Text style={styles.clearFiltersText}>Limpiar todo</Text>
+          <View style={styles.quickFiltersContent}>
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                style={styles.quickFilterChip}
+                onPress={onClearSearch}
+              >
+                <Ionicons
+                  name="search"
+                  size={14}
+                  color={theme.colors.primary}
+                />
+                <Text style={styles.quickFilterChipText}>
+                  {truncateText(
+                    searchQuery,
+                    FILTER_CONSTANTS.MAX_SEARCH_DISPLAY
+                  )}
+                </Text>
+                <Ionicons name="close" size={14} color={theme.colors.primary} />
+              </TouchableOpacity>
+            )}
+
+            {selectedCategory !== FILTER_CONSTANTS.DEFAULT_CATEGORY && (
+              <TouchableOpacity
+                style={styles.quickFilterChip}
+                onPress={onClearCategory}
+              >
+                <Ionicons name="paw" size={14} color={theme.colors.primary} />
+                <Text style={styles.quickFilterChipText}>
+                  {selectedCategory}
+                </Text>
+                <Ionicons name="close" size={14} color={theme.colors.primary} />
+              </TouchableOpacity>
+            )}
+
+            {selectedSort !== FILTER_CONSTANTS.DEFAULT_SORT && (
+              <TouchableOpacity
+                style={styles.quickFilterChip}
+                onPress={onClearSort}
+              >
+                <Ionicons
+                  name="swap-vertical"
+                  size={14}
+                  color={theme.colors.secondary}
+                />
+                <Text style={styles.quickFilterChipText}>
+                  {getSortLabel(selectedSort)}
+                </Text>
+                <Ionicons
+                  name="close"
+                  size={14}
+                  color={theme.colors.secondary}
+                />
+              </TouchableOpacity>
+            )}
+
+            {selectedHabitat !== FILTER_CONSTANTS.DEFAULT_HABITAT && (
+              <TouchableOpacity
+                style={styles.quickFilterChip}
+                onPress={onClearHabitat}
+              >
+                <Ionicons
+                  name="location"
+                  size={14}
+                  color={theme.colors.forest}
+                />
+                <Text style={styles.quickFilterChipText}>
+                  {getHabitatLabel(selectedHabitat)}
+                </Text>
+                <Ionicons name="close" size={14} color={theme.colors.forest} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
+
+        <TouchableOpacity style={styles.clearAllButton} onPress={onClearAll}>
+          <Ionicons name="close-circle" size={16} color={theme.colors.error} />
+          <Text style={styles.clearAllText}>Limpiar</Text>
         </TouchableOpacity>
       </View>
     );
   }
 );
 
-// Hook personalizado para lógica del componente principal
 const useCatalogScreen = () => {
   const { theme } = useTheme();
   const navigation = useNavigationActions();
@@ -634,6 +649,22 @@ const useCatalogScreen = () => {
   const [filtersVisible, setFiltersVisible] = useState(false);
 
   const styles = useMemo(() => createStyles(theme), [theme]);
+
+  const activeFiltersCount = useMemo(
+    () =>
+      getActiveFiltersCount(
+        state.searchQuery,
+        state.selectedCategory,
+        state.selectedSort,
+        state.selectedHabitat
+      ),
+    [
+      state.searchQuery,
+      state.selectedCategory,
+      state.selectedSort,
+      state.selectedHabitat
+    ]
+  );
 
   const handleAddAnimal = useCallback(() => {
     navigation.navigateToAnimalForm();
@@ -697,6 +728,7 @@ const useCatalogScreen = () => {
     categories,
     isLoading,
     filtersVisible,
+    activeFiltersCount,
     handleAddAnimal,
     handleEditAnimal,
     handleEditImage,
@@ -707,7 +739,6 @@ const useCatalogScreen = () => {
   };
 };
 
-// Componente principal
 const CatalogManagementScreen: React.FC = () => {
   const {
     theme,
@@ -715,9 +746,9 @@ const CatalogManagementScreen: React.FC = () => {
     state,
     actions,
     filteredAnimals,
-    categories,
     isLoading,
     filtersVisible,
+    activeFiltersCount,
     handleAddAnimal,
     handleEditAnimal,
     handleEditImage,
@@ -794,7 +825,6 @@ const CatalogManagementScreen: React.FC = () => {
     [state.isRefreshing, actions.refreshAnimals, theme.colors.primary]
   );
 
-  // Mostrar skeleton loader mientras carga
   if (isLoading && filteredAnimals.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
@@ -806,6 +836,7 @@ const CatalogManagementScreen: React.FC = () => {
           styles={styles}
           searchQuery={state.searchQuery}
           onSearchChange={actions.searchAnimals}
+          activeFiltersCount={activeFiltersCount}
         />
         <View style={styles.content}>
           {Array.from({ length: 5 }).map((_, index) => (
@@ -831,28 +862,27 @@ const CatalogManagementScreen: React.FC = () => {
         styles={styles}
         searchQuery={state.searchQuery}
         onSearchChange={actions.searchAnimals}
+        activeFiltersCount={activeFiltersCount}
       />
 
       <View style={styles.content}>
-        {!filtersVisible && (
-          <QuickFiltersBar
-            searchQuery={state.searchQuery}
-            selectedCategory={state.selectedCategory}
-            selectedSort={state.selectedSort}
-            selectedHabitat={state.selectedHabitat}
-            onClearSearch={clearActions.clearSearch}
-            onClearCategory={clearActions.clearCategory}
-            onClearSort={clearActions.clearSort}
-            onClearHabitat={clearActions.clearHabitat}
-            onClearAll={clearActions.clearAll}
-            styles={styles}
-          />
-        )}
+        <QuickFiltersBar
+          searchQuery={state.searchQuery}
+          selectedCategory={state.selectedCategory}
+          selectedSort={state.selectedSort}
+          selectedHabitat={state.selectedHabitat}
+          onClearSearch={clearActions.clearSearch}
+          onClearCategory={clearActions.clearCategory}
+          onClearSort={clearActions.clearSort}
+          onClearHabitat={clearActions.clearHabitat}
+          onClearAll={clearActions.clearAll}
+          styles={styles}
+          theme={theme}
+        />
 
         <FiltersSection
           searchQuery={state.searchQuery}
           onSearchChange={actions.searchAnimals}
-          categories={categories}
           selectedCategory={state.selectedCategory}
           onCategoryChange={actions.filterByCategory}
           visible={filtersVisible}
@@ -879,19 +909,16 @@ const CatalogManagementScreen: React.FC = () => {
           maxToRenderPerBatch={10}
           windowSize={10}
           initialNumToRender={10}
-          getItemLayout={undefined} // Permitir que FlatList calcule automáticamente
         />
       </View>
     </SafeAreaView>
   );
 };
 
-// Display names para debugging
 CatalogHeader.displayName = 'CatalogHeader';
 SearchBar.displayName = 'SearchBar';
-CategoryFilter.displayName = 'CategoryFilter';
-SortFilter.displayName = 'SortFilter';
-HabitatFilter.displayName = 'HabitatFilter';
+FilterChip.displayName = 'FilterChip';
+FilterSection.displayName = 'FilterSection';
 FiltersSection.displayName = 'FiltersSection';
 AnimalInfoChips.displayName = 'AnimalInfoChips';
 EmptyState.displayName = 'EmptyState';

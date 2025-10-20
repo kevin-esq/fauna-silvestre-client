@@ -170,7 +170,6 @@ const AnimalDropdown = forwardRef<DropdownRef, Props>(
           }}
         />
 
-        {/* Mostrar información adicional cuando se selecciona "Desconocido" */}
         {selectedValue?.catalogId === -1 && (
           <View style={styles.unknownAnimalInfo}>
             <Text

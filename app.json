@@ -2,8 +2,8 @@
   "name": "FspClientApp",
   "displayName": "FspClientApp",
   "extra": {
-    "PUBLIC_BASE_URL": "https://mayasur001-001-site1.mtempurl.com",
-    "PUBLIC_API_URL": "https://mayasur001-001-site1.mtempurl.com/api",
+    "PUBLIC_BASE_URL": "https://fototrampa.com",
+    "PUBLIC_API_URL": "https://fototrampa.com/api",
     "PUBLIC_API_TIMEOUT": "15000"
   }
 }

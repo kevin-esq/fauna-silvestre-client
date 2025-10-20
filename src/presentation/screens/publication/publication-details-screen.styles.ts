@@ -1,206 +1,360 @@
+import {
+  ThemeContextType,
+  ThemeVariablesType
+} from '@/presentation/contexts/theme.context';
 import { StyleSheet } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 
 export const createStyles = (
-  vars: Record<string, string>,
+  vars: ThemeVariablesType,
   width: number,
   height: number,
-  insets: EdgeInsets
+  insets: EdgeInsets,
+  theme: ThemeContextType
 ) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: vars['--background'],
-      paddingTop: insets.top,
-      paddingBottom: insets.bottom + 16
+      backgroundColor: vars['--background']
     },
-    content: {
-      padding: 16,
-      gap: 24
+
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingTop: insets.top + 16,
+      paddingBottom: 16,
+      backgroundColor: vars['--surface'],
+      borderBottomWidth: 1,
+      borderBottomColor: vars['--border'],
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 3
     },
-    headerContainer: {
-      paddingHorizontal: 16,
-      paddingBottom: 12
-    },
+
     backButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: vars['--primary'],
-      borderRadius: 32,
-      paddingVertical: 10,
-      paddingHorizontal: 18,
-      alignSelf: 'flex-start',
-      elevation: 2
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: vars['--surface-variant'],
+      justifyContent: 'center',
+      alignItems: 'center'
     },
-    backButtonText: {
-      color: 'white',
-      fontSize: 16,
-      fontWeight: '600',
-      marginLeft: 8
+
+    headerTitleContainer: {
+      flex: 1,
+      marginHorizontal: 16,
+      alignItems: 'center'
     },
-    headerContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 12,
-      gap: 8
-    },
+
     headerTitle: {
-      fontSize: 22,
+      fontSize: 18,
       fontWeight: '700',
-      color: vars['--text']
+      color: vars['--text'],
+      textAlign: 'center'
     },
-    imageCard: {
+
+    headerStatusBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+
+    scrollView: {
+      flex: 1
+    },
+
+    scrollContent: {
+      padding: 20,
+      paddingBottom: insets.bottom + 24
+    },
+
+    statusBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 14,
+      paddingHorizontal: 24,
       borderRadius: 16,
-      overflow: 'hidden',
-      position: 'relative',
-      backgroundColor: vars['--background-variant']
+      marginBottom: 24,
+      gap: 12,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4
     },
+
+    statusText: {
+      fontSize: 17,
+      fontWeight: '700',
+      letterSpacing: 0.5
+    },
+
+    imageCard: {
+      borderRadius: 20,
+      overflow: 'hidden',
+      backgroundColor: vars['--surface-variant'],
+      marginBottom: 24,
+      position: 'relative',
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.12,
+      shadowRadius: 8
+    },
+
     image: {
       width: '100%',
-      height: 240
+      height: 280
     },
-    imagePlaceholder: {
-      height: 240,
+
+    expandButton: {
+      position: 'absolute',
+      bottom: 16,
+      right: 16,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: 'rgba(0,0,0,0.7)',
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: vars['--background-variant']
+      elevation: 4
     },
-    placeholderText: {
-      marginTop: 8,
-      color: vars['--text-secondary'],
-      fontSize: 14
-    },
-    zoomIcon: {
-      position: 'absolute',
-      bottom: 12,
-      right: 12,
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      borderRadius: 20,
-      padding: 6
-    },
-    imageLoading: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.3)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderRadius: 16
-    },
-    card: {
-      backgroundColor: vars['--background-variant'],
+
+    infoSection: {
+      backgroundColor: vars['--surface'],
       borderRadius: 16,
       padding: 20,
-      gap: 12
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: vars['--border'],
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2
     },
-    cardTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: vars['--text']
-    },
-    cardText: {
-      fontSize: 17,
-      color: vars['--text-secondary'],
-      lineHeight: 24
-    },
-    locationRow: {
+
+    sectionHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8
+      justifyContent: 'space-between',
+      marginBottom: 14
     },
-    locationText: {
+
+    sectionTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      flex: 1
+    },
+
+    iconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+
+    sectionTitle: {
       fontSize: 17,
-      color: vars['--text']
+      fontWeight: '700',
+      color: vars['--text'],
+      flex: 1
     },
-    rejectionCard: {
-      backgroundColor: '#FDECEA'
+
+    editButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: vars['--surface-variant'],
+      justifyContent: 'center',
+      alignItems: 'center'
     },
+
+    sectionContent: {
+      fontSize: 15,
+      color: vars['--text-secondary'],
+      lineHeight: 24,
+      paddingLeft: 52
+    },
+
+    stateBadge: {
+      alignSelf: 'flex-start',
+      paddingVertical: 10,
+      paddingHorizontal: 18,
+      borderRadius: 20,
+      borderWidth: 1.5,
+      marginLeft: 52
+    },
+
+    stateBadgeText: {
+      fontSize: 15,
+      fontWeight: '700',
+      letterSpacing: 0.5
+    },
+
+    mapContainer: {
+      borderRadius: 12,
+      overflow: 'hidden',
+      height: 220,
+      marginTop: 8
+    },
+
+    rejectionSection: {
+      backgroundColor: vars['--error'] + '10',
+      borderRadius: 16,
+      padding: 20,
+      borderLeftWidth: 5,
+      borderLeftColor: vars['--error'],
+      marginBottom: 16,
+      elevation: 1
+    },
+
+    rejectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 12
+    },
+
     rejectionTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: '#D32F2F'
+      fontSize: 17,
+      fontWeight: '700',
+      color: vars['--error'],
+      flex: 1
     },
-    userProfilePicture: {
+
+    rejectionText: {
+      fontSize: 15,
+      color: vars['--text'],
+      lineHeight: 24,
+      paddingLeft: 52
+    },
+
+    actionButtonsContainer: {
+      flexDirection: 'row',
+      padding: 20,
+      paddingBottom: insets.bottom + 20,
+      backgroundColor: vars['--surface'],
+      borderTopWidth: 1,
+      borderTopColor: vars['--border'],
+      gap: 12,
+      elevation: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 6
+    },
+
+    rejectButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      backgroundColor: '#EF5350',
+      paddingVertical: 16,
+      borderRadius: 14,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4
+    },
+
+    approveButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      backgroundColor: '#66BB6A',
+      paddingVertical: 16,
+      borderRadius: 14,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4
+    },
+
+    actionButtonText: {
+      color: '#FFFFFF',
+      fontSize: 17,
+      fontWeight: '700',
+      letterSpacing: 0.5
+    },
+
+    imageModalCloseButton: {
+      position: 'absolute',
+      top: insets.top + 20,
+      right: 20,
       width: 44,
       height: 44,
       borderRadius: 22,
-      backgroundColor: vars['--background'],
-      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.7)',
       justifyContent: 'center',
-      marginRight: 12
-    },
-    modifyButton: {
-      marginTop: 12,
-      alignSelf: 'center',
-      backgroundColor: vars['--primary'],
-      flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 30,
-      elevation: 2
-    },
-    modifyButtonText: {
-      color: 'white',
-      fontSize: 16,
-      fontWeight: '600'
-    },
-    cardHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8
+      zIndex: 999,
+      elevation: 10
     },
 
-    titleContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8
-    },
     modalContainer: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.9)',
-      justifyContent: 'center',
-      alignItems: 'center'
+      backgroundColor: 'rgba(0, 0, 0, 0.7)'
     },
 
-    pinchZoomContainer: {
-      width: '100%',
-      height: '100%',
-      justifyContent: 'center',
-      alignItems: 'center'
+    modalBackground: {
+      flex: 1
     },
 
-    fullImage: {
-      width: width,
-      height: height
+    modalContent: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center'
     },
 
     closeButton: {
       position: 'absolute',
       top: insets.top + 20,
       right: 20,
-      zIndex: 10,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      borderRadius: 15,
-      width: 30,
-      height: 30,
-      justifyContent: 'center',
-      alignItems: 'center'
-    },
-
-    fullImagePlaceholder: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: 20
+      zIndex: 10
     },
 
-    fullPlaceholderText: {
-      color: 'white',
-      fontSize: 16,
-      marginTop: 10
+    modalInfo: {
+      position: 'absolute',
+      bottom: insets.bottom + 40,
+      left: 20,
+      right: 20,
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      padding: theme.spacing.large,
+      borderRadius: theme.borderRadius.medium,
+      gap: theme.spacing.small
+    },
+
+    modalTitle: {
+      fontSize: theme.typography.fontSize.xlarge,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: '#FFFFFF'
+    },
+
+    modalSubtitle: {
+      fontSize: theme.typography.fontSize.medium,
+      color: '#E0E0E0',
+      fontStyle: 'italic'
     }
   });

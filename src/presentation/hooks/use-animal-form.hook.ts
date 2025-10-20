@@ -313,7 +313,7 @@ const getFieldLabel = (field: keyof AnimalFormData): string => {
     reproduction: 'Reproducción',
     distribution: 'Distribución',
     feeding: 'Alimentación',
-    category: 'Categoría',
+    category: 'Clase',
     image: 'Imagen'
   };
   return labels[field];

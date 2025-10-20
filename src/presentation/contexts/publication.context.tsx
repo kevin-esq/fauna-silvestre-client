@@ -24,7 +24,6 @@ const CONFIG = {
   DEFAULT_PAGE_SIZE: 10,
   INITIAL_PAGE: 1,
   REQUEST_TIMEOUT: 30000,
-  MAX_MEMORY_PAGES: 3,
   PREFETCH_THRESHOLD: 0.7,
   CIRCUIT_BREAKER_THRESHOLD: 5,
   CIRCUIT_BREAKER_TIMEOUT: 10000,
@@ -33,6 +32,15 @@ const CONFIG = {
   RETRY_DELAY: 1000
 } as const;
 
+interface PaginationState {
+  readonly page: number;
+  readonly size: number;
+  readonly total: number;
+  readonly totalPages: number;
+  readonly hasNext: boolean;
+  readonly hasPrev: boolean;
+}
+
 interface PublicationState {
   readonly publications: PublicationModelResponse[];
   readonly filteredPublications: PublicationModelResponse[];
@@ -40,14 +48,7 @@ interface PublicationState {
   readonly isLoadingMore: boolean;
   readonly isRefreshing: boolean;
   readonly isEmpty: boolean;
-  readonly pagination: {
-    readonly page: number;
-    readonly size: number;
-    readonly total: number;
-    readonly totalPages: number;
-    readonly hasNext: boolean;
-    readonly hasPrev: boolean;
-  };
+  readonly pagination: PaginationState;
   readonly currentSearchQuery: string;
   readonly lastUpdated: number | null;
   readonly error?: string;
@@ -74,116 +75,137 @@ interface State {
   readonly counts: CountsState;
 }
 
-type Action =
-  | { type: 'FETCH_STATUS_START'; status: PublicationStatus }
-  | {
-      type: 'FETCH_STATUS_SUCCESS';
-      status: PublicationStatus;
-      payload: PublicationResponse;
-      searchQuery: string;
-      resetPage: boolean;
-    }
-  | { type: 'FETCH_MORE_START'; status: PublicationStatus }
-  | {
-      type: 'FETCH_MORE_SUCCESS';
-      status: PublicationStatus;
-      payload: PublicationResponse;
-    }
-  | { type: 'REFRESH_START'; status: PublicationStatus }
-  | {
-      type: 'REFRESH_SUCCESS';
-      status: PublicationStatus;
-      payload: PublicationResponse;
-    }
-  | {
-      type: 'FILTER_PUBLICATIONS';
-      status: PublicationStatus;
-      searchQuery: string;
-    }
-  | {
-      type: 'OPERATION_FAILURE';
-      payload: string;
-      status?: PublicationStatus;
-    }
-  | { type: 'RESET_STATUS'; status: PublicationStatus }
-  | { type: 'RESET_ALL' }
-  | { type: 'CIRCUIT_BREAKER_OPEN' }
-  | { type: 'CIRCUIT_BREAKER_RESET' }
-  | {
-      type: 'UPDATE_PUBLICATION_STATUS';
-      publicationId: string;
-      currentStatus: PublicationStatus;
-      newStatus: PublicationStatus;
-    }
-  | { type: 'FETCH_COUNTS_START' }
-  | { type: 'FETCH_COUNTS_SUCCESS'; payload: CountsResponse }
-  | { type: 'FETCH_COUNTS_FAILURE'; payload: string }
-  | { type: 'INVALIDATE_CACHE_AND_COUNTS' };
+type PublicationActionType =
+  | 'FETCH_STATUS_START'
+  | 'FETCH_STATUS_SUCCESS'
+  | 'FETCH_MORE_START'
+  | 'FETCH_MORE_SUCCESS'
+  | 'REFRESH_START'
+  | 'REFRESH_SUCCESS'
+  | 'FILTER_PUBLICATIONS'
+  | 'OPERATION_FAILURE'
+  | 'RESET_STATUS'
+  | 'RESET_ALL'
+  | 'CIRCUIT_BREAKER_OPEN'
+  | 'CIRCUIT_BREAKER_RESET'
+  | 'UPDATE_PUBLICATION_STATUS'
+  | 'FETCH_COUNTS_START'
+  | 'FETCH_COUNTS_SUCCESS'
+  | 'FETCH_COUNTS_FAILURE'
+  | 'INVALIDATE_CACHE_AND_COUNTS';
 
-interface LoadOptions {
-  searchQuery?: string;
-  forceRefresh?: boolean;
+interface BaseAction<T extends PublicationActionType> {
+  readonly type: T;
 }
 
-interface PublicationContextType {
-  readonly state: State;
+interface FetchStatusStartAction extends BaseAction<'FETCH_STATUS_START'> {
+  readonly status: PublicationStatus;
+}
 
-  readonly loadStatus: (
-    status: PublicationStatus,
-    options?: LoadOptions
-  ) => Promise<void>;
-  readonly loadMoreStatus: (status: PublicationStatus) => Promise<void>;
-  readonly refreshStatus: (status: PublicationStatus) => Promise<void>;
-  readonly filterPublications: (
-    status: PublicationStatus,
-    searchQuery: string
-  ) => void;
-  readonly resetStatus: (status: PublicationStatus) => void;
-  readonly resetAll: () => void;
-  readonly clearAllData: () => void;
+interface FetchStatusSuccessAction extends BaseAction<'FETCH_STATUS_SUCCESS'> {
+  readonly status: PublicationStatus;
+  readonly payload: PublicationResponse;
+  readonly searchQuery: string;
+  readonly resetPage: boolean;
+}
 
-  readonly acceptPublication: (
-    publicationId: string,
-    currentStatus: PublicationStatus
-  ) => Promise<void>;
-  readonly rejectPublication: (
-    publicationId: string,
-    currentStatus: PublicationStatus
-  ) => Promise<void>;
-  readonly processBulkPublications: (
-    publicationIds: string[],
-    action: 'accept' | 'reject',
-    currentStatus: PublicationStatus
-  ) => Promise<{ success: string[]; failed: string[] }>;
+interface FetchMoreStartAction extends BaseAction<'FETCH_MORE_START'> {
+  readonly status: PublicationStatus;
+}
 
-  readonly loadCounts: () => Promise<void>;
-  readonly refreshCounts: () => Promise<void>;
+interface FetchMoreSuccessAction extends BaseAction<'FETCH_MORE_SUCCESS'> {
+  readonly status: PublicationStatus;
+  readonly payload: PublicationResponse;
+}
 
-  readonly canLoadMore: (status: PublicationStatus) => boolean;
-  readonly getStatusData: (status: PublicationStatus) => PublicationState;
-  readonly getTotalCount: (status: PublicationStatus) => number;
-  readonly resetCircuitBreaker: () => void;
+interface RefreshStartAction extends BaseAction<'REFRESH_START'> {
+  readonly status: PublicationStatus;
+}
+
+interface RefreshSuccessAction extends BaseAction<'REFRESH_SUCCESS'> {
+  readonly status: PublicationStatus;
+  readonly payload: PublicationResponse;
+}
+
+interface FilterPublicationsAction extends BaseAction<'FILTER_PUBLICATIONS'> {
+  readonly status: PublicationStatus;
+  readonly searchQuery: string;
+}
+
+interface OperationFailureAction extends BaseAction<'OPERATION_FAILURE'> {
+  readonly payload: string;
+  readonly status?: PublicationStatus;
+}
+
+interface ResetStatusAction extends BaseAction<'RESET_STATUS'> {
+  readonly status: PublicationStatus;
+}
+
+interface UpdatePublicationStatusAction
+  extends BaseAction<'UPDATE_PUBLICATION_STATUS'> {
+  readonly publicationId: string;
+  readonly currentStatus: PublicationStatus;
+  readonly newStatus: PublicationStatus;
+}
+
+interface FetchCountsSuccessAction extends BaseAction<'FETCH_COUNTS_SUCCESS'> {
+  readonly payload: CountsResponse;
+}
+
+interface FetchCountsFailureAction extends BaseAction<'FETCH_COUNTS_FAILURE'> {
+  readonly payload: string;
+}
+
+type Action =
+  | FetchStatusStartAction
+  | FetchStatusSuccessAction
+  | FetchMoreStartAction
+  | FetchMoreSuccessAction
+  | RefreshStartAction
+  | RefreshSuccessAction
+  | FilterPublicationsAction
+  | OperationFailureAction
+  | ResetStatusAction
+  | BaseAction<'RESET_ALL'>
+  | BaseAction<'CIRCUIT_BREAKER_OPEN'>
+  | BaseAction<'CIRCUIT_BREAKER_RESET'>
+  | UpdatePublicationStatusAction
+  | BaseAction<'FETCH_COUNTS_START'>
+  | FetchCountsSuccessAction
+  | FetchCountsFailureAction
+  | BaseAction<'INVALIDATE_CACHE_AND_COUNTS'>;
+
+interface LoadOptions {
+  readonly searchQuery?: string;
+  readonly forceRefresh?: boolean;
+}
+
+type BulkAction = 'accept' | 'reject';
+
+interface BulkOperationResult {
+  readonly success: string[];
+  readonly failed: string[];
 }
 
 class PublicationFilters {
-  static filterByQuery(
-    publications: PublicationModelResponse[],
+  public static filterByQuery(
+    publications: readonly PublicationModelResponse[],
     searchQuery: string
   ): PublicationModelResponse[] {
-    if (!searchQuery.trim()) return publications;
+    if (!searchQuery.trim()) return [...publications];
 
     const query = searchQuery.toLowerCase().trim();
     return publications.filter(
-      pub =>
-        pub.commonNoun?.toLowerCase().includes(query) ||
-        pub.description?.toLowerCase().includes(query) ||
-        pub.location?.toLowerCase().includes(query)
+      publication =>
+        publication.commonNoun?.toLowerCase().includes(query) ||
+        publication.description?.toLowerCase().includes(query) ||
+        publication.location?.toLowerCase().includes(query)
     );
   }
 }
 
 class CircuitBreakerUtils {
-  static isOpen(circuitBreaker: CircuitBreakerState): boolean {
+  public static isOpen(circuitBreaker: CircuitBreakerState): boolean {
     if (!circuitBreaker.isOpen) return false;
 
     if (circuitBreaker.lastFailureTime) {
@@ -194,22 +216,23 @@ class CircuitBreakerUtils {
     return false;
   }
 
-  static shouldOpen(failureCount: number): boolean {
+  public static shouldOpen(failureCount: number): boolean {
     return failureCount >= CONFIG.CIRCUIT_BREAKER_THRESHOLD;
   }
 }
 
 class ValidationUtils {
-  static validatePaginationParams(page: number, size: number): void {
+  public static validatePaginationParams(page: number, size: number): void {
     if (!Number.isInteger(page) || page < 1) {
       throw new Error('El número de página debe ser un entero mayor a 0');
     }
+
     if (!Number.isInteger(size) || size < 1 || size > 100) {
       throw new Error('El límite debe ser un entero entre 1 y 100');
     }
   }
 
-  static validateUser(user: User | null): void {
+  public static validateUser(user: User | null): asserts user is User {
     if (!user?.role) {
       throw new Error('User not authenticated');
     }
@@ -217,7 +240,7 @@ class ValidationUtils {
 }
 
 class StateCreators {
-  static createInitialPublicationState(): PublicationState {
+  public static createInitialPublicationState(): PublicationState {
     return {
       publications: [],
       filteredPublications: [],
@@ -239,7 +262,7 @@ class StateCreators {
     };
   }
 
-  static createInitialCountsState(): CountsState {
+  public static createInitialCountsState(): CountsState {
     return {
       data: null,
       isLoading: false,
@@ -248,30 +271,32 @@ class StateCreators {
     };
   }
 
-  static createInitialState(): State {
+  public static createInitialCircuitBreakerState(): CircuitBreakerState {
     return {
-      [PublicationStatus.PENDING]:
-        StateCreators.createInitialPublicationState(),
-      [PublicationStatus.ACCEPTED]:
-        StateCreators.createInitialPublicationState(),
-      [PublicationStatus.REJECTED]:
-        StateCreators.createInitialPublicationState(),
-      circuitBreaker: {
-        failureCount: 0,
-        lastFailureTime: null,
-        isOpen: false
-      },
-      counts: StateCreators.createInitialCountsState()
+      failureCount: 0,
+      lastFailureTime: null,
+      isOpen: false
+    };
+  }
+
+  public static createInitialState(): State {
+    return {
+      [PublicationStatus.PENDING]: this.createInitialPublicationState(),
+      [PublicationStatus.ACCEPTED]: this.createInitialPublicationState(),
+      [PublicationStatus.REJECTED]: this.createInitialPublicationState(),
+      circuitBreaker: this.createInitialCircuitBreakerState(),
+      counts: this.createInitialCountsState()
     };
   }
 }
 
 class ReducerHandlers {
-  static handleFetchStart(
+  public static handleFetchStart(
     state: State,
-    action: { type: string; status: PublicationStatus }
+    action: FetchStatusStartAction
   ): State {
     const currentState = state[action.status];
+
     return {
       ...state,
       [action.status]: {
@@ -282,15 +307,9 @@ class ReducerHandlers {
     };
   }
 
-  static handleFetchSuccess(
+  public static handleFetchSuccess(
     state: State,
-    action: {
-      type: string;
-      status: PublicationStatus;
-      payload: PublicationResponse;
-      searchQuery: string;
-      resetPage: boolean;
-    }
+    action: FetchStatusSuccessAction
   ): State {
     const { status, payload, searchQuery, resetPage } = action;
     const currentState = state[status];
@@ -299,7 +318,7 @@ class ReducerHandlers {
       ? payload.records
       : [...currentState.publications, ...payload.records];
 
-    const filteredPubs = PublicationFilters.filterByQuery(
+    const filteredPublications = PublicationFilters.filterByQuery(
       newPublications,
       searchQuery
     );
@@ -309,45 +328,29 @@ class ReducerHandlers {
       [status]: {
         ...currentState,
         publications: newPublications,
-        filteredPublications: filteredPubs,
+        filteredPublications,
         isLoading: false,
         isEmpty: newPublications.length === 0,
-        pagination: {
-          page: payload.pagination.page,
-          size: payload.pagination.size,
-          total: payload.pagination.total,
-          totalPages: payload.pagination.totalPages,
-          hasNext: payload.pagination.hasNext,
-          hasPrev: payload.pagination.hasPrev
-        },
+        pagination: payload.pagination,
         currentSearchQuery: searchQuery,
         lastUpdated: Date.now(),
         error: undefined
       },
-      circuitBreaker: {
-        failureCount: 0,
-        lastFailureTime: null,
-        isOpen: false
-      }
+      circuitBreaker: StateCreators.createInitialCircuitBreakerState()
     };
   }
 
-  static handleFetchMoreSuccess(
+  public static handleFetchMoreSuccess(
     state: State,
-    action: {
-      type: string;
-      status: PublicationStatus;
-      payload: PublicationResponse;
-    }
+    action: FetchMoreSuccessAction
   ): State {
     const { status, payload } = action;
     const currentState = state[status];
 
     const allPublications = [...currentState.publications, ...payload.records];
-    const maxItems = CONFIG.MAX_MEMORY_PAGES * CONFIG.DEFAULT_PAGE_SIZE;
-    const limitedPublications = allPublications.slice(-maxItems);
+    const limitedPublications = allPublications;
 
-    const filteredPubs = PublicationFilters.filterByQuery(
+    const filteredPublications = PublicationFilters.filterByQuery(
       limitedPublications,
       currentState.currentSearchQuery
     );
@@ -357,31 +360,24 @@ class ReducerHandlers {
       [status]: {
         ...currentState,
         publications: limitedPublications,
-        filteredPublications: filteredPubs,
+        filteredPublications,
         isLoadingMore: false,
         isEmpty: limitedPublications.length === 0,
-        pagination: {
-          page: payload.pagination.page,
-          size: payload.pagination.size,
-          total: payload.pagination.total,
-          totalPages: payload.pagination.totalPages,
-          hasNext: payload.pagination.hasNext,
-          hasPrev: payload.pagination.hasPrev
-        },
+        pagination: payload.pagination,
         lastUpdated: Date.now(),
         error: undefined
       }
     };
   }
 
-  static handleOperationFailure(
+  public static handleOperationFailure(
     state: State,
-    action: { type: string; payload: string; status?: PublicationStatus }
+    action: OperationFailureAction
   ): State {
     const { payload: errorMessage, status } = action;
 
     const newFailureCount = state.circuitBreaker.failureCount + 1;
-    const newCircuitBreaker = {
+    const newCircuitBreaker: CircuitBreakerState = {
       failureCount: newFailureCount,
       lastFailureTime: Date.now(),
       isOpen: CircuitBreakerUtils.shouldOpen(newFailureCount)
@@ -408,27 +404,24 @@ class ReducerHandlers {
     };
   }
 
-  static handleUpdatePublicationStatus(
+  public static handleUpdatePublicationStatus(
     state: State,
-    action: {
-      type: string;
-      publicationId: string;
-      currentStatus: PublicationStatus;
-      newStatus: PublicationStatus;
-    }
+    action: UpdatePublicationStatusAction
   ): State {
     const { publicationId, currentStatus, newStatus } = action;
     const fromState = state[currentStatus];
     const toState = state[newStatus];
 
     const publication = fromState.publications.find(
-      p => p.recordId.toString() === publicationId
+      pub => pub.recordId.toString() === publicationId
     );
+
     if (!publication) return state;
 
     const updatedFromPublications = fromState.publications.filter(
-      p => p.recordId.toString() !== publicationId
+      pub => pub.recordId.toString() !== publicationId
     );
+
     const updatedToPublications = [...toState.publications, publication];
 
     return {
@@ -501,7 +494,7 @@ const publicationReducer = (state: State, action: Action): State => {
     case 'REFRESH_SUCCESS': {
       const { status, payload } = action;
       const currentState = state[status];
-      const filteredPubs = PublicationFilters.filterByQuery(
+      const filteredPublications = PublicationFilters.filterByQuery(
         payload.records,
         currentState.currentSearchQuery
       );
@@ -511,17 +504,10 @@ const publicationReducer = (state: State, action: Action): State => {
         [status]: {
           ...currentState,
           publications: payload.records,
-          filteredPublications: filteredPubs,
+          filteredPublications,
           isRefreshing: false,
           isEmpty: payload.records.length === 0,
-          pagination: {
-            page: payload.pagination.page,
-            size: payload.pagination.size,
-            total: payload.pagination.total,
-            totalPages: payload.pagination.totalPages,
-            hasNext: payload.pagination.hasNext,
-            hasPrev: payload.pagination.hasPrev
-          },
+          pagination: payload.pagination,
           lastUpdated: Date.now(),
           error: undefined
         }
@@ -531,7 +517,7 @@ const publicationReducer = (state: State, action: Action): State => {
     case 'FILTER_PUBLICATIONS': {
       const { status, searchQuery } = action;
       const currentState = state[status];
-      const filteredPubs = PublicationFilters.filterByQuery(
+      const filteredPublications = PublicationFilters.filterByQuery(
         currentState.publications,
         searchQuery
       );
@@ -540,7 +526,7 @@ const publicationReducer = (state: State, action: Action): State => {
         ...state,
         [status]: {
           ...currentState,
-          filteredPublications: filteredPubs,
+          filteredPublications,
           currentSearchQuery: searchQuery
         }
       };
@@ -549,18 +535,16 @@ const publicationReducer = (state: State, action: Action): State => {
     case 'OPERATION_FAILURE':
       return ReducerHandlers.handleOperationFailure(state, action);
 
-    case 'RESET_STATUS': {
+    case 'RESET_STATUS':
       return {
         ...state,
         [action.status]: StateCreators.createInitialPublicationState()
       };
-    }
 
-    case 'RESET_ALL': {
+    case 'RESET_ALL':
       return StateCreators.createInitialState();
-    }
 
-    case 'CIRCUIT_BREAKER_OPEN': {
+    case 'CIRCUIT_BREAKER_OPEN':
       return {
         ...state,
         circuitBreaker: {
@@ -569,23 +553,17 @@ const publicationReducer = (state: State, action: Action): State => {
           lastFailureTime: Date.now()
         }
       };
-    }
 
-    case 'CIRCUIT_BREAKER_RESET': {
+    case 'CIRCUIT_BREAKER_RESET':
       return {
         ...state,
-        circuitBreaker: {
-          failureCount: 0,
-          lastFailureTime: null,
-          isOpen: false
-        }
+        circuitBreaker: StateCreators.createInitialCircuitBreakerState()
       };
-    }
 
     case 'UPDATE_PUBLICATION_STATUS':
       return ReducerHandlers.handleUpdatePublicationStatus(state, action);
 
-    case 'FETCH_COUNTS_START': {
+    case 'FETCH_COUNTS_START':
       return {
         ...state,
         counts: {
@@ -594,9 +572,8 @@ const publicationReducer = (state: State, action: Action): State => {
           error: undefined
         }
       };
-    }
 
-    case 'FETCH_COUNTS_SUCCESS': {
+    case 'FETCH_COUNTS_SUCCESS':
       return {
         ...state,
         counts: {
@@ -606,9 +583,8 @@ const publicationReducer = (state: State, action: Action): State => {
           error: undefined
         }
       };
-    }
 
-    case 'FETCH_COUNTS_FAILURE': {
+    case 'FETCH_COUNTS_FAILURE':
       return {
         ...state,
         counts: {
@@ -617,7 +593,6 @@ const publicationReducer = (state: State, action: Action): State => {
           error: action.payload
         }
       };
-    }
 
     case 'INVALIDATE_CACHE_AND_COUNTS': {
       const initialPublicationState =
@@ -636,13 +611,49 @@ const publicationReducer = (state: State, action: Action): State => {
   }
 };
 
+interface PublicationContextType {
+  readonly state: State;
+  readonly loadStatus: (
+    status: PublicationStatus,
+    options?: LoadOptions
+  ) => Promise<void>;
+  readonly loadMoreStatus: (status: PublicationStatus) => Promise<void>;
+  readonly refreshStatus: (status: PublicationStatus) => Promise<void>;
+  readonly filterPublications: (
+    status: PublicationStatus,
+    searchQuery: string
+  ) => void;
+  readonly resetStatus: (status: PublicationStatus) => void;
+  readonly resetAll: () => void;
+  readonly clearAllData: () => void;
+  readonly acceptPublication: (
+    publicationId: string,
+    currentStatus: PublicationStatus
+  ) => Promise<void>;
+  readonly rejectPublication: (
+    publicationId: string,
+    currentStatus: PublicationStatus
+  ) => Promise<void>;
+  readonly processBulkPublications: (
+    publicationIds: readonly string[],
+    action: BulkAction,
+    currentStatus: PublicationStatus
+  ) => Promise<BulkOperationResult>;
+  readonly loadCounts: () => Promise<void>;
+  readonly refreshCounts: () => Promise<void>;
+  readonly canLoadMore: (status: PublicationStatus) => boolean;
+  readonly getStatusData: (status: PublicationStatus) => PublicationState;
+  readonly getTotalCount: (status: PublicationStatus) => number;
+  readonly resetCircuitBreaker: () => void;
+}
+
 const PublicationContext = createContext<PublicationContextType | undefined>(
   undefined
 );
 
-export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
-  children
-}) => {
+export const PublicationProvider: React.FC<{
+  readonly children: React.ReactNode;
+}> = ({ children }) => {
   const { user } = useAuth();
   const [state, dispatch] = useReducer(
     publicationReducer,
@@ -650,7 +661,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const abortControllerRef = useRef<AbortController | null>(null);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<number | null>(null);
   const initialLoadRef = useRef<boolean>(false);
 
   const clearAllData = useCallback(() => {
@@ -660,9 +671,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const createAbortController = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
     return abortControllerRef.current;
   }, []);
@@ -673,7 +682,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [state.circuitBreaker]);
 
-  const loadCounts = useCallback(async () => {
+  const loadCounts = useCallback(async (): Promise<void> => {
     try {
       checkCircuitBreaker();
       dispatch({ type: 'FETCH_COUNTS_START' });
@@ -687,13 +696,13 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [checkCircuitBreaker]);
 
-  const refreshCounts = useCallback(async () => {
+  const refreshCounts = useCallback(async (): Promise<void> => {
     dispatch({ type: 'FETCH_COUNTS_START' });
     await loadCounts();
   }, [loadCounts]);
 
   useEffect(() => {
-    const handleCacheInvalidation = () => {
+    const handleCacheInvalidation = (): void => {
       console.log('[Cache] Invalidation callback triggered');
       dispatch({ type: 'INVALIDATE_CACHE_AND_COUNTS' });
     };
@@ -703,7 +712,11 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       if (AuthService.isInitialized()) {
         const authService = AuthService.getInstance();
-        authService.setOnClearUserDataCallback(clearAllData);
+
+        authService.setOnClearUserDataCallback(() => {
+          clearAllData();
+        });
+
         console.log('[PublicationContext] Auth cleanup callback registered');
       } else {
         console.log(
@@ -726,7 +739,10 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [clearAllData]);
 
   const loadStatus = useCallback(
-    async (status: PublicationStatus, options: LoadOptions = {}) => {
+    async (
+      status: PublicationStatus,
+      options: LoadOptions = {}
+    ): Promise<void> => {
       const { searchQuery = '' } = options;
 
       try {
@@ -744,7 +760,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
           CONFIG.DEFAULT_PAGE_SIZE
         );
 
-        const isAdmin = user!.role === 'Admin';
+        const isAdmin = user.role === 'Admin';
         createAbortController();
 
         dispatch({ type: 'FETCH_STATUS_START', status });
@@ -765,7 +781,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
         });
 
         if (!state.counts.data && !state.counts.isLoading) {
-          loadCounts();
+          await loadCounts();
         }
       } catch (error) {
         const errorMessage =
@@ -797,7 +813,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user, loadCounts, loadStatus]);
 
   const loadMoreStatus = useCallback(
-    async (status: PublicationStatus) => {
+    async (status: PublicationStatus): Promise<void> => {
       try {
         checkCircuitBreaker();
         ValidationUtils.validateUser(user);
@@ -813,7 +829,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
           CONFIG.DEFAULT_PAGE_SIZE
         );
 
-        const isAdmin = user!.role === 'Admin';
+        const isAdmin = user.role === 'Admin';
         createAbortController();
 
         dispatch({ type: 'FETCH_MORE_START', status });
@@ -842,7 +858,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const refreshStatus = useCallback(
-    async (status: PublicationStatus) => {
+    async (status: PublicationStatus): Promise<void> => {
       try {
         checkCircuitBreaker();
         ValidationUtils.validateUser(user);
@@ -853,7 +869,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
           return;
         }
 
-        const isAdmin = user!.role === 'Admin';
+        const isAdmin = user.role === 'Admin';
         createAbortController();
 
         dispatch({ type: 'REFRESH_START', status });
@@ -871,7 +887,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
           payload: response
         });
 
-        refreshCounts();
+        await refreshCounts();
       } catch (error) {
         const errorMessage =
           error instanceof Error
@@ -884,7 +900,10 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const acceptPublication = useCallback(
-    async (publicationId: string, currentStatus: PublicationStatus) => {
+    async (
+      publicationId: string,
+      currentStatus: PublicationStatus
+    ): Promise<void> => {
       try {
         checkCircuitBreaker();
 
@@ -897,7 +916,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
 
         await publicationService.acceptPublication(publicationId);
         await refreshStatus(currentStatus);
-        refreshCounts();
+        await refreshCounts();
       } catch (error) {
         dispatch({
           type: 'UPDATE_PUBLICATION_STATUS',
@@ -918,7 +937,10 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const rejectPublication = useCallback(
-    async (publicationId: string, currentStatus: PublicationStatus) => {
+    async (
+      publicationId: string,
+      currentStatus: PublicationStatus
+    ): Promise<void> => {
       try {
         checkCircuitBreaker();
 
@@ -931,7 +953,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
 
         await publicationService.rejectPublication(publicationId);
         await refreshStatus(currentStatus);
-        refreshCounts();
+        await refreshCounts();
       } catch (error) {
         dispatch({
           type: 'UPDATE_PUBLICATION_STATUS',
@@ -952,17 +974,20 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const processBulkPublications = useCallback(
-    async (publicationIds: string[], action: 'accept' | 'reject') => {
+    async (
+      publicationIds: readonly string[],
+      action: BulkAction
+    ): Promise<BulkOperationResult> => {
       try {
         checkCircuitBreaker();
 
         const result = await publicationService.processBulkPublications(
-          publicationIds,
+          publicationIds as string[],
           action
         );
 
         dispatch({ type: 'INVALIDATE_CACHE_AND_COUNTS' });
-        refreshCounts();
+        await refreshCounts();
 
         return result;
       } catch (error) {
@@ -976,7 +1001,7 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const filterPublications = useCallback(
-    (status: PublicationStatus, searchQuery: string) => {
+    (status: PublicationStatus, searchQuery: string): void => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
@@ -992,20 +1017,20 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
 
-  const resetStatus = useCallback((status: PublicationStatus) => {
+  const resetStatus = useCallback((status: PublicationStatus): void => {
     dispatch({ type: 'RESET_STATUS', status });
   }, []);
 
-  const resetAll = useCallback(() => {
+  const resetAll = useCallback((): void => {
     dispatch({ type: 'RESET_ALL' });
   }, []);
 
-  const resetCircuitBreaker = useCallback(() => {
+  const resetCircuitBreaker = useCallback((): void => {
     dispatch({ type: 'CIRCUIT_BREAKER_RESET' });
   }, []);
 
   const canLoadMore = useCallback(
-    (status: PublicationStatus) => {
+    (status: PublicationStatus): boolean => {
       const statusState = state[status];
 
       if (statusState.pagination.total === 0) {
@@ -1022,25 +1047,26 @@ export const PublicationProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const getStatusData = useCallback(
-    (status: PublicationStatus) => state[status],
+    (status: PublicationStatus): PublicationState => state[status],
     [state]
   );
 
   const getTotalCount = useCallback(
-    (status: PublicationStatus) => {
+    (status: PublicationStatus): number => {
+      const paginationTotal = state[status].pagination.total;
+
       if (state.counts.data) {
-        switch (status) {
-          case PublicationStatus.PENDING:
-            return state.counts.data.pendingCount || 0;
-          case PublicationStatus.ACCEPTED:
-            return state.counts.data.acceptedCount || 0;
-          case PublicationStatus.REJECTED:
-            return state.counts.data.rejectedCount || 0;
-          default:
-            return 0;
-        }
+        const countMap: Record<PublicationStatus, number> = {
+          [PublicationStatus.PENDING]: state.counts.data.pendingCount || 0,
+          [PublicationStatus.ACCEPTED]: state.counts.data.acceptedCount || 0,
+          [PublicationStatus.REJECTED]: state.counts.data.rejectedCount || 0
+        };
+
+        const count = countMap[status];
+        return count > 0 ? count : paginationTotal;
       }
-      return state[status].pagination.total;
+
+      return paginationTotal;
     },
     [state]
   );

@@ -1,4 +1,3 @@
-// Función para generar estadísticas aleatorias basadas en el rol del usuario.
 export interface UserModel {
   id: string;
   name: string;

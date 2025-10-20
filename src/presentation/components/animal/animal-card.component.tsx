@@ -4,13 +4,20 @@ import {
   Text,
   Image,
   ActivityIndicator,
-  Alert,
-  Pressable
+  Pressable,
+  Dimensions
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AnimalModelResponse } from '../../../domain/models/animal.models';
-import { useTheme, Theme } from '../../contexts/theme.context';
+import {
+  ThemeColors,
+  ThemeIconSizes,
+  useTheme
+} from '../../contexts/theme.context';
 import { createStyles } from './animal-card.styles';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
+
+const { width } = Dimensions.get('window');
 
 interface AnimalCardProps {
   animal: AnimalModelResponse;
@@ -32,13 +39,15 @@ const AnimalCard = React.memo<AnimalCardProps>(
     showImageEditButton = true,
     onPress
   }) => {
-    const { theme } = useTheme();
-    const styles = createStyles(theme);
+    const { theme, colors, iconSizes, typography } = useTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
+
     const [imageError, setImageError] = useState(false);
     const [imageLoading, setImageLoading] = useState(true);
     const [imageReloadCount, setImageReloadCount] = useState(0);
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    // Memoizar la URI de la imagen para evitar recreaciones innecesarias
     const imageUri = useMemo(
       () =>
         animal.image
@@ -47,20 +56,27 @@ const AnimalCard = React.memo<AnimalCardProps>(
       [animal.image, imageReloadCount]
     );
 
-    const handleDelete = useCallback(() => {
-      Alert.alert(
-        '🗑️ Confirmar eliminación',
-        `¿Estás seguro de que deseas eliminar "${animal.commonNoun}"?\n\nEsta acción no se puede deshacer.`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Eliminar',
-            style: 'destructive',
-            onPress: () => onDelete(animal.catalogId.toString())
-          }
-        ]
-      );
-    }, [animal.catalogId, animal.commonNoun, onDelete]);
+    const handleDeletePress = useCallback(() => {
+      setDeleteModalVisible(true);
+    }, []);
+
+    const handleConfirmDelete = useCallback(async () => {
+      setIsDeleting(true);
+      try {
+        await onDelete(animal.catalogId.toString());
+        setDeleteModalVisible(false);
+      } catch (error) {
+        console.error('Error al eliminar:', error);
+      } finally {
+        setIsDeleting(false);
+      }
+    }, [animal.catalogId, onDelete]);
+
+    const handleCloseDeleteModal = useCallback(() => {
+      if (!isDeleting) {
+        setDeleteModalVisible(false);
+      }
+    }, [isDeleting]);
 
     const handleImageLoad = useCallback(() => {
       setImageLoading(false);
@@ -92,8 +108,8 @@ const AnimalCard = React.memo<AnimalCardProps>(
           >
             <Ionicons
               name="camera-outline"
-              size={56}
-              color={theme.colors.placeholder}
+              size={iconSizes.xlarge + 8}
+              color={colors.placeholder}
             />
             <Text style={styles.emptyImageText}>
               {showImageEditButton
@@ -104,12 +120,12 @@ const AnimalCard = React.memo<AnimalCardProps>(
               <Pressable
                 style={styles.retryButton}
                 onPress={handleImageReload}
-                android_ripple={{ color: theme.colors.forest, radius: 20 }}
+                android_ripple={{ color: colors.primary + '20', radius: 20 }}
               >
                 <Ionicons
                   name="refresh"
-                  size={16}
-                  color={theme.colors.forest}
+                  size={iconSizes.small}
+                  color={colors.primary}
                 />
                 <Text style={styles.retryButtonText}>Reintentar</Text>
               </Pressable>
@@ -129,7 +145,7 @@ const AnimalCard = React.memo<AnimalCardProps>(
           />
           {imageLoading && (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color={theme.colors.forest} />
+              <ActivityIndicator size="large" color={colors.primary} />
               <Text style={styles.loadingText}>Cargando imagen...</Text>
             </View>
           )}
@@ -153,7 +169,7 @@ const AnimalCard = React.memo<AnimalCardProps>(
                 ? 'Ver detalles del animal'
                 : 'Agregar imagen del animal'
             }
-            android_ripple={{ color: 'rgba(0, 122, 51, 0.1)' }}
+            android_ripple={{ color: colors.primary + '10' }}
           >
             {renderImage()}
             <CategoryBadge category={animal.category} styles={styles} />
@@ -193,8 +209,8 @@ const AnimalCard = React.memo<AnimalCardProps>(
                     >
                       <Ionicons
                         name={onViewDetails ? 'eye' : 'camera'}
-                        size={18}
-                        color={theme.colors.textOnPrimary}
+                        size={iconSizes.medium - 6}
+                        color={colors.textOnPrimary}
                       />
                     </Pressable>
                   )}
@@ -210,8 +226,8 @@ const AnimalCard = React.memo<AnimalCardProps>(
                   >
                     <Ionicons
                       name="refresh"
-                      size={18}
-                      color={theme.colors.textOnPrimary}
+                      size={iconSizes.medium - 6}
+                      color={colors.textOnPrimary}
                     />
                   </Pressable>
                 </View>
@@ -231,189 +247,290 @@ const AnimalCard = React.memo<AnimalCardProps>(
               : handleCardPress,
             accessibilityRole: 'button' as const,
             accessibilityLabel: `Ver detalles de ${animal.commonNoun}`,
-            android_ripple: { color: 'rgba(0, 122, 51, 0.05)' }
+            android_ripple: { color: colors.primary + '05' }
           }
         : {};
 
     return (
-      <CardWrapper style={styles.animalCard} {...cardProps}>
-        {renderImageContainer()}
+      <>
+        <CardWrapper style={styles.animalCard} {...cardProps}>
+          {renderImageContainer()}
 
-        <View style={styles.animalCardContent}>
-          <AnimalHeader
-            animal={animal}
-            theme={theme}
-            styles={styles}
-            onEdit={onEdit}
-            onDelete={handleDelete}
-            onImageEdit={onImageEdit}
-            onViewDetails={onViewDetails}
-            showImageEditButton={showImageEditButton}
-            showNameInHeader={!animal.image || imageError}
-          />
+          <View style={styles.animalCardContent}>
+            <AnimalHeader
+              animal={animal}
+              onEdit={onEdit}
+              onDelete={handleDeletePress}
+              onImageEdit={onImageEdit}
+              onViewDetails={onViewDetails}
+              showImageEditButton={showImageEditButton}
+              showNameInHeader={!animal.image || imageError}
+              styles={styles}
+              colors={colors}
+              iconSizes={iconSizes}
+            />
 
-          <AnimalDescription description={animal.description} styles={styles} />
+            <AnimalDescription
+              description={animal.description}
+              styles={styles}
+            />
 
-          <AnimalMetadata animal={animal} theme={theme} styles={styles} />
+            <AnimalMetadata
+              animal={animal}
+              iconSize={iconSizes.small}
+              styles={styles}
+              colors={colors}
+            />
 
-          <AnimalInfoChips animal={animal} theme={theme} styles={styles} />
-        </View>
-      </CardWrapper>
+            <AnimalInfoChips animal={animal} styles={styles} colors={colors} />
+          </View>
+        </CardWrapper>
+
+        <CustomModal
+          isVisible={deleteModalVisible}
+          onClose={handleCloseDeleteModal}
+          title="Eliminar Animal"
+          centered
+          icon={
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: colors.error + '20',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Ionicons
+                name="trash"
+                size={iconSizes.large}
+                color={colors.error}
+              />
+            </View>
+          }
+          showFooter
+          footerAlignment="end"
+          buttons={[
+            {
+              label: 'Cancelar',
+              onPress: handleCloseDeleteModal,
+              variant: 'outline',
+              disabled: isDeleting
+            },
+            {
+              label: 'Eliminar',
+              onPress: handleConfirmDelete,
+              variant: 'danger',
+              loading: isDeleting
+            }
+          ]}
+          animationInTiming={200}
+          animationOutTiming={200}
+          maxWidth={width - 40}
+          size="full"
+          closeOnBackdrop={!isDeleting}
+          closeOnBackButton={!isDeleting}
+        >
+          <Text
+            style={{
+              fontSize: typography.fontSize.medium + 1,
+              color: colors.textSecondary,
+              textAlign: 'center',
+              lineHeight: typography.lineHeight.medium + 2,
+              marginBottom: typography.fontSize.small
+            }}
+          >
+            ¿Estás seguro de que deseas eliminar{' '}
+            <Text style={{ fontWeight: 'bold', color: colors.text }}>
+              "{animal.commonNoun}"
+            </Text>
+            ?
+          </Text>
+          <Text
+            style={{
+              fontSize: typography.fontSize.small,
+              color: colors.textSecondary,
+              textAlign: 'center',
+              lineHeight: typography.lineHeight.small + 2
+            }}
+          >
+            Esta acción no se puede deshacer.
+          </Text>
+        </CustomModal>
+      </>
     );
   }
 );
 
-// Componente separado para la insignia de categoría
 const CategoryBadge = React.memo<{
   category: string;
   styles: ReturnType<typeof createStyles>;
-}>(({ category, styles }) => (
-  <View style={styles.animalImageBadge}>
-    <Text style={styles.animalImageBadgeText}>{category}</Text>
-  </View>
-));
+}>(({ category, styles }) => {
+  return (
+    <View style={styles.animalImageBadge}>
+      <Text style={styles.animalImageBadgeText}>{category}</Text>
+    </View>
+  );
+});
 
-// Componente separado para el encabezado del animal
 const AnimalHeader = React.memo<{
   animal: AnimalModelResponse;
-  theme: Theme;
-  styles: ReturnType<typeof createStyles>;
   onEdit: (animal: AnimalModelResponse) => void;
   onDelete: () => void;
   onImageEdit: (animal: AnimalModelResponse) => void;
   onViewDetails?: (animal: AnimalModelResponse) => void;
   showImageEditButton: boolean;
   showNameInHeader: boolean;
+  styles: ReturnType<typeof createStyles>;
+  colors: ThemeColors;
+  iconSizes: ThemeIconSizes;
 }>(
   ({
     animal,
-    theme,
-    styles,
     onEdit,
     onDelete,
     onImageEdit,
     onViewDetails,
     showImageEditButton,
-    showNameInHeader
-  }) => (
-    <View style={styles.animalHeader}>
-      <View style={styles.animalInfo}>
-        {showNameInHeader && (
-          <Text style={styles.animalName}>🦎 {animal.commonNoun}</Text>
-        )}
+    showNameInHeader,
+    styles,
+    colors,
+    iconSizes
+  }) => {
+    return (
+      <View style={styles.animalHeader}>
+        <View style={styles.animalInfo}>
+          {showNameInHeader && (
+            <Text style={styles.animalName}>🦎 {animal.commonNoun}</Text>
+          )}
 
-        <View style={styles.animalSpecies}>
-          <Ionicons name="leaf" size={16} color={theme.colors.earth} />
-          <Text
-            style={[styles.animalSpeciesText, { color: theme.colors.earth }]}
-          >
-            {animal.specie}
-          </Text>
+          <View style={styles.animalSpecies}>
+            <Ionicons name="leaf" size={iconSizes.small} color={colors.earth} />
+            <Text style={styles.animalSpeciesText}>{animal.specie}</Text>
+          </View>
+
+          {showNameInHeader && (
+            <View style={styles.animalCategoryContainer}>
+              <Text style={styles.animalCategory}>📂 {animal.category}</Text>
+            </View>
+          )}
         </View>
 
-        {showNameInHeader && (
-          <View style={styles.animalCategoryContainer}>
-            <Text style={styles.animalCategory}>📂 {animal.category}</Text>
-          </View>
-        )}
+        <AnimalActions
+          animal={animal}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onImageEdit={onImageEdit}
+          onViewDetails={onViewDetails}
+          showImageEditButton={showImageEditButton}
+          styles={styles}
+          colors={colors}
+          iconSizes={iconSizes}
+        />
       </View>
-
-      <AnimalActions
-        animal={animal}
-        theme={theme}
-        styles={styles}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onImageEdit={onImageEdit}
-        onViewDetails={onViewDetails}
-        showImageEditButton={showImageEditButton}
-      />
-    </View>
-  )
+    );
+  }
 );
 
-// Componente separado para las acciones
 const AnimalActions = React.memo<{
   animal: AnimalModelResponse;
-  theme: Theme;
-  styles: ReturnType<typeof createStyles>;
   onEdit: (animal: AnimalModelResponse) => void;
   onDelete: () => void;
   onImageEdit: (animal: AnimalModelResponse) => void;
   onViewDetails?: (animal: AnimalModelResponse) => void;
   showImageEditButton: boolean;
-}>(({ animal, theme, styles, onEdit, onDelete, onImageEdit }) => (
-  <View style={styles.animalActions}>
-    <Pressable
-      style={[styles.actionButton, styles.editButton]}
-      onPress={() => onEdit(animal)}
-      accessibilityRole="button"
-      accessibilityLabel={`Editar ${animal.commonNoun}`}
-      android_ripple={{ color: 'rgba(255, 255, 255, 0.3)', radius: 24 }}
-    >
-      <Ionicons name="pencil" size={20} color={theme.colors.textOnPrimary} />
-    </Pressable>
+  styles: ReturnType<typeof createStyles>;
+  colors: ThemeColors;
+  iconSizes: ThemeIconSizes;
+}>(({ animal, onEdit, onDelete, onImageEdit, styles, colors, iconSizes }) => {
+  return (
+    <View style={styles.animalActions}>
+      <Pressable
+        style={[styles.actionButton, styles.editButton]}
+        onPress={() => onEdit(animal)}
+        accessibilityRole="button"
+        accessibilityLabel={`Editar ${animal.commonNoun}`}
+        android_ripple={{ color: 'rgba(255, 255, 255, 0.3)', radius: 24 }}
+      >
+        <Ionicons
+          name="pencil"
+          size={iconSizes.medium - 4}
+          color={colors.textOnPrimary}
+        />
+      </Pressable>
 
-    <Pressable
-      style={[styles.actionButton, styles.imageButton]}
-      onPress={() => onImageEdit(animal)}
-      accessibilityRole="button"
-      accessibilityLabel={`Editar imagen de ${animal.commonNoun}`}
-      android_ripple={{ color: 'rgba(0, 122, 51, 0.2)', radius: 24 }}
-    >
-      <Ionicons name="camera" size={20} color={theme.colors.forest} />
-    </Pressable>
+      <Pressable
+        style={[styles.actionButton, styles.imageButton]}
+        onPress={() => onImageEdit(animal)}
+        accessibilityRole="button"
+        accessibilityLabel={`Editar imagen de ${animal.commonNoun}`}
+        android_ripple={{ color: colors.primary + '20', radius: 24 }}
+      >
+        <Ionicons
+          name="camera"
+          size={iconSizes.medium - 4}
+          color={colors.primary}
+        />
+      </Pressable>
 
-    <Pressable
-      style={[styles.actionButton, styles.deleteButton]}
-      onPress={onDelete}
-      accessibilityRole="button"
-      accessibilityLabel={`Eliminar ${animal.commonNoun}`}
-      android_ripple={{ color: 'rgba(255, 255, 255, 0.3)', radius: 24 }}
-    >
-      <Ionicons name="trash" size={20} color={theme.colors.textOnPrimary} />
-    </Pressable>
-  </View>
-));
+      <Pressable
+        style={[styles.actionButton, styles.deleteButton]}
+        onPress={onDelete}
+        accessibilityRole="button"
+        accessibilityLabel={`Eliminar ${animal.commonNoun}`}
+        android_ripple={{ color: 'rgba(255, 255, 255, 0.3)', radius: 24 }}
+      >
+        <Ionicons
+          name="trash"
+          size={iconSizes.medium - 4}
+          color={colors.textOnPrimary}
+        />
+      </Pressable>
+    </View>
+  );
+});
 
-// Componente separado para la descripción
 const AnimalDescription = React.memo<{
   description?: string;
   styles: ReturnType<typeof createStyles>;
-}>(({ description, styles }) => (
-  <Text style={styles.animalDescription} numberOfLines={3}>
-    {description || '📝 Sin descripción disponible para este animal.'}
-  </Text>
-));
+}>(({ description, styles }) => {
+  return (
+    <Text style={styles.animalDescription} numberOfLines={3}>
+      {description || '📝 Sin descripción disponible para este animal.'}
+    </Text>
+  );
+});
 
-// Componente separado para los metadatos
 const AnimalMetadata = React.memo<{
   animal: AnimalModelResponse;
-  theme: Theme;
+  iconSize: number;
   styles: ReturnType<typeof createStyles>;
-}>(({ animal, theme, styles }) => (
-  <View style={styles.animalMetadata}>
-    <View style={styles.animalStats}>
-      <View style={styles.animalStatItem}>
-        <Ionicons name="location" size={16} color={theme.colors.water} />
-        <Text style={styles.animalStatText}>
-          {animal.habitat || 'Hábitat no especificado'}
-        </Text>
+  colors: ThemeColors;
+}>(({ animal, iconSize, styles, colors }) => {
+  return (
+    <View style={styles.animalMetadata}>
+      <View style={styles.animalStats}>
+        <View style={styles.animalStatItem}>
+          <Ionicons name="location" size={iconSize} color={colors.water} />
+          <Text style={styles.animalStatText}>
+            {animal.habitat || 'Hábitat no especificado'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.animalIdBadge}>
+        <Text style={styles.animalIdText}>ID: {animal.catalogId}</Text>
       </View>
     </View>
+  );
+});
 
-    <View style={styles.animalIdBadge}>
-      <Text style={styles.animalIdText}>ID: {animal.catalogId}</Text>
-    </View>
-  </View>
-));
-
-// Componente mejorado para los chips de información
 const AnimalInfoChips = React.memo<{
   animal: AnimalModelResponse;
-  theme: Theme;
   styles: ReturnType<typeof createStyles>;
-}>(({ animal, theme, styles }) => {
+  colors: ThemeColors;
+}>(({ animal, styles, colors }) => {
   const infoItems = useMemo(
     () =>
       [
@@ -422,24 +539,24 @@ const AnimalInfoChips = React.memo<{
           emoji: '🍃',
           label: 'Alimentación',
           value: animal.feeding,
-          color: theme.colors.leaf
+          color: colors.leaf
         },
         {
           icon: 'heart',
           emoji: '💝',
           label: 'Reproducción',
           value: animal.reproduction,
-          color: theme.colors.error
+          color: colors.error
         },
         {
           icon: 'map',
           emoji: '🗺️',
           label: 'Distribución',
           value: animal.distribution,
-          color: theme.colors.water
+          color: colors.water
         }
       ].filter(item => item.value && item.value.trim().length > 0),
-    [animal.feeding, animal.reproduction, animal.distribution, theme.colors]
+    [animal.feeding, animal.reproduction, animal.distribution, colors]
   );
 
   if (infoItems.length === 0) return null;
@@ -472,7 +589,6 @@ const AnimalInfoChips = React.memo<{
   );
 });
 
-// Asignar nombres para debugging
 AnimalCard.displayName = 'AnimalCard';
 CategoryBadge.displayName = 'CategoryBadge';
 AnimalHeader.displayName = 'AnimalHeader';

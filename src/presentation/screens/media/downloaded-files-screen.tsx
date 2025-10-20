@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,9 @@ import {
   RefreshControl,
   SafeAreaView,
   ActivityIndicator,
-  Platform,
-  BackHandler
+  Platform
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useNavigationActions } from '../../navigation/navigation-provider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, Theme } from '../../contexts/theme.context';
 import { useDownloadedFiles } from '../../hooks/use-downloaded-files.hook';
@@ -21,6 +18,7 @@ import { DownloadedFile } from '../../../services/storage/local-file.service';
 import { createStyles } from './downloaded-files-screen.styles';
 import RNFetchBlob from 'react-native-blob-util';
 import Share from 'react-native-share';
+import { useBackHandler } from '@/presentation/hooks/use-back-handler.hook';
 
 interface DownloadedFileCardProps {
   file: DownloadedFile;
@@ -44,6 +42,8 @@ const DownloadedFileCard = React.memo<DownloadedFileCardProps>(
     styles,
     theme
   }) => {
+    const [isPressed, setIsPressed] = useState(false);
+
     const handleOpen = useCallback(() => {
       onOpen(file);
     }, [file, onOpen]);
@@ -69,52 +69,140 @@ const DownloadedFileCard = React.memo<DownloadedFileCardProps>(
 
     return (
       <TouchableOpacity
-        style={styles.fileCard}
+        style={[styles.fileCard, isPressed && styles.fileCardPressed]}
         onPress={handleOpen}
+        onPressIn={() => setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
+        activeOpacity={0.9}
         accessibilityRole="button"
         accessibilityLabel={`Abrir ficha de ${file.animalName}`}
       >
+        <View style={styles.cardProgressContainer}>
+          <View style={styles.cardProgressBackground} />
+        </View>
+
         <View style={styles.fileIconContainer}>
           <Ionicons
             name="document-text"
             size={32}
             color={theme.colors.forest}
           />
+          <View style={styles.fileTypeBadge}>
+            <Text style={styles.fileTypeText}>{'PDF'}</Text>
+          </View>
         </View>
 
         <View style={styles.fileInfo}>
           <Text style={styles.fileName} numberOfLines={2}>
             {file.animalName}
           </Text>
-          <Text style={styles.fileDetails}>
-            {file.catalogId} • {formatFileSize(file.fileSize)}
-          </Text>
-          <Text style={styles.fileDate}>
-            {formatDownloadDate(file.downloadDate)}
-          </Text>
+          <View style={styles.fileMetaContainer}>
+            <View style={styles.fileMetaItem}>
+              <Ionicons
+                name="barcode"
+                size={12}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.fileMetaText}>{file.catalogId}</Text>
+            </View>
+            <View style={styles.fileMetaItem}>
+              <Ionicons
+                name="analytics"
+                size={12}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.fileMetaText}>
+                {formatFileSize(file.fileSize)}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.fileDateContainer}>
+            <Ionicons
+              name="calendar"
+              size={12}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.fileDate}>
+              {formatDownloadDate(file.downloadDate)}
+            </Text>
+          </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={handleDelete}
-          accessibilityRole="button"
-          accessibilityLabel={`Eliminar ficha de ${file.animalName}`}
-        >
-          <Ionicons name="trash" size={20} color={theme.colors.error} />
-        </TouchableOpacity>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.shareButton]}
+            onPress={handleShare}
+            accessibilityRole="button"
+            accessibilityLabel={`Compartir ficha de ${file.animalName}`}
+          >
+            <Ionicons
+              name="share-social"
+              size={18}
+              color={theme.colors.forest}
+            />
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.shareButton}
-          onPress={handleShare}
-          accessibilityRole="button"
-          accessibilityLabel={`Compartir ficha de ${file.animalName}`}
-        >
-          <Ionicons name="share-social" size={20} color={theme.colors.forest} />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.deleteButton]}
+            onPress={handleDelete}
+            accessibilityRole="button"
+            accessibilityLabel={`Eliminar ficha de ${file.animalName}`}
+          >
+            <Ionicons name="trash" size={18} color={theme.colors.error} />
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
     );
   }
 );
+
+// New Progress Bar Component
+const StorageProgressBar = React.memo<{
+  used: number;
+  total: number;
+  styles: ReturnType<typeof createStyles>;
+  theme: Theme;
+  formatFileSize: (bytes: number) => string;
+}>(({ used, total, styles, theme, formatFileSize }) => {
+  const percentage = total > 0 ? (used / total) * 100 : 0;
+
+  const getProgressColor = () => {
+    if (percentage < 70) return theme.colors.success;
+    if (percentage < 90) return theme.colors.warning;
+    return theme.colors.error;
+  };
+
+  return (
+    <View style={styles.storageProgressContainer}>
+      <View style={styles.storageProgressHeader}>
+        <Text style={styles.storageProgressTitle}>
+          Almacenamiento utilizado
+        </Text>
+        <Text style={styles.storageProgressPercentage}>
+          {Math.round(percentage)}%
+        </Text>
+      </View>
+
+      <View style={styles.storageProgressBarContainer}>
+        <View
+          style={[
+            styles.storageProgressBar,
+            {
+              width: `${Math.min(percentage, 100)}%`,
+              backgroundColor: getProgressColor()
+            }
+          ]}
+        />
+      </View>
+
+      <View style={styles.storageProgressFooter}>
+        <Text style={styles.storageProgressText}>
+          {formatFileSize(used)} de {formatFileSize(total)} utilizados
+        </Text>
+      </View>
+    </View>
+  );
+});
 
 const EmptyState = React.memo<{
   styles: ReturnType<typeof createStyles>;
@@ -122,12 +210,19 @@ const EmptyState = React.memo<{
   onRefresh: () => void;
 }>(({ styles, theme, onRefresh }) => (
   <View style={styles.emptyContainer}>
-    <View style={styles.emptyIcon}>
-      <Ionicons name="folder-open" size={60} color={theme.colors.forest} />
+    <View style={styles.emptyIconContainer}>
+      <Ionicons
+        name="folder-open"
+        size={80}
+        color={theme.colors.forest + '80'}
+      />
+      <View style={styles.emptyIconOverlay}>
+        <Ionicons name="download" size={40} color={theme.colors.forest} />
+      </View>
     </View>
     <Text style={styles.emptyTitle}>No hay fichas descargadas</Text>
     <Text style={styles.emptySubtitle}>
-      Las fichas de animales que descargues aparecerán aquí
+      Las fichas técnicas que descargues aparecerán aquí para acceso offline
     </Text>
     <TouchableOpacity
       style={styles.emptyButton}
@@ -135,6 +230,7 @@ const EmptyState = React.memo<{
       accessibilityRole="button"
       accessibilityLabel="Actualizar lista"
     >
+      <Ionicons name="refresh" size={20} color={theme.colors.textOnPrimary} />
       <Text style={styles.emptyButtonText}>Actualizar</Text>
     </TouchableOpacity>
   </View>
@@ -144,9 +240,6 @@ const DownloadedFilesScreen: React.FC = () => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
-  const navigation = useNavigation();
-  const { goBack } = useNavigationActions();
-
   const {
     files,
     isLoading,
@@ -160,6 +253,14 @@ const DownloadedFilesScreen: React.FC = () => {
     formatFileSize,
     formatDownloadDate
   } = useDownloadedFiles();
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refreshFiles();
+    setRefreshing(false);
+  }, [refreshFiles]);
 
   const handleOpenFile = useCallback(
     (file: DownloadedFile) => {
@@ -180,7 +281,7 @@ const DownloadedFilesScreen: React.FC = () => {
 
     Alert.alert(
       '🗑️ Eliminar todas las fichas',
-      `¿Estás seguro de que deseas eliminar todas las ${files.length} fichas descargadas?\n\nEsta acción no se puede deshacer.`,
+      `¿Estás seguro de que deseas eliminar las ${files.length} fichas descargadas?\n\nEsta acción no se puede deshacer.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -203,27 +304,21 @@ const DownloadedFilesScreen: React.FC = () => {
       let shareUrl = file.filePath;
 
       if (Platform.OS === 'android') {
-        // Copia el archivo a cache si no está ahí
         const cachePath = `${RNFetchBlob.fs.dirs.CacheDir}/${file.fileName}`;
         await RNFetchBlob.fs.cp(file.filePath, cachePath);
-
-        // URL para compartir usando FileProvider
         shareUrl = `file://${cachePath}`;
       } else {
-        // iOS usa file://
         shareUrl = `file://${file.filePath}`;
       }
 
-      const response = await Share.open({
+      await Share.open({
         title: `Compartir ${file.animalName}`,
         url: shareUrl,
         type: file.mimeType || 'application/pdf',
         failOnCancel: false
       });
-
-      console.log('✅ Share dialog opened successfully', response);
     } catch (err) {
-      console.log('❌ Unexpected error:', err);
+      console.log('❌ Error compartiendo archivo:', err);
       Alert.alert('Error', 'No se pudo compartir el archivo.');
     }
   }, []);
@@ -252,13 +347,17 @@ const DownloadedFilesScreen: React.FC = () => {
     ]
   );
 
+  const { handleBackPress } = useBackHandler({
+    enableSafeMode: true
+  });
+
   const renderHeader = useCallback(
     () => (
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => (navigation.canGoBack() ? goBack() : null)}
+            onPress={handleBackPress}
             accessibilityRole="button"
             accessibilityLabel="Volver"
           >
@@ -267,6 +366,10 @@ const DownloadedFilesScreen: React.FC = () => {
 
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>📁 Fichas Descargadas</Text>
+            <Text style={styles.headerSubtitle}>
+              {files.length} {files.length === 1 ? 'ficha' : 'fichas'} •{' '}
+              {formatFileSize(storageInfo.totalSize)}
+            </Text>
           </View>
 
           {files.length > 0 && (
@@ -284,11 +387,15 @@ const DownloadedFilesScreen: React.FC = () => {
           {files.length === 0 && <View style={styles.headerPlaceholder} />}
         </View>
 
-        <View style={styles.storageInfo}>
-          <Text style={styles.storageText}>
-            📊 {files.length} fichas • {formatFileSize(storageInfo.totalSize)}
-          </Text>
-        </View>
+        {files.length > 0 && (
+          <StorageProgressBar
+            used={storageInfo.totalSize}
+            total={storageInfo.totalCapacity}
+            styles={styles}
+            theme={theme}
+            formatFileSize={formatFileSize}
+          />
+        )}
 
         {error && (
           <View style={styles.errorContainer}>
@@ -313,14 +420,14 @@ const DownloadedFilesScreen: React.FC = () => {
     [
       files.length,
       storageInfo.totalSize,
+      storageInfo.totalCapacity,
       error,
       handleDeleteAll,
       formatFileSize,
       styles,
       theme,
       clearError,
-      navigation,
-      goBack
+      handleBackPress
     ]
   );
 
@@ -337,8 +444,13 @@ const DownloadedFilesScreen: React.FC = () => {
     if (files.length > 0) {
       return (
         <View style={styles.footer}>
+          <Ionicons
+            name="checkmark-done"
+            size={24}
+            color={theme.colors.success}
+          />
           <Text style={styles.footerText}>
-            ✨ Has visto todas tus fichas descargadas ✨
+            Has visto todas tus {files.length} fichas descargadas
           </Text>
         </View>
       );
@@ -350,37 +462,14 @@ const DownloadedFilesScreen: React.FC = () => {
   const refreshControl = useMemo(
     () => (
       <RefreshControl
-        refreshing={isLoading}
-        onRefresh={refreshFiles}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         colors={[theme.colors.forest]}
         tintColor={theme.colors.forest}
+        progressBackgroundColor={theme.colors.background}
       />
     ),
-    [isLoading, refreshFiles, theme.colors.forest]
-  );
-
-  const handleBackPress = useCallback(() => {
-    try {
-      if (navigation.canGoBack()) {
-        goBack();
-        return true;
-      } else {
-        return false;
-      }
-    } catch (error) {
-      console.error('Error in handleBackPress:', error);
-      return false;
-    }
-  }, [goBack, navigation]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      const backHandler = BackHandler.addEventListener(
-        'hardwareBackPress',
-        handleBackPress
-      );
-      return () => backHandler.remove();
-    }, [handleBackPress])
+    [refreshing, handleRefresh, theme]
   );
 
   return (
@@ -400,7 +489,7 @@ const DownloadedFilesScreen: React.FC = () => {
             <EmptyState
               styles={styles}
               theme={theme}
-              onRefresh={refreshFiles}
+              onRefresh={handleRefresh}
             />
           ) : null
         }
@@ -413,8 +502,8 @@ const DownloadedFilesScreen: React.FC = () => {
   );
 };
 
-// Display names for debugging
 DownloadedFileCard.displayName = 'DownloadedFileCard';
+StorageProgressBar.displayName = 'StorageProgressBar';
 EmptyState.displayName = 'EmptyState';
 DownloadedFilesScreen.displayName = 'DownloadedFilesScreen';
 

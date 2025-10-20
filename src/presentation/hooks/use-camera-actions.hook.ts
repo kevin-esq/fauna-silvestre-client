@@ -11,9 +11,6 @@ import { MediaLibraryService } from '@/services/media/media-library.service';
 
 interface CameraHook {
   takePhoto: () => Promise<PhotoFile | undefined>;
-  requestPermissions: (
-    permissions: ('camera' | 'gallery' | 'location')[]
-  ) => Promise<boolean>;
   isCapturing: boolean;
 }
 
@@ -29,10 +26,9 @@ export const useCameraActions = (
 ) => {
   const { navigate } = useNavigationActions();
   const { showLoading, hideLoading } = useLoading();
-  const { takePhoto, requestPermissions, isCapturing } = cameraHook;
+  const { takePhoto, isCapturing } = cameraHook;
   const { showFreeze, hideFreeze } = freezeHook;
 
-  const [isPermissionLoading, setIsPermissionLoading] = useState(false);
   const [activeThumbnail, setActiveThumbnail] = useState<string | null>(null);
 
   const parseCoordinate = (value: unknown): number => {
@@ -41,33 +37,6 @@ export const useCameraActions = (
     const num = Number(value);
     return isNaN(num) ? 0 : num;
   };
-
-  const handleRequestPermissions = useCallback(async () => {
-    if (isPermissionLoading) return;
-    setIsPermissionLoading(true);
-
-    try {
-      const granted = await requestPermissions([
-        'camera',
-        'gallery',
-        'location'
-      ]);
-      if (!granted) {
-        Alert.alert(
-          'Permisos denegados',
-          'Para usar todas las funciones de la cámara, necesitamos los permisos solicitados.'
-        );
-      }
-    } catch (error) {
-      console.error('Error requesting permissions:', error);
-      Alert.alert(
-        'Error',
-        'No se pudieron solicitar los permisos. Por favor, verifica la configuración de la aplicación.'
-      );
-    } finally {
-      setIsPermissionLoading(false);
-    }
-  }, [isPermissionLoading, requestPermissions]);
 
   const handleCapture = useCallback(async () => {
     if (isCapturing) return;
@@ -132,7 +101,7 @@ export const useCameraActions = (
           speed: 0,
           time: Date.now(),
           bearing: 0,
-          provider: 0,
+          provider: '',
           verticalAccuracy: 0,
           course: 0
         };
@@ -156,9 +125,7 @@ export const useCameraActions = (
   );
 
   return {
-    isPermissionLoading,
     activeThumbnail,
-    handleRequestPermissions,
     handleCapture,
     handleThumbnailPress,
     handleConfirm

@@ -10,19 +10,13 @@ import {
   ScrollView,
   StatusBar
 } from 'react-native';
-import { BackHandler } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import moment from 'moment';
-import 'moment/locale/es';
-
 import { useAuth } from '../../contexts/auth.context';
 import { Theme, useTheme } from '../../contexts/theme.context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { useLocationInfo } from '../../hooks/use-location-info';
 import { useHomeData } from '../../hooks/use-home-data.hook';
 
-import FloatingActionButton from '../../components/ui/floating-action-button.component';
 import { CatalogAnimalCard } from '../catalog/catalog-animals-screen';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
 import {
@@ -37,10 +31,8 @@ import {
   CommonNounResponse
 } from '@/domain/models/animal.models';
 import User from '@/domain/entities/user.entity';
-
-moment.locale('es');
-
-// ==================== COMPONENTES MEJORADOS ====================
+import { useCurrentTime } from '@/presentation/hooks/use-current-time.hook';
+import { useDoubleBackExit } from '@/presentation/hooks/use-double-back-exit.hook';
 
 const UserHeader = React.memo<{
   user: User | null;
@@ -49,17 +41,19 @@ const UserHeader = React.memo<{
   theme: Theme;
 }>(({ user, onLogout, styles, theme }) => {
   const { city, state: stateLoc, loading: locLoading } = useLocationInfo();
+  const time = useCurrentTime();
 
-  const currentHour = moment().hour();
   const getGreetingIcon = () => {
-    if (currentHour < 12) return '🌅';
-    if (currentHour < 18) return '☀️';
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return '🌅';
+    if (hour >= 12 && hour < 19) return '☀️';
     return '🌙';
   };
 
   const getGreetingMessage = () => {
-    if (currentHour < 12) return 'Buenos días';
-    if (currentHour < 18) return 'Buenas tardes';
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Buenos días';
+    if (hour >= 12 && hour < 19) return 'Buenas tardes';
     return 'Buenas noches';
   };
 
@@ -71,9 +65,9 @@ const UserHeader = React.memo<{
         <View style={styles.headerTopRow}>
           <View style={styles.greetingSection}>
             <Text style={styles.greetingIcon}>{getGreetingIcon()}</Text>
-            <View>
+            <View style={styles.greetingTextContainer}>
               <Text style={styles.greeting}>
-                {getGreetingMessage()}, {user?.name || 'Usuario'}
+                {getGreetingMessage()}, {user?.name || 'Usuario'} 👋
               </Text>
               <Text style={styles.subGreeting}>
                 Descubre la fauna de tu región
@@ -84,9 +78,10 @@ const UserHeader = React.memo<{
           <TouchableOpacity
             style={styles.logoutButton}
             onPress={onLogout}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Cerrar sesión"
+            accessibilityHint="Cierra tu sesión actual"
           >
             <Ionicons name="log-out-outline" style={styles.logoutIcon} />
           </TouchableOpacity>
@@ -99,7 +94,7 @@ const UserHeader = React.memo<{
               size={14}
               color={theme.colors.textOnPrimary}
             />
-            <Text style={styles.infoChipText}>{moment().format('h:mm A')}</Text>
+            <Text style={styles.infoChipText}>{time}</Text>
           </View>
 
           <View style={styles.infoChip}>
@@ -109,7 +104,7 @@ const UserHeader = React.memo<{
               color={theme.colors.textOnPrimary}
             />
             {locLoading ? (
-              <SkeletonLoader width={80} height={14} borderRadius={4} />
+              <SkeletonLoader width={80} height={14} borderRadius={7} />
             ) : (
               <Text style={styles.infoChipText} numberOfLines={1}>
                 {city}, {stateLoc}
@@ -146,7 +141,12 @@ const StatsSection = React.memo<{
       <Text style={styles.sectionTitle}>Estadísticas en Vivo</Text>
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <View style={styles.statIconContainer}>
+          <View
+            style={[
+              styles.statIconContainer,
+              { backgroundColor: theme.colors.primary + '15' }
+            ]}
+          >
             <Ionicons name="camera" size={24} color={theme.colors.primary} />
           </View>
           <Text style={styles.statNumber}>
@@ -156,7 +156,12 @@ const StatsSection = React.memo<{
         </View>
 
         <View style={styles.statCard}>
-          <View style={styles.statIconContainer}>
+          <View
+            style={[
+              styles.statIconContainer,
+              { backgroundColor: theme.colors.forest + '15' }
+            ]}
+          >
             <Ionicons name="people" size={24} color={theme.colors.forest} />
           </View>
           <Text style={styles.statNumber}>{totalUsers.toLocaleString()}</Text>
@@ -181,6 +186,8 @@ const QuickActions = React.memo<{
         style={[styles.quickActionCard, styles.quickActionPrimary]}
         onPress={onAddPublication}
         activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Nueva publicación"
       >
         <View style={styles.quickActionIcon}>
           <Ionicons
@@ -199,8 +206,15 @@ const QuickActions = React.memo<{
         style={[styles.quickActionCard, styles.quickActionSecondary]}
         onPress={onViewCatalog}
         activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Explorar catálogo"
       >
-        <View style={styles.quickActionIcon}>
+        <View
+          style={[
+            styles.quickActionIcon,
+            { backgroundColor: theme.colors.forest + '20' }
+          ]}
+        >
           <Ionicons name="library" size={24} color={theme.colors.forest} />
         </View>
         <Text style={[styles.quickActionTitle, { color: theme.colors.forest }]}>
@@ -217,21 +231,24 @@ const QuickActions = React.memo<{
         style={[styles.quickActionCard, styles.quickActionTertiary]}
         onPress={onDownloadedCards}
         activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Fichas descargadas"
       >
-        <View style={styles.quickActionIcon}>
-          <Ionicons
-            name="file-tray-full"
-            size={24}
-            color={theme.colors.forest}
-          />
+        <View
+          style={[
+            styles.quickActionIcon,
+            { backgroundColor: theme.colors.info + '20' }
+          ]}
+        >
+          <Ionicons name="file-tray-full" size={24} color={theme.colors.info} />
         </View>
-        <Text style={[styles.quickActionTitle, { color: theme.colors.forest }]}>
+        <Text style={[styles.quickActionTitle, { color: theme.colors.info }]}>
           Fichas Descargadas
         </Text>
         <Text
-          style={[styles.quickActionSubtitle, { color: theme.colors.forest }]}
+          style={[styles.quickActionSubtitle, { color: theme.colors.info }]}
         >
-          Ver fichas descargadas
+          Ver fichas guardadas
         </Text>
       </TouchableOpacity>
     </View>
@@ -242,7 +259,6 @@ const CatalogFilters = React.memo<{
   categories: CommonNounResponse[];
   selectedCategory: CommonNounResponse | null;
   onCategoryChange: (category: CommonNounResponse | null) => void;
-  onDropdownToggle: (open: boolean) => void;
   isDropdownOpen: boolean;
   filteredAnimals: AnimalModelResponse[];
   showAllAnimals: boolean;
@@ -255,7 +271,6 @@ const CatalogFilters = React.memo<{
     categories,
     selectedCategory,
     onCategoryChange,
-    onDropdownToggle,
     isDropdownOpen,
     filteredAnimals,
     showAllAnimals,
@@ -267,9 +282,6 @@ const CatalogFilters = React.memo<{
     <View style={styles.filtersSection}>
       <View style={styles.filtersHeader}>
         <Text style={styles.sectionTitle}>Fauna Destacada</Text>
-        <TouchableOpacity style={styles.filterToggle}>
-          <Ionicons name="options" size={20} color={theme.colors.primary} />
-        </TouchableOpacity>
       </View>
 
       <View
@@ -282,9 +294,8 @@ const CatalogFilters = React.memo<{
           options={categories}
           selectedValue={selectedCategory}
           onValueChange={onCategoryChange}
-          placeholder="Filtrar por categoría..."
+          placeholder="Filtrar por clase..."
           theme={theme}
-          onDropdownToggle={onDropdownToggle}
         />
       </View>
 
@@ -292,23 +303,27 @@ const CatalogFilters = React.memo<{
         <View style={styles.resultsCount}>
           <Text style={styles.resultsNumber}>
             {selectedCategory &&
-            selectedCategory.commonNoun !== 'Todas las categorías'
+            selectedCategory.commonNoun !== 'Todas las clases'
               ? filteredAnimals.length
               : catalogLength || 0}
           </Text>
           <Text style={styles.resultsLabel}>
             {selectedCategory &&
-            selectedCategory.commonNoun !== 'Todas las categorías'
+            selectedCategory.commonNoun !== 'Todas las clases'
               ? `en "${selectedCategory.commonNoun}"`
               : 'especies registradas'}
           </Text>
         </View>
 
-        {filteredAnimals.length > 5 && (
+        {filteredAnimals.length > 4 && (
           <TouchableOpacity
             style={styles.toggleButton}
             onPress={onToggleShowAll}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={
+              showAllAnimals ? 'Ver menos especies' : 'Ver todas las especies'
+            }
           >
             <Text style={styles.toggleButtonText}>
               {showAllAnimals
@@ -341,14 +356,12 @@ const EmptyState = React.memo<{
       />
     </View>
     <Text style={styles.emptyStateTitle}>
-      {selectedCategory &&
-      selectedCategory.commonNoun !== 'Todas las categorías'
-        ? 'Sin especies en esta categoría'
+      {selectedCategory && selectedCategory.commonNoun !== 'Todas las clases'
+        ? 'Sin especies en esta clase'
         : 'Catálogo en construcción'}
     </Text>
     <Text style={styles.emptyStateText}>
-      {selectedCategory &&
-      selectedCategory.commonNoun !== 'Todas las categorías'
+      {selectedCategory && selectedCategory.commonNoun !== 'Todas las Clases'
         ? `No hay animales registrados en "${selectedCategory.commonNoun}"`
         : 'Sé el primero en contribuir al catálogo de fauna local'}
     </Text>
@@ -361,14 +374,12 @@ const LoadingState = React.memo<{
   <View style={styles.loadingSection}>
     <Text style={styles.loadingTitle}>Cargando especies...</Text>
     <View style={styles.skeletonGrid}>
-      {Array.from({ length: 4 }).map((_, index) => (
+      {[...Array(4)].map((_, index) => (
         <AnimalCardSkeleton key={index} />
       ))}
     </View>
   </View>
 ));
-
-// ==================== COMPONENTE PRINCIPAL ====================
 
 const HomeScreen: React.FC = React.memo(() => {
   const { theme } = useTheme();
@@ -384,6 +395,11 @@ const HomeScreen: React.FC = React.memo(() => {
     animalsToShow,
     isLoading
   } = useHomeData();
+
+  useDoubleBackExit({
+    exitMessage: 'Presiona de nuevo para salir de la aplicación',
+    timeout: 2000
+  });
 
   const handleLogout = useCallback(() => {
     Alert.alert(
@@ -414,17 +430,6 @@ const HomeScreen: React.FC = React.memo(() => {
       navigate('AnimalDetails', { animal });
     },
     [navigate]
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => true;
-      const backHandler = BackHandler.addEventListener(
-        'hardwareBackPress',
-        onBackPress
-      );
-      return () => backHandler.remove();
-    }, [])
   );
 
   const renderAnimalItem = useCallback(
@@ -498,7 +503,6 @@ const HomeScreen: React.FC = React.memo(() => {
           categories={categories}
           selectedCategory={state.selectedCategory}
           onCategoryChange={actions.setSelectedCategory}
-          onDropdownToggle={actions.setIsDropdownOpen}
           isDropdownOpen={state.isDropdownOpen}
           filteredAnimals={filteredAnimals}
           showAllAnimals={state.showAllAnimals}
@@ -539,23 +543,10 @@ const HomeScreen: React.FC = React.memo(() => {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
-
-      <FloatingActionButton
-        onPress={handleAddPublication}
-        icon={
-          <Ionicons
-            name="camera-outline"
-            size={24}
-            color={theme.colors.textOnPrimary}
-          />
-        }
-        accessibilityLabel="Crear nueva publicación"
-      />
     </SafeAreaView>
   );
 });
 
-// Display names
 UserHeader.displayName = 'UserHeader';
 StatsSection.displayName = 'StatsSection';
 QuickActions.displayName = 'QuickActions';

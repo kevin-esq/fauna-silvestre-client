@@ -1,4 +1,3 @@
-// src/utils/logger.ts
 import { ILogger } from '../../shared/types/ILogger';
 
 export class ContextLogger implements ILogger {

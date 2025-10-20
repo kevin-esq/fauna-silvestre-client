@@ -1,6 +1,10 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { useTheme, themeVariables } from '../../contexts/theme.context';
+import {
+  useTheme,
+  themeVariables,
+  ThemeVariablesType
+} from '../../contexts/theme.context';
 import { Picker } from '@react-native-picker/picker';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -54,7 +58,7 @@ const CustomPicker: React.FC<CustomPickerProps> = ({
   );
 };
 
-const createStyles = (vars: Record<string, string>) =>
+const createStyles = (vars: ThemeVariablesType) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',

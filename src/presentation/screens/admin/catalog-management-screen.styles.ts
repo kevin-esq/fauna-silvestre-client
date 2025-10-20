@@ -2,7 +2,6 @@ import { StyleSheet, Platform } from 'react-native';
 import { Theme } from '../../contexts/theme.context';
 import { EdgeInsets } from 'react-native-safe-area-context';
 
-// Design System Constants - Expandido y mejorado
 const SPACING = {
   xs: 4,
   sm: 8,
@@ -44,7 +43,6 @@ const TYPOGRAPHY = {
   chip: { fontSize: 12, fontWeight: '500' as const, lineHeight: 16 }
 } as const;
 
-// Helper functions mejoradas
 const createShadow = (elevation: number) => {
   if (Platform.OS === 'ios') {
     return {
@@ -70,7 +68,6 @@ const createFocusStyle = (theme: Theme) => ({
 
 export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
   StyleSheet.create({
-    // ==================== LAYOUT PRINCIPAL ====================
     container: {
       flex: 1,
       backgroundColor: theme.colors.background
@@ -89,7 +86,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       borderRadius: BORDER_RADIUS.lg
     },
 
-    // ==================== HEADER PRINCIPAL ====================
     header: {
       backgroundColor: theme.colors.surface,
       borderBottomWidth: 1,
@@ -106,7 +102,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       marginTop: SPACING.md
     },
 
-    // ==================== BÚSQUEDA EN HEADER ====================
     searchHeaderContainer: {
       flex: 1
     },
@@ -139,7 +134,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       marginLeft: SPACING.sm
     },
 
-    // ==================== BOTONES DEL HEADER ====================
     toggleFiltersButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -171,7 +165,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       ...createShadow(ELEVATION.lg)
     },
 
-    // ==================== SECCIÓN DE FILTROS ====================
     filtersSection: {
       backgroundColor: theme.colors.surface,
       borderBottomWidth: 1,
@@ -180,9 +173,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
     },
     filtersSectionCollapsed: {
       height: 0
-    },
-    filtersContent: {
-      padding: SPACING.lg
     },
     filtersHeader: {
       marginBottom: SPACING.lg,
@@ -200,7 +190,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       textAlign: 'center'
     },
 
-    // ==================== BÚSQUEDA AVANZADA ====================
     advancedSearchContainer: {
       marginBottom: SPACING.lg
     },
@@ -233,7 +222,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       marginLeft: SPACING.sm
     },
 
-    // ==================== GRID DE FILTROS ====================
     filtersGrid: {
       gap: SPACING.lg
     },
@@ -246,28 +234,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       fontWeight: '600',
       textTransform: 'uppercase',
       letterSpacing: 0.5
-    },
-
-    // ==================== CHIPS DE FILTROS RÁPIDOS ====================
-    quickFiltersBar: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      paddingHorizontal: SPACING.lg,
-      paddingVertical: SPACING.md,
-      gap: SPACING.sm,
-      backgroundColor: theme.colors.surface,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border
-    },
-    quickFilterChip: {
-      backgroundColor: theme.colors.primaryLight,
-      paddingHorizontal: SPACING.md,
-      paddingVertical: SPACING.xs,
-      borderRadius: BORDER_RADIUS.full,
-      borderWidth: 1,
-      borderColor: theme.colors.primary,
-      flexDirection: 'row',
-      alignItems: 'center'
     },
     quickFilterChipText: {
       ...TYPOGRAPHY.chip,
@@ -287,7 +253,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       fontWeight: '600'
     },
 
-    // ==================== CHIPS DE INFORMACIÓN DEL ANIMAL ====================
     animalInfoChips: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -310,7 +275,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       fontWeight: '500'
     },
 
-    // ==================== ESTADO VACÍO ====================
     emptyContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -354,7 +318,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       color: theme.colors.textOnPrimary
     },
 
-    // ==================== PIE DE CARGA ====================
     loadingContainer: {
       flexDirection: 'row',
       justifyContent: 'center',
@@ -379,7 +342,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       fontStyle: 'italic'
     },
 
-    // ==================== MANEJO DE ERRORES ====================
     errorDisplayContainer: {
       backgroundColor: theme.colors.error,
       borderRadius: BORDER_RADIUS.lg,
@@ -407,8 +369,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       ...createShadow(ELEVATION.sm)
     },
 
-    // ==================== ESTILOS HEREDADOS NECESARIOS ====================
-    // Los siguientes estilos se mantienen para compatibilidad con componentes existentes
     sectionTitle: {
       ...TYPOGRAPHY.h3,
       color: theme.colors.primary,
@@ -547,7 +507,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       lineHeight: 22
     },
 
-    // ==================== ESTADOS DE ERROR ====================
     errorContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -573,7 +532,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       color: theme.colors.textOnPrimary
     },
 
-    // ==================== ESTILOS ADICIONALES PARA COMPATIBILIDAD ====================
     placeholderContainer: {
       alignItems: 'center',
       paddingVertical: SPACING.xxxl,
@@ -679,27 +637,22 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       fontStyle: 'italic'
     },
 
-    // ==================== NUEVOS ESTILOS PARA PERFORMANCE ====================
-    // Estilos optimizados para rendimiento de listas grandes
     listItemSeparator: {
       height: SPACING.sm,
       backgroundColor: 'transparent'
     },
 
-    // Estilos para estados de carga específicos
     skeletonShimmer: {
       backgroundColor: theme.colors.surfaceVariant,
       borderRadius: BORDER_RADIUS.md
     },
 
-    // Estilos para accesibilidad mejorada
     focusIndicator: {
       borderWidth: 2,
       borderColor: theme.colors.primary,
       borderRadius: BORDER_RADIUS.md
     },
 
-    // Estilos responsive para diferentes tamaños de pantalla
     compactHeader: {
       paddingVertical: SPACING.sm,
       paddingTop: (insets?.top || 0) + SPACING.sm
@@ -712,5 +665,159 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
     collapsedFilters: {
       maxHeight: 0,
       overflow: 'hidden'
+    },
+    // Agrega estos estilos a tu createStyles function
+
+    // Header styles
+    headerTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.md
+    },
+    headerTitle: {
+      ...TYPOGRAPHY.h2,
+      color: theme.colors.text,
+      fontWeight: '700'
+    },
+
+    // Filter badge
+    filterBadge: {
+      position: 'absolute',
+      top: -6,
+      right: -6,
+      backgroundColor: theme.colors.error,
+      borderRadius: BORDER_RADIUS.full,
+      minWidth: 20,
+      height: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...createShadow(ELEVATION.sm)
+    },
+    filterBadgeText: {
+      ...TYPOGRAPHY.caption,
+      color: theme.colors.textOnPrimary,
+      fontWeight: '700',
+      fontSize: 10
+    },
+
+    // Filter chips
+    filterChipsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.sm
+    },
+    filterChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceVariant,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderRadius: BORDER_RADIUS.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: SPACING.xs,
+      ...createShadow(ELEVATION.sm)
+    },
+    filterChipSelected: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+      ...createShadow(ELEVATION.sm)
+    },
+    filterChipText: {
+      ...TYPOGRAPHY.caption,
+      color: theme.colors.textSecondary,
+      fontWeight: '500'
+    },
+    filterChipTextSelected: {
+      color: theme.colors.textOnPrimary,
+      fontWeight: '600'
+    },
+
+    // Filter sections
+    filterSection: {
+      marginBottom: SPACING.lg
+    },
+    filterSectionTitle: {
+      ...TYPOGRAPHY.body1,
+      color: theme.colors.text,
+      fontWeight: '600',
+      marginBottom: SPACING.md
+    },
+    filterSectionContent: {
+      // Content styles are handled by filterChipsContainer
+    },
+
+    // Quick filters bar improvements
+    quickFiltersBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.sm,
+      backgroundColor: theme.colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border
+    },
+    quickFiltersScroll: {
+      flex: 1
+    },
+    quickFiltersContent: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+      paddingRight: SPACING.md
+    },
+    quickFilterChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceVariant,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.xs,
+      borderRadius: BORDER_RADIUS.full,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: SPACING.xs,
+      ...createShadow(ELEVATION.sm)
+    },
+    clearAllButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.xs,
+      borderRadius: BORDER_RADIUS.full,
+      backgroundColor: theme.colors.surfaceVariant,
+      gap: SPACING.xs,
+      ...createShadow(ELEVATION.sm)
+    },
+    clearAllText: {
+      ...TYPOGRAPHY.caption,
+      color: theme.colors.error,
+      fontWeight: '600'
+    },
+
+    // Filters section improvements
+    filtersScroll: {
+      maxHeight: 400
+    },
+    filtersContent: {
+      padding: SPACING.lg,
+      gap: SPACING.lg
+    },
+
+    // Search bar improvements
+    searchInputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: BORDER_RADIUS.lg,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...createShadow(ELEVATION.sm)
+    },
+
+    // Toggle filters button improvements
+    toggleFiltersButtonWithBadge: {
+      position: 'relative'
     }
   });

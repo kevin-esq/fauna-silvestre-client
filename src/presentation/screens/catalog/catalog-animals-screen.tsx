@@ -16,8 +16,7 @@ import {
   Animated,
   StatusBar,
   LayoutAnimation,
-  Platform,
-  UIManager
+  Platform
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, themeVariables } from '../../contexts/theme.context';
@@ -30,19 +29,11 @@ import { createStyles } from './catalog-animals-screen.styles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCatalog } from '../../contexts/catalog.context';
 
-// Enable LayoutAnimation for Android
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 const PAGE_SIZE = 10;
 const ANIMATION_DURATION = 300;
 const STAGGER_DELAY = 50;
+const SEARCH_DEBOUNCE_DELAY = 300;
 
-// ==================== INTERFACES ====================
 interface EmptyStateProps {
   searchQuery: string;
   theme: Theme;
@@ -70,31 +61,65 @@ interface CatalogHeaderProps {
   onSortChange: (sort: 'name' | 'species' | 'category') => void;
 }
 
-// ==================== CUSTOM HOOKS ====================
-const useAnimatedValue = (initialValue: number = 0) => {
-  return useRef(new Animated.Value(initialValue)).current;
-};
-
-const useSearchDebounce = (value: string, delay: number = 300) => {
+const useSearchDebounce = (
+  value: string,
+  delay: number = SEARCH_DEBOUNCE_DELAY
+) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    const normalizedValue = value.trim().toLowerCase();
 
     timeoutRef.current = setTimeout(() => {
-      setDebouncedValue(value.trim().toLowerCase());
+      setDebouncedValue(normalizedValue);
     }, delay);
 
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
   }, [value, delay]);
 
   return debouncedValue;
 };
 
-// ==================== ENHANCED EMPTY STATE ====================
+const useAnimatedValue = (initialValue: number = 0) => {
+  return useRef(new Animated.Value(initialValue)).current;
+};
+
+const normalizeString = (str: string): string => {
+  if (!str) return '';
+
+  return str
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/g, '');
+};
+
+const matchesSearch = (animal: AnimalModelResponse, query: string): boolean => {
+  if (!query) return true;
+
+  const normalizedQuery = normalizeString(query);
+
+  const searchFields = [
+    normalizeString(animal.commonNoun),
+    normalizeString(animal.specie),
+    normalizeString(animal.category),
+    normalizeString(animal.description || ''),
+    normalizeString(animal.habitat || '')
+  ];
+
+  return searchFields.some(field => field.includes(normalizedQuery));
+};
+
 const EmptyState = React.memo<EmptyStateProps>(
   ({ searchQuery, theme, onRefresh, isLoading }) => {
     const insets = useSafeAreaInsets();
@@ -146,7 +171,7 @@ const EmptyState = React.memo<EmptyStateProps>(
             • Usa términos más generales
           </Text>
           <Text style={styles.suggestionItem}>
-            • Prueba con categorías como "mamífero"
+            • Prueba con clases como "mamífero"
           </Text>
         </View>
       </Animated.View>
@@ -204,7 +229,6 @@ const EmptyState = React.memo<EmptyStateProps>(
   }
 );
 
-// ==================== ENHANCED ANIMAL CARD ====================
 export const CatalogAnimalCard = React.memo<CatalogAnimalCardProps>(
   ({ animal, onPress, theme, index, viewMode }) => {
     const insets = useSafeAreaInsets();
@@ -212,7 +236,6 @@ export const CatalogAnimalCard = React.memo<CatalogAnimalCardProps>(
     const [imageError, setImageError] = useState(false);
     const [imageLoading, setImageLoading] = useState(true);
 
-    // Animation values
     const scaleAnim = useAnimatedValue(0.9);
     const fadeAnim = useAnimatedValue(0);
     const slideAnim = useAnimatedValue(50);
@@ -248,7 +271,6 @@ export const CatalogAnimalCard = React.memo<CatalogAnimalCardProps>(
       setImageLoading(false);
       setImageError(false);
 
-      // Animate progress bar
       Animated.timing(progressAnim, {
         toValue: 1,
         duration: 200,
@@ -262,7 +284,6 @@ export const CatalogAnimalCard = React.memo<CatalogAnimalCardProps>(
     }, []);
 
     const handlePress = useCallback(() => {
-      // Haptic feedback simulation with animation
       Animated.sequence([
         Animated.timing(scaleAnim, {
           toValue: 0.95,
@@ -302,6 +323,7 @@ export const CatalogAnimalCard = React.memo<CatalogAnimalCardProps>(
             style={styles.catalogImage}
             onLoad={handleImageLoad}
             onError={handleImageError}
+            resizeMode="cover"
           />
           {imageLoading && (
             <View style={styles.catalogImageLoading}>
@@ -327,7 +349,9 @@ export const CatalogAnimalCard = React.memo<CatalogAnimalCardProps>(
     const renderBadges = () => (
       <>
         <View style={styles.catalogBadge}>
-          <Text style={styles.catalogBadgeText}>{animal.category}</Text>
+          <Text style={styles.catalogBadgeText} numberOfLines={1}>
+            {animal.category}
+          </Text>
         </View>
 
         {index < 3 && (
@@ -381,8 +405,8 @@ export const CatalogAnimalCard = React.memo<CatalogAnimalCardProps>(
               size={14}
               color={theme.colors.forest}
             />
-            <Text style={styles.catalogMetaText}>
-              {animal.habitat ? 'Hábitat definido' : 'Info básica'}
+            <Text style={styles.catalogMetaText} numberOfLines={1}>
+              {animal.habitat || 'Hábitat no especificado'}
             </Text>
           </View>
 
@@ -393,22 +417,13 @@ export const CatalogAnimalCard = React.memo<CatalogAnimalCardProps>(
                 size={14}
                 color={theme.colors.textSecondary}
               />
-              <Text style={styles.catalogMetaText}>
+              <Text style={styles.catalogMetaText} numberOfLines={1}>
                 {animal.description.length > 50
                   ? 'Descripción completa'
                   : 'Descripción'}
               </Text>
             </View>
           )}
-
-          <View style={styles.catalogMetaItem}>
-            <Ionicons
-              name="time-outline"
-              size={14}
-              color={theme.colors.textSecondary}
-            />
-            <Text style={styles.catalogMetaText}>Reciente</Text>
-          </View>
         </View>
       </View>
     );
@@ -463,7 +478,6 @@ export const CatalogAnimalCard = React.memo<CatalogAnimalCardProps>(
   }
 );
 
-// ==================== ENHANCED HEADER WITH CONTROLS ====================
 const CatalogHeader = React.memo<CatalogHeaderProps>(
   ({
     totalCount,
@@ -479,50 +493,79 @@ const CatalogHeader = React.memo<CatalogHeaderProps>(
     const styles = createStyles(themeVariables(theme), useSafeAreaInsets());
     const [showControls, setShowControls] = useState(false);
     const controlsAnim = useAnimatedValue(0);
+    const controlsHeightAnim = useAnimatedValue(0);
 
     const toggleControls = useCallback(() => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setShowControls(!showControls);
+      const nextState = !showControls;
 
-      Animated.timing(controlsAnim, {
-        toValue: showControls ? 0 : 1,
-        duration: ANIMATION_DURATION,
-        useNativeDriver: true
-      }).start();
-    }, [showControls, controlsAnim]);
+      if (Platform.OS === 'ios') {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      }
+
+      setShowControls(nextState);
+
+      Animated.parallel([
+        Animated.timing(controlsAnim, {
+          toValue: nextState ? 1 : 0,
+          duration: ANIMATION_DURATION,
+          useNativeDriver: true
+        }),
+        Animated.timing(controlsHeightAnim, {
+          toValue: nextState ? 1 : 0,
+          duration: ANIMATION_DURATION,
+          useNativeDriver: false
+        })
+      ]).start();
+    }, [showControls, controlsAnim, controlsHeightAnim]);
 
     const renderSortButton = (
       sortType: 'name' | 'species' | 'category',
       label: string,
       icon: string
-    ) => (
-      <TouchableOpacity
-        style={[
-          styles.sortButton,
-          sortBy === sortType && styles.sortButtonActive
-        ]}
-        onPress={() => onSortChange(sortType)}
-        activeOpacity={0.7}
-      >
-        <Ionicons
-          name={icon}
-          size={16}
-          color={
-            sortBy === sortType
-              ? theme.colors.textOnPrimary
-              : theme.colors.textSecondary
-          }
-        />
-        <Text
-          style={[
-            styles.sortButtonText,
-            sortBy === sortType && styles.sortButtonTextActive
-          ]}
+    ) => {
+      const isActive = sortBy === sortType;
+
+      return (
+        <TouchableOpacity
+          style={[styles.sortButton, isActive && styles.sortButtonActive]}
+          onPress={() => {
+            if (Platform.OS === 'ios') {
+              LayoutAnimation.configureNext(
+                LayoutAnimation.Presets.easeInEaseOut
+              );
+            }
+            onSortChange(sortType);
+          }}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`Ordenar por ${label}`}
+          accessibilityState={{ selected: isActive }}
         >
-          {label}
-        </Text>
-      </TouchableOpacity>
-    );
+          <Ionicons
+            name={icon}
+            size={16}
+            color={
+              isActive ? theme.colors.textOnPrimary : theme.colors.textSecondary
+            }
+          />
+          <Text
+            style={[
+              styles.sortButtonText,
+              isActive && styles.sortButtonTextActive
+            ]}
+          >
+            {label}
+          </Text>
+          {isActive && (
+            <Ionicons
+              name="checkmark"
+              size={14}
+              color={theme.colors.textOnPrimary}
+            />
+          )}
+        </TouchableOpacity>
+      );
+    };
 
     return (
       <View style={styles.headerContainer}>
@@ -547,21 +590,32 @@ const CatalogHeader = React.memo<CatalogHeaderProps>(
             <Text style={styles.headerTitle}>Catálogo de Fauna</Text>
             <Text style={styles.headerSubtitle}>
               {searchQuery
-                ? `${filteredCount} de ${totalCount} animales`
-                : `${totalCount} especies documentadas`}
+                ? `${filteredCount} de ${totalCount} ${filteredCount === 1 ? 'animal' : 'animales'}`
+                : `${totalCount} ${totalCount === 1 ? 'especie documentada' : 'especies documentadas'}`}
             </Text>
           </View>
 
           <View style={styles.headerActions}>
             <TouchableOpacity
-              style={styles.headerActionButton}
+              style={[
+                styles.headerActionButton,
+                showControls && styles.headerActionButtonActive
+              ]}
               onPress={toggleControls}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={
+                showControls ? 'Ocultar controles' : 'Mostrar controles'
+              }
             >
               <Ionicons
-                name="options-outline"
+                name={showControls ? 'close-outline' : 'options-outline'}
                 size={20}
-                color={theme.colors.forest}
+                color={
+                  showControls
+                    ? theme.colors.textOnPrimary
+                    : theme.colors.forest
+                }
               />
             </TouchableOpacity>
 
@@ -570,10 +624,17 @@ const CatalogHeader = React.memo<CatalogHeaderProps>(
                 styles.viewModeButton,
                 viewMode === 'grid' && styles.viewModeButtonActive
               ]}
-              onPress={() =>
-                onViewModeChange(viewMode === 'grid' ? 'list' : 'grid')
-              }
+              onPress={() => {
+                if (Platform.OS === 'ios') {
+                  LayoutAnimation.configureNext(
+                    LayoutAnimation.Presets.easeInEaseOut
+                  );
+                }
+                onViewModeChange(viewMode === 'grid' ? 'list' : 'grid');
+              }}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Cambiar a vista ${viewMode === 'grid' ? 'lista' : 'cuadrícula'}`}
             >
               <Ionicons
                 name={viewMode === 'grid' ? 'grid-outline' : 'list-outline'}
@@ -609,7 +670,7 @@ const CatalogHeader = React.memo<CatalogHeaderProps>(
             <View style={styles.sortButtonsContainer}>
               {renderSortButton('name', 'Nombre', 'text-outline')}
               {renderSortButton('species', 'Especie', 'leaf-outline')}
-              {renderSortButton('category', 'Categoría', 'library-outline')}
+              {renderSortButton('category', 'Clase', 'library-outline')}
             </View>
           </Animated.View>
         )}
@@ -618,7 +679,6 @@ const CatalogHeader = React.memo<CatalogHeaderProps>(
   }
 );
 
-// ==================== MAIN COMPONENT ENHANCED ====================
 const CatalogAnimalsScreen = () => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -630,70 +690,76 @@ const CatalogAnimalsScreen = () => {
   const { push, goBack } = useNavigationActions();
   const { catalog, isLoading, fetchCatalog } = useCatalog();
 
-  // State management
   const [searchInput, setSearchInput] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'name' | 'species' | 'category'>('name');
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // Animation refs
   const scrollY = useRef(new Animated.Value(0)).current;
-  const searchQuery = useSearchDebounce(searchInput);
+  const searchQuery = useSearchDebounce(searchInput, SEARCH_DEBOUNCE_DELAY);
+  const flatListRef = useRef<FlatList>(null);
 
-  // Effects
   useEffect(() => {
-    if (isInitialLoading) {
+    if (isInitialLoading && catalog.length === 0) {
       fetchCatalog();
-      setIsInitialLoading(false);
     }
-  }, [fetchCatalog, isInitialLoading]);
+    setIsInitialLoading(false);
+  }, [fetchCatalog, isInitialLoading, catalog.length]);
 
-  // Enhanced filtering and sorting
   const processedCatalog = useMemo(() => {
-    let filtered = catalog;
+    let filtered = [...catalog];
 
-    // Apply search filter
     if (searchQuery) {
-      filtered = catalog.filter(animal => {
-        const query = searchQuery.toLowerCase();
-        return (
-          animal.commonNoun.toLowerCase().includes(query) ||
-          animal.specie.toLowerCase().includes(query) ||
-          animal.category.toLowerCase().includes(query) ||
-          (animal.description &&
-            animal.description.toLowerCase().includes(query))
-        );
-      });
+      filtered = filtered.filter(animal => matchesSearch(animal, searchQuery));
     }
 
-    // Apply sorting
-    return [...filtered].sort((a, b) => {
+    filtered.sort((a, b) => {
       switch (sortBy) {
         case 'name':
-          return a.commonNoun.localeCompare(b.commonNoun);
+          return a.commonNoun.localeCompare(b.commonNoun, 'es', {
+            sensitivity: 'base'
+          });
         case 'species':
-          return a.specie.localeCompare(b.specie);
+          return a.specie.localeCompare(b.specie, 'es', {
+            sensitivity: 'base'
+          });
         case 'category':
-          return a.category.localeCompare(b.category);
+          return a.category.localeCompare(b.category, 'es', {
+            sensitivity: 'base'
+          });
         default:
           return 0;
       }
     });
+
+    return filtered;
   }, [catalog, searchQuery, sortBy]);
 
-  // Handlers
+  useEffect(() => {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, [searchQuery, sortBy]);
+
   const handleViewModeChange = useCallback((mode: 'grid' | 'list') => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (Platform.OS === 'ios') {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setViewMode(mode);
   }, []);
 
   const handleSortChange = useCallback(
     (sort: 'name' | 'species' | 'category') => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      if (Platform.OS === 'ios') {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      }
       setSortBy(sort);
     },
     []
   );
+
+  const handleRefresh = useCallback(() => {
+    setSearchInput('');
+    fetchCatalog();
+  }, [fetchCatalog]);
 
   const renderAnimalItem = useCallback(
     ({ item, index }: { item: AnimalModelResponse; index: number }) => {
@@ -715,11 +781,10 @@ const CatalogAnimalsScreen = () => {
   );
 
   const keyExtractor = useCallback(
-    (item: AnimalModelResponse, index: number) => `${item.catalogId}-${index}`,
+    (item: AnimalModelResponse) => `catalog-animal-${item.catalogId}`,
     []
   );
 
-  // Header animation
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 50],
     outputRange: [1, 0.95],
@@ -732,8 +797,7 @@ const CatalogAnimalsScreen = () => {
     extrapolate: 'clamp'
   });
 
-  // Loading state
-  if (isLoading && catalog.length === 0) {
+  if (isLoading && catalog.length === 0 && isInitialLoading) {
     return (
       <LoadingIndicator theme={theme} text="Explorando la biodiversidad..." />
     );
@@ -772,18 +836,19 @@ const CatalogAnimalsScreen = () => {
         <SearchBar
           value={searchInput}
           onChangeText={setSearchInput}
-          placeholder="Buscar por nombre, especie o categoría..."
+          placeholder="Buscar por nombre, especie o clase..."
           theme={theme}
           onClear={() => setSearchInput('')}
         />
       </Animated.View>
 
       <FlatList
+        ref={flatListRef}
         data={processedCatalog}
         renderItem={renderAnimalItem}
         keyExtractor={keyExtractor}
         numColumns={viewMode === 'grid' ? 2 : 1}
-        key={viewMode} // Force re-render on view mode change
+        key={`catalog-${viewMode}`}
         columnWrapperStyle={viewMode === 'grid' ? styles.row : undefined}
         contentContainerStyle={[
           styles.list,
@@ -791,8 +856,8 @@ const CatalogAnimalsScreen = () => {
         ]}
         refreshControl={
           <RefreshControl
-            refreshing={isLoading && searchQuery === ''}
-            onRefresh={fetchCatalog}
+            refreshing={isLoading && !isInitialLoading}
+            onRefresh={handleRefresh}
             colors={[variables['--primary']]}
             tintColor={variables['--primary']}
             title="Actualizando catálogo..."
@@ -803,14 +868,14 @@ const CatalogAnimalsScreen = () => {
           <EmptyState
             searchQuery={searchQuery}
             theme={theme}
-            onRefresh={fetchCatalog}
+            onRefresh={handleRefresh}
             isLoading={isLoading}
           />
         }
         initialNumToRender={PAGE_SIZE}
         maxToRenderPerBatch={PAGE_SIZE}
         windowSize={10}
-        removeClippedSubviews={true}
+        removeClippedSubviews={Platform.OS === 'android'}
         getItemLayout={
           viewMode === 'grid'
             ? (_, index) => ({

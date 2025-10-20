@@ -1,6 +1,7 @@
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 import { StyleSheet } from 'react-native';
 
-export const createStyles = (vars: Record<string, string>) =>
+export const createStyles = (vars: ThemeVariablesType) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -9,19 +10,19 @@ export const createStyles = (vars: Record<string, string>) =>
       padding: 20
     },
     inputContainer: {
-      marginBottom: parseInt(vars['--spacing-small']) || 8
+      marginBottom: vars['--spacing-small']
     },
     rememberContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: parseInt(vars['--spacing-large']) || 24,
-      marginTop: parseInt(vars['--spacing-medium']) || 16,
-      paddingVertical: parseInt(vars['--spacing-medium']) || 16,
-      paddingHorizontal: parseInt(vars['--spacing-large']) || 20,
-      borderRadius: parseInt(vars['--border-radius-medium']) || 8,
+      marginBottom: vars['--spacing-large'],
+      marginTop: vars['--spacing-medium'],
+      paddingVertical: vars['--spacing-medium'],
+      paddingHorizontal: vars['--spacing-large'],
+      borderRadius: vars['--border-radius-medium'],
       backgroundColor: vars['--surface'],
-      borderWidth: parseInt(vars['--border-width-hairline']) || 1,
+      borderWidth: vars['--border-width-hairline'],
       borderColor: vars['--border'],
       shadowColor: vars['--shadow'],
       shadowOffset: {
@@ -33,25 +34,25 @@ export const createStyles = (vars: Record<string, string>) =>
       elevation: 2
     },
     rememberText: {
-      fontSize: parseInt(vars['--font-size-large']) || 16,
+      fontSize: vars['--font-size-large'],
       fontWeight: '500',
       color: vars['--text'],
       fontFamily: vars['--font-family-primary']
     },
     button: {
-      marginBottom: parseInt(vars['--spacing-medium']) || 16,
-      borderRadius: parseInt(vars['--border-radius-medium']) || 8,
+      marginBottom: vars['--spacing-medium'],
+      borderRadius: vars['--border-radius-medium'],
       paddingVertical: 4
     },
     forgotPassword: {
       alignSelf: 'center',
-      marginBottom: parseInt(vars['--spacing-large']) || 24,
-      paddingVertical: parseInt(vars['--spacing-small']) || 8,
-      paddingHorizontal: parseInt(vars['--spacing-medium']) || 16,
-      borderRadius: parseInt(vars['--border-radius-small']) || 4
+      marginBottom: vars['--spacing-large'],
+      paddingVertical: vars['--spacing-small'],
+      paddingHorizontal: vars['--spacing-medium'],
+      borderRadius: vars['--border-radius-small']
     },
     forgotPasswordText: {
-      fontSize: parseInt(vars['--font-size-medium']) || 14,
+      fontSize: vars['--font-size-medium'],
       color: vars['--primary'],
       fontWeight: '500',
       textDecorationLine: 'underline',
@@ -59,9 +60,9 @@ export const createStyles = (vars: Record<string, string>) =>
     },
     orText: {
       textAlign: 'center',
-      fontSize: parseInt(vars['--font-size-large']) || 16,
+      fontSize: vars['--font-size-large'],
       color: vars['--text-secondary'],
-      marginVertical: parseInt(vars['--spacing-large']) || 20,
+      marginVertical: vars['--spacing-large'],
       fontWeight: '500',
       fontFamily: vars['--font-family-primary'],
       position: 'relative'
@@ -85,6 +86,6 @@ export const createStyles = (vars: Record<string, string>) =>
       backgroundColor: 'rgba(0,0,0,0.3)',
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: parseInt(vars['--border-radius-medium']) || 8
+      borderRadius: vars['--border-radius-medium']
     }
   });

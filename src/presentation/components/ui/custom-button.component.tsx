@@ -1,3 +1,4 @@
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 import React, { useMemo } from 'react';
 import {
   TouchableOpacity,
@@ -22,7 +23,7 @@ interface CustomButtonProps {
   fullWidth?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  variables: Record<string, string> | undefined;
+  variables: ThemeVariablesType | undefined;
 }
 
 const CustomButton: React.FC<CustomButtonProps> = ({
@@ -151,7 +152,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
 
 const getLoadingColor = (
   variant: string,
-  variables: Record<string, string> | undefined
+  variables: ThemeVariablesType | undefined
 ) => {
   switch (variant) {
     case 'primary':
@@ -169,7 +170,7 @@ const getLoadingColor = (
   }
 };
 
-const createStyles = (variables: Record<string, string> | undefined) =>
+const createStyles = (variables: ThemeVariablesType | undefined) =>
   StyleSheet.create({
     button: {
       borderRadius: 16,

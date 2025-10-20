@@ -4,7 +4,6 @@ import { useTheme, themeVariables } from '../../contexts/theme.context';
 import { createStyles } from './splash-screen.styles';
 import SplashIcon from '../../../assets/splash-icon.png';
 
-// Componente para animación de puntos (...)
 const AnimatedDots = () => {
   const [dots, setDots] = useState('');
 
@@ -23,7 +22,6 @@ const SplashScreen = () => {
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
 
-  // Animación para el logo
   const scaleValue = useMemo(() => new Animated.Value(0.95), []);
 
   useEffect(() => {
@@ -49,15 +47,10 @@ const SplashScreen = () => {
         style={[styles.logoContainer, { transform: [{ scale: scaleValue }] }]}
       >
         <Image source={SplashIcon} style={styles.logo} resizeMode="contain" />
-        <View
-          style={[
-            styles.glowEffect,
-            { backgroundColor: variables['--primary'] }
-          ]}
-        />
+        <View style={[styles.glowEffect]} />
       </Animated.View>
 
-      <Text style={styles.appName}>FAUNA SILVESTRE</Text>
+      <Text style={styles.appName}>k'aaxil ba'alilche'</Text>
 
       <ActivityIndicator
         size="large"

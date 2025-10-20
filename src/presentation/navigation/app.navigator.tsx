@@ -7,7 +7,12 @@ import {
 import { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs';
 
 import { useAuth } from '../contexts/auth.context';
-import { Theme, themeVariables, useTheme } from '../contexts/theme.context';
+import {
+  Theme,
+  themeVariables,
+  ThemeVariablesType,
+  useTheme
+} from '../contexts/theme.context';
 import { useApiStatus } from '../contexts/api-status.context';
 import TopTabsNavigationBar from '../components/ui/top-tabs-navigation-bar.component';
 
@@ -45,7 +50,7 @@ const VALID_ROLES: readonly ValidRole[] = ['Admin', 'User'] as const;
 const TopTabs = createMaterialTopTabNavigator<RootStackParamList>();
 
 const createScreenOptions = (
-  variables: Record<string, string>
+  variables: ThemeVariablesType
 ): MaterialTopTabNavigationOptions => ({
   lazy: true,
   swipeEnabled: true,
@@ -118,10 +123,8 @@ const TabsComponent = React.memo<{
   );
 
   const tabBar = useCallback(
-    (props: MaterialTopTabBarProps) => (
-      <TopTabsNavigationBar {...props} theme={theme} />
-    ),
-    [theme]
+    (props: MaterialTopTabBarProps) => <TopTabsNavigationBar {...props} />,
+    []
   );
 
   return (
