@@ -14,7 +14,8 @@ import {
   TouchableOpacity,
   NativeSyntheticEvent,
   NativeScrollEvent,
-  StyleSheet
+  Animated,
+  TextInput
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,18 +25,23 @@ import PublicationCard, {
   ITEM_HEIGHT
 } from '../../components/publication/publication-card.component';
 import PublicationSkeleton from '../../components/ui/publication-skeleton.component';
+import PublicationFilters, {
+  FilterOptions
+} from '../../components/publication/publication-filters.component';
 
 import { PublicationModelResponse } from '../../../domain/models/publication.models';
 import { PublicationStatus } from '../../../services/publication/publication.service';
 import { useAuth } from '@/presentation/contexts/auth.context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
+import { createPublicationScreenStyles } from './publication-screen.styles';
 
 const CONFIG = {
   SCROLL: {
     FAST_THRESHOLD: 2,
     PREFETCH_THRESHOLD: 0.7,
     DEBOUNCE_TIME: 100,
-    END_REACHED_THRESHOLD: 0.8
+    END_REACHED_THRESHOLD: 0.8,
+    PADDING_TO_BOTTOM: 20
   },
   UI: {
     SKELETON_COUNT: 5,
@@ -46,8 +52,82 @@ const CONFIG = {
     MAX_RENDER_BATCH: 10,
     WINDOW_SIZE: 5,
     UPDATE_BATCHING_PERIOD: 50
+  },
+  ANIMATION: {
+    DURATION: 250,
+    SPRING_CONFIG: {
+      tension: 40,
+      friction: 7
+    }
+  },
+  SEARCH: {
+    DEBOUNCE_TIME: 300
+  },
+  LOADING: {
+    INITIAL_LOAD_DELAY: 100,
+    RETRY_DELAY: 2000
   }
 } as const;
+
+const CARD_MARGIN = 16;
+const ACTUAL_ITEM_HEIGHT = ITEM_HEIGHT + CARD_MARGIN;
+
+const useSearch = (publications: PublicationModelResponse[]) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const searchTimeoutRef = useRef<number | null>(null);
+
+  const filteredPublications = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return publications;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return publications.filter(pub => {
+      const title = pub.commonNoun?.toLowerCase() || '';
+      const description = pub.description?.toLowerCase() || '';
+      const location = pub.location?.toLowerCase() || '';
+
+      return (
+        title.includes(query) ||
+        description.includes(query) ||
+        location.includes(query)
+      );
+    });
+  }, [publications, searchQuery]);
+
+  const handleSearchChange = useCallback((text: string) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearchQuery(text);
+    }, CONFIG.SEARCH.DEBOUNCE_TIME);
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  return {
+    searchQuery,
+    setSearchQuery,
+    filteredPublications,
+    handleSearchChange,
+    clearSearch,
+    isFocused,
+    setIsFocused
+  };
+};
 
 const usePublicationData = (selectedStatus: PublicationStatus) => {
   const { state, getStatusData, getTotalCount, canLoadMore } =
@@ -59,7 +139,8 @@ const usePublicationData = (selectedStatus: PublicationStatus) => {
 
     return {
       statusData,
-      publications: statusData.filteredPublications,
+      publications: statusData.publications,
+      filteredPublications: statusData.filteredPublications,
       pagination: statusData.pagination,
       totalCount: getTotalCount(selectedStatus),
       canLoadMore: canLoadMore(selectedStatus),
@@ -68,7 +149,8 @@ const usePublicationData = (selectedStatus: PublicationStatus) => {
       isRefreshing: statusData.isRefreshing,
       isEmpty: statusData.isEmpty,
       error: statusData.error,
-      circuitBreaker
+      circuitBreaker,
+      lastUpdated: statusData.lastUpdated
     };
   }, [selectedStatus, state, getStatusData, getTotalCount, canLoadMore]);
 };
@@ -120,64 +202,6 @@ const useErrorState = (
   };
 };
 
-const useScrollOptimization = (
-  selectedStatus: PublicationStatus,
-  canLoadMore: boolean,
-  isLoadingMore: boolean,
-  onLoadMore: () => void
-) => {
-  const lastScrollY = useRef(0);
-  const lastScrollTime = useRef(Date.now());
-  const loadMoreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isNearEndRef = useRef(false);
-
-  const handleScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const { contentOffset, contentSize, layoutMeasurement } =
-        event.nativeEvent;
-      const currentY = contentOffset.y;
-      const currentTime = Date.now();
-
-      const scrollProgress =
-        (currentY + layoutMeasurement.height) / contentSize.height;
-      const timeDelta = currentTime - lastScrollTime.current;
-      const distanceDelta = Math.abs(currentY - lastScrollY.current);
-      const velocity = timeDelta > 0 ? distanceDelta / timeDelta : 0;
-
-      const wasNearEnd = isNearEndRef.current;
-      isNearEndRef.current = scrollProgress > CONFIG.SCROLL.PREFETCH_THRESHOLD;
-
-      if (!wasNearEnd && isNearEndRef.current && canLoadMore) {
-        onLoadMore();
-      }
-
-      if (
-        velocity > CONFIG.SCROLL.FAST_THRESHOLD &&
-        canLoadMore &&
-        !isLoadingMore
-      ) {
-        onLoadMore();
-      }
-
-      lastScrollY.current = currentY;
-      lastScrollTime.current = currentTime;
-    },
-    [canLoadMore, isLoadingMore, onLoadMore]
-  );
-
-  useEffect(() => {
-    const timeoutRef = loadMoreTimeoutRef;
-    return () => {
-      const timeoutId = timeoutRef.current;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, []);
-
-  return { handleScroll };
-};
-
 const usePublicationOperations = (selectedStatus: PublicationStatus) => {
   const {
     loadStatus,
@@ -187,47 +211,58 @@ const usePublicationOperations = (selectedStatus: PublicationStatus) => {
     resetCircuitBreaker
   } = usePublications();
 
-  const loadMoreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const operationsInProgress = useRef<Set<string>>(new Set());
 
-  const handleInitialLoad = useCallback(async () => {
-    await loadStatus(selectedStatus, { forceRefresh: true });
-  }, [loadStatus, selectedStatus]);
+  const executeOperation = useCallback(
+    async (operation: string, action: () => Promise<void>): Promise<void> => {
+      if (operationsInProgress.current.has(operation)) {
+        return;
+      }
 
-  const handleLoadMore = useCallback(() => {
-    if (loadMoreTimeoutRef.current) return;
+      operationsInProgress.current.add(operation);
+      try {
+        await action();
+      } finally {
+        operationsInProgress.current.delete(operation);
+      }
+    },
+    []
+  );
 
-    const timeoutId = setTimeout(() => {
-      loadMoreStatus(selectedStatus);
-      loadMoreTimeoutRef.current = null;
-    }, CONFIG.SCROLL.DEBOUNCE_TIME);
-    loadMoreTimeoutRef.current = timeoutId;
-  }, [loadMoreStatus, selectedStatus]);
+  const handleInitialLoad = useCallback(
+    async (force = false) => {
+      await executeOperation('initialLoad', () =>
+        loadStatus(selectedStatus, { forceRefresh: force })
+      );
+    },
+    [executeOperation, loadStatus, selectedStatus]
+  );
+
+  const handleLoadMore = useCallback(async () => {
+    await executeOperation('loadMore', () => loadMoreStatus(selectedStatus));
+  }, [executeOperation, loadMoreStatus, selectedStatus]);
 
   const handleRefresh = useCallback(async () => {
-    await refreshStatus(selectedStatus);
-  }, [refreshStatus, selectedStatus]);
+    await executeOperation('refresh', () => refreshStatus(selectedStatus));
+  }, [executeOperation, refreshStatus, selectedStatus]);
 
   const handleRetry = useCallback(async () => {
     resetStatus(selectedStatus);
-    await loadStatus(selectedStatus, { forceRefresh: true });
-  }, [loadStatus, selectedStatus, resetStatus]);
+    await handleInitialLoad(true);
+  }, [handleInitialLoad, resetStatus, selectedStatus]);
 
   const handleForceRetry = useCallback(async () => {
     resetStatus(selectedStatus);
     resetCircuitBreaker();
-    await loadStatus(selectedStatus, { forceRefresh: true });
-  }, [loadStatus, selectedStatus, resetStatus, resetCircuitBreaker]);
+    await handleInitialLoad(true);
+  }, [handleInitialLoad, resetStatus, resetCircuitBreaker, selectedStatus]);
 
   useEffect(() => {
-    const timeoutRef = loadMoreTimeoutRef;
+    const operations = operationsInProgress.current;
     return () => {
-      const timeoutId = timeoutRef.current;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutRef.current = null;
-      }
+      operations.clear();
     };
-  }, []);
+  }, [selectedStatus]);
 
   return {
     handleInitialLoad,
@@ -237,6 +272,157 @@ const usePublicationOperations = (selectedStatus: PublicationStatus) => {
     handleForceRetry
   };
 };
+
+const useScrollOptimization = (
+  selectedStatus: PublicationStatus,
+  canLoadMore: boolean,
+  isLoadingMore: boolean,
+  onLoadMore: () => void,
+  onHeaderVisibilityChange?: (visible: boolean) => void
+) => {
+  const lastScrollY = useRef(0);
+  const scrollDirectionRef = useRef<'up' | 'down'>('down');
+  const loadMoreTriggeredRef = useRef(false);
+  const lastLoadMoreTimeRef = useRef(0);
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, contentSize, layoutMeasurement } =
+        event.nativeEvent;
+      const currentY = contentOffset.y;
+
+      const scrollDelta = currentY - lastScrollY.current;
+      if (Math.abs(scrollDelta) > 5) {
+        const newDirection = scrollDelta > 0 ? 'down' : 'up';
+        if (newDirection !== scrollDirectionRef.current) {
+          scrollDirectionRef.current = newDirection;
+          if (newDirection === 'down' && currentY > 50) {
+            onHeaderVisibilityChange?.(false);
+          }
+        }
+      }
+
+      const distanceFromEnd =
+        contentSize.height - layoutMeasurement.height - currentY;
+
+      const isNearEnd = distanceFromEnd < layoutMeasurement.height * 0.5;
+      const canTriggerLoadMore =
+        canLoadMore &&
+        !isLoadingMore &&
+        !loadMoreTriggeredRef.current &&
+        Date.now() - lastLoadMoreTimeRef.current > 1000;
+
+      if (isNearEnd && canTriggerLoadMore) {
+        loadMoreTriggeredRef.current = true;
+        lastLoadMoreTimeRef.current = Date.now();
+        onLoadMore();
+
+        setTimeout(() => {
+          loadMoreTriggeredRef.current = false;
+        }, 2000);
+      }
+
+      lastScrollY.current = currentY;
+    },
+    [canLoadMore, isLoadingMore, onLoadMore, onHeaderVisibilityChange]
+  );
+
+  useEffect(() => {
+    loadMoreTriggeredRef.current = false;
+    lastLoadMoreTimeRef.current = 0;
+  }, [selectedStatus]);
+
+  return { handleScroll };
+};
+
+const SearchBar: React.FC<{
+  value: string;
+  onChangeText: (text: string) => void;
+  onClear: () => void;
+  isFocused: boolean;
+  onFocus: () => void;
+  onBlur: () => void;
+  resultsCount?: number;
+  totalCount?: number;
+}> = React.memo(
+  ({
+    value,
+    onChangeText,
+    onClear,
+    isFocused,
+    onFocus,
+    onBlur,
+    resultsCount,
+    totalCount
+  }) => {
+    const { theme } = useTheme();
+    const styles = useMemo(() => createPublicationScreenStyles(theme), [theme]);
+    const [inputValue, setInputValue] = useState(value);
+
+    const handleChange = (text: string) => {
+      setInputValue(text);
+      onChangeText(text);
+    };
+
+    const handleClear = () => {
+      setInputValue('');
+      onClear();
+    };
+
+    return (
+      <View style={styles.searchContainer}>
+        <View
+          style={[
+            styles.searchInputContainer,
+            isFocused && styles.searchInputFocused
+          ]}
+        >
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar publicaciones..."
+            placeholderTextColor={theme.colors.placeholder}
+            value={inputValue}
+            onChangeText={handleChange}
+            onFocus={onFocus}
+            onBlur={onBlur}
+          />
+          {inputValue.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={handleClear}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.clearIcon}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {inputValue.length > 0 &&
+          resultsCount !== undefined &&
+          totalCount !== undefined && (
+            <View style={styles.searchResultsCount}>
+              <Text style={styles.searchResultsText}>
+                Mostrando{' '}
+                <Text style={styles.searchResultsHighlight}>
+                  {resultsCount}
+                </Text>{' '}
+                de {totalCount} publicaciones
+              </Text>
+              {resultsCount === 0 && (
+                <TouchableOpacity
+                  style={styles.clearSearchButton}
+                  onPress={handleClear}
+                >
+                  <Text style={styles.clearSearchText}>Limpiar búsqueda</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+      </View>
+    );
+  }
+);
 
 const StatusTabs: React.FC<{
   selectedStatus: PublicationStatus;
@@ -252,14 +438,40 @@ const StatusTabs: React.FC<{
 }> = React.memo(({ selectedStatus, onStatusChange, statusStats }) => {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const styles = useMemo(() => createPublicationScreenStyles(theme), [theme]);
+
+  const animatedValues = useRef<
+    Map<
+      string,
+      {
+        scale: Animated.Value;
+        opacity: Animated.Value;
+      }
+    >
+  >(new Map());
 
   const statusOptions = useMemo(
     () => [
-      { label: 'Pendientes', value: PublicationStatus.PENDING, icon: '⏳' },
-      { label: 'Aceptadas', value: PublicationStatus.ACCEPTED, icon: '✅' },
-      { label: 'Rechazadas', value: PublicationStatus.REJECTED, icon: '❌' }
+      {
+        label: 'Pendientes',
+        value: PublicationStatus.PENDING,
+        color: theme.colors.warning,
+        gradient: [theme.colors.warning, theme.colors.secondaryDark]
+      },
+      {
+        label: 'Aceptadas',
+        value: PublicationStatus.ACCEPTED,
+        color: theme.colors.success,
+        gradient: [theme.colors.success, theme.colors.primaryDark]
+      },
+      {
+        label: 'Rechazadas',
+        value: PublicationStatus.REJECTED,
+        color: theme.colors.error,
+        gradient: [theme.colors.error, '#C62828']
+      }
     ],
-    []
+    [theme]
   );
 
   const filteredOptions = useMemo(
@@ -272,73 +484,105 @@ const StatusTabs: React.FC<{
     [user?.role, statusOptions]
   );
 
+  const getAnimatedValue = useCallback(
+    (key: string) => {
+      if (!animatedValues.current.has(key)) {
+        animatedValues.current.set(key, {
+          scale: new Animated.Value(selectedStatus === key ? 1 : 0.95),
+          opacity: new Animated.Value(selectedStatus === key ? 1 : 0.7)
+        });
+      }
+      return animatedValues.current.get(key)!;
+    },
+    [selectedStatus]
+  );
+
+  useEffect(() => {
+    filteredOptions.forEach(option => {
+      const anim = getAnimatedValue(option.value);
+      Animated.parallel([
+        Animated.spring(anim.scale, {
+          toValue: selectedStatus === option.value ? 1 : 0.95,
+          ...CONFIG.ANIMATION.SPRING_CONFIG,
+          useNativeDriver: true
+        }),
+        Animated.timing(anim.opacity, {
+          toValue: selectedStatus === option.value ? 1 : 0.7,
+          duration: CONFIG.ANIMATION.DURATION,
+          useNativeDriver: true
+        })
+      ]).start();
+    });
+  }, [selectedStatus, filteredOptions, getAnimatedValue]);
+
   return (
     <View style={styles.tabsContainer}>
       {filteredOptions.map(option => {
         const isSelected = selectedStatus === option.value;
         const showStats =
           isSelected && (statusStats.total > 0 || statusStats.hasError);
+        const animValue = getAnimatedValue(option.value);
 
         return (
-          <TouchableOpacity
+          <Animated.View
             key={option.value}
-            onPress={() => onStatusChange(option.value)}
             style={[
-              styles.tab,
-              isSelected && [
-                styles.activeTab,
-                { backgroundColor: theme.colors.primary }
-              ],
-              statusStats.hasError && isSelected && styles.errorTab,
-              statusStats.hasTemporaryError && !isSelected && styles.warningTab,
-              statusStats.isCircuitBreakerOpen && styles.circuitBreakerTab
+              styles.tabWrapper,
+              {
+                transform: [{ scale: animValue.scale }],
+                opacity: animValue.opacity
+              }
             ]}
-            disabled={statusStats.isLoading}
           >
-            <View style={styles.tabContent}>
-              <Text
-                style={[
-                  styles.tabText,
-                  { color: theme.colors.text },
-                  isSelected && [
-                    styles.activeTabText,
-                    { color: theme.colors.background }
-                  ],
-                  statusStats.hasError && isSelected && { color: '#fff' }
-                ]}
-              >
-                {option.icon} {option.label}
-              </Text>
-              {showStats && (
+            <TouchableOpacity
+              onPress={() => onStatusChange(option.value)}
+              style={[
+                styles.tab,
+                isSelected && [
+                  styles.tabActive,
+                  { backgroundColor: option.color }
+                ],
+                statusStats.hasError && isSelected && styles.tabError
+              ]}
+              disabled={statusStats.isLoading}
+              activeOpacity={0.8}
+            >
+              <View style={styles.tabContent}>
                 <Text
-                  style={[
-                    styles.tabStats,
-                    {
-                      color: isSelected
-                        ? theme.colors.background
-                        : theme.colors.textSecondary
-                    },
-                    statusStats.hasError && isSelected && { color: '#fff' }
-                  ]}
+                  style={[styles.tabLabel, isSelected && styles.tabLabelActive]}
                 >
-                  {statusStats.hasError
-                    ? 'Error persistente'
-                    : statusStats.hasTemporaryError
-                      ? 'Conectando...'
-                      : `${statusStats.loaded}/${statusStats.total}`}
+                  {option.label}
                 </Text>
+                {showStats && (
+                  <View
+                    style={[
+                      styles.tabBadge,
+                      isSelected && styles.tabBadgeActive
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.tabBadgeText,
+                        isSelected && styles.tabBadgeTextActive
+                      ]}
+                    >
+                      {statusStats.hasError
+                        ? '!'
+                        : `${statusStats.loaded}/${statusStats.total}`}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {statusStats.isLoading && isSelected && (
+                <View style={styles.tabLoadingIndicator}>
+                  <ActivityIndicator
+                    size="small"
+                    color={isSelected ? '#FFFFFF' : option.color}
+                  />
+                </View>
               )}
-            </View>
-            {statusStats.isLoading && isSelected && (
-              <ActivityIndicator
-                size="small"
-                color={
-                  isSelected ? theme.colors.background : theme.colors.primary
-                }
-                style={styles.tabLoader}
-              />
-            )}
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </Animated.View>
         );
       })}
     </View>
@@ -347,9 +591,13 @@ const StatusTabs: React.FC<{
 
 const PublicationScreen: React.FC = () => {
   const { user } = useAuth();
-  const { theme } = useTheme();
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { navigate } = useNavigationActions();
+  const styles = useMemo(
+    () => createPublicationScreenStyles(theme.theme),
+    [theme]
+  );
 
   const [selectedStatus, setSelectedStatus] = useState<PublicationStatus>(
     user?.role === 'Admin'
@@ -358,64 +606,132 @@ const PublicationScreen: React.FC = () => {
   );
 
   const publicationData = usePublicationData(selectedStatus);
+  const search = useSearch(publicationData.publications);
+  const operations = usePublicationOperations(selectedStatus);
+
+  const [filteredAndSorted, setFilteredAndSorted] = useState<
+    PublicationModelResponse[]
+  >([]);
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    sortBy: 'date-desc',
+    filterByState: 'all'
+  });
+
+  const finalPublications = useMemo(() => {
+    if (search.searchQuery.trim()) {
+      return search.filteredPublications;
+    }
+
+    if (filteredAndSorted.length > 0) {
+      return filteredAndSorted;
+    }
+
+    return publicationData.filteredPublications;
+  }, [
+    search.filteredPublications,
+    filteredAndSorted,
+    search.searchQuery,
+    publicationData.filteredPublications
+  ]);
+
+  const handleFilterChange = useCallback(
+    (filtered: PublicationModelResponse[], options: FilterOptions) => {
+      setFilteredAndSorted(filtered);
+      setFilterOptions(options);
+    },
+    []
+  );
+
+  const [isHeaderVisible, setIsHeaderVisible] = useState(false);
+  const headerTranslateY = useRef(new Animated.Value(-300)).current;
+
+  const handleHeaderVisibilityChange = useCallback(
+    (visible: boolean) => {
+      setIsHeaderVisible(visible);
+      Animated.timing(headerTranslateY, {
+        toValue: visible ? 0 : -300,
+        duration: 300,
+        useNativeDriver: true
+      }).start();
+    },
+    [headerTranslateY]
+  );
+
   const errorState = useErrorState(
     publicationData.publications,
     publicationData.circuitBreaker,
     publicationData.error
   );
-  const operations = usePublicationOperations(selectedStatus);
+
   const { handleScroll } = useScrollOptimization(
     selectedStatus,
     publicationData.canLoadMore,
     publicationData.isLoadingMore,
-    operations.handleLoadMore
+    operations.handleLoadMore,
+    handleHeaderVisibilityChange
   );
 
   const listRef = useRef<FlatList<PublicationModelResponse>>(null);
-
-  const { handleInitialLoad } = operations;
+  const bannerAnim = useRef(new Animated.Value(0)).current;
+  const contentAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const hasNoData = publicationData.statusData.publications.length === 0;
-    const isNotLoading = !publicationData.statusData.isLoading;
-    const isNotRefreshing = !publicationData.statusData.isRefreshing;
-    const total = publicationData.statusData.pagination.total;
-    const hasError = publicationData.statusData.error;
+    const shouldAutoLoad =
+      publicationData.publications.length === 0 &&
+      !publicationData.isLoading &&
+      !publicationData.error &&
+      publicationData.lastUpdated === null;
 
-    const hasSuccessfullyLoadedEmpty =
-      total === 0 && !hasError && publicationData.statusData.lastUpdated;
-    if (hasSuccessfullyLoadedEmpty) {
-      return;
-    }
-
-    const shouldLoad = isNotLoading && isNotRefreshing && hasNoData;
-
-    if (shouldLoad) {
-      console.log(
-        `[PublicationScreen] Loading data for status: ${selectedStatus}`
-      );
-      handleInitialLoad();
+    if (shouldAutoLoad) {
+      console.log(`[PublicationScreen] Auto-loading ${selectedStatus}`);
+      operations.handleInitialLoad(true);
     }
   }, [
     selectedStatus,
-    publicationData.statusData.publications.length,
-    publicationData.statusData.isLoading,
-    publicationData.statusData.isRefreshing,
-    publicationData.statusData.lastUpdated,
-    publicationData.statusData.error,
-    publicationData.statusData.pagination.total,
-    handleInitialLoad
+    publicationData.publications.length,
+    publicationData.isLoading,
+    publicationData.error,
+    publicationData.lastUpdated,
+    operations
   ]);
+
+  useEffect(() => {
+    Animated.timing(bannerAnim, {
+      toValue: errorState.showDelayedError ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true
+    }).start();
+  }, [errorState.showDelayedError, bannerAnim]);
+
+  useEffect(() => {
+    Animated.timing(contentAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true
+    }).start();
+  }, [selectedStatus, contentAnim]);
 
   const handleStatusChange = useCallback(
     async (status: PublicationStatus) => {
       if (status === selectedStatus) return;
 
+      contentAnim.setValue(0);
       setSelectedStatus(status);
-
+      search.clearSearch();
+      setFilteredAndSorted([]);
+      setFilterOptions({
+        sortBy: 'date-desc',
+        filterByState: 'all'
+      });
       listRef.current?.scrollToOffset({ offset: 0, animated: false });
+
+      Animated.timing(contentAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true
+      }).start();
     },
-    [selectedStatus]
+    [selectedStatus, contentAnim, search]
   );
 
   const renderItem = useCallback(
@@ -438,48 +754,52 @@ const PublicationScreen: React.FC = () => {
   const renderFooter = useCallback(() => {
     if (publicationData.isLoadingMore) {
       return (
-        <View style={styles.footer}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text
-            style={[styles.footerText, { color: theme.colors.textSecondary }]}
-          >
-            Cargando más publicaciones...
-          </Text>
+        <View style={styles.listFooter}>
+          <View style={styles.footerLoadingContainer}>
+            <ActivityIndicator
+              size="small"
+              color={theme.theme.colors.primary}
+            />
+            <Text style={styles.footerLoadingText}>
+              Cargando más publicaciones...
+            </Text>
+          </View>
         </View>
       );
     }
 
     if (errorState.isPersistentError) {
       return (
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.colors.error }]}>
-            {publicationData.error}
-          </Text>
-          <TouchableOpacity
-            onPress={operations.handleRetry}
-            style={styles.retryButton}
-          >
-            <Text
-              style={[styles.retryButtonText, { color: theme.colors.primary }]}
-            >
-              Reintentar
+        <View style={styles.listFooter}>
+          <View style={styles.footerErrorContainer}>
+            <View style={styles.errorIconContainer}>
+              <Text style={styles.errorIcon}>⚠️</Text>
+            </View>
+            <Text style={styles.footerErrorText}>
+              {publicationData.error || 'Error al cargar publicaciones'}
             </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={operations.handleRetry}
+              style={styles.retryButton}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.retryButtonText}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       );
     }
 
-    if (
-      !publicationData.canLoadMore &&
-      publicationData.publications.length > 0
-    ) {
+    if (!publicationData.canLoadMore && finalPublications.length > 0) {
       return (
-        <View style={styles.footer}>
-          <Text
-            style={[styles.footerText, { color: theme.colors.textSecondary }]}
-          >
-            Has visto todas las publicaciones
-          </Text>
+        <View style={styles.listFooter}>
+          <View style={styles.footerEndContainer}>
+            <View style={styles.endDivider} />
+            <Text style={styles.footerEndText}>
+              Has visto todas las publicaciones
+            </Text>
+            <View style={styles.endDivider} />
+          </View>
         </View>
       );
     }
@@ -488,41 +808,77 @@ const PublicationScreen: React.FC = () => {
   }, [
     publicationData.isLoadingMore,
     publicationData.canLoadMore,
-    publicationData.publications.length,
+    finalPublications.length,
     publicationData.error,
     errorState.isPersistentError,
     theme,
-    operations.handleRetry
+    operations.handleRetry,
+    styles
   ]);
 
   const renderEmpty = useCallback(
     () => (
-      <View style={styles.emptyContainer}>
+      <View style={styles.emptyStateContainer}>
         {errorState.showDelayedError ? (
-          <View style={styles.temporaryErrorContainer}>
-            <Text
-              style={[styles.emptyText, { color: theme.colors.textSecondary }]}
-            >
-              Conectando...
+          <View style={styles.emptyStateContent}>
+            <View style={styles.emptyStateIconContainer}>
+              <ActivityIndicator
+                size="large"
+                color={theme.theme.colors.primary}
+              />
+            </View>
+            <Text style={styles.emptyStateTitle}>
+              Conectando con el servidor
             </Text>
-            <ActivityIndicator
-              size="small"
-              color={theme.colors.primary}
-              style={{ marginTop: 8 }}
-            />
+            <Text style={styles.emptyStateDescription}>
+              Por favor espera mientras establecemos la conexión
+            </Text>
+          </View>
+        ) : search.searchQuery.trim() ||
+          filterOptions.filterByState !== 'all' ||
+          filterOptions.sortBy !== 'date-desc' ? (
+          <View style={styles.emptyStateContent}>
+            <View style={styles.emptyStateIconContainer}>
+              <Text style={styles.emptyStateIcon}>🔍</Text>
+            </View>
+            <Text style={styles.emptyStateTitle}>
+              No se encontraron resultados
+            </Text>
+            <Text style={styles.emptyStateDescription}>
+              {search.searchQuery.trim()
+                ? `No hay publicaciones que coincidan con "${search.searchQuery}"`
+                : 'No hay publicaciones con los filtros seleccionados'}
+            </Text>
           </View>
         ) : (
-          <Text
-            style={[styles.emptyText, { color: theme.colors.textSecondary }]}
-          >
-            {publicationData.isLoading
-              ? 'Cargando publicaciones...'
-              : 'No hay publicaciones para mostrar'}
-          </Text>
+          <View style={styles.emptyStateContent}>
+            <View style={styles.emptyStateIconContainer}>
+              <Text style={styles.emptyStateIcon}>
+                {publicationData.isLoading ? '⏳' : '📭'}
+              </Text>
+            </View>
+            <Text style={styles.emptyStateTitle}>
+              {publicationData.isLoading
+                ? 'Cargando publicaciones'
+                : 'No hay publicaciones'}
+            </Text>
+            <Text style={styles.emptyStateDescription}>
+              {publicationData.isLoading
+                ? 'Obteniendo los datos más recientes'
+                : 'No hay publicaciones disponibles en esta clase de animal'}
+            </Text>
+          </View>
         )}
       </View>
     ),
-    [errorState.showDelayedError, publicationData.isLoading, theme]
+    [
+      errorState.showDelayedError,
+      publicationData.isLoading,
+      search.searchQuery,
+      filterOptions,
+      theme,
+      styles
+    ]
   );
 
   const renderSkeletons = useCallback(
@@ -532,47 +888,115 @@ const PublicationScreen: React.FC = () => {
           <PublicationSkeleton
             key={index}
             viewMode="card"
-            style={{ marginBottom: 16 }}
+            style={styles.skeletonItem}
           />
         ))}
       </View>
     ),
-    []
+    [styles]
   );
 
   const getItemLayout = useCallback(
     (_: unknown, index: number) => ({
-      length: ITEM_HEIGHT,
-      offset: ITEM_HEIGHT * index,
+      length: ACTUAL_ITEM_HEIGHT,
+      offset: ACTUAL_ITEM_HEIGHT * index,
       index
     }),
     []
   );
 
   const keyExtractor = useCallback(
-    (item: PublicationModelResponse, index: number) => {
-      const id = item.recordId?.toString() || `unknown-${index}`;
-      return `${selectedStatus}-${id}-${index}`;
+    (item: PublicationModelResponse) => {
+      return `pub-${item.recordId}-${selectedStatus}`;
     },
     [selectedStatus]
   );
 
+  const flatListOptimizations = useMemo(
+    () => ({
+      removeClippedSubviews: true,
+      maxToRenderPerBatch: CONFIG.PERFORMANCE.MAX_RENDER_BATCH,
+      windowSize: CONFIG.PERFORMANCE.WINDOW_SIZE,
+      initialNumToRender: CONFIG.UI.INITIAL_RENDER_COUNT,
+      updateCellsBatchingPeriod: CONFIG.PERFORMANCE.UPDATE_BATCHING_PERIOD,
+      maintainVisibleContentPosition: {
+        minIndexForVisible: 0,
+        autoscrollToTopThreshold: 10
+      },
+      extraData: `${selectedStatus}-${finalPublications.length}-${publicationData.isLoadingMore}`
+    }),
+    [selectedStatus, finalPublications.length, publicationData.isLoadingMore]
+  );
+
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top + 12,
+            transform: [{ translateY: headerTranslateY }],
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000
+          }
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.collapseHeaderButton}
+          onPress={() => handleHeaderVisibilityChange(false)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.collapseHeaderIcon}>▲</Text>
+          <Text style={styles.collapseHeaderText}>Ocultar</Text>
+        </TouchableOpacity>
+
         {errorState.showDelayedError && (
-          <View
+          <Animated.View
             style={[
               styles.connectionBanner,
-              { backgroundColor: theme.colors.warning || '#ff9800' }
+              {
+                opacity: bannerAnim,
+                transform: [
+                  {
+                    translateY: bannerAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-50, 0]
+                    })
+                  }
+                ]
+              }
             ]}
           >
-            <ActivityIndicator size="small" color="#fff" />
-            <Text style={styles.connectionBannerText}>Reconectando...</Text>
-          </View>
+            <View style={styles.connectionBannerContent}>
+              <ActivityIndicator size="small" color="#fff" />
+              <Text style={styles.connectionBannerText}>
+                Reconectando con el servidor...
+              </Text>
+            </View>
+          </Animated.View>
         )}
+
+        <SearchBar
+          value={search.searchQuery}
+          onChangeText={search.handleSearchChange}
+          onClear={search.clearSearch}
+          isFocused={search.isFocused}
+          onFocus={() => search.setIsFocused(true)}
+          onBlur={() => search.setIsFocused(false)}
+          resultsCount={search.filteredPublications.length}
+          totalCount={publicationData.publications.length}
+        />
+
+        <PublicationFilters
+          publications={search.filteredPublications}
+          onFilterChange={handleFilterChange}
+          theme={theme}
+          isVisible={isHeaderVisible}
+        />
+
         <StatusTabs
           selectedStatus={selectedStatus}
           onStatusChange={handleStatusChange}
@@ -585,129 +1009,86 @@ const PublicationScreen: React.FC = () => {
             isCircuitBreakerOpen: errorState.isCircuitBreakerOpen
           }}
         />
-      </View>
+      </Animated.View>
 
-      <FlatList
-        ref={listRef}
-        data={publicationData.publications}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        contentContainerStyle={[
-          styles.listContent,
-          publicationData.isEmpty &&
-            !publicationData.isLoading &&
-            styles.emptyListContent
+      {!isHeaderVisible && (
+        <TouchableOpacity
+          style={[styles.floatingHeaderButton, { top: insets.top + 12 }]}
+          onPress={() => handleHeaderVisibilityChange(true)}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.floatingHeaderButtonIcon}>▼</Text>
+          <Text style={styles.floatingHeaderButtonText}>Mostrar filtros</Text>
+        </TouchableOpacity>
+      )}
+
+      <Animated.View
+        style={[
+          styles.contentContainer,
+          {
+            paddingTop: insets.top + 12,
+            opacity: contentAnim,
+            transform: [
+              {
+                translateY: contentAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0]
+                })
+              }
+            ]
+          }
         ]}
-        refreshControl={
-          <RefreshControl
-            refreshing={publicationData.isRefreshing}
-            onRefresh={operations.handleRefresh}
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
-            title="Actualizando..."
-            titleColor={theme.colors.textSecondary}
-          />
-        }
-        onEndReached={operations.handleLoadMore}
-        onEndReachedThreshold={CONFIG.SCROLL.END_REACHED_THRESHOLD}
-        ListEmptyComponent={
-          publicationData.isLoading ? renderSkeletons : renderEmpty
-        }
-        ListFooterComponent={renderFooter}
-        getItemLayout={getItemLayout}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={CONFIG.PERFORMANCE.MAX_RENDER_BATCH}
-        windowSize={CONFIG.PERFORMANCE.WINDOW_SIZE}
-        initialNumToRender={CONFIG.UI.INITIAL_RENDER_COUNT}
-        updateCellsBatchingPeriod={CONFIG.PERFORMANCE.UPDATE_BATCHING_PERIOD}
-        showsVerticalScrollIndicator={true}
-        extraData={selectedStatus}
-        legacyImplementation={false}
-      />
+      >
+        <View style={styles.titleContainer}>
+          <Text style={styles.titleMain} accessibilityRole="header">
+            Publicaciones
+          </Text>
+          <Text style={styles.titleStatus}>
+            {selectedStatus.toLowerCase() === 'pending'
+              ? 'Pendientes de revisión'
+              : selectedStatus.toLowerCase() === 'accepted'
+                ? 'Aceptadas'
+                : 'Rechazadas'}
+            {'  👉'}
+          </Text>
+        </View>
+        <FlatList
+          ref={listRef}
+          data={finalPublications}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          getItemLayout={getItemLayout}
+          {...flatListOptimizations}
+          contentContainerStyle={[
+            styles.listContent,
+            finalPublications.length === 0 &&
+              !publicationData.isLoading &&
+              styles.listContentEmpty
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={publicationData.isRefreshing}
+              onRefresh={operations.handleRefresh}
+              colors={[theme.theme.colors.primary]}
+              tintColor={theme.theme.colors.primary}
+              title="Actualizando..."
+              titleColor={theme.theme.colors.textSecondary}
+            />
+          }
+          onEndReached={operations.handleLoadMore}
+          onEndReachedThreshold={CONFIG.SCROLL.END_REACHED_THRESHOLD}
+          ListEmptyComponent={
+            publicationData.isLoading ? renderSkeletons : renderEmpty
+          }
+          ListFooterComponent={renderFooter}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={true}
+          legacyImplementation={false}
+        />
+      </Animated.View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-    elevation: 2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2
-  },
-  listContent: { paddingHorizontal: 16, paddingVertical: 8 },
-  emptyListContent: { flexGrow: 1, justifyContent: 'center' },
-  footer: { paddingVertical: 20, alignItems: 'center' },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 64
-  },
-  emptyText: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  skeletonContainer: { paddingHorizontal: 16, paddingVertical: 8 },
-  tabsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    marginHorizontal: 4,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    minHeight: 60
-  },
-  activeTab: {
-    borderColor: 'transparent',
-    elevation: 3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4
-  },
-  errorTab: { backgroundColor: '#ffebee', borderColor: '#f44336' },
-  warningTab: { borderColor: '#ff9800' },
-  circuitBreakerTab: { backgroundColor: '#ff9800', borderColor: '#ff9800' },
-  tabContent: { alignItems: 'center', justifyContent: 'center' },
-  tabText: { fontSize: 13, fontWeight: '500', textAlign: 'center' },
-  activeTabText: { fontWeight: '600' },
-  tabStats: { fontSize: 11, fontWeight: '400', marginTop: 2, opacity: 0.8 },
-  tabLoader: { position: 'absolute', top: 4, right: 4 },
-  footerText: { fontSize: 13, marginTop: 8, textAlign: 'center' },
-  retryButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 8
-  },
-  retryButtonText: { fontSize: 14, fontWeight: '500' },
-  temporaryErrorContainer: { justifyContent: 'center', alignItems: 'center' },
-  connectionBanner: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    paddingHorizontal: 16
-  },
-  connectionBannerText: { fontSize: 14, color: '#fff', marginLeft: 8 }
-});
 
 export default PublicationScreen;

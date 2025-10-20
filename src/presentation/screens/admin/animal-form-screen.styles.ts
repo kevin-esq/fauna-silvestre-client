@@ -1,7 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { Theme } from '../../contexts/theme.context';
 
-// Design System Constants
 const SPACING = {
   xs: 4,
   sm: 8,
@@ -38,7 +37,6 @@ const TYPOGRAPHY = {
   button: { fontSize: 16, fontWeight: '600' as const }
 } as const;
 
-// Helper functions
 const createShadow = (elevation: number) => ({
   shadowColor: '#000',
   shadowOffset: {
@@ -55,7 +53,6 @@ export const createStyles = (
   insets: { top: number; bottom: number }
 ) =>
   StyleSheet.create({
-    // ==================== LAYOUT ====================
     container: {
       top: insets.top,
       bottom: insets.bottom,
@@ -76,7 +73,6 @@ export const createStyles = (
       height: 100
     },
 
-    // ==================== HEADER ====================
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -117,7 +113,6 @@ export const createStyles = (
       opacity: 0.6
     },
 
-    // ==================== FORM SECTIONS ====================
     sectionContainer: {
       marginTop: SPACING.xl,
       marginBottom: SPACING.lg
@@ -131,7 +126,6 @@ export const createStyles = (
       borderBottomColor: theme.colors.primaryLight
     },
 
-    // ==================== FORM FIELDS ====================
     fieldContainer: {
       marginBottom: SPACING.lg
     },
@@ -179,7 +173,6 @@ export const createStyles = (
       marginTop: SPACING.xs
     },
 
-    // ==================== IMAGE SELECTOR ====================
     imageSelector: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -205,7 +198,6 @@ export const createStyles = (
       fontFamily: 'monospace'
     },
 
-    // ==================== PREVIEW SECTION ====================
     previewContainer: {
       backgroundColor: theme.colors.surface,
       borderRadius: BORDER_RADIUS.lg,
@@ -247,7 +239,6 @@ export const createStyles = (
       marginTop: SPACING.sm
     },
 
-    // Selección de imagen
     imagePreviewContainer: {
       position: 'relative',
       alignItems: 'center',
@@ -315,5 +306,63 @@ export const createStyles = (
     galleryButtonText: {
       ...TYPOGRAPHY.button,
       color: theme.colors.forest
+    },
+
+    classSelectorContainer: {
+      marginBottom: SPACING.lg,
+      padding: SPACING.lg,
+      backgroundColor: theme.colors.surface,
+      borderRadius: BORDER_RADIUS.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...createShadow(ELEVATION.sm)
+    },
+    classSelectorLabel: {
+      ...TYPOGRAPHY.body1,
+      color: theme.colors.text,
+      marginBottom: SPACING.xs,
+      fontWeight: '600'
+    },
+    classSelectorSubtext: {
+      ...TYPOGRAPHY.caption,
+      color: theme.colors.textSecondary,
+      marginBottom: SPACING.md
+    },
+    classOptionsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between'
+    },
+    classOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.md,
+      borderRadius: BORDER_RADIUS.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      marginBottom: SPACING.sm,
+      flex: 1,
+      minWidth: '48%',
+      ...createShadow(ELEVATION.sm)
+    },
+    classOptionSelected: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary
+    },
+    classIcon: {
+      fontSize: 16,
+      marginRight: SPACING.sm
+    },
+    classLabel: {
+      ...TYPOGRAPHY.body2,
+      color: theme.colors.text,
+      flex: 1,
+      fontWeight: '500'
+    },
+    classLabelSelected: {
+      color: theme.colors.textOnPrimary,
+      fontWeight: '600'
     }
   });

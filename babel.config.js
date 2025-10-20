@@ -1,8 +1,6 @@
 module.exports = {
   presets: ['module:@react-native/babel-preset'],
   plugins: [
-    'react-native-worklets-core/plugin',
-    'react-native-reanimated/plugin',
     [
       'module-resolver',
       {
@@ -22,6 +20,8 @@ module.exports = {
         safe: false,
         allowUndefined: true
       }
-    ]
+    ],
+    'react-native-worklets-core/plugin',
+    'react-native-worklets/plugin'
   ]
 };

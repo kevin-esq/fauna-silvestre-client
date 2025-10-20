@@ -1,163 +1,153 @@
 import { StyleSheet } from 'react-native';
 import { Theme } from '@/presentation/contexts/theme.context';
 
-// Función para crear sombras optimizadas
-const createModernShadow = (
-  elevation: number,
-  color = '#000',
-  opacity = 0.1
-) => ({
-  shadowColor: color,
+const createShadow = (elevation: number, theme: Theme, opacity = 0.08) => ({
+  shadowColor: theme.colors.shadow,
   shadowOffset: {
     width: 0,
     height: Math.max(1, elevation / 2)
   },
-  shadowOpacity: Math.min(0.25, opacity + elevation * 0.01),
-  shadowRadius: Math.max(2, elevation * 1.5),
-  elevation: elevation + 2
+  shadowOpacity: Math.min(0.3, opacity + elevation * 0.01),
+  shadowRadius: Math.max(3, elevation * 1.2),
+  elevation: elevation + 1
 });
 
 export const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    // Estilos principales del card
     card: {
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.medium,
+      borderRadius: theme.borderRadius.large,
       overflow: 'hidden',
       marginBottom: theme.spacing.medium,
       marginHorizontal: theme.spacing.small,
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: theme.borderWidths.hairline,
       borderColor: theme.colors.border,
-      transform: [{ scale: 1 }], // Preparar para animaciones
-      ...createModernShadow(6, theme.colors.shadow, 0.08)
+      ...createShadow(4, theme, 0.06)
     },
 
     presentationCard: {
       marginHorizontal: theme.spacing.large,
-      borderRadius: theme.borderRadius.medium,
-      ...createModernShadow(8, theme.colors.shadow, 0.12)
-    },
-
-    processingCard: {
-      opacity: 0.8,
-      transform: [{ scale: 0.98 }]
+      borderRadius: theme.borderRadius.xlarge,
+      ...createShadow(8, theme, 0.1)
     },
 
     imageContainer: {
-      borderTopLeftRadius: theme.borderRadius.medium,
-      borderTopRightRadius: theme.borderRadius.medium,
-      overflow: 'hidden'
+      borderTopLeftRadius: theme.borderRadius.large,
+      borderTopRightRadius: theme.borderRadius.large,
+      overflow: 'hidden',
+      backgroundColor: theme.colors.surfaceVariant
     },
 
     cardContent: {
       padding: theme.spacing.medium,
-      flex: 1,
       backgroundColor: theme.colors.surface
     },
 
-    // Estilos del contenido
     contentContainer: {
-      flex: 1
+      gap: theme.spacing.small
     },
 
     headerContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: theme.spacing.small
+      gap: theme.spacing.small,
+      marginBottom: theme.spacing.tiny
     },
 
     titleText: {
-      fontSize: theme.typography.fontSize.large,
-      fontWeight: '800',
+      fontSize: theme.typography.fontSize.xlarge,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: theme.colors.text,
       flex: 1,
-      marginRight: theme.spacing.small,
-      lineHeight: theme.typography.fontSize.large,
-      letterSpacing: -0.3
+      lineHeight: theme.typography.lineHeight.xlarge,
+      letterSpacing: -0.5
+    },
+
+    metaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.tiny,
+      marginBottom: theme.spacing.tiny
     },
 
     dateText: {
       fontSize: theme.typography.fontSize.small,
-      fontWeight: '500',
-      marginBottom: theme.spacing.small,
-      opacity: 0.8,
-      letterSpacing: 0.2
+      fontWeight: theme.typography.fontWeight.medium,
+      color: theme.colors.textSecondary,
+      opacity: 0.7,
+      letterSpacing: 0.1
     },
 
     descriptionText: {
       fontSize: theme.typography.fontSize.medium,
-      lineHeight: theme.typography.fontSize.medium,
-      marginBottom: theme.spacing.medium,
-      fontWeight: '400',
-      textAlign: 'justify'
+      lineHeight: theme.typography.lineHeight.medium,
+      fontWeight: theme.typography.fontWeight.regular,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.small
     },
 
-    // Estilos del badge de estado
     statusBadge: {
       paddingHorizontal: theme.spacing.small,
-      paddingVertical: theme.spacing.small,
+      paddingVertical: theme.spacing.tiny,
       borderRadius: theme.borderRadius.small,
-      borderWidth: 1,
+      borderWidth: theme.borderWidths.hairline,
       flexDirection: 'row',
       alignItems: 'center',
-      ...createModernShadow(2, theme.colors.shadow, 0.05)
+      gap: theme.spacing.tiny,
+      alignSelf: 'flex-start',
+      minHeight: 24
     },
 
-    statusBadgeEmoji: {
-      fontSize: theme.typography.fontSize.small,
-      marginRight: theme.spacing.small
+    statusBadgeIcon: {
+      marginRight: 2
     },
 
     statusBadgeText: {
-      fontSize: theme.typography.fontSize.small,
-      fontWeight: '700',
+      fontSize: theme.typography.fontSize.small - 1,
+      fontWeight: theme.typography.fontWeight.bold,
       textTransform: 'uppercase',
       letterSpacing: 0.5
     },
 
-    // Estilos de las filas de estado
     statusRowsContainer: {
-      gap: theme.spacing.small
+      flexDirection: 'row',
+      gap: theme.spacing.small,
+      flexWrap: 'wrap'
     },
 
     statusContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: theme.spacing.small,
-      paddingVertical: theme.spacing.small,
-      backgroundColor: theme.colors.surface,
+      paddingVertical: theme.spacing.tiny,
+      backgroundColor: theme.colors.surfaceVariant,
       borderRadius: theme.borderRadius.small,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.border
+      borderWidth: theme.borderWidths.hairline,
+      borderColor: theme.colors.border,
+      gap: theme.spacing.tiny
     },
 
     statusIconContainer: {
-      flexDirection: 'row',
+      width: 16,
       alignItems: 'center',
-      marginRight: theme.spacing.small,
-      minWidth: theme.spacing.small
-    },
-
-    statusEmoji: {
-      fontSize: theme.typography.fontSize.medium,
-      marginRight: theme.spacing.small
+      justifyContent: 'center'
     },
 
     statusText: {
-      fontWeight: '600',
-      fontSize: theme.typography.fontSize.medium,
-      flex: 1,
-      lineHeight: theme.typography.fontSize.medium
+      fontWeight: theme.typography.fontWeight.bold,
+      fontSize: theme.typography.fontSize.small,
+      letterSpacing: 0.2
     },
 
-    // Estilos de los botones de revisión
     buttonsContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       marginTop: theme.spacing.medium,
       paddingTop: theme.spacing.medium,
       gap: theme.spacing.small,
-      borderTopWidth: StyleSheet.hairlineWidth
+      borderTopWidth: theme.borderWidths.hairline,
+      borderTopColor: theme.colors.border
     },
 
     actionButton: {
@@ -167,107 +157,62 @@ export const createStyles = (theme: Theme) =>
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      overflow: 'hidden', // Para ripple effect
-      minHeight: theme.spacing.medium,
-      ...createModernShadow(4, theme.colors.shadow, 0.1)
+      gap: theme.spacing.small,
+      minHeight: 44,
+      ...createShadow(3, theme, 0.08)
     },
 
     rejectButton: {
       backgroundColor: theme.colors.error,
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: theme.borderWidths.hairline,
       borderColor: theme.colors.error
     },
 
     approveButton: {
       backgroundColor: theme.colors.success,
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: theme.borderWidths.hairline,
       borderColor: theme.colors.success
     },
 
     disabledButton: {
-      opacity: 0.6,
-      transform: [{ scale: 0.98 }]
-    },
-
-    buttonEmoji: {
-      fontSize: theme.typography.fontSize.medium,
-      marginRight: theme.spacing.small
+      opacity: 0.5
     },
 
     buttonIcon: {
-      marginRight: theme.spacing.small
+      marginRight: 0
     },
 
     buttonText: {
-      color: theme.colors.text,
-      fontWeight: '700',
+      color: theme.colors.textOnPrimary,
+      fontWeight: theme.typography.fontWeight.bold,
       fontSize: theme.typography.fontSize.medium,
-      letterSpacing: 0.3
+      letterSpacing: 0.5
     },
 
-    // Estilos del overlay de procesamiento
     processingOverlay: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: theme.colors.overlay,
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: theme.borderRadius.medium
+      borderRadius: theme.borderRadius.large,
+      zIndex: 10
     },
 
     processingContent: {
       alignItems: 'center',
-      padding: theme.spacing.medium,
-      backgroundColor: theme.colors.overlay,
+      padding: theme.spacing.large,
+      backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.medium,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.border,
-      ...createModernShadow(3, theme.colors.shadow, 0.1)
+      gap: theme.spacing.medium,
+      minWidth: 140,
+      ...createShadow(8, theme, 0.2)
     },
 
     processingText: {
-      marginTop: theme.spacing.small,
-      fontWeight: '600',
+      fontWeight: theme.typography.fontWeight.bold,
       fontSize: theme.typography.fontSize.medium,
-      letterSpacing: 0.2,
+      color: theme.colors.text,
+      letterSpacing: 0.3,
       textAlign: 'center'
-    },
-
-    // Estilos adicionales para mejoras visuales
-    cardHover: {
-      transform: [{ scale: 1.02 }],
-      ...createModernShadow(8, theme.colors.shadow, 0.15)
-    },
-
-    // Estilos para estados específicos
-    acceptedCard: {
-      borderLeftWidth: 4,
-      borderLeftColor: theme.colors.success
-    },
-
-    rejectedCard: {
-      borderLeftWidth: 4,
-      borderLeftColor: theme.colors.error
-    },
-
-    pendingCard: {
-      borderLeftWidth: 4,
-      borderLeftColor: theme.colors.info
-    },
-
-    // Estilos para animaciones
-    fadeIn: {
-      opacity: 1
-    },
-
-    fadeOut: {
-      opacity: 0
-    },
-
-    slideUp: {
-      transform: [{ translateY: 0 }]
-    },
-
-    slideDown: {
-      transform: [{ translateY: 10 }]
     }
   });

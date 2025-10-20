@@ -2,7 +2,6 @@ import { StyleSheet } from 'react-native';
 import { Theme } from '../../contexts/theme.context';
 import { EdgeInsets } from 'react-native-safe-area-context';
 
-// Design System Constants
 const SPACING = {
   xs: 4,
   sm: 8,
@@ -39,7 +38,6 @@ const TYPOGRAPHY = {
   button: { fontSize: 16, fontWeight: '600' as const }
 } as const;
 
-// Helper functions
 const createShadow = (elevation: number) => ({
   shadowColor: '#000',
   shadowOffset: {
@@ -53,7 +51,6 @@ const createShadow = (elevation: number) => ({
 
 export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
   StyleSheet.create({
-    // ==================== LAYOUT ====================
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
@@ -70,7 +67,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       height: SPACING.xxxl
     },
 
-    // ==================== HEADER ====================
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -118,7 +114,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       opacity: 0.6
     },
 
-    // ==================== SECTIONS ====================
     sectionTitle: {
       ...TYPOGRAPHY.h3,
       color: theme.colors.primary,
@@ -128,7 +123,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       borderBottomColor: theme.colors.primaryLight
     },
 
-    // ==================== IMAGE EDIT SECTION ====================
     imageEditContainer: {
       backgroundColor: theme.colors.surface,
       borderRadius: BORDER_RADIUS.lg,
@@ -142,7 +136,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       justifyContent: 'center'
     },
 
-    // ==================== IMAGE CONTROLS ====================
     imageControlsContainer: {
       marginBottom: SPACING.lg
     },
@@ -184,7 +177,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       marginTop: SPACING.sm
     },
 
-    // ==================== CAMERA ACTIONS ====================
     cameraActions: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -234,7 +226,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       fontStyle: 'italic'
     },
 
-    // ==================== INFO SECTION ====================
     infoContainer: {
       backgroundColor: theme.colors.surface,
       borderRadius: BORDER_RADIUS.lg,
@@ -265,7 +256,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       lineHeight: 22
     },
 
-    // ==================== ERROR STATE ====================
     errorContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -291,7 +281,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       color: theme.colors.textOnPrimary
     },
 
-    // ==================== LEGACY STYLES (mantener compatibilidad) ====================
     placeholderContainer: {
       alignItems: 'center',
       paddingVertical: SPACING.xxxl,

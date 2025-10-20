@@ -2,7 +2,12 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
-apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localProperties.load(new FileInputStream(localPropertiesFile))
+}
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -42,7 +47,7 @@ react {
     // entryFile = file("../js/MyApplication.android.js")
     //
     //   A list of extra flags to pass to the 'bundle' commands.
-    //   See https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle
+    //   See https://github.comreact-native-community/cli/blob/main/docs/commands.md#bundle
     // extraPackagerArgs = []
 
     /* Hermes Commands */
@@ -87,7 +92,7 @@ android {
         versionCode 1
         versionName "1.0"
         manifestPlaceholders = [
-            GOOGLE_MAPS_API_KEY: project.env.get("GOOGLE_MAPS_API_KEY")
+            GOOGLE_MAPS_API_KEY: localProperties.getProperty("GOOGLE_MAPS_API_KEY", "")
         ]
     }
     flavorDimensions "react-native-camera"

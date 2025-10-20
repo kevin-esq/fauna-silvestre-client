@@ -1,10 +1,11 @@
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 interface StepIndicatorProps {
   currentStep: number;
   totalSteps: number;
-  variables: Record<string, string>;
+  variables: ThemeVariablesType;
 }
 
 const StepIndicator: React.FC<StepIndicatorProps> = ({
@@ -97,7 +98,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
   );
 };
 
-const createStyles = (variables: Record<string, string>) =>
+const createStyles = (variables: ThemeVariablesType) =>
   StyleSheet.create({
     container: {
       marginBottom: 24,

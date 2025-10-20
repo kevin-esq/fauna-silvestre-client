@@ -1,28 +1,30 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { usePublications } from '../contexts/publication.context';
 import { UserModel, getAllUsers } from '@/shared/utils/fakeData';
 
 interface AdminDataState {
-  users: UserModel[];
-  loading: boolean;
-  refreshing: boolean;
-  error: string | null;
+  readonly users: UserModel[];
+  readonly loading: boolean;
+  readonly refreshing: boolean;
+  readonly error: string | null;
 }
 
 interface AdminDataActions {
-  loadUsers: (isRefreshing?: boolean) => Promise<void>;
-  handleRefresh: () => void;
-  retryLoad: () => void;
+  readonly loadUsers: (isRefreshing?: boolean) => Promise<void>;
+  readonly handleRefresh: () => void;
+  readonly retryLoad: () => void;
+}
+
+interface PublicationCounts {
+  readonly total: number;
+  readonly users: number;
+  readonly isLoading: boolean;
 }
 
 interface AdminDataReturn {
-  state: AdminDataState;
-  actions: AdminDataActions;
-  publicationCounts: {
-    total: number;
-    users: number;
-    isLoading: boolean;
-  };
+  readonly state: AdminDataState;
+  readonly actions: AdminDataActions;
+  readonly publicationCounts: PublicationCounts;
 }
 
 export const useAdminData = (): AdminDataReturn => {
@@ -35,63 +37,80 @@ export const useAdminData = (): AdminDataReturn => {
     error: null
   });
 
-  const loadUsers = useCallback(async (isRefreshing = false) => {
+  const loadUsers = useCallback(async (isRefreshing = false): Promise<void> => {
     try {
-      setState(prev => ({
-        ...prev,
+      setState(prevState => ({
+        ...prevState,
         loading: !isRefreshing,
         refreshing: isRefreshing,
         error: null
       }));
 
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise<void>(resolve => {
+        setTimeout(() => {
+          resolve();
+        }, 800);
+      });
 
       const users = getAllUsers();
 
-      setState(prev => ({
-        ...prev,
+      setState(prevState => ({
+        ...prevState,
         users,
         loading: false,
         refreshing: false
       }));
     } catch (error) {
-      setState(prev => ({
-        ...prev,
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error al cargar usuarios';
+
+      setState(prevState => ({
+        ...prevState,
         loading: false,
         refreshing: false,
-        error:
-          error instanceof Error ? error.message : 'Error al cargar usuarios'
+        error: errorMessage
       }));
     }
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    loadUsers(true);
-    loadCounts();
+  const handleRefresh = useCallback((): void => {
+    void loadUsers(true);
+    void loadCounts();
   }, [loadUsers, loadCounts]);
-  const retryLoad = useCallback(() => {
-    loadUsers();
+
+  const retryLoad = useCallback((): void => {
+    void loadUsers();
   }, [loadUsers]);
 
   useEffect(() => {
-    loadUsers();
-    loadCounts();
+    void loadUsers();
+    void loadCounts();
   }, [loadUsers, loadCounts]);
-  const actions: AdminDataActions = {
-    loadUsers,
-    handleRefresh,
-    retryLoad
-  };
 
-  const publicationCounts = {
-    total: publicationState.counts?.data?.records || 0,
-    users: publicationState.counts?.data?.users || 0,
-    isLoading: publicationState.counts?.isLoading || false
-  };
+  const actions: AdminDataActions = useMemo(
+    () => ({
+      loadUsers,
+      handleRefresh,
+      retryLoad
+    }),
+    [loadUsers, handleRefresh, retryLoad]
+  );
 
-  return {
-    state,
-    actions,
-    publicationCounts
-  };
+  const publicationCounts: PublicationCounts = useMemo(
+    () => ({
+      total: publicationState.counts.data?.records ?? 0,
+      users: publicationState.counts.data?.users ?? 0,
+      isLoading: publicationState.counts.isLoading
+    }),
+    [publicationState.counts.data, publicationState.counts.isLoading]
+  );
+
+  return useMemo(
+    () => ({
+      state,
+      actions,
+      publicationCounts
+    }),
+    [state, actions, publicationCounts]
+  );
 };

@@ -23,27 +23,29 @@ import {
   CameraRoll
 } from '@react-native-camera-roll/camera-roll';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { Theme, themeVariables } from '../../contexts/theme.context';
+import {
+  Theme,
+  themeVariables,
+  ThemeVariablesType
+} from '../../contexts/theme.context';
 import { createStyles } from './custom-image-picker-screen.styles';
 import { Location } from 'react-native-get-location';
-import {
-  MediaLibraryService,
-  MediaMetadata
-} from '../../../services/media/media-library.service';
+import { MediaLibraryService } from '../../../services/media/media-library.service';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PAGE_SIZE = 50;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PHOTO_ITEM_SIZE = (SCREEN_WIDTH - 12) / 3;
-const INITIAL_RENDER_COUNT = 15;
-const MAX_RENDER_PER_BATCH = 12;
-const WINDOW_SIZE = 5;
+const INITIAL_RENDER_COUNT = 21;
+const MAX_RENDER_PER_BATCH = 15;
+const WINDOW_SIZE = 7;
 
 interface ImageItem {
   uri: string;
   id: string;
   title: string;
-  hasLocation: boolean;
-  isLoading?: boolean;
+  hasLocation: boolean | null;
+  isLoading: boolean;
 }
 
 interface AlbumWithCover extends Album {
@@ -64,358 +66,100 @@ const parseCoordinate = (value: unknown): number => {
   return isNaN(num) ? 0 : num;
 };
 
-async function hasValidLocation(
-  metadataPromise: Promise<MediaMetadata | null>
-): Promise<boolean> {
+async function checkLocationAsync(uri: string): Promise<boolean> {
   try {
-    const metadata = await metadataPromise;
+    const metadata = await MediaLibraryService.extractMetadata(uri);
     if (!metadata) return false;
     const lat = parseCoordinate(metadata.latitude);
     const lng = parseCoordinate(metadata.longitude);
     return lat !== 0 && lng !== 0;
   } catch (error) {
-    console.error('Error fetching metadata:', error);
+    console.error('Error checking location:', error);
     return false;
   }
-}
-
-const ShimmerItem = memo<{
-  style: ReturnType<typeof createStyles>;
-  variables: Record<string, string>;
-  width?: number;
-  height?: number;
-  variants: 'photo' | 'cover';
-}>(({ style, variables, width, height, variants }) => {
-  const baseStyle = variants === 'photo' ? style.photo : style.albumCover;
-
-  return (
-    <View
-      style={[
-        baseStyle,
-        {
-          backgroundColor: variables['--surface-variant'],
-          opacity: 0.6,
-          ...(width && { width }),
-          ...(height && { height })
-        }
-      ]}
-    >
-      <ActivityIndicator
-        size="small"
-        color={variables['--text-secondary']}
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          marginTop: -10,
-          marginLeft: -10
-        }}
-      />
-    </View>
-  );
-});
-
-ShimmerItem.displayName = 'ShimmerItem';
-
-function useCameraRoll() {
-  const [albums, setAlbums] = useState<AlbumWithCover[]>([]);
-  const [photos, setPhotos] = useState<ImageItem[]>([]);
-  const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithCover | null>(
-    null
-  );
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [endCursor, setEndCursor] = useState<string | null>(null);
-  const [hasNextPage, setHasNextPage] = useState(true);
-  const [processedCount, setProcessedCount] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-
-  const loadAlbums = useCallback(
-    async (isRefresh = false) => {
-      if (loading && !isRefresh) return;
-
-      try {
-        if (isRefresh) {
-          setRefreshing(true);
-        } else {
-          setLoading(true);
-        }
-        setError(null);
-
-        const fetchedAlbums = await CameraRoll.getAlbums({
-          assetType: 'Photos'
-        });
-
-        if (!fetchedAlbums?.length) {
-          setError('No se encontraron álbumes en tu dispositivo');
-          return;
-        }
-
-        const albumsWithPlaceholders: AlbumWithCover[] = fetchedAlbums.map(
-          album => ({
-            ...album,
-            coverUri: undefined,
-            isLoading: true
-          })
-        );
-        setAlbums(albumsWithPlaceholders);
-
-        const albumPromises = fetchedAlbums.map(
-          async (album, index): Promise<AlbumWithCover> => {
-            try {
-              const photos = await CameraRoll.getPhotos({
-                first: 1,
-                groupName: album.title,
-                assetType: 'Photos'
-              });
-
-              const updatedAlbum: AlbumWithCover = {
-                ...album,
-                coverUri: photos.edges[0]?.node.image.uri,
-                isLoading: false
-              };
-
-              setAlbums(prev =>
-                prev.map((a, i) => (i === index ? updatedAlbum : a))
-              );
-
-              return updatedAlbum;
-            } catch {
-              return { ...album, coverUri: undefined, isLoading: false };
-            }
-          }
-        );
-
-        const albumsWithCovers = await Promise.allSettled(albumPromises);
-
-        const validAlbums = albumsWithCovers
-          .filter(
-            (result): result is PromiseFulfilledResult<AlbumWithCover> =>
-              result.status === 'fulfilled'
-          )
-          .map(result => result.value);
-
-        setAlbums(validAlbums);
-      } catch (err) {
-        console.error('Failed to load albums:', err);
-        setError('Error al cargar álbumes. Verifica los permisos de galería.');
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [loading]
-  );
-
-  const loadAlbumPhotos = useCallback(
-    async (album: AlbumWithCover, after?: string) => {
-      if ((!hasNextPage && after) || (loadingMore && after)) return;
-
-      try {
-        if (after) {
-          setLoadingMore(true);
-        } else {
-          setLoading(true);
-          setPhotos([]);
-          setProcessedCount(0);
-          setTotalCount(0);
-        }
-
-        setError(null);
-
-        const result = await CameraRoll.getPhotos({
-          first: PAGE_SIZE,
-          after: after || undefined,
-          groupName: album.title,
-          assetType: 'Photos',
-          include: ['filename', 'location', 'imageSize']
-        });
-
-        if (!after) {
-          setTotalCount(result.edges.length);
-        }
-
-        const initialPhotos = result.edges.map(
-          (edge: PhotoIdentifier, index: number) => ({
-            uri: edge.node.image.uri,
-            id:
-              edge.node.image.filename ||
-              `${edge.node.timestamp}-${index}-${album.title}`,
-            title: album.title,
-            hasLocation: false,
-            isLoading: true
-          })
-        );
-
-        setPhotos(prev =>
-          after ? [...prev, ...initialPhotos] : initialPhotos
-        );
-
-        result.edges.forEach(async (edge: PhotoIdentifier, index: number) => {
-          try {
-            const metadata = await MediaLibraryService.extractMetadata(
-              edge.node.image.uri
-            );
-            const photoId =
-              edge.node.image.filename ||
-              `${edge.node.timestamp}-${index}-${album.title}`;
-            const hasLocation = await hasValidLocation(
-              Promise.resolve(metadata)
-            );
-
-            setPhotos(prev =>
-              prev.map(photo =>
-                photo.id === photoId
-                  ? { ...photo, hasLocation, isLoading: false }
-                  : photo
-              )
-            );
-
-            setProcessedCount(prev => prev + 1);
-          } catch {
-            const photoId =
-              edge.node.image.filename ||
-              `${edge.node.timestamp}-${index}-${album.title}`;
-
-            setPhotos(prev =>
-              prev.map(photo =>
-                photo.id === photoId
-                  ? { ...photo, hasLocation: false, isLoading: false }
-                  : photo
-              )
-            );
-
-            setProcessedCount(prev => prev + 1);
-          }
-        });
-
-        setEndCursor(result.page_info.end_cursor || null);
-        setHasNextPage(result.page_info.has_next_page);
-      } catch (err) {
-        console.error('Failed to load photos:', err);
-        setError('Error al cargar fotos. Intenta nuevamente.');
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [hasNextPage, loadingMore]
-  );
-
-  const resetPhotos = useCallback(() => {
-    setPhotos([]);
-    setEndCursor(null);
-    setHasNextPage(true);
-    setError(null);
-    setProcessedCount(0);
-    setTotalCount(0);
-  }, []);
-
-  const refreshAlbums = useCallback(() => {
-    loadAlbums(true);
-  }, [loadAlbums]);
-
-  return {
-    albums,
-    photos,
-    selectedAlbum,
-    setSelectedAlbum,
-    loadAlbums,
-    loadAlbumPhotos,
-    resetPhotos,
-    refreshAlbums,
-    endCursor,
-    hasNextPage,
-    loading,
-    loadingMore,
-    refreshing,
-    error,
-    processedCount,
-    totalCount
-  };
 }
 
 const PhotoItem = memo<{
   uri: string;
   selected: boolean;
-  hasLocation: boolean;
-  isLoading?: boolean;
+  hasLocation: boolean | null;
+  isLoading: boolean;
   onPress: () => void;
   styles: ReturnType<typeof createStyles>;
   itemSize: number;
-  variables: Record<string, string>;
+  variables: ThemeVariablesType;
 }>(
   ({
     uri,
     selected,
     hasLocation,
-    isLoading = false,
+    isLoading,
     onPress,
     styles,
     itemSize,
     variables
-  }) => (
-    <TouchableOpacity
-      style={[
-        styles.photoItem,
-        { width: itemSize, height: itemSize },
-        !hasLocation && !isLoading && { opacity: 0.5 }
-      ]}
-      onPress={onPress}
-      activeOpacity={hasLocation || isLoading ? 0.8 : 0.3}
-      disabled={(!hasLocation && !isLoading) || isLoading}
-    >
-      {isLoading ? (
-        <ShimmerItem
-          style={styles}
-          variables={variables}
-          variants="photo"
-          width={itemSize}
-          height={itemSize}
-        />
-      ) : (
+  }) => {
+    const isChecking = hasLocation === null;
+    const canSelect = hasLocation === true && !isLoading;
+    const isDisabled = hasLocation === false && !isLoading;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.photoItem,
+          { width: itemSize, height: itemSize },
+          isDisabled && { opacity: 0.4 }
+        ]}
+        onPress={onPress}
+        activeOpacity={canSelect ? 0.7 : 0.9}
+        disabled={!canSelect}
+      >
         <Image
           source={{ uri }}
           style={[styles.photo, { width: itemSize, height: itemSize }]}
           resizeMode="cover"
+          fadeDuration={100}
         />
-      )}
 
-      {!isLoading && (
-        <View
-          style={[
-            styles.locationIcon,
-            {
-              backgroundColor: hasLocation ? '#4CAF50' : '#F44336',
-              opacity: 0.9
-            }
-          ]}
-        >
-          <Ionicons
-            name={hasLocation ? 'location' : 'location-outline'}
-            size={12}
-            color="white"
-          />
-        </View>
-      )}
-
-      {selected && hasLocation && !isLoading && (
-        <View style={styles.selectionOverlay}>
-          <View style={styles.selectionBadge}>
-            <Ionicons name="checkmark-circle" size={28} color="#007AFF" />
+        {isChecking && (
+          <View style={styles.checkingOverlay}>
+            <ActivityIndicator size="small" color={variables['--primary']} />
           </View>
-        </View>
-      )}
+        )}
 
-      {!hasLocation && !isLoading && (
-        <View style={styles.disabledPhotoOverlay}>
-          <Ionicons name="ban" size={24} color="#F44336" />
-        </View>
-      )}
-    </TouchableOpacity>
-  )
+        {!isChecking && hasLocation !== null && (
+          <View
+            style={[
+              styles.locationIcon,
+              {
+                backgroundColor: hasLocation ? '#4CAF50' : '#F44336'
+              }
+            ]}
+          >
+            <Ionicons
+              name={hasLocation ? 'location' : 'location-outline'}
+              size={12}
+              color="white"
+            />
+          </View>
+        )}
+
+        {selected && canSelect && (
+          <View style={styles.selectionOverlay}>
+            <View style={styles.selectionBadge}>
+              <Ionicons name="checkmark-circle" size={32} color="#007AFF" />
+            </View>
+          </View>
+        )}
+
+        {isDisabled && (
+          <View style={styles.disabledPhotoOverlay}>
+            <Ionicons name="ban" size={28} color="#F44336" />
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  }
 );
 
 PhotoItem.displayName = 'PhotoItem';
@@ -424,7 +168,7 @@ const AlbumItem = memo<{
   album: AlbumWithCover;
   onPress: () => void;
   styles: ReturnType<typeof createStyles>;
-  variables: Record<string, string>;
+  variables: ThemeVariablesType;
 }>(({ album, onPress, styles, variables }) => (
   <TouchableOpacity
     style={styles.albumItem}
@@ -433,12 +177,15 @@ const AlbumItem = memo<{
     disabled={album.isLoading}
   >
     {album.isLoading ? (
-      <ShimmerItem style={styles} variables={variables} variants="cover" />
+      <View style={[styles.albumCover, styles.albumCoverLoading]}>
+        <ActivityIndicator size="small" color={variables['--text-secondary']} />
+      </View>
     ) : album.coverUri ? (
       <Image
         source={{ uri: album.coverUri }}
         style={styles.albumCover}
         resizeMode="cover"
+        fadeDuration={100}
       />
     ) : (
       <View
@@ -473,34 +220,226 @@ const ProgressIndicator = memo<{
   processed: number;
   total: number;
   styles: ReturnType<typeof createStyles>;
-  variables: Record<string, string>;
+  variables: ThemeVariablesType;
 }>(({ processed, total, styles, variables }) => {
   const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
 
   return (
     <View style={styles.progressContainer}>
-      <View style={styles.progressBar}>
+      <View style={styles.progressBarContainer}>
         <View
           style={[
-            styles.progressBar,
+            styles.progressBarFill,
             {
               width: `${percentage}%`,
-              backgroundColor: variables['--primary'],
-              position: 'absolute',
-              left: 0,
-              top: 0
+              backgroundColor: variables['--primary']
             }
           ]}
         />
       </View>
       <Text style={styles.progressText}>
-        Analizando ubicaciones: {processed}/{total} ({percentage}%)
+        Verificando ubicaciones: {processed}/{total}
       </Text>
     </View>
   );
 });
 
 ProgressIndicator.displayName = 'ProgressIndicator';
+
+function useCameraRoll() {
+  const [albums, setAlbums] = useState<AlbumWithCover[]>([]);
+  const [photos, setPhotos] = useState<ImageItem[]>([]);
+  const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithCover | null>(
+    null
+  );
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [endCursor, setEndCursor] = useState<string | null>(null);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [processedCount, setProcessedCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const locationCheckQueue = useRef<Set<string>>(new Set());
+
+  const loadAlbums = useCallback(
+    async (isRefresh = false) => {
+      if (loading && !isRefresh) return;
+
+      try {
+        if (isRefresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+        setError(null);
+
+        const fetchedAlbums = await CameraRoll.getAlbums({
+          assetType: 'Photos'
+        });
+
+        if (!fetchedAlbums?.length) {
+          setError('No se encontraron álbumes en tu dispositivo');
+          return;
+        }
+
+        const albumsWithPlaceholders: AlbumWithCover[] = fetchedAlbums.map(
+          album => ({
+            ...album,
+            coverUri: undefined,
+            isLoading: true
+          })
+        );
+        setAlbums(albumsWithPlaceholders);
+
+        const batchSize = 5;
+        for (let i = 0; i < fetchedAlbums.length; i += batchSize) {
+          const batch = fetchedAlbums.slice(i, i + batchSize);
+          const batchPromises = batch.map(async (album, batchIndex) => {
+            const actualIndex = i + batchIndex;
+            try {
+              const photos = await CameraRoll.getPhotos({
+                first: 1,
+                groupName: album.title,
+                assetType: 'Photos'
+              });
+
+              const updatedAlbum: AlbumWithCover = {
+                ...album,
+                coverUri: photos.edges[0]?.node.image.uri,
+                isLoading: false
+              };
+
+              setAlbums(prev =>
+                prev.map((a, idx) => (idx === actualIndex ? updatedAlbum : a))
+              );
+
+              return updatedAlbum;
+            } catch {
+              return { ...album, coverUri: undefined, isLoading: false };
+            }
+          });
+
+          await Promise.all(batchPromises);
+        }
+      } catch (err) {
+        console.error('Failed to load albums:', err);
+        setError('Error al cargar álbumes. Verifica los permisos de galería.');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [loading]
+  );
+
+  const loadAlbumPhotos = useCallback(
+    async (album: AlbumWithCover, after?: string) => {
+      if ((!hasNextPage && after) || (loadingMore && after)) return;
+
+      try {
+        if (after) {
+          setLoadingMore(true);
+        } else {
+          setLoading(true);
+          setPhotos([]);
+          setProcessedCount(0);
+          setTotalCount(0);
+          locationCheckQueue.current.clear();
+        }
+
+        setError(null);
+
+        const result = await CameraRoll.getPhotos({
+          first: PAGE_SIZE,
+          after: after || undefined,
+          groupName: album.title,
+          assetType: 'Photos',
+          include: ['filename', 'imageSize']
+        });
+
+        const newPhotos = result.edges.map(
+          (edge: PhotoIdentifier, index: number) => ({
+            uri: edge.node.image.uri,
+            id:
+              edge.node.image.filename ||
+              `${edge.node.timestamp}-${index}-${album.title}`,
+            title: album.title,
+            hasLocation: null,
+            isLoading: false
+          })
+        );
+
+        setPhotos(prev => (after ? [...prev, ...newPhotos] : newPhotos));
+        setTotalCount(prev => prev + newPhotos.length);
+
+        const checkBatchSize = 3;
+        for (let i = 0; i < newPhotos.length; i += checkBatchSize) {
+          const batch = newPhotos.slice(i, i + checkBatchSize);
+
+          batch.forEach(async photo => {
+            if (locationCheckQueue.current.has(photo.id)) return;
+            locationCheckQueue.current.add(photo.id);
+
+            const hasLocation = await checkLocationAsync(photo.uri);
+
+            setPhotos(prev =>
+              prev.map(p => (p.id === photo.id ? { ...p, hasLocation } : p))
+            );
+
+            setProcessedCount(prev => prev + 1);
+            locationCheckQueue.current.delete(photo.id);
+          });
+
+          await new Promise<void>(resolve => setTimeout(resolve, 10));
+        }
+
+        setEndCursor(result.page_info.end_cursor || null);
+        setHasNextPage(result.page_info.has_next_page);
+      } catch (err) {
+        console.error('Failed to load photos:', err);
+        setError('Error al cargar fotos. Intenta nuevamente.');
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [hasNextPage, loadingMore]
+  );
+
+  const resetPhotos = useCallback(() => {
+    setPhotos([]);
+    setEndCursor(null);
+    setHasNextPage(true);
+    setError(null);
+    setProcessedCount(0);
+    setTotalCount(0);
+    locationCheckQueue.current.clear();
+  }, []);
+
+  const refreshAlbums = useCallback(() => {
+    loadAlbums(true);
+  }, [loadAlbums]);
+
+  return {
+    albums,
+    photos,
+    selectedAlbum,
+    setSelectedAlbum,
+    loadAlbums,
+    loadAlbumPhotos,
+    resetPhotos,
+    refreshAlbums,
+    endCursor,
+    hasNextPage,
+    loading,
+    loadingMore,
+    refreshing,
+    error,
+    processedCount,
+    totalCount
+  };
+}
 
 const CustomImagePickerScreen: React.FC<Props> = ({
   onConfirm,
@@ -528,13 +467,18 @@ const CustomImagePickerScreen: React.FC<Props> = ({
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const variables = useMemo(() => themeVariables(theme), [theme]);
-  const styles = useMemo(() => createStyles(variables), [variables]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(variables, insets), [variables, insets]);
   const photoListRef = useRef<FlatList>(null);
-  const albumListRef = useRef<FlatList>(null);
   const isMountedRef = useRef(true);
 
   const photosWithLocation = useMemo(
-    () => photos.filter(photo => photo.hasLocation && !photo.isLoading).length,
+    () => photos.filter(photo => photo.hasLocation === true).length,
+    [photos]
+  );
+
+  const photosChecked = useMemo(
+    () => photos.filter(photo => photo.hasLocation !== null).length,
     [photos]
   );
 
@@ -557,14 +501,12 @@ const CustomImagePickerScreen: React.FC<Props> = ({
     async (uri: string) => {
       try {
         const metadata = await MediaLibraryService.extractMetadata(uri);
-        const isValidLocation = await hasValidLocation(
-          Promise.resolve(metadata)
-        );
+        const hasLocation = await checkLocationAsync(uri);
 
-        if (!isValidLocation) {
+        if (!hasLocation) {
           Alert.alert(
             'Sin ubicación GPS',
-            'Esta imagen no contiene información de ubicación válida. Por favor, selecciona una imagen con datos GPS.',
+            'Esta imagen no contiene información de ubicación válida.',
             [{ text: 'Entendido', style: 'default' }]
           );
           return;
@@ -578,7 +520,7 @@ const CustomImagePickerScreen: React.FC<Props> = ({
           speed: 0,
           time: Date.now(),
           bearing: 0,
-          provider: 0,
+          provider: 'gps',
           verticalAccuracy: 0,
           course: 0
         };
@@ -587,7 +529,7 @@ const CustomImagePickerScreen: React.FC<Props> = ({
         console.error('Error processing photo:', err);
         Alert.alert(
           'Error de procesamiento',
-          'No se pudo procesar la imagen seleccionada. Por favor, intenta con otra.',
+          'No se pudo procesar la imagen seleccionada.',
           [{ text: 'Entendido', style: 'default' }]
         );
       }
@@ -607,13 +549,13 @@ const CustomImagePickerScreen: React.FC<Props> = ({
   );
 
   const handlePhotoSelect = useCallback(
-    (id: string, hasLocation: boolean, isLoading: boolean) => {
-      if (isLoading) return;
+    (id: string, hasLocation: boolean | null) => {
+      if (hasLocation === null) return;
 
       if (!hasLocation) {
         Alert.alert(
           'Imagen sin ubicación GPS',
-          'Esta imagen no contiene información de ubicación GPS. Solo puedes seleccionar imágenes que tengan datos de ubicación válidos.',
+          'Esta imagen no contiene datos de ubicación GPS.',
           [{ text: 'Entendido', style: 'default' }]
         );
         return;
@@ -626,11 +568,7 @@ const CustomImagePickerScreen: React.FC<Props> = ({
   const handleConfirm = useCallback(() => {
     if (!selectedId) return;
     const selectedPhoto = photos.find(photo => photo.id === selectedId);
-    if (
-      selectedPhoto &&
-      selectedPhoto.hasLocation &&
-      !selectedPhoto.isLoading
-    ) {
+    if (selectedPhoto && selectedPhoto.hasLocation === true) {
       confirmPhoto(selectedPhoto.uri);
     }
   }, [selectedId, photos, confirmPhoto]);
@@ -666,9 +604,10 @@ const CustomImagePickerScreen: React.FC<Props> = ({
 
   const photoKeyExtractor = useCallback((item: ImageItem) => item.id, []);
 
-  const albumKeyExtractor = useCallback((item: AlbumWithCover) => {
-    return `album-${item.title}-${item.count}`;
-  }, []);
+  const albumKeyExtractor = useCallback(
+    (item: AlbumWithCover) => `album-${item.title}-${item.count}`,
+    []
+  );
 
   const renderPhotoItem = useCallback(
     ({ item }: { item: ImageItem }) => (
@@ -677,9 +616,7 @@ const CustomImagePickerScreen: React.FC<Props> = ({
         selected={item.id === selectedId}
         hasLocation={item.hasLocation}
         isLoading={item.isLoading}
-        onPress={() =>
-          handlePhotoSelect(item.id, item.hasLocation, item.isLoading || false)
-        }
+        onPress={() => handlePhotoSelect(item.id, item.hasLocation)}
         styles={styles}
         itemSize={PHOTO_ITEM_SIZE}
         variables={variables}
@@ -757,13 +694,12 @@ const CustomImagePickerScreen: React.FC<Props> = ({
             color={variables['--primary']}
           />
           <Text style={styles.infoText}>
-            {photosWithLocation} de {photos.filter(p => !p.isLoading).length}{' '}
-            fotos tienen ubicación GPS
+            {photosWithLocation} de {photosChecked} fotos con ubicación GPS
           </Text>
         </View>
       )}
 
-      {isProcessing && totalCount > 0 && (
+      {isProcessing && (
         <ProgressIndicator
           processed={processedCount}
           total={totalCount}
@@ -786,7 +722,7 @@ const CustomImagePickerScreen: React.FC<Props> = ({
             keyExtractor={photoKeyExtractor}
             numColumns={3}
             onEndReached={handleEndReached}
-            onEndReachedThreshold={0.2}
+            onEndReachedThreshold={0.3}
             contentContainerStyle={styles.photoGrid}
             renderItem={renderPhotoItem}
             showsVerticalScrollIndicator={false}
@@ -807,6 +743,11 @@ const CustomImagePickerScreen: React.FC<Props> = ({
             windowSize={WINDOW_SIZE}
             removeClippedSubviews
             updateCellsBatchingPeriod={50}
+            getItemLayout={(data, index) => ({
+              length: PHOTO_ITEM_SIZE,
+              offset: PHOTO_ITEM_SIZE * index,
+              index
+            })}
             ListEmptyComponent={
               !loading && !isProcessing ? (
                 <View style={styles.emptyStateContainer}>
@@ -828,7 +769,6 @@ const CustomImagePickerScreen: React.FC<Props> = ({
         ) : (
           <FlatList
             key="albums-list"
-            ref={albumListRef}
             data={albums}
             keyExtractor={albumKeyExtractor}
             numColumns={2}
@@ -842,8 +782,6 @@ const CustomImagePickerScreen: React.FC<Props> = ({
                 onRefresh={refreshAlbums}
                 colors={[variables['--primary']]}
                 tintColor={variables['--primary']}
-                title="Actualizando álbumes..."
-                titleColor={variables['--text-secondary']}
               />
             }
             ListEmptyComponent={
@@ -874,7 +812,7 @@ const CustomImagePickerScreen: React.FC<Props> = ({
             onPress={handleConfirm}
             activeOpacity={0.8}
           >
-            <Ionicons name="checkmark" size={20} color="white" />
+            <Ionicons name="checkmark" size={22} color="white" />
             <Text style={[styles.buttonText, { marginLeft: 8 }]}>
               Seleccionar Foto
             </Text>

@@ -2,14 +2,6 @@ import React, { useState } from 'react';
 import { Pressable, StyleProp, ViewStyle } from 'react-native';
 import { MotiView } from 'moti';
 
-/**
- * Botón animado que escala y cambia opacidad al presionar.
- *
- * @param {React.ReactNode} children - Contenido dentro del botón.
- * @param {Function} onPress - Acción al presionar.
- * @param {object} style - Estilo adicional del botón.
- * @returns {JSX.Element}
- */
 const AnimatedPressable = ({
   children,
   onPress,

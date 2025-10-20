@@ -19,17 +19,12 @@ interface UseAnimalImagePickerReturn {
   openGalleryWithNavigation: () => void;
 }
 
-/**
- * Hook especializado para selección de imágenes de animales
- * Integra useGallery con funcionalidad específica para el contexto de animales
- */
 export const useAnimalImagePicker = ({
   onImageSelected,
   onImageError
 }: UseAnimalImagePickerProps = {}): UseAnimalImagePickerReturn => {
   const { pickAndNavigate } = useGallery();
 
-  // Función para abrir la cámara directamente
   const openCamera = useCallback(() => {
     const options = {
       mediaType: 'photo' as MediaType,
@@ -54,7 +49,6 @@ export const useAnimalImagePicker = ({
     });
   }, [onImageSelected, onImageError]);
 
-  // Función para abrir la galería directamente
   const openGallery = useCallback(() => {
     const options = {
       mediaType: 'photo' as MediaType,
@@ -80,7 +74,6 @@ export const useAnimalImagePicker = ({
     });
   }, [onImageSelected, onImageError]);
 
-  // Función para abrir galería con navegación (usa useGallery)
   const openGalleryWithNavigation = useCallback(() => {
     pickAndNavigate();
   }, [pickAndNavigate]);

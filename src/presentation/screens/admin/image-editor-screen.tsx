@@ -18,11 +18,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CatalogAnimalCard } from '../catalog/catalog-animals-screen';
 import { useImageEditor } from '../../hooks/use-image-editor.hook';
 
-// ==================== COMPONENTES MEMORIZADOS ====================
-
-/**
- * Header del editor
- */
 const EditorHeader = React.memo<{
   animalName: string;
   onBack: () => void;
@@ -70,9 +65,6 @@ const EditorHeader = React.memo<{
   </View>
 ));
 
-/**
- * Sección de edición de imagen
- */
 const ImageEditSection = React.memo<{
   animal: AnimalModelResponse;
   currentImage: string;
@@ -91,7 +83,6 @@ const ImageEditSection = React.memo<{
     theme,
     styles
   }) => {
-    // Crear animal temporal con la imagen actual
     const animalWithCurrentImage: AnimalModelResponse = useMemo(
       () => ({
         ...animal,
@@ -108,7 +99,6 @@ const ImageEditSection = React.memo<{
       <View style={styles.imageEditContainer}>
         <Text style={styles.sectionTitle}>Imagen Actual</Text>
 
-        {/* Preview del animal con la imagen actual */}
         <View style={styles.animalCardContainer}>
           <CatalogAnimalCard
             animal={animalWithCurrentImage}
@@ -119,7 +109,6 @@ const ImageEditSection = React.memo<{
           />
         </View>
 
-        {/* Controles de imagen */}
         <View style={styles.imageControlsContainer}>
           {currentImage ? (
             <View style={styles.imagePreviewContainer}>
@@ -156,7 +145,6 @@ const ImageEditSection = React.memo<{
           )}
         </View>
 
-        {/* Botones de acción */}
         <View style={styles.cameraActions}>
           <TouchableOpacity
             style={styles.cameraButton}
@@ -192,9 +180,6 @@ const ImageEditSection = React.memo<{
   }
 );
 
-/**
- * Sección de información del animal
- */
 const AnimalInfoSection = React.memo<{
   animal: AnimalModelResponse;
   styles: ReturnType<typeof createStyles>;
@@ -211,7 +196,7 @@ const AnimalInfoSection = React.memo<{
         <Text style={styles.infoValue}>{animal.specie}</Text>
       </View>
       <View style={styles.infoItem}>
-        <Text style={styles.infoLabel}>Categoría:</Text>
+        <Text style={styles.infoLabel}>Clase:</Text>
         <Text style={styles.infoValue}>{animal.category}</Text>
       </View>
       {animal.description && (
@@ -226,8 +211,6 @@ const AnimalInfoSection = React.memo<{
   </View>
 ));
 
-// ==================== COMPONENTE PRINCIPAL ====================
-
 const ImageEditorScreen = () => {
   const { theme } = useTheme();
   const navigation = useNavigationActions();
@@ -241,7 +224,6 @@ const ImageEditorScreen = () => {
 
   const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
 
-  // Hook de edición de imágenes
   const {
     currentImage,
     isSaving,
@@ -314,7 +296,6 @@ const ImageEditorScreen = () => {
 
         <AnimalInfoSection animal={animal} styles={styles} />
 
-        {/* Spacer para el scroll */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>

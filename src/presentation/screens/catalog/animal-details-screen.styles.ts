@@ -1,366 +1,446 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Theme } from '@/presentation/contexts/theme.context';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
-export const createStyles = (
-  variables: Record<string, string>,
-  inset: { top: number; bottom: number }
+export const createAnimalDetailsStyles = (
+  theme: Theme,
+  insets: { top: number; bottom: number; left: number; right: number }
 ) =>
   StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background
+    },
+
     container: {
       flex: 1,
-      backgroundColor: variables['--background'],
-      paddingBottom: inset.bottom + 16
+      backgroundColor: theme.colors.background
     },
 
-    // Tarjeta principal
-    card: {
-      margin: 16,
-      marginTop: 8, // Reducido porque ya tenemos padding en el header
-      backgroundColor: variables['--surface'],
-      borderRadius: 16,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 4
-      },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: theme.spacing.medium,
+      paddingVertical: theme.spacing.small,
+      backgroundColor: theme.colors.surface,
+      borderBottomWidth: theme.borderWidth.hairline,
+      borderBottomColor: theme.colors.border,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 5,
-      overflow: 'hidden'
+      shadowRadius: 4,
+      elevation: 3
     },
 
-    // Header de la tarjeta
-    cardHeader: {
-      height: 250,
-      position: 'relative',
-      overflow: 'hidden'
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: theme.borderRadius.medium,
+      backgroundColor: theme.colors.surfaceVariant,
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+
+    headerCenter: {
+      flex: 1,
+      paddingHorizontal: theme.spacing.medium
+    },
+
+    headerTitle: {
+      fontSize: theme.typography.fontSize.large,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: theme.colors.text,
+      textAlign: 'center'
+    },
+
+    headerActionButton: {
+      width: 40,
+      height: 40,
+      borderRadius: theme.borderRadius.medium,
+      backgroundColor: theme.colors.surfaceVariant,
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+
+    headerActionButtonActive: {
+      backgroundColor: '#FEE2E2'
+    },
+
+    imageCard: {
+      margin: theme.spacing.medium,
+      borderRadius: theme.borderRadius.large,
+      overflow: 'hidden',
+      backgroundColor: theme.colors.surface,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 5
     },
 
     cardImage: {
       width: '100%',
-      height: '100%',
+      height: 300,
       resizeMode: 'cover'
     },
 
-    // Estilo específico para imágenes verticales
     imageTopAligned: {
-      height: '190%',
-      top: 0,
-      position: 'absolute'
+      resizeMode: 'cover'
     },
 
     imageOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
+      ...StyleSheet.absoluteFillObject,
       backgroundColor: 'rgba(0, 0, 0, 0.3)'
     },
 
-    backButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: variables['--primary'],
-      borderRadius: 32,
-      paddingVertical: 10,
-      paddingHorizontal: 18,
-      alignSelf: 'flex-start',
-      elevation: 2
-    },
-
-    backButtonText: {
-      color: 'white',
-      fontSize: 16,
-      fontWeight: '600',
-      marginLeft: 8
-    },
-
-    cardHeaderContent: {
+    imageContent: {
       position: 'absolute',
-      bottom: 16,
-      left: 16,
-      right: 16
-    },
-
-    commonName: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#FFFFFF',
-      marginBottom: 4
-    },
-
-    scientificName: {
-      fontSize: 14,
-      fontStyle: 'italic',
-      color: '#E5E7EB'
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: theme.spacing.large
     },
 
     categoryBadge: {
       position: 'absolute',
-      top: 16,
-      right: 16,
-      backgroundColor: variables['--background'],
-      borderRadius: 12,
-      paddingHorizontal: 12,
-      paddingVertical: 4
+      top: theme.spacing.medium,
+      right: theme.spacing.medium,
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: theme.spacing.medium,
+      paddingVertical: theme.spacing.small,
+      borderRadius: theme.borderRadius.large,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 3
     },
 
     categoryText: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: '#374151'
+      fontSize: theme.typography.fontSize.small,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: theme.colors.textOnPrimary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5
     },
 
-    // Indicador de imagen expandible
-    imageIndicator: {
+    imageTitleContainer: {
+      gap: theme.spacing.tiny
+    },
+
+    imageCommonName: {
+      fontSize: 28,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: '#FFFFFF',
+      textShadowColor: 'rgba(0, 0, 0, 0.75)',
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 4
+    },
+
+    imageScientificName: {
+      fontSize: theme.typography.fontSize.medium,
+      fontWeight: theme.typography.fontWeight.regular,
+      color: '#F0F0F0',
+      fontStyle: 'italic',
+      textShadowColor: 'rgba(0, 0, 0, 0.75)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 3
+    },
+
+    imageZoomIndicator: {
       position: 'absolute',
-      top: 16,
-      left: 16,
-      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-      borderRadius: 20,
-      padding: 8
+      top: theme.spacing.medium,
+      left: theme.spacing.medium,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center'
     },
 
-    // Contenido de la tarjeta
-    cardContent: {
-      padding: 16
+    contentCard: {
+      marginHorizontal: theme.spacing.medium,
+      marginBottom: theme.spacing.medium,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.large,
+      padding: theme.spacing.large,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 6,
+      elevation: 3
     },
 
-    descriptionContainer: {
-      marginBottom: 16
+    section: {
+      marginBottom: theme.spacing.large
+    },
+
+    sectionTitle: {
+      fontSize: theme.typography.fontSize.large,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: theme.colors.primary,
+      marginBottom: theme.spacing.medium
     },
 
     description: {
-      fontSize: 14,
-      lineHeight: 20
+      fontSize: theme.typography.fontSize.medium,
+      lineHeight: theme.typography.lineHeight.large,
+      color: theme.colors.text,
+      textAlign: 'justify'
     },
 
-    // Información básica
-    basicInfo: {
-      marginBottom: 16
+    infoGrid: {
+      gap: theme.spacing.medium
     },
 
     infoRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      marginBottom: 12
+      gap: theme.spacing.medium,
+      backgroundColor: theme.colors.surfaceVariant,
+      padding: theme.spacing.medium,
+      borderRadius: theme.borderRadius.medium
     },
 
     iconContainer: {
-      width: 24,
-      height: 24,
+      width: 40,
+      height: 40,
+      borderRadius: theme.borderRadius.medium,
       justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 12,
-      marginTop: 2
+      alignItems: 'center'
     },
 
     infoContent: {
-      flex: 1
+      flex: 1,
+      gap: theme.spacing.tiny
     },
 
     infoLabel: {
-      fontSize: 14,
-      fontWeight: '600',
-      marginBottom: 4
+      fontSize: theme.typography.fontSize.small,
+      fontWeight: theme.typography.fontWeight.medium,
+      color: theme.colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5
     },
 
     infoValue: {
-      fontSize: 14,
-      lineHeight: 20
+      fontSize: theme.typography.fontSize.medium,
+      fontWeight: theme.typography.fontWeight.regular,
+      color: theme.colors.text,
+      lineHeight: theme.typography.lineHeight.medium
     },
 
-    // Información expandible
-    expandedInfo: {
-      marginTop: 16
-    },
-
-    separator: {
-      height: 1,
-      backgroundColor: variables['--border'],
-      marginBottom: 16
-    },
-
-    // Botón expandir
     expandButton: {
-      backgroundColor: variables['--primary-button'],
-      borderRadius: 8,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
+      flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 16
+      justifyContent: 'center',
+      gap: theme.spacing.small,
+      paddingVertical: theme.spacing.medium,
+      borderTopWidth: theme.borderWidth.hairline,
+      borderTopColor: theme.colors.border,
+      marginTop: theme.spacing.small
     },
 
     expandButtonText: {
-      color: variables['--primary-button-text'],
-      fontSize: 14,
-      fontWeight: '600'
+      fontSize: theme.typography.fontSize.medium,
+      fontWeight: theme.typography.fontWeight.medium,
+      color: theme.colors.primary
     },
 
-    // Footer de la tarjeta
-    cardFooter: {
+    downloadButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.borderRadius.medium,
+      marginTop: theme.spacing.medium,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+      elevation: 4,
+      overflow: 'hidden'
+    },
+
+    downloadButtonDisabled: {
+      opacity: 0.9
+    },
+
+    downloadButtonContent: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      backgroundColor: variables['--surface-variant'],
-      borderTopWidth: 1,
-      borderTopColor: variables['--border']
+      justifyContent: 'center',
+      gap: theme.spacing.small,
+      paddingVertical: theme.spacing.medium,
+      paddingHorizontal: theme.spacing.large
     },
 
-    actionButton: {
+    downloadTextContainer: {
+      flexDirection: 'column',
+      alignItems: 'flex-start'
+    },
+
+    downloadButtonText: {
+      fontSize: theme.typography.fontSize.medium,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: theme.colors.textOnPrimary
+    },
+
+    downloadProgressText: {
+      fontSize: theme.typography.fontSize.small,
+      fontWeight: theme.typography.fontWeight.medium,
+      color: theme.colors.textOnPrimary,
+      opacity: 0.9
+    },
+
+    progressBarContainer: {
+      height: 4,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      width: '100%'
+    },
+
+    progressBar: {
+      height: '100%',
+      borderRadius: 2
+    },
+
+    mapSection: {
+      marginHorizontal: theme.spacing.medium,
+      marginBottom: theme.spacing.medium,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.large,
+      overflow: 'hidden',
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 6,
+      elevation: 3
+    },
+
+    mapHeader: {
+      padding: theme.spacing.large,
+      borderBottomWidth: theme.borderWidth.hairline,
+      borderBottomColor: theme.colors.border
+    },
+
+    mapTitleContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 8,
-      paddingHorizontal: 4
+      gap: theme.spacing.medium
     },
 
-    actionButtonText: {
-      fontSize: 12,
-      marginLeft: 4,
-      fontWeight: '500'
+    mapTitleTextContainer: {
+      flex: 1,
+      gap: theme.spacing.tiny
     },
 
-    // Estilos del modal de imagen
+    mapTitle: {
+      fontSize: theme.typography.fontSize.large,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: theme.colors.text
+    },
+
+    mapSubtitle: {
+      fontSize: theme.typography.fontSize.small,
+      color: theme.colors.textSecondary
+    },
+
+    mapContainer: {
+      backgroundColor: theme.colors.surfaceVariant
+    },
+
+    mapWrapper: {
+      marginBottom: 0
+    },
+
+    mapLoadingContainer: {
+      padding: theme.spacing.xlarge,
+      alignItems: 'center',
+      gap: theme.spacing.medium
+    },
+
+    mapLoadingText: {
+      fontSize: theme.typography.fontSize.medium,
+      color: theme.colors.textSecondary
+    },
+
+    mapErrorContainer: {
+      padding: theme.spacing.xlarge,
+      alignItems: 'center',
+      gap: theme.spacing.medium
+    },
+
+    mapErrorText: {
+      fontSize: theme.typography.fontSize.medium,
+      fontWeight: theme.typography.fontWeight.medium,
+      color: theme.colors.error,
+      textAlign: 'center'
+    },
+
+    mapErrorSubtext: {
+      fontSize: theme.typography.fontSize.small,
+      color: theme.colors.textSecondary,
+      textAlign: 'center'
+    },
+
+    mapEmptyContainer: {
+      padding: theme.spacing.xlarge,
+      alignItems: 'center',
+      gap: theme.spacing.medium
+    },
+
+    mapEmptyText: {
+      fontSize: theme.typography.fontSize.medium,
+      color: theme.colors.textSecondary,
+      textAlign: 'center'
+    },
+
     modalContainer: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.9)',
-      justifyContent: 'center',
-      alignItems: 'center'
+      backgroundColor: 'rgba(0, 0, 0, 0.95)'
     },
 
     modalBackground: {
-      flex: 1,
-      width: '100%',
-      justifyContent: 'center',
-      alignItems: 'center'
+      flex: 1
     },
 
     modalContent: {
-      width: screenWidth,
-      height: screenHeight,
+      flex: 1,
       justifyContent: 'center',
-      alignItems: 'center',
-      position: 'relative'
+      alignItems: 'center'
     },
 
     closeButton: {
       position: 'absolute',
-      top: 50,
+      top: insets.top + 20,
       right: 20,
-      zIndex: 1000,
-      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-      borderRadius: 25,
-      padding: 10
-    },
-
-    modalImage: {
-      width: screenWidth - 40,
-      height: screenHeight - 200,
-      borderRadius: 12
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 10
     },
 
     modalInfo: {
       position: 'absolute',
-      bottom: 80,
+      bottom: insets.bottom + 40,
       left: 20,
       right: 20,
       backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      borderRadius: 12,
-      padding: 16,
-      alignItems: 'center'
+      padding: theme.spacing.large,
+      borderRadius: theme.borderRadius.medium,
+      gap: theme.spacing.small
     },
 
     modalTitle: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#FFFFFF',
-      marginBottom: 4,
-      textAlign: 'center'
+      fontSize: theme.typography.fontSize.xlarge,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: '#FFFFFF'
     },
 
     modalSubtitle: {
-      fontSize: 16,
-      fontStyle: 'italic',
-      color: '#E5E7EB',
-      textAlign: 'center'
-    },
-
-    // Estilos del modal del mapa - Consistente con modal de imagen
-    mapModalHeader: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 1000,
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      paddingTop: 50,
-      paddingBottom: 20,
-      paddingHorizontal: 20
-    },
-
-    mapModalCloseButton: {
-      position: 'absolute',
-      top: 50,
-      right: 20,
-      zIndex: 1001,
-      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-      borderRadius: 25,
-      padding: 10,
-      width: 50,
-      height: 50,
-      justifyContent: 'center',
-      alignItems: 'center'
-    },
-
-    mapModalHeaderContent: {
-      alignItems: 'center',
-      marginTop: 60
-    },
-
-    mapModalTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: '#FFFFFF',
-      textAlign: 'center',
-      marginBottom: 4
-    },
-
-    mapModalSubtitle: {
-      fontSize: 14,
-      fontStyle: 'italic',
-      color: '#E5E7EB',
-      textAlign: 'center'
-    },
-
-    mapInfoPanel: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      paddingHorizontal: 20,
-      paddingVertical: 16,
-      paddingBottom: 40
-    },
-
-    mapInfoContent: {
-      gap: 12
-    },
-
-    mapInfoRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12
-    },
-
-    mapInfoText: {
-      fontSize: 14,
-      color: '#FFFFFF',
-      flex: 1,
-      lineHeight: 20
+      fontSize: theme.typography.fontSize.medium,
+      color: '#E0E0E0',
+      fontStyle: 'italic'
     }
   });

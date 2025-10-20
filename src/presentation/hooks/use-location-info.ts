@@ -39,15 +39,16 @@ export function useLocationInfo(): UseLocationInfoResult {
     country: ''
   });
   const [loading, setLoading] = useState<boolean>(true);
-  const { requestPermissions, checkPermissions } = useRequestPermissions();
+  const { requestAlertPermissions, checkPermissions } = useRequestPermissions();
   const didRequestRef = useRef(false);
 
   const fetchLocationInfo = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
-      const hasPerm = await checkPermissions(['location']);
-      if (!hasPerm) {
-        const granted = await requestPermissions(['location']);
+      const { missingPermissions } = await checkPermissions(['location']);
+
+      if (missingPermissions.includes('location')) {
+        const granted = await requestAlertPermissions(['location']);
         if (!granted) throw new Error('Permisos de ubicación no concedidos');
       }
 
@@ -67,7 +68,7 @@ export function useLocationInfo(): UseLocationInfoResult {
     } finally {
       setLoading(false);
     }
-  }, [checkPermissions, requestPermissions]);
+  }, [checkPermissions, requestAlertPermissions]);
 
   useEffect(() => {
     if (didRequestRef.current) return;

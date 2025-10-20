@@ -1,3 +1,4 @@
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 import React, { useMemo, useState, forwardRef } from 'react';
 import {
   View,
@@ -18,7 +19,7 @@ interface AuthTextInputProps extends Omit<TextInputProps, 'style'> {
   error?: boolean | string;
   label?: string;
   helperText?: string;
-  variables: Record<string, string>;
+  variables: ThemeVariablesType;
   variant?: 'outlined' | 'filled';
   size?: 'small' | 'medium' | 'large';
   leftIcon?: string;
@@ -209,7 +210,7 @@ const AuthTextInput = forwardRef<TextInput, AuthTextInputProps>(
 );
 
 const createStyles = (
-  variables: Record<string, string>,
+  variables: ThemeVariablesType,
   variant: 'outlined' | 'filled',
   size: 'small' | 'medium' | 'large'
 ) => {
@@ -223,7 +224,7 @@ const createStyles = (
 
   return StyleSheet.create({
     container: {
-      marginBottom: parseInt(variables['--spacing-medium']) || 16
+      marginBottom: variables['--spacing-medium']
     },
     labelContainer: {
       position: 'absolute',
@@ -252,8 +253,8 @@ const createStyles = (
         variant === 'filled'
           ? variables['--surface-variant']
           : variables['--surface'],
-      borderRadius: parseInt(variables['--border-radius-medium']) || 8,
-      borderWidth: parseInt(variables['--border-width-hairline']) || 1,
+      borderRadius: variables['--border-radius-medium'],
+      borderWidth: variables['--border-width-hairline'],
       borderColor: variables['--border'],
       paddingHorizontal: config.padding,
       minHeight: config.height,
@@ -305,10 +306,10 @@ const createStyles = (
       paddingVertical: 0
     },
     helperText: {
-      fontSize: parseInt(variables['--font-size-small']) || 12,
+      fontSize: variables['--font-size-small'],
       color: variables['--text-secondary'],
       fontFamily: variables['--font-family-primary'],
-      marginTop: parseInt(variables['--spacing-tiny']) || 4,
+      marginTop: variables['--spacing-tiny'],
       marginLeft: config.padding
     },
     errorText: {

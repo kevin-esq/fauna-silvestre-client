@@ -1,10 +1,10 @@
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 import { StyleSheet, Dimensions } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_MARGIN = 8;
 const CARD_WIDTH = (screenWidth - CARD_MARGIN * 4) / 2;
 
-// Enhanced Design System
 const SPACING = {
   xs: 4,
   sm: 8,
@@ -90,17 +90,15 @@ const SHADOWS = {
 };
 
 export const createStyles = (
-  vars: Record<string, string>,
+  vars: ThemeVariablesType,
   insets: { top: number; bottom: number; left: number; right: number }
 ) =>
   StyleSheet.create({
-    // ==================== LAYOUT BASE ====================
     container: {
       flex: 1,
       backgroundColor: vars['--background'] || '#FAFAFA'
     },
 
-    // ==================== ENHANCED HEADER ====================
     headerWrapper: {
       backgroundColor: vars['--surface'] || '#FFFFFF',
       paddingBottom: SPACING.md,
@@ -109,7 +107,6 @@ export const createStyles = (
       borderBottomColor: vars['--border'] || '#E0E0E0'
     },
 
-    // Header Layout
     headerContainer: {
       paddingHorizontal: SPACING.lg,
       paddingTop: insets.top + SPACING.md,
@@ -179,7 +176,6 @@ export const createStyles = (
       backgroundColor: vars['--primary'] || '#4CAF50'
     },
 
-    // Controls Section
     controlsContainer: {
       backgroundColor: vars['--surface-variant'] || '#F5F5F5',
       marginHorizontal: SPACING.lg,
@@ -229,7 +225,6 @@ export const createStyles = (
       color: vars['--text-on-primary'] || '#FFFFFF'
     },
 
-    // ==================== LIST LAYOUT ====================
     list: {
       paddingHorizontal: SPACING.sm,
       paddingTop: SPACING.md,
@@ -245,7 +240,6 @@ export const createStyles = (
       paddingHorizontal: SPACING.sm
     },
 
-    // ==================== ENHANCED EMPTY STATE ====================
     emptyStateContainer: {
       flex: 1,
       justifyContent: 'center',
@@ -322,7 +316,6 @@ export const createStyles = (
       marginLeft: SPACING.sm
     },
 
-    // ==================== ENHANCED CATALOG CARDS ====================
     catalogCard: {
       width: CARD_WIDTH,
       backgroundColor: vars['--surface'] || '#FFFFFF',
@@ -354,7 +347,6 @@ export const createStyles = (
       position: 'relative'
     },
 
-    // ==================== IMAGE CONTAINERS ====================
     catalogImageContainer: {
       height: 140,
       position: 'relative',
@@ -426,7 +418,6 @@ export const createStyles = (
       backgroundColor: 'rgba(0, 0, 0, 0.1)'
     },
 
-    // ==================== ENHANCED BADGES ====================
     catalogBadge: {
       position: 'absolute',
       top: SPACING.sm,
@@ -451,7 +442,7 @@ export const createStyles = (
       left: SPACING.sm,
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: vars['--accent'] || '#FF5722',
+      backgroundColor: vars['--error'] || '#FF5722',
       paddingHorizontal: SPACING.sm,
       paddingVertical: SPACING.xs,
       borderRadius: BORDER_RADIUS.lg,
@@ -466,7 +457,6 @@ export const createStyles = (
       color: vars['--text-on-primary'] || '#FFFFFF'
     },
 
-    // ==================== CONTENT AREAS ====================
     catalogContent: {
       padding: SPACING.lg,
       flex: 1
@@ -498,7 +488,6 @@ export const createStyles = (
       color: vars['--text'] || '#212121'
     },
 
-    // ==================== META INFORMATION ====================
     catalogMeta: {
       gap: SPACING.sm
     },
@@ -515,7 +504,6 @@ export const createStyles = (
       fontWeight: '500'
     },
 
-    // ==================== ACTION BUTTONS ====================
     actionButton: {
       position: 'absolute',
       bottom: SPACING.lg,
@@ -531,7 +519,6 @@ export const createStyles = (
       borderColor: vars['--surface'] || '#FFFFFF'
     },
 
-    // ==================== LEGACY COMPATIBILITY ====================
     centered: {
       flex: 1,
       justifyContent: 'center',
@@ -573,7 +560,7 @@ export const createStyles = (
       marginBottom: SPACING.md,
       marginHorizontal: SPACING.lg,
       color: vars['--error'] || '#D32F2F',
-      backgroundColor: vars['--error-container'] || '#FFEBEE',
+      backgroundColor: vars['--surface-variant'] || '#FFEBEE',
       padding: SPACING.md,
       borderRadius: BORDER_RADIUS.md
     },
@@ -582,7 +569,6 @@ export const createStyles = (
       color: vars['--primary'] || '#4CAF50'
     },
 
-    // Additional Enhanced Styles
     catalogDescription: {
       ...TYPOGRAPHY.body2,
       color: vars['--text-secondary'] || '#757575',
@@ -590,13 +576,11 @@ export const createStyles = (
       marginTop: SPACING.sm
     },
 
-    // Accessibility improvements
     focusedCard: {
       borderWidth: 2,
       borderColor: vars['--primary'] || '#4CAF50'
     },
 
-    // Animation support classes
     fadeIn: {
       opacity: 1
     },
@@ -605,7 +589,6 @@ export const createStyles = (
       opacity: 0.6
     },
 
-    // Dark mode support
     darkOverlay: {
       backgroundColor: 'rgba(0, 0, 0, 0.05)'
     },
@@ -614,12 +597,14 @@ export const createStyles = (
       backgroundColor: 'rgba(255, 255, 255, 0.05)'
     },
 
-    // Responsive breakpoints
     smallScreen: {
       paddingHorizontal: SPACING.md
     },
 
     largeScreen: {
       paddingHorizontal: SPACING.xl
+    },
+    headerActionButtonActive: {
+      backgroundColor: vars['--primary'] || '#4CAF50'
     }
   });

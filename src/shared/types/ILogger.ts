@@ -1,7 +1,3 @@
-/**
- * Contrato para el servicio de logging.
- * @interface
- */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface ILogger {

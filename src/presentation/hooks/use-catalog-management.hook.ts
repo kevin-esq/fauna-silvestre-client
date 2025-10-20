@@ -61,7 +61,7 @@ const DEFAULT_PAGE_SIZE = 10;
 
 export const useCatalogManagement = (): CatalogManagementReturn => {
   const abortControllerRef = useRef<AbortController | null>(null);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<number | null>(null);
   const stateRef = useRef<CatalogManagementState>(null);
 
   const [state, setState] = useState<CatalogManagementState>({
@@ -96,22 +96,18 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
   }, []);
 
   const loadMoreAnimals = useCallback(async () => {
-    // Access current state directly to avoid dependencies
     if (!stateRef.current?.hasNextPage || stateRef.current?.isLoadingMore) {
       return;
     }
 
-    // Set loading state
     setState(prev => ({ ...prev, isLoadingMore: true, error: null }));
 
     try {
-      // Make API call directly without using loadAnimals
       const response = await catalogService.getAllCatalogs(
         stateRef.current.currentPage + 1,
         DEFAULT_PAGE_SIZE
       );
 
-      // Only update if we still have the same state structure
       setState(prev => ({
         ...prev,
         animals: [...prev.animals, ...response.catalog],
@@ -142,10 +138,9 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
         DEFAULT_PAGE_SIZE
       );
 
-      // Limpiar y recargar cache de imágenes agregando timestamp único
       const refreshedAnimals = response.catalog.map(animal => ({
         ...animal,
-        // Agregar timestamp para forzar recarga del cache si hay imagen
+
         image: animal.image
           ? `${animal.image}?refresh=${Date.now()}`
           : animal.image
@@ -186,7 +181,6 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
           DEFAULT_PAGE_SIZE
         );
 
-        // Limpiar cache de imágenes agregando timestamp único
         const searchedAnimals = response.catalog.map(animal => ({
           ...animal,
           image: animal.image
@@ -228,7 +222,6 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
         DEFAULT_PAGE_SIZE
       );
 
-      // Limpiar cache de imágenes agregando timestamp único
       const filteredAnimals = response.catalog.map(animal => ({
         ...animal,
         image: animal.image
@@ -268,7 +261,6 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
         DEFAULT_PAGE_SIZE
       );
 
-      // Limpiar cache de imágenes agregando timestamp único
       const sortedAnimals = response.catalog.map(animal => ({
         ...animal,
         image: animal.image
@@ -313,7 +305,6 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
         DEFAULT_PAGE_SIZE
       );
 
-      // Limpiar cache de imágenes agregando timestamp único
       const filteredAnimals = response.catalog.map(animal => ({
         ...animal,
         image: animal.image
@@ -570,7 +561,6 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
           DEFAULT_PAGE_SIZE
         );
 
-        // Limpiar cache de imágenes agregando timestamp único
         const initialAnimals = response.catalog.map(animal => ({
           ...animal,
           image: animal.image ? `${animal.image}?t=${Date.now()}` : animal.image

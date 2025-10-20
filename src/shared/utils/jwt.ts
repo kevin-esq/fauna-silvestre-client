@@ -1,8 +1,5 @@
-// src/shared/utils/jwt.ts
 import { jwtDecode } from 'jwt-decode';
 
-// This represents the raw structure of the token from the backend.
-// The keys are the long claim URIs from the .NET identity system.
 export interface RawJwtPayload {
   'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier': string;
   'http://schemas.microsoft.com/ws/2008/06/identity/claims/role': string;
