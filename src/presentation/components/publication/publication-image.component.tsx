@@ -10,7 +10,8 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {
   useTheme,
-  themeVariables
+  themeVariables,
+  ThemeVariablesType
 } from '@/presentation/contexts/theme.context';
 
 interface PublicationImageProps {
@@ -74,7 +75,7 @@ const PublicationImage = React.memo(
 PublicationImage.displayName = 'PublicationImage';
 
 const getImageStyles = (
-  vars: Record<string, string>,
+  vars: ThemeVariablesType,
   viewMode: 'card' | 'presentation'
 ) =>
   StyleSheet.create({

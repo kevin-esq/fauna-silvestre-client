@@ -51,7 +51,7 @@ export interface CreateAnimalRequest {
   distribution: string;
   feeding: string;
   category: string;
-  image: string; // base64
+  image: string;
 }
 
 export interface UpdateAnimalRequest {
@@ -69,7 +69,7 @@ export interface UpdateAnimalRequest {
 
 export interface UpdateAnimalImageRequest {
   catalogId: number;
-  image: string; // base64
+  image: string;
 }
 
 export interface AnimalCrudResponse {

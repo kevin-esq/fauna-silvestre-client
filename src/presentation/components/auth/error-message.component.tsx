@@ -1,3 +1,4 @@
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 import React, { useEffect, useRef, useMemo } from 'react';
 import { Text, StyleSheet, Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -5,7 +6,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 interface FeedbackMessageProps {
   message: string | null;
   isSuccess?: boolean;
-  variables: Record<string, string> | undefined;
+  variables: ThemeVariablesType | undefined;
 }
 
 const ErrorMessage: React.FC<FeedbackMessageProps> = ({
@@ -47,7 +48,7 @@ const ErrorMessage: React.FC<FeedbackMessageProps> = ({
   );
 };
 
-const createStyles = (variables: Record<string, string> | undefined) =>
+const createStyles = (variables: ThemeVariablesType | undefined) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',

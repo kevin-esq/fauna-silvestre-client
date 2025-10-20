@@ -10,10 +10,6 @@ interface SkeletonLoaderProps {
   children?: React.ReactNode;
 }
 
-/**
- * Componente de skeleton loader reutilizable con animación suave
- * Principio OCP: Extensible sin modificar el código base
- */
 export const SkeletonLoader: React.FC<SkeletonLoaderProps> = React.memo(
   ({ width = '100%', height = 20, borderRadius = 4, style, children }) => {
     const { theme } = useTheme();
@@ -65,9 +61,6 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = React.memo(
   }
 );
 
-/**
- * Skeleton para tarjetas de estadísticas
- */
 export const StatCardSkeleton: React.FC = React.memo(() => {
   const { theme } = useTheme();
 
@@ -89,9 +82,6 @@ export const StatCardSkeleton: React.FC = React.memo(() => {
   );
 });
 
-/**
- * Skeleton para lista de animales
- */
 export const AnimalCardSkeleton: React.FC = React.memo(() => {
   const { theme } = useTheme();
 
@@ -118,9 +108,6 @@ export const AnimalCardSkeleton: React.FC = React.memo(() => {
   );
 });
 
-/**
- * Skeleton para lista de usuarios (Admin)
- */
 export const UserListSkeleton: React.FC = React.memo(() => {
   const { theme } = useTheme();
 
@@ -145,9 +132,6 @@ export const UserListSkeleton: React.FC = React.memo(() => {
   );
 });
 
-/**
- * Skeleton para botones de acción rápida
- */
 export const QuickActionSkeleton: React.FC = React.memo(() => {
   const { theme } = useTheme();
 

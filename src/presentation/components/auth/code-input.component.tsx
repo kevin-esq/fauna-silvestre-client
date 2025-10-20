@@ -1,3 +1,4 @@
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 import React, { useRef, useMemo, useEffect, useState } from 'react';
 import {
   View,
@@ -15,7 +16,7 @@ interface CodeInputProps {
   code: string;
   setCode: (code: string) => void;
   digitCount?: number;
-  variables: Record<string, string>;
+  variables: ThemeVariablesType;
   error?: boolean | string;
   autoFocus?: boolean;
   placeholder?: string;
@@ -83,7 +84,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
 
   useEffect(() => {
     if (maskDelay > 0) {
-      const timeouts: NodeJS.Timeout[] = [];
+      const timeouts: number[] = [];
       code.split('').forEach((digit, index) => {
         if (digit && !maskedDigits[index]) {
           const timeout = setTimeout(() => {
@@ -213,11 +214,10 @@ const CodeInput: React.FC<CodeInputProps> = ({
         }) || variables['--border'],
       transform: [
         {
-          scale:
-            animatedValues.current[index]?.interpolate({
-              inputRange: [0, 1],
-              outputRange: [1, 1.05]
-            }) || 1
+          scale: animatedValues.current[index]?.interpolate({
+            inputRange: [0, 1],
+            outputRange: [1, 1.05]
+          })
         }
       ]
     };
@@ -285,7 +285,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
 };
 
 const createStyles = (
-  variables: Record<string, string>,
+  variables: ThemeVariablesType,
   variant: 'outlined' | 'filled' | 'underlined',
   size: 'small' | 'medium' | 'large',
   spacing: 'tight' | 'normal' | 'loose'
@@ -323,7 +323,7 @@ const createStyles = (
       default:
         return {
           backgroundColor: variables['--surface'],
-          borderWidth: parseInt(variables['--border-width-hairline']) || 1
+          borderWidth: variables['--border-width-hairline']
         };
     }
   };
@@ -331,7 +331,7 @@ const createStyles = (
   return StyleSheet.create({
     container: {
       alignItems: 'center',
-      marginBottom: parseInt(variables['--spacing-large']) || 24
+      marginBottom: variables['--spacing-large']
     },
     inputsContainer: {
       flexDirection: 'row',
@@ -339,16 +339,14 @@ const createStyles = (
       gap: gap
     },
     cellTouchable: {
-      borderRadius: parseInt(variables['--border-radius-medium']) || 8
+      borderRadius: variables['--border-radius-medium']
     },
     codeInput: {
       width: config.width,
       height: config.height,
       borderColor: variables['--border'],
       borderRadius:
-        variant === 'underlined'
-          ? 0
-          : parseInt(variables['--border-radius-medium']) || 8,
+        variant === 'underlined' ? 0 : variables['--border-radius-medium'],
       justifyContent: 'center',
       alignItems: 'center',
       position: 'relative',
@@ -391,21 +389,21 @@ const createStyles = (
       textAlign: 'center'
     },
     errorText: {
-      fontSize: parseInt(variables['--font-size-small']) || 12,
+      fontSize: variables['--font-size-small'],
       color: variables['--error'],
       fontFamily: variables['--font-family-primary'],
-      marginTop: parseInt(variables['--spacing-small']) || 8,
+      marginTop: variables['--spacing-small'],
       textAlign: 'center'
     },
     clearButton: {
-      marginTop: parseInt(variables['--spacing-medium']) || 16,
-      paddingVertical: parseInt(variables['--spacing-small']) || 8,
-      paddingHorizontal: parseInt(variables['--spacing-medium']) || 16,
-      borderRadius: parseInt(variables['--border-radius-medium']) || 8,
+      marginTop: variables['--spacing-medium'],
+      paddingVertical: variables['--spacing-small'],
+      paddingHorizontal: variables['--spacing-medium'],
+      borderRadius: variables['--border-radius-medium'],
       backgroundColor: variables['--surface-variant']
     },
     clearButtonText: {
-      fontSize: parseInt(variables['--font-size-medium']) || 14,
+      fontSize: variables['--font-size-medium'],
       color: variables['--primary'],
       fontFamily: variables['--font-family-primary'],
       fontWeight: '500'

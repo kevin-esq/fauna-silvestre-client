@@ -1,9 +1,9 @@
-// publication-form-screen.styles.ts
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 import { StyleSheet } from 'react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
 
 export const createStyles = (
-  vars: Record<string, string>,
+  vars: ThemeVariablesType,
   width: number,
   height: number,
   insets: EdgeInsets
@@ -18,15 +18,20 @@ export const createStyles = (
       backgroundColor: vars['--background']
     },
     scrollContainer: {
-      paddingBottom: 120 + insets.bottom, // Espacio para el footer sticky
-      paddingHorizontal: 16
+      paddingBottom: 120 + insets.bottom,
+      paddingHorizontal: 20,
+      paddingTop: 80 + insets.top
+    },
+    scrollContainerKeyboard: {
+      paddingBottom: insets.bottom
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingTop: insets.top + 8,
-      paddingBottom: 12,
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingTop: insets.top + 12,
+      paddingBottom: 16,
       backgroundColor: vars['--background'],
       borderBottomColor: vars['--border'],
       borderBottomWidth: 1,
@@ -41,60 +46,85 @@ export const createStyles = (
         width: 0,
         height: 2
       },
-      shadowOpacity: 0.1,
-      shadowRadius: 3.84
+      shadowOpacity: 0.08,
+      shadowRadius: 4
     },
     backButton: {
-      padding: 4,
-      marginRight: 8
+      padding: 8,
+      borderRadius: 20,
+      backgroundColor: vars['--surface-variant']
     },
     headerTitle: {
       fontSize: 20,
       fontWeight: '700',
-      color: vars['--text']
+      color: vars['--text'],
+      textAlign: 'center',
+      flex: 1
+    },
+    imageContainer: {
+      position: 'relative',
+      marginBottom: 24,
+      borderRadius: 16,
+      overflow: 'hidden',
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 4
     },
     image: {
       width: '100%',
       height: width * 0.7,
-      borderRadius: 14,
-      marginBottom: 16,
-      backgroundColor: vars['--surface-variant'],
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 1
-      },
-      shadowOpacity: 0.22,
-      shadowRadius: 2.22
+      backgroundColor: vars['--surface-variant']
     },
     expandIconContainer: {
       position: 'absolute',
-      bottom: 12,
-      right: 12,
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      padding: 6,
-      borderRadius: 20
+      bottom: 16,
+      right: 16,
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      padding: 10,
+      borderRadius: 25,
+      elevation: 2
+    },
+    imageOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      alignItems: 'center'
+    },
+    imageOverlayText: {
+      color: 'white',
+      fontSize: 14,
+      fontWeight: '500'
     },
     formContainer: {
-      // paddingHorizontal removido porque ya está en scrollContainer
+      gap: 24
+    },
+    fieldContainer: {
+      gap: 8
     },
     label: {
       fontWeight: '600',
-      marginBottom: 8,
       color: vars['--text'],
-      fontSize: 16
+      fontSize: 16,
+      marginBottom: 4
     },
     textArea: {
       backgroundColor: vars['--surface'],
-      padding: 14,
-      borderRadius: 10,
-      marginBottom: 20,
-      fontSize: 15,
+      padding: 16,
+      borderRadius: 12,
+      fontSize: 16,
       color: vars['--text'],
       height: 120,
       textAlignVertical: 'top',
-      borderWidth: 1,
+      borderWidth: 2,
       borderColor: vars['--border'],
       elevation: 1,
       shadowColor: '#000',
@@ -102,21 +132,132 @@ export const createStyles = (
         width: 0,
         height: 1
       },
-      shadowOpacity: 0.18,
-      shadowRadius: 1.0
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      lineHeight: 22
     },
-    locationContainer: {
+    textAreaValid: {
+      borderColor: '#4CAF50'
+    },
+    textAreaInvalid: {
+      borderColor: '#FF9800'
+    },
+    characterCounter: {
+      alignItems: 'flex-end',
+      marginTop: 4
+    },
+    characterCountText: {
+      fontSize: 12,
+      fontWeight: '500'
+    },
+    validText: {
+      color: '#4CAF50'
+    },
+    invalidText: {
+      color: '#FF9800'
+    },
+    loadingContainer: {
+      backgroundColor: vars['--surface'],
+      padding: 20,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: vars['--border'],
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8
+    },
+    loadingText: {
+      color: vars['--text-secondary'],
+      fontSize: 14,
+      fontWeight: '500'
+    },
+    errorContainer: {
+      backgroundColor: '#FFF3E0',
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#FF9800',
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 10,
-      paddingVertical: 12,
-      borderTopWidth: 1,
-      borderTopColor: vars['--border']
+      gap: 12
+    },
+    errorText: {
+      color: '#F57C00',
+      fontSize: 14,
+      fontWeight: '500',
+      flex: 1
+    },
+    stateSelectorContainer: {
+      flexDirection: 'row',
+      borderRadius: 12,
+      overflow: 'hidden',
+      borderWidth: 2,
+      borderColor: vars['--border'],
+      elevation: 1,
+      backgroundColor: vars['--surface']
+    },
+    stateOption: {
+      flex: 1,
+      paddingVertical: 16,
+      paddingHorizontal: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      gap: 8,
+      borderWidth: 1,
+      borderColor: 'transparent'
+    },
+    stateIcon: {
+      fontSize: 16
+    },
+    stateLabel: {
+      fontSize: 15,
+      fontWeight: '500'
+    },
+    locationContainer: {
+      backgroundColor: vars['--surface'],
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#E8F5E8',
+      gap: 8
+    },
+    locationHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8
+    },
+    locationTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: vars['--text']
     },
     locationText: {
-      marginLeft: 8,
+      color: vars['--text'],
+      fontSize: 14,
+      fontWeight: '500',
+      fontFamily: 'monospace'
+    },
+    locationSubtext: {
       color: vars['--text-secondary'],
-      fontSize: 14
+      fontSize: 12,
+      fontStyle: 'italic'
+    },
+    validationContainer: {
+      backgroundColor: '#FFF8E1',
+      padding: 12,
+      borderRadius: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      borderLeftWidth: 4,
+      borderLeftColor: '#FF9800'
+    },
+    validationText: {
+      color: '#F57C00',
+      fontSize: 14,
+      fontWeight: '500',
+      flex: 1
     },
     footer: {
       position: 'absolute',
@@ -125,8 +266,8 @@ export const createStyles = (
       right: 0,
       flexDirection: 'row',
       justifyContent: 'space-between',
-      padding: 16,
-      paddingBottom: 16 + insets.bottom,
+      padding: 20,
+      paddingBottom: 20 + insets.bottom,
       backgroundColor: vars['--background'],
       borderTopWidth: 1,
       borderTopColor: vars['--border'],
@@ -136,16 +277,20 @@ export const createStyles = (
         width: 0,
         height: -2
       },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      gap: 12
     },
     cancelButton: {
       backgroundColor: vars['--surface-variant'],
-      padding: 16,
-      borderRadius: 10,
+      paddingVertical: 16,
+      paddingHorizontal: 24,
+      borderRadius: 12,
       flex: 1,
-      marginRight: 12,
       alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      gap: 8,
       borderWidth: 1,
       borderColor: vars['--border']
     },
@@ -156,75 +301,79 @@ export const createStyles = (
     },
     submitButton: {
       backgroundColor: vars['--primary'],
-      padding: 16,
-      borderRadius: 10,
+      paddingVertical: 16,
+      paddingHorizontal: 24,
+      borderRadius: 12,
       flex: 1,
       alignItems: 'center',
+      justifyContent: 'center',
       flexDirection: 'row',
-      justifyContent: 'center'
+      gap: 8,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2
+      },
+      shadowOpacity: 0.15,
+      shadowRadius: 3
+    },
+    submitButtonDisabled: {
+      backgroundColor: vars['--disabled'],
+      elevation: 0,
+      shadowOpacity: 0
     },
     submitButtonText: {
       color: vars['--text-on-primary'],
-      fontWeight: '600',
+      fontWeight: '700',
       fontSize: 16
     },
-    sendIcon: {
-      marginLeft: 8
-    },
-    modalContainer: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.9)',
-      justifyContent: 'center',
-      alignItems: 'center'
+    submitButtonTextDisabled: {
+      color: vars['--disabled-text']
     },
     modalCloseButton: {
       position: 'absolute',
-      top: 50,
-      right: 20,
+      top: 60,
+      right: 24,
       zIndex: 10,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      borderRadius: 20,
-      padding: 8
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      borderRadius: 25,
+      padding: 12,
+      elevation: 5
     },
-    expandedImage: {
-      width: width,
-      height: height * 0.8
-    },
-    stateSelectorContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 10,
-      paddingVertical: 12,
-      borderTopWidth: 1,
-      borderTopColor: vars['--border']
-    },
-    loadingContainer: {
-      backgroundColor: vars['--surface'],
+
+    customAnimalContainer: {
+      marginTop: 12,
       padding: 16,
-      borderRadius: 10,
-      marginBottom: 20,
+      backgroundColor: vars['--surface-variant'] || '#F5F5F5',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: vars['--border'] || '#E0E0E0'
+    },
+
+    customAnimalLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: vars['--text'],
+      marginBottom: 8
+    },
+
+    customAnimalInput: {
       borderWidth: 1,
       borderColor: vars['--border'],
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: 60
-    },
-    loadingText: {
-      color: vars['--text-secondary'],
-      fontSize: 14,
-      marginTop: 8
-    },
-    errorContainer: {
-      backgroundColor: vars['--error-container'],
-      padding: 12,
       borderRadius: 8,
-      marginBottom: 20,
-      borderWidth: 1,
-      borderColor: vars['--error']
+      padding: 12,
+      fontSize: 16,
+      color: vars['--text'],
+      backgroundColor: vars['--surface'],
+      minHeight: 48
     },
-    errorText: {
-      color: vars['--on-error-container'],
-      fontSize: 14,
-      textAlign: 'center'
+
+    customAnimalHint: {
+      fontSize: 12,
+      color: vars['--text-secondary'],
+      marginTop: 6,
+      fontStyle: 'italic',
+      lineHeight: 16
     }
   });

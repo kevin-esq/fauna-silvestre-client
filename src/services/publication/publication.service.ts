@@ -192,7 +192,7 @@ export class PublicationService {
       await this.repository.acceptPublication(publicationId);
 
       this.invalidateCountsCache();
-      // Invalidar cache del contexto para forzar actualización inmediata
+
       this.onCacheInvalidate?.();
 
       this.logger.info('Publicación aceptada exitosamente', { publicationId });
@@ -214,7 +214,7 @@ export class PublicationService {
       await this.repository.rejectPublication(publicationId);
 
       this.invalidateCountsCache();
-      // Invalidar cache del contexto para forzar actualización inmediata
+
       this.onCacheInvalidate?.();
 
       this.logger.info('Publicación rechazada exitosamente', { publicationId });

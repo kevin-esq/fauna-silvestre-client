@@ -1,5 +1,3 @@
-// services/camera/camera.service.ts
-
 import { Camera, PhotoFile } from 'react-native-vision-camera';
 import ImageResizer from '@bam.tech/react-native-image-resizer';
 import { metaToLocation } from '../../shared/utils/metaParser';
@@ -11,7 +9,6 @@ export interface TakePhotoOptions {
   onCaptureProgress?: (progress: number) => void;
 }
 
-/** Error para indicar que el usuario canceló la captura */
 export class CaptureCancelledError extends Error {
   constructor() {
     super('Captura cancelada por el usuario');
@@ -19,7 +16,6 @@ export class CaptureCancelledError extends Error {
   }
 }
 
-/** PhotoFile extendido con ubicación opcional */
 export interface ProcessedPhoto extends PhotoFile {
   location?: {
     latitude: number;
@@ -31,7 +27,6 @@ export interface ProcessedPhoto extends PhotoFile {
 export class CameraService {
   constructor(private cameraRef: React.RefObject<Camera>) {}
 
-  /** Toma la foto y respeta abortSignal */
   async takePhoto(
     useFlashFront: boolean,
     flashMode: FlashMode,
@@ -57,13 +52,11 @@ export class CameraService {
     return this.processPhoto(photo, options);
   }
 
-  /** Redimensiona y extrae ubicación EXIF */
   private async processPhoto(
     photo: PhotoFile,
     options?: TakePhotoOptions
   ): Promise<ProcessedPhoto> {
     try {
-      // 1. Redimensionar con react-native-image-resizer
       const originalWidth = photo.width || 1080;
       const originalHeight = photo.height || originalWidth;
       const targetWidth = 1080;
@@ -76,14 +69,13 @@ export class CameraService {
         targetWidth,
         targetHeight,
         'JPEG',
-        80 // calidad del 0 al 100
+        80
       );
 
       if (options?.abortSignal?.aborted) {
         throw new CaptureCancelledError();
       }
 
-      // 2. Extraer GPS desde metadata EXIF
       const location = await metaToLocation(photo).catch(() => null);
 
       if (options?.abortSignal?.aborted) {
@@ -94,7 +86,6 @@ export class CameraService {
 
       return {
         ...photo,
-        // la ruta devuelta por ImageResizer ya es un path válido (contiene 'file://')
         path: resized.uri.replace('file://', ''),
         width: targetWidth,
         height: targetHeight,

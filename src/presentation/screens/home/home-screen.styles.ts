@@ -1,10 +1,9 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, Dimensions, Platform } from 'react-native';
 import { Theme } from '../../contexts/theme.context';
 
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = (screenWidth - 48) / 2;
 
-// Design System Constants
 const SPACING = {
   xs: 4,
   sm: 8,
@@ -53,21 +52,26 @@ const createShadow = (
   elevation: number,
   color: string = '#000',
   opacity: number = 0.1
-) => ({
-  elevation,
-  shadowColor: color,
-  shadowOffset: { width: 0, height: elevation / 2 },
-  shadowOpacity: opacity,
-  shadowRadius: elevation
-});
+) =>
+  Platform.select({
+    ios: {
+      shadowColor: color,
+      shadowOffset: { width: 0, height: elevation / 2 },
+      shadowOpacity: opacity,
+      shadowRadius: elevation * 1.5
+    },
+    android: {
+      elevation
+    }
+  }) || {};
 
 const createSurface = (theme: Theme, elevation: number = ELEVATION.md) => ({
   backgroundColor: theme.colors.surface,
-  borderRadius: BORDER_RADIUS.lg,
+  borderRadius: 18,
   ...createShadow(
     elevation,
     theme.colors.shadow || '#000',
-    theme.colors.primary || '#000' ? 0.3 : 0.1
+    theme.colors.primary ? 0.08 : 0.1
   )
 });
 
@@ -75,7 +79,6 @@ export const createStyles = (theme: Theme) => {
   const vars = theme.colors;
 
   return StyleSheet.create({
-    // ==================== LAYOUT BASE ====================
     container: {
       flex: 1,
       backgroundColor: vars.background
@@ -85,14 +88,13 @@ export const createStyles = (theme: Theme) => {
       backgroundColor: vars.background
     },
     bottomSpacer: {
-      height: 120 // Espacio para FAB
+      height: 120
     },
 
-    // ==================== HEADER MEJORADO ====================
     headerGradient: {
-      borderBottomLeftRadius: BORDER_RADIUS.xxxl,
-      borderBottomRightRadius: BORDER_RADIUS.xxxl,
-      ...createShadow(ELEVATION.lg, '#000', 0.2)
+      borderBottomLeftRadius: 28,
+      borderBottomRightRadius: 28,
+      ...createShadow(ELEVATION.lg, '#000', 0.15)
     },
     headerContainer: {
       paddingHorizontal: SPACING.xl,
@@ -111,33 +113,50 @@ export const createStyles = (theme: Theme) => {
       flex: 1
     },
     greetingIcon: {
-      fontSize: 32,
+      fontSize: 36,
       marginRight: SPACING.md
     },
+    greetingTextContainer: {
+      flex: 1
+    },
     greeting: {
-      ...TYPOGRAPHY.h4,
+      fontSize: 20,
+      fontWeight: '700',
       color: vars.textOnPrimary || '#FFFFFF',
-      marginBottom: SPACING.xs
+      marginBottom: 4,
+      letterSpacing: 0.2
     },
     subGreeting: {
-      ...TYPOGRAPHY.body2,
+      fontSize: 13,
+      fontWeight: '500',
       color: vars.textOnPrimary || '#FFFFFF',
-      opacity: 0.9
+      opacity: 0.9,
+      letterSpacing: 0.3
     },
     logoutButton: {
       width: 44,
       height: 44,
-      borderRadius: BORDER_RADIUS.lg,
+      borderRadius: 14,
       backgroundColor: 'rgba(255, 255, 255, 0.2)',
       justifyContent: 'center',
-      alignItems: 'center'
+      alignItems: 'center',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4
+        },
+        android: {
+          elevation: 2
+        }
+      })
     },
     logoutIcon: {
-      fontSize: 20,
+      fontSize: 22,
       color: vars.textOnPrimary || '#FFFFFF'
     },
 
-    // ==================== TIME & LOCATION CHIPS ====================
     timeAndLocationContainer: {
       flexDirection: 'row',
       gap: SPACING.md,
@@ -149,24 +168,24 @@ export const createStyles = (theme: Theme) => {
       backgroundColor: 'rgba(255, 255, 255, 0.2)',
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.sm,
-      borderRadius: BORDER_RADIUS.xl,
+      borderRadius: 14,
       gap: SPACING.xs
     },
     infoChipText: {
-      ...TYPOGRAPHY.caption,
+      fontSize: 12,
       color: vars.textOnPrimary || '#FFFFFF',
-      fontWeight: '500'
+      fontWeight: '600',
+      letterSpacing: 0.2
     },
 
-    // ==================== SECTIONS ====================
     sectionTitle: {
-      ...TYPOGRAPHY.h4,
+      fontSize: 22,
+      fontWeight: '700',
       color: vars.text,
       marginBottom: SPACING.lg,
-      textAlign: 'center'
+      letterSpacing: 0.3
     },
 
-    // ==================== STATS MEJORADAS ====================
     statsSection: {
       paddingHorizontal: SPACING.xl,
       paddingTop: SPACING.xxxl
@@ -181,47 +200,33 @@ export const createStyles = (theme: Theme) => {
       padding: SPACING.xl,
       alignItems: 'center',
       minHeight: 140,
-      justifyContent: 'center'
+      justifyContent: 'center',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: vars.border
     },
     statIconContainer: {
-      width: 48,
-      height: 48,
-      borderRadius: BORDER_RADIUS.lg,
-      backgroundColor: vars.surfaceVariant || '#F5F5F5',
+      width: 52,
+      height: 52,
+      borderRadius: 16,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: SPACING.md,
-      ...createShadow(ELEVATION.sm)
+      marginBottom: SPACING.md
     },
     statNumber: {
-      ...TYPOGRAPHY.h2,
+      fontSize: 28,
+      fontWeight: '800',
       color: vars.text,
-      marginBottom: SPACING.xs,
-      textAlign: 'center'
+      marginBottom: 4,
+      letterSpacing: -0.5
     },
     statLabel: {
-      ...TYPOGRAPHY.body2,
+      fontSize: 13,
       color: vars.textSecondary,
       textAlign: 'center',
-      fontWeight: '500',
-      marginBottom: SPACING.sm
-    },
-    statTrend: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: vars.success || '#E8F5E8',
-      paddingHorizontal: SPACING.sm,
-      paddingVertical: SPACING.xs,
-      borderRadius: BORDER_RADIUS.md,
-      gap: SPACING.xs
-    },
-    statTrendText: {
-      ...TYPOGRAPHY.caption,
-      color: vars.success || '#4CAF50',
-      fontWeight: '600'
+      fontWeight: '600',
+      letterSpacing: 0.3
     },
 
-    // ==================== QUICK ACTIONS ====================
     quickActionsSection: {
       paddingHorizontal: SPACING.xl,
       paddingTop: SPACING.xxxl
@@ -232,11 +237,22 @@ export const createStyles = (theme: Theme) => {
     },
     quickActionCard: {
       flex: 1,
-      padding: SPACING.xl,
-      borderRadius: BORDER_RADIUS.xl,
+      padding: SPACING.lg,
+      borderRadius: 18,
       alignItems: 'center',
-      minHeight: 120,
-      ...createShadow(ELEVATION.md)
+      minHeight: 130,
+      justifyContent: 'center',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8
+        },
+        android: {
+          elevation: 4
+        }
+      })
     },
     quickActionPrimary: {
       backgroundColor: vars.primary
@@ -246,30 +262,37 @@ export const createStyles = (theme: Theme) => {
       borderWidth: 2,
       borderColor: vars.forest || vars.primary
     },
+    quickActionTertiary: {
+      backgroundColor: vars.surface,
+      borderWidth: 2,
+      borderColor: vars.info || vars.primary
+    },
     quickActionIcon: {
       width: 48,
       height: 48,
-      borderRadius: BORDER_RADIUS.lg,
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      borderRadius: 14,
+      backgroundColor: 'rgba(255, 255, 255, 0.25)',
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: SPACING.md
     },
     quickActionTitle: {
-      ...TYPOGRAPHY.body1,
-      fontWeight: '600',
+      fontSize: 14,
+      fontWeight: '700',
       color: vars.textOnPrimary,
       textAlign: 'center',
-      marginBottom: SPACING.xs
+      marginBottom: 4,
+      letterSpacing: 0.2
     },
     quickActionSubtitle: {
-      ...TYPOGRAPHY.caption,
+      fontSize: 11,
       color: vars.textOnPrimary,
       opacity: 0.9,
-      textAlign: 'center'
+      textAlign: 'center',
+      fontWeight: '500',
+      letterSpacing: 0.2
     },
 
-    // ==================== FILTERS SECTION ====================
     filtersSection: {
       paddingHorizontal: SPACING.xl,
       paddingTop: SPACING.xxxl
@@ -280,14 +303,7 @@ export const createStyles = (theme: Theme) => {
       alignItems: 'center',
       marginBottom: SPACING.lg
     },
-    filterToggle: {
-      width: 36,
-      height: 36,
-      borderRadius: BORDER_RADIUS.md,
-      backgroundColor: vars.surfaceVariant,
-      justifyContent: 'center',
-      alignItems: 'center'
-    },
+
     filterContainer: {
       marginBottom: SPACING.lg,
       zIndex: 1000,
@@ -297,28 +313,31 @@ export const createStyles = (theme: Theme) => {
       zIndex: 99999,
       elevation: 99999
     },
-
-    // ==================== RESULTS INFO ====================
     resultsInfo: {
       ...createSurface(theme, ELEVATION.sm),
       padding: SPACING.lg,
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: SPACING.xl
+      marginBottom: SPACING.xl,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: vars.border
     },
     resultsCount: {
       flex: 1
     },
     resultsNumber: {
-      ...TYPOGRAPHY.h3,
+      fontSize: 26,
       color: vars.primary,
-      fontWeight: '700'
+      fontWeight: '800',
+      letterSpacing: -0.5
     },
     resultsLabel: {
-      ...TYPOGRAPHY.body2,
+      fontSize: 13,
       color: vars.textSecondary,
-      marginTop: SPACING.xs
+      marginTop: 4,
+      fontWeight: '500',
+      letterSpacing: 0.2
     },
     toggleButton: {
       flexDirection: 'row',
@@ -326,17 +345,27 @@ export const createStyles = (theme: Theme) => {
       paddingHorizontal: SPACING.lg,
       paddingVertical: SPACING.md,
       backgroundColor: vars.primaryLight || vars.surfaceVariant,
-      borderRadius: BORDER_RADIUS.xl,
-      gap: SPACING.sm,
-      ...createShadow(ELEVATION.sm)
+      borderRadius: 14,
+      gap: SPACING.xs,
+      ...Platform.select({
+        ios: {
+          shadowColor: vars.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.15,
+          shadowRadius: 4
+        },
+        android: {
+          elevation: 2
+        }
+      })
     },
     toggleButtonText: {
-      ...TYPOGRAPHY.body2,
-      fontWeight: '600',
-      color: vars.primary
+      fontSize: 13,
+      fontWeight: '700',
+      color: vars.primary,
+      letterSpacing: 0.3
     },
 
-    // ==================== ANIMALS GRID ====================
     animalsGrid: {
       paddingHorizontal: SPACING.sm,
       paddingVertical: SPACING.sm
@@ -361,15 +390,17 @@ export const createStyles = (theme: Theme) => {
       marginLeft: SPACING.sm
     },
 
-    // ==================== LOADING STATES ====================
     loadingSection: {
-      paddingHorizontal: SPACING.sm
+      paddingHorizontal: SPACING.sm,
+      paddingTop: SPACING.xl
     },
     loadingTitle: {
-      ...TYPOGRAPHY.h5,
+      fontSize: 18,
+      fontWeight: '600',
       color: vars.text,
       textAlign: 'center',
-      marginBottom: SPACING.lg
+      marginBottom: SPACING.lg,
+      letterSpacing: 0.2
     },
     skeletonGrid: {
       flexDirection: 'row',
@@ -378,12 +409,11 @@ export const createStyles = (theme: Theme) => {
       justifyContent: 'space-between'
     },
 
-    // ==================== EMPTY STATES MEJORADOS ====================
     emptyState: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: SPACING.md,
-      paddingHorizontal: SPACING.md
+      paddingVertical: SPACING.huge,
+      paddingHorizontal: SPACING.xl
     },
     emptyIconContainer: {
       width: 100,
@@ -393,171 +423,39 @@ export const createStyles = (theme: Theme) => {
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: SPACING.xl,
-      ...createShadow(ELEVATION.sm)
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 4
+        },
+        android: {
+          elevation: 2
+        }
+      })
     },
     emptyStateTitle: {
-      ...TYPOGRAPHY.h4,
+      fontSize: 20,
+      fontWeight: '700',
       color: vars.text,
       textAlign: 'center',
-      marginBottom: SPACING.md
+      marginBottom: SPACING.md,
+      letterSpacing: 0.2
     },
     emptyStateText: {
-      ...TYPOGRAPHY.body2,
+      fontSize: 14,
       color: vars.textSecondary,
       textAlign: 'center',
       lineHeight: 22,
       opacity: 0.8,
-      maxWidth: 280
-    },
-
-    // ==================== LEGACY COMPATIBILITY ====================
-    scrollContainer: {
-      paddingBottom: 120,
-      flexGrow: 1
-    },
-    section: {
-      marginVertical: SPACING.lg,
-      paddingHorizontal: SPACING.lg
-    },
-    imageSection: {
-      marginTop: SPACING.xxl,
-      paddingHorizontal: SPACING.lg
-    },
-    list: {
-      paddingHorizontal: SPACING.lg,
-      paddingBottom: 100
-    },
-    description: {
-      ...TYPOGRAPHY.body1,
-      color: vars.textSecondary,
-      textAlign: 'center',
-      marginBottom: SPACING.lg,
-      alignSelf: 'stretch'
-    },
-    welcome: {
-      ...TYPOGRAPHY.h3,
-      color: vars.text,
-      marginVertical: SPACING.lg
-    },
-    statsRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginBottom: SPACING.xxl
-    },
-    statCount: {
-      ...TYPOGRAPHY.h3,
-      color: vars.primary
-    },
-    statBox: {
-      alignItems: 'center',
-      flex: 1
-    },
-    statValue: {
-      ...TYPOGRAPHY.h2,
-      color: vars.primary
-    },
-    imagePlaceholder: {
-      ...TYPOGRAPHY.body1,
-      textAlign: 'center',
-      color: vars.textSecondary,
-      padding: SPACING.lg,
-      backgroundColor: vars.surface,
-      borderRadius: BORDER_RADIUS.md
-    },
-    statsCard: {
-      ...createSurface(theme),
-      width: '100%',
-      padding: SPACING.lg,
-      alignItems: 'center',
-      marginBottom: SPACING.xxl
-    },
-    cardButtonContainer: {
-      width: '100%',
-      marginBottom: SPACING.xxl
-    },
-    cardButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      ...createSurface(theme),
-      padding: SPACING.lg,
-      marginBottom: SPACING.md
-    },
-    cardButtonText: {
-      ...TYPOGRAPHY.body1,
-      color: vars.text,
-      fontWeight: '600'
-    },
-    buttonIcon: {
-      marginLeft: SPACING.sm
-    },
-    emptyListContainer: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: SPACING.xxxl
-    },
-    emptyListText: {
-      ...TYPOGRAPHY.body1,
-      marginTop: SPACING.md,
-      color: vars.textSecondary,
-      textAlign: 'center'
-    },
-    catalogHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: SPACING.lg
-    },
-    viewAllButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: SPACING.md,
-      paddingVertical: SPACING.sm,
-      borderRadius: BORDER_RADIUS.md,
-      backgroundColor: vars.surfaceVariant
-    },
-    viewAllButtonText: {
-      ...TYPOGRAPHY.body2,
-      fontWeight: '600',
-      color: vars.primary,
-      marginRight: SPACING.xs
-    },
-    timeAndLocationText: {
-      ...TYPOGRAPHY.body2,
-      color: vars.textSecondary,
-      marginLeft: SPACING.sm
-    },
-    separator: {
-      height: SPACING.lg,
-      width: 1,
-      backgroundColor: vars.border,
-      marginHorizontal: SPACING.md,
-      opacity: 0.5
-    },
-    activityIndicator: {
-      marginLeft: SPACING.sm
-    },
-    loadingContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: SPACING.xxxl * 2
-    },
-    loadingText: {
-      ...TYPOGRAPHY.body2,
-      color: vars.textSecondary,
-      marginTop: SPACING.md,
-      fontStyle: 'italic'
-    },
-    quickActionTertiary: {
-      backgroundColor: vars.surface,
-      borderWidth: 2,
-      borderColor: vars.primary
+      maxWidth: 280,
+      fontWeight: '500',
+      letterSpacing: 0.2
     }
   });
 };
 
-// Export design system constants for reuse
 export {
   SPACING,
   BORDER_RADIUS,

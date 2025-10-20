@@ -16,43 +16,73 @@ export function useCamera() {
   const [isCapturing, setCapturing] = useState(false);
   const [cameraPosition, setCameraPosition] = useState<CameraPosition>(0);
   const [flashMode, setFlashMode] = useState<'on' | 'off' | 'auto'>('off');
-  const { hasPermissions, checkPermissions } = useRequestPermissions();
+
+  const { hasPermissions, permissionStatus, checkPermissions } =
+    useRequestPermissions();
 
   const devices = useCameraDevices();
   const device = devices[cameraPosition];
 
   useEffect(() => {
-    checkPermissions(['camera']);
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (nextAppState === 'active') {
-        checkPermissions(['camera']);
-      }
+    const hasCameraPermission = permissionStatus['camera'] === 'granted';
+    const hasLocationPermission = permissionStatus['location'] === 'granted';
+
+    const isReady =
+      hasPermissions &&
+      hasCameraPermission &&
+      hasLocationPermission &&
+      !!device;
+
+    console.log('📷 Estado de cámara:', {
+      hasPermissions,
+      hasCameraPermission,
+      hasLocationPermission,
+      hasDevice: !!device,
+      isCameraReady: isReady
     });
-    return () => subscription.remove();
-  }, [checkPermissions]);
+
+    setCameraReady(isReady);
+  }, [hasPermissions, permissionStatus, device]);
 
   useEffect(() => {
-    setCameraReady(hasPermissions && !!device);
-  }, [hasPermissions, device]);
+    const initPermissions = async () => {
+      await checkPermissions(['camera', 'gallery', 'location', 'allFiles']);
+    };
+
+    initPermissions();
+
+    const subscription = AppState.addEventListener('change', async state => {
+      if (state === 'active') {
+        await checkPermissions(['camera', 'gallery', 'location', 'allFiles']);
+      }
+    });
+
+    return () => subscription.remove();
+  }, [checkPermissions]);
 
   const takePhoto = useCallback(
     async (options?: TakePhotoOptions): Promise<PhotoFile | undefined> => {
       if (!cameraRef.current || !isCameraReady) {
-        console.log('Camera not ready or no permission');
+        console.log('❌ Cámara no lista o sin permisos');
         return;
       }
+
       setCapturing(true);
       try {
         const photo = await cameraRef.current.takePhoto({
           flash: flashMode,
           ...options
         });
+        console.log('✅ Foto tomada exitosamente');
         return photo;
       } catch (e: unknown) {
         if (e instanceof Error && e.name === 'CameraRuntimeError') {
-          console.error('Camera runtime error:', e.message);
+          console.error(
+            '❌ Error de cámara en tiempo de ejecución:',
+            e.message
+          );
         } else {
-          console.error('Failed to take photo with an unexpected error:', e);
+          console.error('❌ Error inesperado al tomar foto:', e);
         }
       } finally {
         setCapturing(false);
@@ -83,7 +113,6 @@ export function useCamera() {
     flashMode,
     takePhoto,
     flipCamera,
-    toggleFlashMode,
-    checkPermissions
+    toggleFlashMode
   };
 }

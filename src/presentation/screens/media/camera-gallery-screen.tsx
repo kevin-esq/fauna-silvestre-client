@@ -1,102 +1,143 @@
 import React, {
-  useRef,
-  useEffect,
   useMemo,
+  useCallback,
+  useEffect,
   useState,
-  useCallback
+  useRef
 } from 'react';
-import {
-  View,
-  StyleSheet,
-  ActivityIndicator,
-  Text,
-  Animated,
-  SafeAreaView,
-  StatusBar,
-  Alert,
-  TouchableOpacity,
-  BackHandler,
-  Modal
-} from 'react-native';
+import { SafeAreaView, StatusBar, Modal } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Camera } from 'react-native-vision-camera';
 import { useCamera } from '../../hooks/use-camera.hook';
-import { useRecentImages } from '../../hooks/use-recent-images.hook';
-import { TopControls } from '../../components/camera/top-controls.component';
-import { CaptureButton } from '../../components/camera/capture-button.component';
-import { GalleryButton } from '../../components/camera/gallery-button.component';
-import { ThumbnailList } from '../../components/camera/thumbnail-list.component';
-import CustomImagePickerScreen from './custom-image-picker-screen';
-import { useLoading } from '../../contexts/loading.context';
+import { useRecentImagesWithLocation } from '../../hooks/use-recent-images.hook';
+import { useRequestPermissions } from '../../hooks/use-request-permissions.hook';
+import { useCameraAnimations } from '../../hooks/use-camera-animations.hook';
+import { useCameraActions } from '../../hooks/use-camera-actions.hook';
+import { useCameraFreeze } from '../../hooks/use-camera-freeze.hook';
+import { useModalState } from '../../hooks/use-modal-state.hook';
+import {
+  useBackHandler,
+  useModalBackHandler
+} from '../../hooks/use-back-handler.hook';
 import { themeVariables, useTheme } from '../../contexts/theme.context';
-import Location, {
-  type Location as LocationType
-} from 'react-native-get-location';
 import { createStyles } from './camera-gallery-screen.styles';
-import { useNavigationActions } from '../../navigation/navigation-provider';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { PermissionMessage } from '../../components/camera/permission-message.component';
+import { Loading } from '../../components/camera/loading.component';
+import { CameraView } from '../../components/camera/camera-view.component';
+import CustomImagePickerScreen from './custom-image-picker-screen';
 
-interface PermissionMessageProps {
-  styles: ReturnType<typeof createStyles>;
-  title: string;
-  message: string;
-  onRequestPermission: () => void;
-  isLoading?: boolean;
+interface ScreenWrapperProps {
+  children: React.ReactNode;
 }
 
-interface LoadingProps {
-  styles: ReturnType<typeof createStyles>;
-}
-
-const PermissionMessage = React.memo<PermissionMessageProps>(
-  ({ styles, title, message, onRequestPermission, isLoading = false }) => (
-    <View style={styles.loadingContainer}>
-      <Ionicons
-        name="camera-off"
-        size={60}
-        color="#fff"
-        style={{ marginBottom: 20 }}
+const ScreenWrapper: React.FC<ScreenWrapperProps> = ({ children }) => (
+  <GestureHandlerRootView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
       />
-      <Text style={styles.loadingText}>{title}</Text>
-      <Text style={[styles.loadingText, { fontSize: 14, marginTop: 10 }]}>
-        {message}
-      </Text>
-      <TouchableOpacity
-        style={[styles.permissionButton, isLoading && { opacity: 0.7 }]}
-        onPress={onRequestPermission}
-        activeOpacity={0.7}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator size="small" color="#ffffff" />
-        ) : (
-          <Text style={styles.permissionButtonText}>Habilitar Cámara</Text>
-        )}
-      </TouchableOpacity>
-    </View>
-  )
+      {children}
+    </SafeAreaView>
+  </GestureHandlerRootView>
 );
 
-PermissionMessage.displayName = 'PermissionMessage';
-
-const Loading = React.memo<LoadingProps>(({ styles }) => (
-  <View style={styles.loadingContainer}>
-    <ActivityIndicator size="large" color="#ffffff" />
-    <Text style={styles.loadingText}>Preparando cámara...</Text>
-  </View>
-));
-
-Loading.displayName = 'Loading';
-
 export const CameraGalleryScreen: React.FC = () => {
-  const insets = useSafeAreaInsets();
-  const { navigate, goBack } = useNavigationActions();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const { showLoading, hideLoading } = useLoading();
+  const {
+    hasPermissions,
+    isRequesting,
+    missingPermissions,
+    blockedPermissions,
+    requestAlertPermissions,
+    requestAllFilesPermission,
+    openAppSettings,
+    checkPermissions
+  } = useRequestPermissions();
 
+  const [isInitialCheckComplete, setIsInitialCheckComplete] = useState(false);
+  const initialCheckDoneRef = useRef(false);
+  const [currentPermissionStep, setCurrentPermissionStep] = useState<
+    'checking' | 'alert' | 'settings' | 'blocked'
+  >('checking');
+
+  const hasBlockedPermissionsRef = useRef(false);
+
+  useEffect(() => {
+    console.log('🔄 Estado de hasPermissions cambió:', hasPermissions);
+  }, [hasPermissions]);
+
+  useEffect(() => {
+    if (blockedPermissions.length > 0) {
+      console.log(
+        '🚫 Permisos bloqueados detectados, marcando flag:',
+        blockedPermissions
+      );
+      hasBlockedPermissionsRef.current = true;
+      setCurrentPermissionStep('blocked');
+    }
+  }, [blockedPermissions]);
+
+  useEffect(() => {
+    if (hasPermissions && isInitialCheckComplete) {
+      console.log('✅ Todos los permisos concedidos, reseteando flags');
+      hasBlockedPermissionsRef.current = false;
+      setCurrentPermissionStep('checking');
+    }
+  }, [hasPermissions, isInitialCheckComplete]);
+
+  useEffect(() => {
+    if (initialCheckDoneRef.current) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const performInitialCheck = async () => {
+      console.log('🔍 Realizando verificación inicial de permisos...');
+
+      try {
+        const {
+          missingPermissions: initialMissing,
+          blockedPermissions: initialBlocked
+        } = await checkPermissions([
+          'camera',
+          'gallery',
+          'location',
+          'allFiles'
+        ]);
+
+        console.log('📋 Permisos faltantes:', initialMissing);
+        console.log('🚫 Permisos bloqueados:', initialBlocked);
+
+        if (isMounted) {
+          initialCheckDoneRef.current = true;
+          setIsInitialCheckComplete(true);
+
+          if (initialBlocked.length > 0) {
+            setCurrentPermissionStep('blocked');
+          } else if (initialMissing.length > 0) {
+            setCurrentPermissionStep('alert');
+          }
+
+          console.log('✅ Verificación inicial completada');
+        }
+      } catch (error) {
+        console.error('❌ Error en verificación inicial:', error);
+        if (isMounted) {
+          initialCheckDoneRef.current = true;
+          setIsInitialCheckComplete(true);
+        }
+      }
+    };
+
+    performInitialCheck();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [checkPermissions]);
+
+  const cameraHook = useCamera();
   const {
     cameraRef,
     device,
@@ -104,324 +145,362 @@ export const CameraGalleryScreen: React.FC = () => {
     isCapturing,
     cameraPosition,
     flashMode,
-    hasPermissions,
-    takePhoto,
     flipCamera,
-    toggleFlashMode,
-    checkPermissions
-  } = useCamera();
+    toggleFlashMode
+  } = cameraHook;
 
-  const recentImages = useRecentImages();
+  const freezeHook = useCameraFreeze();
+  const { freezeUri, isShowingFreeze } = freezeHook;
 
-  // Estados locales
-  const [activeThumbnail, setActiveThumbnail] = useState<string | null>(null);
-  const [isPermissionLoading, setIsPermissionLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const shouldLoadImages = hasPermissions && isInitialCheckComplete;
+
+  const { images: recentImages, refresh: refreshImages } =
+    useRecentImagesWithLocation({
+      limit: 50,
+      autoRefresh: false,
+      enabled: shouldLoadImages,
+      onError: error => {
+        console.error('Error cargando imágenes:', error);
+      }
+    });
+
+  const { fadeAnim, pulseAnim, freezeFadeAnim } = useCameraAnimations(
+    isCameraReady,
+    isCapturing,
+    isShowingFreeze
+  );
+
+  const {
+    activeThumbnail,
+    handleCapture,
+    handleThumbnailPress,
+    handleConfirm
+  } = useCameraActions(cameraHook, freezeHook);
+
+  const { isModalOpen, openModal, closeModal } = useModalState();
 
   const { theme } = useTheme();
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const styles = useMemo(() => createStyles(variables), [variables]);
 
-  const navigation = useNavigation();
+  const { handleBackPress } = useBackHandler();
 
-  useFocusEffect(() => {
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      () => {
-        if (isModalOpen) {
-          setIsModalOpen(false);
-          return true;
-        }
-        if (navigation.canGoBack()) {
-          goBack();
-          return true;
-        } else {
-          navigate('HomeTabs');
-          return true;
-        }
-      }
-    );
-
-    return () => backHandler.remove();
+  useModalBackHandler(isModalOpen, closeModal, {
+    enableHardwareBack: true,
+    closeOnBack: true
   });
 
-  // Animación de cámara lista
-  useEffect(() => {
-    if (isCameraReady) {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true
-      }).start();
+  const handleModalClose = useCallback(() => {
+    closeModal();
+
+    if (hasPermissions) {
+      refreshImages();
     }
-  }, [isCameraReady, fadeAnim]);
+  }, [closeModal, refreshImages, hasPermissions]);
 
-  // Animación de pulso para captura
-  useEffect(() => {
-    let pulseAnimation: Animated.CompositeAnimation | undefined;
+  const handleRequestAllPermissions = useCallback(async () => {
+    console.log('🔄 Iniciando flujo completo de permisos...');
+    console.log('❌ Permisos faltantes actuales:', missingPermissions);
+    console.log('🚫 Permisos bloqueados actuales:', blockedPermissions);
 
-    if (isCapturing) {
-      pulseAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.1,
-            duration: 600,
-            useNativeDriver: true
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true
-          })
-        ]),
-        { iterations: 3 }
+    if (missingPermissions.length === 0) {
+      console.log('✅ Todos los permisos ya están concedidos');
+      refreshImages();
+      return;
+    }
+
+    if (blockedPermissions.length > 0) {
+      console.log('🚫 Hay permisos bloqueados, abriendo configuración...');
+      setCurrentPermissionStep('blocked');
+      openAppSettings();
+      return;
+    }
+
+    const alertPermissions = missingPermissions.filter(
+      perm => perm === 'camera' || perm === 'gallery' || perm === 'location'
+    );
+    const settingsPermissions = missingPermissions.filter(
+      perm => perm === 'allFiles'
+    );
+
+    console.log('📱 Permisos con alerta:', alertPermissions);
+    console.log(
+      '⚙️ Permisos que requieren configuración:',
+      settingsPermissions
+    );
+
+    if (alertPermissions.length > 0) {
+      console.log('🔄 Solicitando permisos con alerta nativa...');
+      setCurrentPermissionStep('alert');
+
+      const alertGranted = await requestAlertPermissions(alertPermissions);
+
+      console.log(
+        '🔍 Estado de blockedPermissions después de solicitud:',
+        blockedPermissions
       );
-      pulseAnimation.start();
 
-      return () => {
-        pulseAnimation?.stop();
-        pulseAnim.setValue(1);
-      };
+      if (alertGranted) {
+        console.log('✅ Permisos con alerta concedidos');
+
+        const {
+          missingPermissions: updatedMissing,
+          blockedPermissions: updatedBlocked
+        } = await checkPermissions([
+          'camera',
+          'gallery',
+          'location',
+          'allFiles'
+        ]);
+
+        console.log(
+          '🔍 Permisos faltantes después de alertas:',
+          updatedMissing
+        );
+        console.log(
+          '🚫 Permisos bloqueados después de alertas:',
+          updatedBlocked
+        );
+
+        if (updatedBlocked.length > 0) {
+          console.log(
+            '🚫 Algunos permisos fueron bloqueados, ir a configuración'
+          );
+          setCurrentPermissionStep('blocked');
+          return;
+        }
+
+        const remainingSettingsPermissions = updatedMissing.filter(
+          perm => perm === 'allFiles'
+        );
+
+        if (remainingSettingsPermissions.length > 0) {
+          console.log(
+            '🔄 Aún faltan permisos de configuración, procediendo...'
+          );
+          setCurrentPermissionStep('settings');
+          requestAllFilesPermission();
+        } else if (updatedMissing.length === 0) {
+          console.log(
+            '✅ Todos los permisos concedidos, refrescando imágenes...'
+          );
+          setCurrentPermissionStep('checking');
+          refreshImages();
+        } else {
+          console.log('⚠️ Algunos permisos aún faltan:', updatedMissing);
+          setCurrentPermissionStep('alert');
+        }
+      } else {
+        console.log(
+          '❌ Algunos permisos con alerta fueron denegados o bloqueados'
+        );
+
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 500));
+
+        const { blockedPermissions: updatedBlocked } = await checkPermissions([
+          'camera',
+          'gallery',
+          'location',
+          'allFiles'
+        ]);
+
+        console.log(
+          '🔍 Verificando permisos bloqueados después de rechazo:',
+          updatedBlocked
+        );
+        console.log(
+          '🔍 Estado actual de blockedPermissions del hook:',
+          blockedPermissions
+        );
+
+        if (blockedPermissions.length > 0 || updatedBlocked.length > 0) {
+          console.log(
+            '🚫 Permisos bloqueados detectados, cambiando a modo blocked'
+          );
+          setCurrentPermissionStep('blocked');
+        } else {
+          console.log(
+            '⚠️ Permisos denegados pero no bloqueados, mantener en alert'
+          );
+          setCurrentPermissionStep('alert');
+        }
+      }
+    } else if (settingsPermissions.length > 0) {
+      console.log('🔄 Abriendo configuración para permisos restantes...');
+      setCurrentPermissionStep('settings');
+      requestAllFilesPermission();
+    }
+  }, [
+    missingPermissions,
+    blockedPermissions,
+    requestAlertPermissions,
+    requestAllFilesPermission,
+    openAppSettings,
+    checkPermissions,
+    refreshImages
+  ]);
+
+  const handleBackButtonPress = useCallback(() => {
+    handleBackPress();
+  }, [handleBackPress]);
+
+  const getPermissionMessageType = () => {
+    if (blockedPermissions.length > 0 || hasBlockedPermissionsRef.current) {
+      console.log('🚫 Hay permisos bloqueados, mostrando tipo "all"');
+      return 'all';
     }
 
-    return undefined;
-  }, [isCapturing, pulseAnim]);
-
-  // Handlers
-  const handleRequestPermissions = useCallback(async () => {
-    if (isPermissionLoading) return;
-
-    setIsPermissionLoading(true);
-    try {
-      await checkPermissions(['camera']);
-    } catch (error) {
-      console.error('Error requesting permissions:', error);
-      Alert.alert(
-        'Error',
-        'No se pudieron solicitar los permisos. Por favor, verifica la configuración de la aplicación.'
-      );
-    } finally {
-      setIsPermissionLoading(false);
+    if (!isInitialCheckComplete || currentPermissionStep === 'checking') {
+      return 'all';
     }
-  }, [isPermissionLoading, checkPermissions]);
 
-  const handleCapture = useCallback(async () => {
-    if (isCapturing) return;
+    const hasAlertPermissions = missingPermissions.some(
+      perm => perm === 'camera' || perm === 'gallery' || perm === 'location'
+    );
+    const hasSettingsPermissions = missingPermissions.some(
+      perm => perm === 'allFiles'
+    );
 
-    showLoading();
-    try {
-      const photo = await takePhoto();
-      if (!photo) {
-        Alert.alert('Error', 'No se pudo capturar la foto.');
-        return;
+    if (currentPermissionStep === 'blocked') {
+      return 'all';
+    } else if (currentPermissionStep === 'alert' && hasAlertPermissions) {
+      if (
+        missingPermissions.length > 1 ||
+        missingPermissions.includes('location')
+      ) {
+        return 'all';
       }
 
-      let location: LocationType | null = null;
-      try {
-        location = await Location.getCurrentPosition({
-          enableHighAccuracy: true,
-          timeout: 10000
-        });
-      } catch (locationError) {
-        console.warn('Could not get location:', locationError);
+      if (missingPermissions.includes('camera')) {
+        return 'camera';
       }
 
-      navigate('ImagePreview', {
-        imageUri: `file://${photo.path}`,
-        location: location || undefined
-      });
-    } catch (error) {
-      console.error('Error capturing photo:', error);
-      Alert.alert(
-        'Error',
-        'Ocurrió un error al capturar la foto. Por favor, inténtalo de nuevo.'
-      );
-    } finally {
-      hideLoading();
+      if (missingPermissions.includes('gallery')) {
+        return 'photos';
+      }
+    } else if (currentPermissionStep === 'settings' && hasSettingsPermissions) {
+      return 'all';
     }
-  }, [isCapturing, takePhoto, navigate, showLoading, hideLoading]);
 
-  const handleOpenGallery = useCallback(() => {
-    setIsModalOpen(true);
-  }, []);
+    return 'all';
+  };
 
-  const handleConfirm = useCallback(
-    (uri: string, location: LocationType) => {
-      setIsModalOpen(false);
-      navigate('ImagePreview', { imageUri: uri, location });
-    },
-    [navigate]
+  const getCustomButtonText = () => {
+    if (
+      blockedPermissions.length > 0 ||
+      hasBlockedPermissionsRef.current ||
+      currentPermissionStep === 'blocked'
+    ) {
+      console.log(
+        '🚫 Mostrando botón de configuración por permisos bloqueados'
+      );
+      return 'Abrir Configuración';
+    }
+
+    const messageType = getPermissionMessageType();
+
+    if (messageType === 'camera') {
+      return 'Habilitar Cámara';
+    } else if (messageType === 'photos') {
+      return 'Permitir Acceso a Fotos';
+    } else {
+      if (currentPermissionStep === 'settings') {
+        return 'Abrir Configuración de Android';
+      }
+      return 'Habilitar Todos los Permisos';
+    }
+  };
+
+  const renderPermissionMessage = () => (
+    <ScreenWrapper>
+      <PermissionMessage
+        styles={styles}
+        onRequestPermission={handleRequestAllPermissions}
+        isLoading={
+          isRequesting &&
+          currentPermissionStep !== 'settings' &&
+          currentPermissionStep !== 'blocked'
+        }
+        permissionType={getPermissionMessageType()}
+        customButtonText={getCustomButtonText()}
+        missingPermissions={missingPermissions}
+        blockedPermissions={blockedPermissions}
+        currentStep={currentPermissionStep}
+      />
+    </ScreenWrapper>
   );
 
-  const handleCancel = useCallback(() => {
-    setIsModalOpen(false);
-  }, []);
-
-  const handleThumbnailPress = useCallback(
-    (uri: string) => {
-      try {
-        setActiveThumbnail(uri);
-        // Navegar directamente a ImagePreview con la imagen seleccionada
-        navigate('ImagePreview', {
-          imageUri: uri,
-          location: undefined
-        });
-      } catch (error) {
-        console.error('Error opening thumbnail:', error);
-        Alert.alert('Error', 'No se pudo abrir la imagen.');
-      } finally {
-        // Limpiar selección después de un tiempo
-        setTimeout(() => {
-          setActiveThumbnail(null);
-        }, 200);
-      }
-    },
-    [navigate]
+  const renderLoadingState = () => (
+    <ScreenWrapper>
+      <Loading styles={styles} />
+    </ScreenWrapper>
   );
 
-  const handleBackPress = useCallback(() => {
-    navigate('HomeTabs');
-  }, [navigate]);
+  const renderCameraView = () => (
+    <ScreenWrapper>
+      <CameraView
+        cameraRef={cameraRef}
+        device={device}
+        isCameraReady={isCameraReady}
+        isCapturing={isCapturing}
+        cameraPosition={cameraPosition}
+        flashMode={flashMode}
+        fadeAnim={fadeAnim}
+        pulseAnim={pulseAnim}
+        freezeFadeAnim={freezeFadeAnim}
+        freezeUri={freezeUri}
+        isShowingFreeze={isShowingFreeze}
+        styles={styles}
+        recentImages={recentImages}
+        activeThumbnail={activeThumbnail}
+        onBack={handleBackButtonPress}
+        onToggleFlash={toggleFlashMode}
+        onFlip={flipCamera}
+        onOpenGallery={openModal}
+        onCapture={handleCapture}
+        onThumbnailPress={handleThumbnailPress}
+      />
 
-  // Estado de permisos denegados
+      <Modal
+        visible={isModalOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleModalClose}
+      >
+        <ScreenWrapper>
+          <CustomImagePickerScreen
+            theme={theme}
+            onConfirm={(uri, location) => {
+              handleConfirm(uri, location);
+              handleModalClose();
+            }}
+            onCancel={handleModalClose}
+          />
+        </ScreenWrapper>
+      </Modal>
+    </ScreenWrapper>
+  );
+
+  if (!isInitialCheckComplete) {
+    console.log('⏳ Esperando verificación inicial...');
+    return renderLoadingState();
+  }
+
+  console.log('🎯 Estado final para render - hasPermissions:', hasPermissions);
+  console.log('❌ Permisos faltantes:', missingPermissions);
+  console.log('🚫 Permisos bloqueados:', blockedPermissions);
+  console.log('📝 Paso actual:', currentPermissionStep);
+
   if (!hasPermissions) {
-    return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaView style={styles.safeArea}>
-          <StatusBar
-            barStyle="light-content"
-            translucent
-            backgroundColor="transparent"
-          />
-          <PermissionMessage
-            styles={styles}
-            title="Permisos requeridos"
-            message="Para usar todas las funciones de la cámara, necesitamos acceso a la cámara y al almacenamiento."
-            onRequestPermission={handleRequestPermissions}
-            isLoading={isPermissionLoading}
-          />
-        </SafeAreaView>
-      </GestureHandlerRootView>
-    );
+    console.log('🚫 Permisos insuficientes, mostrando mensaje...');
+    return renderPermissionMessage();
   }
 
-  // Cámara no disponible
   if (!device) {
-    return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaView style={styles.safeArea}>
-          <StatusBar
-            barStyle="light-content"
-            translucent
-            backgroundColor="transparent"
-          />
-          <Loading styles={styles} />
-        </SafeAreaView>
-      </GestureHandlerRootView>
-    );
+    console.log('📷 Dispositivo de cámara no disponible...');
+    return renderLoadingState();
   }
 
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
-        />
-
-        <Animated.View style={[styles.full, { opacity: fadeAnim }]}>
-          {isCameraReady && (
-            <Camera
-              ref={cameraRef}
-              style={StyleSheet.absoluteFill}
-              device={device}
-              isActive={true}
-              photo
-              enableZoomGesture
-            />
-          )}
-
-          <View style={styles.controlsOverlay}>
-            <TopControls
-              onBack={handleBackPress}
-              onToggleFlash={toggleFlashMode}
-              onFlip={flipCamera}
-              flashMode={flashMode}
-              showFlash={cameraPosition === 0}
-              style={{ marginTop: insets.top }}
-            />
-
-            <View
-              style={[
-                styles.bottomControls,
-                { paddingBottom: Math.max(insets.bottom, 20) }
-              ]}
-            >
-              <GalleryButton
-                onPress={handleOpenGallery}
-                style={styles.buttonPressed}
-              />
-
-              <View style={styles.captureButtonContainer}>
-                <Animated.View
-                  style={[
-                    styles.captureRing,
-                    {
-                      transform: [{ scale: pulseAnim }],
-                      borderColor: isCapturing
-                        ? '#ff4757'
-                        : 'rgba(255,255,255,0.8)'
-                    }
-                  ]}
-                />
-                <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                  <CaptureButton
-                    onPress={handleCapture}
-                    isActive={isCapturing}
-                    disabled={isCapturing}
-                  />
-                </Animated.View>
-              </View>
-
-              <View style={{ width: 40 }} />
-            </View>
-          </View>
-
-          {recentImages.length > 0 && (
-            <View
-              style={[
-                styles.thumbnailContainer,
-                {
-                  bottom: Math.max(insets.bottom + 120, 140)
-                }
-              ]}
-            >
-              <ThumbnailList
-                uris={recentImages}
-                onSelect={handleThumbnailPress}
-                activeUri={activeThumbnail}
-              />
-            </View>
-          )}
-        </Animated.View>
-
-        {/* Modal reemplazado con Modal nativo para evitar conflictos */}
-        <Modal
-          visible={isModalOpen}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={handleCancel}
-        >
-          <SafeAreaView style={{ flex: 1 }}>
-            <CustomImagePickerScreen
-              theme={theme}
-              onConfirm={handleConfirm}
-              onCancel={handleCancel}
-            />
-          </SafeAreaView>
-        </Modal>
-      </SafeAreaView>
-    </GestureHandlerRootView>
-  );
+  console.log('🎉 Todo listo, mostrando cámara...');
+  return renderCameraView();
 };

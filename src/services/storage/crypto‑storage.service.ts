@@ -1,5 +1,3 @@
-// crypto‑storage.service.ts
-
 import { ILogger } from '../../shared/types/ILogger';
 import Keychain from 'react-native-keychain';
 import Aes from 'react-native-aes-crypto';

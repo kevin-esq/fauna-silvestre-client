@@ -1,6 +1,7 @@
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 import { StyleSheet } from 'react-native';
 
-export const createStyles = (vars: Record<string, string>) => {
+export const createStyles = (vars: ThemeVariablesType) => {
   return StyleSheet.create({
     container: {
       flex: 1,

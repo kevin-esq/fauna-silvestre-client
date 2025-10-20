@@ -1,6 +1,9 @@
 import React, { useMemo } from 'react';
 import { TextInput, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Theme } from '@/presentation/contexts/theme.context';
+import {
+  Theme,
+  ThemeVariablesType
+} from '@/presentation/contexts/theme.context';
 import { themeVariables } from '@/presentation/contexts/theme.context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -47,7 +50,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   );
 };
 
-const createStyles = (vars: Record<string, string>) =>
+const createStyles = (vars: ThemeVariablesType) =>
   StyleSheet.create({
     container: {
       position: 'relative',

@@ -93,11 +93,12 @@ export const createStyles = (vars: ThemeVariablesType) =>
       position: 'absolute',
       left: 16,
       right: 16,
-      zIndex: 5,
+      zIndex: 10,
       backgroundColor: 'rgba(0,0,0,0.6)',
       borderRadius: 20,
       paddingVertical: 12,
-      paddingHorizontal: 16
+      paddingHorizontal: 16,
+      elevation: 10
     },
     thumbnailItem: {
       marginRight: 12,

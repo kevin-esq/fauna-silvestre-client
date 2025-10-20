@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import {
   LocalFileService,
   DownloadedFile
 } from '../../services/storage/local-file.service';
 import { catalogService } from '../../services/catalog/catalog.service';
+import RNFetchBlob from 'react-native-blob-util';
 
 interface DownloadedFilesState {
   files: DownloadedFile[];
@@ -13,19 +14,20 @@ interface DownloadedFilesState {
   storageInfo: {
     totalFiles: number;
     totalSize: number;
+    totalCapacity: number;
     sheetsDirectory: string;
+    freeSpace: number;
+    usedPercentage: number;
   };
 }
 
-/**
- * Converts a Blob to base64 string
- */
 const blobToBase64 = (blob: Blob): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
-        resolve(reader.result);
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
       } else {
         reject(new Error('Failed to convert blob to base64'));
       }
@@ -33,6 +35,70 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
     reader.onerror = () => reject(new Error('Error reading blob'));
     reader.readAsDataURL(blob);
   });
+};
+
+const STORAGE_DEFAULTS = {
+  ANDROID: {
+    TOTAL: 16 * 1024 * 1024 * 1024,
+    FREE: 4 * 1024 * 1024 * 1024
+  },
+  IOS: {
+    TOTAL: 64 * 1024 * 1024 * 1024,
+    FREE: 8 * 1024 * 1024 * 1024
+  },
+  FALLBACK: {
+    TOTAL: 16 * 1024 * 1024 * 1024,
+    FREE: 2 * 1024 * 1024 * 1024
+  }
+} as const;
+
+interface StorageCapacity {
+  totalCapacity: number;
+  freeSpace: number;
+}
+
+const getStorageCapacity = async (): Promise<StorageCapacity> => {
+  try {
+    if (Platform.OS === 'android') {
+      return await getAndroidStorageCapacity();
+    }
+
+    return {
+      totalCapacity: STORAGE_DEFAULTS.IOS.TOTAL,
+      freeSpace: STORAGE_DEFAULTS.IOS.FREE
+    };
+  } catch (error) {
+    console.error('Error getting storage capacity:', error);
+    return {
+      totalCapacity: STORAGE_DEFAULTS.FALLBACK.TOTAL,
+      freeSpace: STORAGE_DEFAULTS.FALLBACK.FREE
+    };
+  }
+};
+
+const getAndroidStorageCapacity = async (): Promise<StorageCapacity> => {
+  const storagePath =
+    RNFetchBlob.fs.dirs.SDCardDir || RNFetchBlob.fs.dirs.DocumentDir;
+
+  try {
+    const exists = await RNFetchBlob.fs.exists(storagePath);
+
+    if (exists) {
+      const stats = await RNFetchBlob.fs.stat(storagePath);
+      console.log('Storage path stats:', stats);
+    }
+
+    return {
+      totalCapacity: STORAGE_DEFAULTS.ANDROID.TOTAL,
+      freeSpace: STORAGE_DEFAULTS.ANDROID.FREE
+    };
+  } catch (error) {
+    console.warn('Could not access storage path, using defaults:', error);
+    return {
+      totalCapacity: STORAGE_DEFAULTS.ANDROID.TOTAL,
+      freeSpace: STORAGE_DEFAULTS.ANDROID.FREE
+    };
+  }
 };
 
 export const useDownloadedFiles = () => {
@@ -43,21 +109,36 @@ export const useDownloadedFiles = () => {
     storageInfo: {
       totalFiles: 0,
       totalSize: 0,
-      sheetsDirectory: ''
+      totalCapacity: 0,
+      sheetsDirectory: '',
+      freeSpace: 0,
+      usedPercentage: 0
     }
   });
 
-  /**
-   * Loads all downloaded files from local storage
-   */
   const loadDownloadedFiles = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
       const files = await LocalFileService.getDownloadedFiles();
-      const storageInfo = await LocalFileService.getStorageInfo();
+      const storageCapacity = await getStorageCapacity();
 
-      // Sort files by download date (newest first)
+      const totalSize = files.reduce((sum, file) => sum + file.fileSize, 0);
+
+      const usedPercentage = Math.min(
+        (totalSize / storageCapacity.totalCapacity) * 100,
+        100
+      );
+
+      const storageInfo = {
+        totalFiles: files.length,
+        totalSize,
+        totalCapacity: storageCapacity.totalCapacity,
+        sheetsDirectory: await LocalFileService.getSheetsDirectory(),
+        freeSpace: storageCapacity.freeSpace,
+        usedPercentage
+      };
+
       const sortedFiles = files.sort(
         (a, b) =>
           new Date(b.downloadDate).getTime() -
@@ -71,7 +152,9 @@ export const useDownloadedFiles = () => {
         isLoading: false
       }));
 
-      console.log(`📋 Loaded ${files.length} downloaded files`);
+      console.log(
+        `📋 Loaded ${files.length} downloaded files, total size: ${totalSize} bytes`
+      );
     } catch (error) {
       console.error('❌ Error loading downloaded files:', error);
       setState(prev => ({
@@ -82,9 +165,6 @@ export const useDownloadedFiles = () => {
     }
   }, []);
 
-  /**
-   * Downloads and saves an animal sheet
-   */
   const downloadAnimalSheet = useCallback(
     async (
       catalogId: number,
@@ -97,15 +177,12 @@ export const useDownloadedFiles = () => {
           `📥 Starting download for animal ${catalogId}: ${animalName}`
         );
 
-        // Download PDF from server
         const pdfBlob = await catalogService.downloadAnimalSheet(
           catalogId.toString()
         );
 
-        // Convert blob to base64
         const pdfBase64 = await blobToBase64(pdfBlob);
 
-        // Save to local storage
         const downloadedFile = await LocalFileService.saveAnimalSheet(
           catalogId,
           animalName,
@@ -113,7 +190,6 @@ export const useDownloadedFiles = () => {
           'application/pdf'
         );
 
-        // Reload files list
         await loadDownloadedFiles();
 
         console.log(
@@ -144,14 +220,15 @@ export const useDownloadedFiles = () => {
     [loadDownloadedFiles]
   );
 
-  /**
-   * Opens a downloaded file
-   */
   const openDownloadedFile = useCallback(async (file: DownloadedFile) => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-      await LocalFileService.openDownloadedFile(file);
+      const success = await LocalFileService.openDownloadedFile(file);
+
+      if (!success) {
+        throw new Error('No se pudo abrir el archivo');
+      }
 
       console.log(`📱 Opened file: ${file.fileName}`);
     } catch (error) {
@@ -167,7 +244,7 @@ export const useDownloadedFiles = () => {
 
       Alert.alert(
         'Error al abrir',
-        `No se pudo abrir la ficha ${file.fileName}: ${errorMessage}`,
+        `No se pudo abrir la ficha ${file.animalName}: ${errorMessage}`,
         [{ text: 'OK' }]
       );
     } finally {
@@ -175,20 +252,34 @@ export const useDownloadedFiles = () => {
     }
   }, []);
 
-  /**
-   * Deletes a downloaded file
-   */
   const deleteDownloadedFile = useCallback(
     async (fileId: string) => {
       try {
         setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-        await LocalFileService.deleteDownloadedFile(fileId);
+        console.log(`🗑️ Attempting to delete file with ID: ${fileId}`);
 
-        // Reload files list
+        const fileToDelete = state.files.find(file => file.id === fileId);
+
+        if (!fileToDelete) {
+          throw new Error(`File with ID ${fileId} not found`);
+        }
+
+        const success = await LocalFileService.deleteDownloadedFile(fileId);
+
+        if (!success) {
+          throw new Error('File deletion returned false');
+        }
+
         await loadDownloadedFiles();
 
-        console.log(`🗑️ Deleted downloaded file: ${fileId}`);
+        console.log(`✅ Successfully deleted file: ${fileToDelete.fileName}`);
+
+        Alert.alert(
+          '✅ Ficha eliminada',
+          `La ficha "${fileToDelete.animalName}" ha sido eliminada correctamente.`,
+          [{ text: 'OK' }]
+        );
       } catch (error) {
         console.error('❌ Error deleting file:', error);
         const errorMessage =
@@ -207,27 +298,57 @@ export const useDownloadedFiles = () => {
         );
       }
     },
-    [loadDownloadedFiles]
+    [state.files, loadDownloadedFiles]
   );
 
-  /**
-   * Deletes all downloaded files
-   */
   const deleteAllFiles = useCallback(async () => {
     try {
-      setState(prev => ({ ...prev, isLoading: true, error: null }));
-
-      const files = state.files;
-
-      // Delete all files
-      for (const file of files) {
-        await LocalFileService.deleteDownloadedFile(file.id);
+      if (state.files.length === 0) {
+        Alert.alert('Info', 'No hay fichas para eliminar.');
+        return;
       }
 
-      // Reload files list
+      setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+      console.log(`🗑️ Attempting to delete all ${state.files.length} files`);
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const file of state.files) {
+        try {
+          const success = await LocalFileService.deleteDownloadedFile(file.id);
+          if (success) {
+            successCount++;
+          } else {
+            errorCount++;
+            console.error(`Failed to delete file: ${file.fileName}`);
+          }
+        } catch (error) {
+          errorCount++;
+          console.error(`Error deleting file ${file.fileName}:`, error);
+        }
+      }
+
       await loadDownloadedFiles();
 
-      console.log(`🗑️ Deleted all ${files.length} downloaded files`);
+      console.log(
+        `✅ Deletion completed: ${successCount} success, ${errorCount} errors`
+      );
+
+      if (errorCount === 0) {
+        Alert.alert(
+          '✅ Todas las fichas eliminadas',
+          `Se han eliminado correctamente ${successCount} fichas.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          '⚠️ Eliminación parcial',
+          `Se eliminaron ${successCount} fichas, pero ${errorCount} no se pudieron eliminar.`,
+          [{ text: 'OK' }]
+        );
+      }
     } catch (error) {
       console.error('❌ Error deleting all files:', error);
       const errorMessage =
@@ -247,9 +368,6 @@ export const useDownloadedFiles = () => {
     }
   }, [state.files, loadDownloadedFiles]);
 
-  /**
-   * Formats file size for display
-   */
   const formatFileSize = useCallback((bytes: number): string => {
     if (bytes === 0) return '0 B';
 
@@ -260,9 +378,6 @@ export const useDownloadedFiles = () => {
     return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
   }, []);
 
-  /**
-   * Formats download date for display
-   */
   const formatDownloadDate = useCallback((date: Date): string => {
     const now = new Date();
     const diffInHours = Math.floor(
@@ -289,33 +404,24 @@ export const useDownloadedFiles = () => {
     }
   }, []);
 
-  /**
-   * Clears any error state
-   */
   const clearError = useCallback(() => {
     setState(prev => ({ ...prev, error: null }));
   }, []);
 
-  /**
-   * Refresh files list
-   */
   const refreshFiles = useCallback(async () => {
     await loadDownloadedFiles();
   }, [loadDownloadedFiles]);
 
-  // Load files on mount
   useEffect(() => {
     loadDownloadedFiles();
   }, [loadDownloadedFiles]);
 
   return {
-    // State
     files: state.files,
     isLoading: state.isLoading,
     error: state.error,
     storageInfo: state.storageInfo,
 
-    // Actions
     downloadAnimalSheet,
     openDownloadedFile,
     deleteDownloadedFile,
@@ -323,7 +429,6 @@ export const useDownloadedFiles = () => {
     refreshFiles,
     clearError,
 
-    // Utilities
     formatFileSize,
     formatDownloadDate
   };

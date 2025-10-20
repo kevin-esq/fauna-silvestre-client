@@ -32,10 +32,6 @@ interface HomeDataReturn {
   error: string | null;
 }
 
-/**
- * Hook personalizado para manejar el estado y lógica de datos del HomeScreen
- * Principio SRP: Solo maneja datos y estado relacionado con el home
- */
 export const useHomeData = (): HomeDataReturn => {
   const { state: publicationState, loadCounts } = usePublications();
   const {
@@ -57,7 +53,7 @@ export const useHomeData = (): HomeDataReturn => {
 
   const categories = useMemo(() => {
     if (!catalog || !Array.isArray(catalog) || catalog.length === 0) {
-      return [{ catalogId: 0, commonNoun: 'Todas las categorías' }];
+      return [{ catalogId: 0, commonNoun: 'Todas las Clases' }];
     }
 
     const uniqueCategories = [
@@ -65,7 +61,7 @@ export const useHomeData = (): HomeDataReturn => {
     ].filter(Boolean);
 
     return [
-      { catalogId: 0, commonNoun: 'Todas las categorías' },
+      { catalogId: 0, commonNoun: 'Todas las Clases' },
       ...uniqueCategories.map((category, index) => ({
         catalogId: index + 1,
         commonNoun: category
@@ -80,7 +76,7 @@ export const useHomeData = (): HomeDataReturn => {
 
     if (
       !state.selectedCategory ||
-      state.selectedCategory.commonNoun === 'Todas las categorías'
+      state.selectedCategory.commonNoun === 'Todas las Clases'
     ) {
       return catalog;
     }
@@ -91,7 +87,7 @@ export const useHomeData = (): HomeDataReturn => {
   }, [catalog, state.selectedCategory]);
 
   const animalsToShow = useMemo(() => {
-    return state.showAllAnimals ? filteredAnimals : filteredAnimals.slice(0, 5);
+    return state.showAllAnimals ? filteredAnimals : filteredAnimals.slice(0, 4);
   }, [filteredAnimals, state.showAllAnimals]);
   useEffect(() => {
     if (!hasLoaded.current) {

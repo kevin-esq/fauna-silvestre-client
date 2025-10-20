@@ -7,8 +7,9 @@ import React, {
 } from 'react';
 import { SecureStorageService } from '../../services/storage/secure-storage.service';
 import { THEME_KEY } from '../../services/storage/storage-keys';
+import { FontWeight } from '@/shared/utils/fontUtil';
 
-interface ThemeColors {
+export interface ThemeColors {
   primary: string;
   primaryLight: string;
   primaryDark: string;
@@ -60,7 +61,7 @@ interface ThemeColors {
   publicationCardButtonText: string;
 }
 
-interface ThemeSpacing {
+export interface ThemeSpacing {
   tiny: number;
   small: number;
   medium: number;
@@ -69,7 +70,7 @@ interface ThemeSpacing {
   xxlarge: number;
 }
 
-interface ThemeIconSizes {
+export interface ThemeIconSizes {
   tiny: number;
   small: number;
   medium: number;
@@ -78,7 +79,7 @@ interface ThemeIconSizes {
   xxlarge: number;
 }
 
-interface ThemeTypography {
+export interface ThemeTypography {
   fontSize: {
     small: number;
     medium: number;
@@ -87,11 +88,11 @@ interface ThemeTypography {
     xxlarge: number;
   };
   fontWeight: {
-    light: string;
-    regular: string;
-    medium: string;
-    bold: string;
-    black: string;
+    light: FontWeight;
+    regular: FontWeight;
+    medium: FontWeight;
+    bold: FontWeight;
+    black: FontWeight;
   };
   fontFamily: {
     primary: string;
@@ -422,7 +423,7 @@ const lightTheme: Theme = {
   publicationCardButtonBackground: '#007A33',
   publicationCardButtonText: '#FFFFFF',
   modalBackground: '#FFFFFF',
-  overlay: 'rgba(0, 0, 0, 0.4)',
+  overlay: 'rgba(0, 0, 0, 0.6)',
   cardBackground: '#FFFFFF',
   chipBackground: '#F1F8E9',
   forest: '#007A33',
@@ -653,12 +654,12 @@ export const themeVariables = (theme: Theme) => ({
   '--publication-card-button-background': theme.publicationCardButtonBackground,
   '--publication-card-button-text': theme.publicationCardButtonText,
 
-  '--spacing-tiny': `${theme.spacing.tiny}px`,
-  '--spacing-small': `${theme.spacing.small}px`,
-  '--spacing-medium': `${theme.spacing.medium}px`,
-  '--spacing-large': `${theme.spacing.large}px`,
-  '--spacing-xlarge': `${theme.spacing.xlarge}px`,
-  '--spacing-xxlarge': `${theme.spacing.xxlarge}px`,
+  '--spacing-tiny': theme.spacing.tiny,
+  '--spacing-small': theme.spacing.small,
+  '--spacing-medium': theme.spacing.medium,
+  '--spacing-large': theme.spacing.large,
+  '--spacing-xlarge': theme.spacing.xlarge,
+  '--spacing-xxlarge': theme.spacing.xxlarge,
 
   '--icon-size-tiny': `${theme.iconSizes.tiny}px`,
   '--icon-size-small': `${theme.iconSizes.small}px`,
@@ -667,11 +668,11 @@ export const themeVariables = (theme: Theme) => ({
   '--icon-size-xlarge': `${theme.iconSizes.xlarge}px`,
   '--icon-size-xxlarge': `${theme.iconSizes.xxlarge}px`,
 
-  '--font-size-small': `${theme.typography.fontSize.small}px`,
-  '--font-size-medium': `${theme.typography.fontSize.medium}px`,
-  '--font-size-large': `${theme.typography.fontSize.large}px`,
-  '--font-size-xlarge': `${theme.typography.fontSize.xlarge}px`,
-  '--font-size-xxlarge': `${theme.typography.fontSize.xxlarge}px`,
+  '--font-size-small': theme.typography.fontSize.small,
+  '--font-size-medium': theme.typography.fontSize.medium,
+  '--font-size-large': theme.typography.fontSize.large,
+  '--font-size-xlarge': theme.typography.fontSize.xlarge,
+  '--font-size-xxlarge': theme.typography.fontSize.xxlarge,
   '--font-weight-light': theme.typography.fontWeight.light,
   '--font-weight-regular': theme.typography.fontWeight.regular,
   '--font-weight-medium': theme.typography.fontWeight.medium,
@@ -679,21 +680,21 @@ export const themeVariables = (theme: Theme) => ({
   '--font-weight-black': theme.typography.fontWeight.black,
   '--font-family-primary': theme.typography.fontFamily.primary,
   '--font-family-secondary': theme.typography.fontFamily.secondary,
-  '--line-height-small': `${theme.typography.lineHeight.small}px`,
-  '--line-height-medium': `${theme.typography.lineHeight.medium}px`,
-  '--line-height-large': `${theme.typography.lineHeight.large}px`,
-  '--line-height-xlarge': `${theme.typography.lineHeight.xlarge}px`,
-  '--line-height-xxlarge': `${theme.typography.lineHeight.xxlarge}px`,
+  '--line-height-small': theme.typography.lineHeight.small,
+  '--line-height-medium': theme.typography.lineHeight.medium,
+  '--line-height-large': theme.typography.lineHeight.large,
+  '--line-height-xlarge': theme.typography.lineHeight.xlarge,
+  '--line-height-xxlarge': theme.typography.lineHeight.xxlarge,
 
   '--border-radius-small': `${theme.borderRadius.small}px`,
   '--border-radius-medium': `${theme.borderRadius.medium}px`,
   '--border-radius-large': `${theme.borderRadius.large}px`,
   '--border-radius-xlarge': `${theme.borderRadius.xlarge}px`,
 
-  '--border-width-hairline': `${theme.borderWidth.hairline}px`,
-  '--border-width-small': `${theme.borderWidths.small}px`,
-  '--border-width-medium': `${theme.borderWidths.medium}px`,
-  '--border-width-large': `${theme.borderWidths.large}px`,
+  '--border-width-hairline': theme.borderWidth.hairline,
+  '--border-width-small': theme.borderWidths.small,
+  '--border-width-medium': theme.borderWidths.medium,
+  '--border-width-large': theme.borderWidths.large,
 
   '--shadow-small': theme.shadows.small,
   '--shadow-medium': theme.shadows.medium,

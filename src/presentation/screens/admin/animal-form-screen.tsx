@@ -23,6 +23,14 @@ import { useRoute } from '@react-navigation/native';
 import { CatalogAnimalCard } from '../catalog/catalog-animals-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const VERTEBRATE_CLASSES = [
+  'Mamíferos',
+  'Aves',
+  'Reptiles',
+  'Anfibios',
+  'Peces'
+];
+
 const FormHeader = React.memo<{
   isEditMode: boolean;
   onBack: () => void;
@@ -126,6 +134,66 @@ const FormField = React.memo<{
   )
 );
 
+const ClassSelector = React.memo<{
+  selectedClass: string;
+  onClassSelect: (animalClass: string) => void;
+  styles: ReturnType<typeof createStyles>;
+}>(({ selectedClass, onClassSelect, styles }) => {
+  const getClassIcon = (animalClass: string) => {
+    switch (animalClass) {
+      case 'Mamíferos':
+        return '🐾';
+      case 'Aves':
+        return '🦅';
+      case 'Reptiles':
+        return '🦎';
+      case 'Anfibios':
+        return '🐸';
+      case 'Peces':
+        return '🐠';
+      default:
+        return '❓';
+    }
+  };
+
+  return (
+    <View style={styles.classSelectorContainer}>
+      <Text style={styles.classSelectorLabel}>🧬 Clase de Vertebrado *</Text>
+      <Text style={styles.classSelectorSubtext}>
+        Selecciona la clase del animal
+      </Text>
+
+      <View style={styles.classOptionsContainer}>
+        {VERTEBRATE_CLASSES.map((animalClass, index) => {
+          const isSelected = selectedClass === animalClass;
+          return (
+            <TouchableOpacity
+              key={animalClass}
+              onPress={() => onClassSelect(animalClass)}
+              activeOpacity={0.7}
+              style={[
+                styles.classOption,
+                isSelected && styles.classOptionSelected,
+                index % 2 === 0 && { marginRight: 8 }
+              ]}
+            >
+              <Text style={styles.classIcon}>{getClassIcon(animalClass)}</Text>
+              <Text
+                style={[
+                  styles.classLabel,
+                  isSelected && styles.classLabelSelected
+                ]}
+              >
+                {animalClass}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+});
+
 const FormSection = React.memo<{
   title: string;
   children: React.ReactNode;
@@ -146,7 +214,7 @@ const AnimalPreview = React.memo<{
     catalogId: animal.catalogId || 0,
     commonNoun: animal.commonNoun || 'Nuevo Animal',
     specie: animal.specie || 'Especie no especificada',
-    category: animal.category || 'Sin categoría',
+    category: animal.category || 'Sin Clase',
     description: animal.description || 'Sin descripción',
     image: animal.image?.startsWith('/')
       ? `data:image/jpeg;base64,${animal.image}`
@@ -242,6 +310,13 @@ const AnimalFormScreen = () => {
     [actions, state]
   );
 
+  const handleClassSelect = useCallback(
+    (animalClass: string) => {
+      actions.updateField('category', animalClass);
+    },
+    [actions]
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <FormHeader
@@ -289,17 +364,14 @@ const AnimalFormScreen = () => {
               styles={styles}
             />
 
-            <FormField
-              label="Categoría"
-              value={state.formData.category}
-              onChangeText={createFieldHandler('category')}
-              error={state.errors.category}
-              placeholder="Ej: Mamífero"
-              maxLength={30}
-              required
-              theme={theme}
+            <ClassSelector
+              selectedClass={state.formData.category}
+              onClassSelect={handleClassSelect}
               styles={styles}
             />
+            {state.errors.category && (
+              <Text style={styles.errorText}>{state.errors.category}</Text>
+            )}
           </FormSection>
 
           <FormSection title="Descripción" styles={styles}>
@@ -475,6 +547,7 @@ const AnimalFormScreen = () => {
 
 FormHeader.displayName = 'FormHeader';
 FormField.displayName = 'FormField';
+ClassSelector.displayName = 'ClassSelector';
 FormSection.displayName = 'FormSection';
 AnimalPreview.displayName = 'AnimalPreview';
 AnimalFormScreen.displayName = 'AnimalFormScreen';
