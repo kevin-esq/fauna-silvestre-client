@@ -468,7 +468,10 @@ const CustomImagePickerScreen: React.FC<Props> = ({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const variables = useMemo(() => themeVariables(theme), [theme]);
   const insets = useSafeAreaInsets();
-  const styles = useMemo(() => createStyles(variables, insets), [variables, insets]);
+  const styles = useMemo(
+    () => createStyles(variables, insets),
+    [variables, insets]
+  );
   const photoListRef = useRef<FlatList>(null);
   const isMountedRef = useRef(true);
 
