@@ -156,7 +156,6 @@ const DownloadedFileCard = React.memo<DownloadedFileCardProps>(
   }
 );
 
-// New Progress Bar Component
 const StorageProgressBar = React.memo<{
   used: number;
   total: number;

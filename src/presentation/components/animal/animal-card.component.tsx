@@ -1,11 +1,12 @@
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   Image,
   ActivityIndicator,
   Pressable,
-  Dimensions
+  Dimensions,
+  Animated
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AnimalModelResponse } from '../../../domain/models/animal.models';
@@ -48,6 +49,9 @@ const AnimalCard = React.memo<AnimalCardProps>(
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+    const opacityAnim = useRef(new Animated.Value(1)).current;
+
     const imageUri = useMemo(
       () =>
         animal.image
@@ -56,21 +60,62 @@ const AnimalCard = React.memo<AnimalCardProps>(
       [animal.image, imageReloadCount]
     );
 
+    const handlePressIn = useCallback(() => {
+      if (onPress || onViewDetails) {
+        Animated.spring(scaleAnim, {
+          toValue: 0.98,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8
+        }).start();
+      }
+    }, [onPress, onViewDetails, scaleAnim]);
+
+    const handlePressOut = useCallback(() => {
+      if (onPress || onViewDetails) {
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 60,
+          friction: 7
+        }).start();
+      }
+    }, [onPress, onViewDetails, scaleAnim]);
+
+    const handleCardPress = useCallback(() => {
+      if (onPress) {
+        onPress(animal);
+      } else if (onViewDetails) {
+        onViewDetails(animal);
+      }
+    }, [animal, onPress, onViewDetails]);
+
     const handleDeletePress = useCallback(() => {
       setDeleteModalVisible(true);
     }, []);
 
     const handleConfirmDelete = useCallback(async () => {
       setIsDeleting(true);
+      Animated.timing(opacityAnim, {
+        toValue: 0.5,
+        duration: 200,
+        useNativeDriver: true
+      }).start();
+
       try {
         await onDelete(animal.catalogId.toString());
         setDeleteModalVisible(false);
       } catch (error) {
         console.error('Error al eliminar:', error);
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true
+        }).start();
       } finally {
         setIsDeleting(false);
       }
-    }, [animal.catalogId, onDelete]);
+    }, [animal.catalogId, onDelete, opacityAnim]);
 
     const handleCloseDeleteModal = useCallback(() => {
       if (!isDeleting) {
@@ -94,197 +139,137 @@ const AnimalCard = React.memo<AnimalCardProps>(
       setImageError(false);
     }, []);
 
-    const handleCardPress = useCallback(() => {
-      if (onPress) {
-        onPress(animal);
-      }
-    }, [animal, onPress]);
-
-    const renderImage = () => {
-      if (!animal.image || imageError) {
-        return (
-          <View
-            style={[styles.animalImagePlaceholder, styles.emptyImageContainer]}
-          >
-            <Ionicons
-              name="camera-outline"
-              size={iconSizes.xlarge + 8}
-              color={colors.placeholder}
-            />
-            <Text style={styles.emptyImageText}>
-              {showImageEditButton
-                ? '📸 Toca para agregar imagen'
-                : 'Sin imagen disponible'}
-            </Text>
-            {imageError && (
-              <Pressable
-                style={styles.retryButton}
-                onPress={handleImageReload}
-                android_ripple={{ color: colors.primary + '20', radius: 20 }}
-              >
-                <Ionicons
-                  name="refresh"
-                  size={iconSizes.small}
-                  color={colors.primary}
-                />
-                <Text style={styles.retryButtonText}>Reintentar</Text>
-              </Pressable>
-            )}
-          </View>
-        );
-      }
-
-      return (
-        <>
-          <Image
-            source={{ uri: imageUri! }}
-            style={styles.animalImage}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-            resizeMode="cover"
-          />
-          {imageLoading && (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Cargando imagen...</Text>
-            </View>
-          )}
-        </>
-      );
+    const animatedStyle = {
+      transform: [{ scale: scaleAnim }],
+      opacity: opacityAnim
     };
 
-    const renderImageContainer = () => {
-      const isEmptyImage = !animal.image || imageError;
-
-      if (showImageEditButton && isEmptyImage) {
-        return (
-          <Pressable
-            style={styles.animalImageContainer}
-            onPress={() =>
-              onViewDetails ? onViewDetails(animal) : onImageEdit(animal)
-            }
-            accessibilityRole="button"
-            accessibilityLabel={
-              onViewDetails
-                ? 'Ver detalles del animal'
-                : 'Agregar imagen del animal'
-            }
-            android_ripple={{ color: colors.primary + '10' }}
-          >
-            {renderImage()}
-            <CategoryBadge category={animal.category} styles={styles} />
-          </Pressable>
-        );
-      }
-
-      return (
-        <View style={styles.animalImageContainer}>
-          {renderImage()}
-          <CategoryBadge category={animal.category} styles={styles} />
-          {!imageError && animal.image && (
-            <View style={styles.animalImageOverlay}>
-              <View style={styles.imageOverlayContent}>
-                <Text style={[styles.animalName, styles.overlayAnimalName]}>
-                  🦎 {animal.commonNoun}
-                </Text>
-                <View style={styles.imageActions}>
-                  {showImageEditButton && (
-                    <Pressable
-                      style={styles.overlayActionButton}
-                      onPress={() =>
-                        onViewDetails
-                          ? onViewDetails(animal)
-                          : onImageEdit(animal)
-                      }
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        onViewDetails
-                          ? 'Ver detalles del animal'
-                          : 'Editar imagen'
-                      }
-                      android_ripple={{
-                        color: 'rgba(255, 255, 255, 0.3)',
-                        radius: 20
-                      }}
-                    >
-                      <Ionicons
-                        name={onViewDetails ? 'eye' : 'camera'}
-                        size={iconSizes.medium - 6}
-                        color={colors.textOnPrimary}
-                      />
-                    </Pressable>
-                  )}
-                  <Pressable
-                    style={styles.overlayActionButton}
-                    onPress={handleImageReload}
-                    accessibilityRole="button"
-                    accessibilityLabel="Recargar imagen"
-                    android_ripple={{
-                      color: 'rgba(255, 255, 255, 0.3)',
-                      radius: 20
-                    }}
-                  >
-                    <Ionicons
-                      name="refresh"
-                      size={iconSizes.medium - 6}
-                      color={colors.textOnPrimary}
-                    />
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          )}
-        </View>
-      );
-    };
-
-    const CardWrapper = onViewDetails || onPress ? Pressable : View;
+    const CardWrapper = onPress || onViewDetails ? Pressable : View;
     const cardProps =
-      onViewDetails || onPress
+      onPress || onViewDetails
         ? {
-            onPress: onViewDetails
-              ? () => onViewDetails(animal)
-              : handleCardPress,
+            onPress: handleCardPress,
+            onPressIn: handlePressIn,
+            onPressOut: handlePressOut,
+            disabled: isDeleting,
+            android_ripple: { color: colors.primary + '05' },
             accessibilityRole: 'button' as const,
-            accessibilityLabel: `Ver detalles de ${animal.commonNoun}`,
-            android_ripple: { color: colors.primary + '05' }
+            accessibilityLabel: `Ver detalles de ${animal.commonNoun}`
           }
         : {};
 
     return (
       <>
-        <CardWrapper style={styles.animalCard} {...cardProps}>
-          {renderImageContainer()}
+        <Animated.View style={animatedStyle}>
+          <CardWrapper style={styles.card} {...cardProps}>
+            <View style={styles.imageContainer}>
+              {!animal.image || imageError ? (
+                <Pressable
+                  style={styles.emptyImageContainer}
+                  onPress={() => showImageEditButton && onImageEdit(animal)}
+                  disabled={!showImageEditButton}
+                >
+                  <Ionicons
+                    name="camera-outline"
+                    size={48}
+                    color={colors.placeholder}
+                  />
+                  <Text style={styles.emptyImageText}>
+                    {showImageEditButton ? 'Agregar foto' : 'Sin imagen'}
+                  </Text>
+                  {imageError && (
+                    <Pressable
+                      style={styles.retryButton}
+                      onPress={handleImageReload}
+                    >
+                      <Ionicons
+                        name="refresh"
+                        size={16}
+                        color={colors.primary}
+                      />
+                      <Text style={styles.retryButtonText}>Reintentar</Text>
+                    </Pressable>
+                  )}
+                </Pressable>
+              ) : (
+                <>
+                  <Image
+                    source={{ uri: imageUri! }}
+                    style={styles.image}
+                    onLoad={handleImageLoad}
+                    onError={handleImageError}
+                    resizeMode="cover"
+                  />
+                  {imageLoading && (
+                    <View style={styles.loadingOverlay}>
+                      <ActivityIndicator size="large" color={colors.primary} />
+                    </View>
+                  )}
+                </>
+              )}
 
-          <View style={styles.animalCardContent}>
-            <AnimalHeader
-              animal={animal}
-              onEdit={onEdit}
-              onDelete={handleDeletePress}
-              onImageEdit={onImageEdit}
-              onViewDetails={onViewDetails}
-              showImageEditButton={showImageEditButton}
-              showNameInHeader={!animal.image || imageError}
-              styles={styles}
-              colors={colors}
-              iconSizes={iconSizes}
-            />
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryBadgeText}>{animal.category}</Text>
+              </View>
+            </View>
 
-            <AnimalDescription
-              description={animal.description}
-              styles={styles}
-            />
+            <View style={styles.content}>
+              <View style={styles.header}>
+                <View style={styles.titleContainer}>
+                  <Text style={styles.title} numberOfLines={1}>
+                    {animal.commonNoun}
+                  </Text>
+                  <View style={styles.specieContainer}>
+                    <Ionicons
+                      name="leaf-outline"
+                      size={14}
+                      color={colors.forest}
+                    />
+                    <Text style={styles.specie} numberOfLines={1}>
+                      {animal.specie}
+                    </Text>
+                  </View>
+                </View>
 
-            <AnimalMetadata
-              animal={animal}
-              iconSize={iconSizes.small}
-              styles={styles}
-              colors={colors}
-            />
+                <QuickActions
+                  animal={animal}
+                  onEdit={onEdit}
+                  onImageEdit={onImageEdit}
+                  onDelete={handleDeletePress}
+                  showImageEdit={showImageEditButton}
+                  styles={styles}
+                  colors={colors}
+                  iconSizes={iconSizes}
+                />
+              </View>
 
-            <AnimalInfoChips animal={animal} styles={styles} colors={colors} />
-          </View>
-        </CardWrapper>
+              {animal.description && (
+                <Text style={styles.description} numberOfLines={2}>
+                  {animal.description}
+                </Text>
+              )}
+
+              <View style={styles.metadataRow}>
+                <View style={styles.metadataItem}>
+                  <Ionicons
+                    name="location-outline"
+                    size={16}
+                    color={colors.water}
+                  />
+                  <Text style={styles.metadataText} numberOfLines={1}>
+                    {animal.habitat || 'Sin hábitat'}
+                  </Text>
+                </View>
+
+                <View style={styles.idBadge}>
+                  <Text style={styles.idText}>ID: {animal.catalogId}</Text>
+                </View>
+              </View>
+
+              <InfoChips animal={animal} styles={styles} colors={colors} />
+            </View>
+          </CardWrapper>
+        </Animated.View>
 
         <CustomModal
           isVisible={deleteModalVisible}
@@ -296,14 +281,14 @@ const AnimalCard = React.memo<AnimalCardProps>(
               style={{
                 width: 56,
                 height: 56,
-                borderRadius: 28,
+                borderRadius: theme.borderRadius.xlarge,
                 backgroundColor: colors.error + '20',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
             >
               <Ionicons
-                name="trash"
+                name="trash-outline"
                 size={iconSizes.large}
                 color={colors.error}
               />
@@ -363,25 +348,12 @@ const AnimalCard = React.memo<AnimalCardProps>(
   }
 );
 
-const CategoryBadge = React.memo<{
-  category: string;
-  styles: ReturnType<typeof createStyles>;
-}>(({ category, styles }) => {
-  return (
-    <View style={styles.animalImageBadge}>
-      <Text style={styles.animalImageBadgeText}>{category}</Text>
-    </View>
-  );
-});
-
-const AnimalHeader = React.memo<{
+const QuickActions = React.memo<{
   animal: AnimalModelResponse;
   onEdit: (animal: AnimalModelResponse) => void;
-  onDelete: () => void;
   onImageEdit: (animal: AnimalModelResponse) => void;
-  onViewDetails?: (animal: AnimalModelResponse) => void;
-  showImageEditButton: boolean;
-  showNameInHeader: boolean;
+  onDelete: () => void;
+  showImageEdit: boolean;
   styles: ReturnType<typeof createStyles>;
   colors: ThemeColors;
   iconSizes: ThemeIconSizes;
@@ -389,144 +361,94 @@ const AnimalHeader = React.memo<{
   ({
     animal,
     onEdit,
-    onDelete,
     onImageEdit,
-    onViewDetails,
-    showImageEditButton,
-    showNameInHeader,
+    onDelete,
+    showImageEdit,
     styles,
     colors,
     iconSizes
   }) => {
+    const editScale = useRef(new Animated.Value(1)).current;
+    const imageScale = useRef(new Animated.Value(1)).current;
+    const deleteScale = useRef(new Animated.Value(1)).current;
+
+    const animateButton = (scale: Animated.Value) => {
+      Animated.sequence([
+        Animated.spring(scale, {
+          toValue: 0.85,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8
+        }),
+        Animated.spring(scale, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 60,
+          friction: 7
+        })
+      ]).start();
+    };
+
     return (
-      <View style={styles.animalHeader}>
-        <View style={styles.animalInfo}>
-          {showNameInHeader && (
-            <Text style={styles.animalName}>🦎 {animal.commonNoun}</Text>
-          )}
+      <View style={styles.actionsContainer}>
+        <Animated.View style={{ transform: [{ scale: editScale }] }}>
+          <Pressable
+            style={[styles.actionButton, styles.editButton]}
+            onPress={() => {
+              animateButton(editScale);
+              onEdit(animal);
+            }}
+            android_ripple={{ color: 'rgba(255, 255, 255, 0.3)', radius: 20 }}
+          >
+            <Ionicons
+              name="create-outline"
+              size={iconSizes.medium - 4}
+              color={colors.textOnPrimary}
+            />
+          </Pressable>
+        </Animated.View>
 
-          <View style={styles.animalSpecies}>
-            <Ionicons name="leaf" size={iconSizes.small} color={colors.earth} />
-            <Text style={styles.animalSpeciesText}>{animal.specie}</Text>
-          </View>
+        {showImageEdit && (
+          <Animated.View style={{ transform: [{ scale: imageScale }] }}>
+            <Pressable
+              style={[styles.actionButton, styles.imageButton]}
+              onPress={() => {
+                animateButton(imageScale);
+                onImageEdit(animal);
+              }}
+              android_ripple={{ color: colors.primary + '20', radius: 20 }}
+            >
+              <Ionicons
+                name="camera-outline"
+                size={iconSizes.medium - 4}
+                color={colors.primary}
+              />
+            </Pressable>
+          </Animated.View>
+        )}
 
-          {showNameInHeader && (
-            <View style={styles.animalCategoryContainer}>
-              <Text style={styles.animalCategory}>📂 {animal.category}</Text>
-            </View>
-          )}
-        </View>
-
-        <AnimalActions
-          animal={animal}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onImageEdit={onImageEdit}
-          onViewDetails={onViewDetails}
-          showImageEditButton={showImageEditButton}
-          styles={styles}
-          colors={colors}
-          iconSizes={iconSizes}
-        />
+        <Animated.View style={{ transform: [{ scale: deleteScale }] }}>
+          <Pressable
+            style={[styles.actionButton, styles.deleteButton]}
+            onPress={() => {
+              animateButton(deleteScale);
+              onDelete();
+            }}
+            android_ripple={{ color: 'rgba(255, 255, 255, 0.3)', radius: 20 }}
+          >
+            <Ionicons
+              name="trash-outline"
+              size={iconSizes.medium - 4}
+              color={colors.textOnPrimary}
+            />
+          </Pressable>
+        </Animated.View>
       </View>
     );
   }
 );
 
-const AnimalActions = React.memo<{
-  animal: AnimalModelResponse;
-  onEdit: (animal: AnimalModelResponse) => void;
-  onDelete: () => void;
-  onImageEdit: (animal: AnimalModelResponse) => void;
-  onViewDetails?: (animal: AnimalModelResponse) => void;
-  showImageEditButton: boolean;
-  styles: ReturnType<typeof createStyles>;
-  colors: ThemeColors;
-  iconSizes: ThemeIconSizes;
-}>(({ animal, onEdit, onDelete, onImageEdit, styles, colors, iconSizes }) => {
-  return (
-    <View style={styles.animalActions}>
-      <Pressable
-        style={[styles.actionButton, styles.editButton]}
-        onPress={() => onEdit(animal)}
-        accessibilityRole="button"
-        accessibilityLabel={`Editar ${animal.commonNoun}`}
-        android_ripple={{ color: 'rgba(255, 255, 255, 0.3)', radius: 24 }}
-      >
-        <Ionicons
-          name="pencil"
-          size={iconSizes.medium - 4}
-          color={colors.textOnPrimary}
-        />
-      </Pressable>
-
-      <Pressable
-        style={[styles.actionButton, styles.imageButton]}
-        onPress={() => onImageEdit(animal)}
-        accessibilityRole="button"
-        accessibilityLabel={`Editar imagen de ${animal.commonNoun}`}
-        android_ripple={{ color: colors.primary + '20', radius: 24 }}
-      >
-        <Ionicons
-          name="camera"
-          size={iconSizes.medium - 4}
-          color={colors.primary}
-        />
-      </Pressable>
-
-      <Pressable
-        style={[styles.actionButton, styles.deleteButton]}
-        onPress={onDelete}
-        accessibilityRole="button"
-        accessibilityLabel={`Eliminar ${animal.commonNoun}`}
-        android_ripple={{ color: 'rgba(255, 255, 255, 0.3)', radius: 24 }}
-      >
-        <Ionicons
-          name="trash"
-          size={iconSizes.medium - 4}
-          color={colors.textOnPrimary}
-        />
-      </Pressable>
-    </View>
-  );
-});
-
-const AnimalDescription = React.memo<{
-  description?: string;
-  styles: ReturnType<typeof createStyles>;
-}>(({ description, styles }) => {
-  return (
-    <Text style={styles.animalDescription} numberOfLines={3}>
-      {description || '📝 Sin descripción disponible para este animal.'}
-    </Text>
-  );
-});
-
-const AnimalMetadata = React.memo<{
-  animal: AnimalModelResponse;
-  iconSize: number;
-  styles: ReturnType<typeof createStyles>;
-  colors: ThemeColors;
-}>(({ animal, iconSize, styles, colors }) => {
-  return (
-    <View style={styles.animalMetadata}>
-      <View style={styles.animalStats}>
-        <View style={styles.animalStatItem}>
-          <Ionicons name="location" size={iconSize} color={colors.water} />
-          <Text style={styles.animalStatText}>
-            {animal.habitat || 'Hábitat no especificado'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.animalIdBadge}>
-        <Text style={styles.animalIdText}>ID: {animal.catalogId}</Text>
-      </View>
-    </View>
-  );
-});
-
-const AnimalInfoChips = React.memo<{
+const InfoChips = React.memo<{
   animal: AnimalModelResponse;
   styles: ReturnType<typeof createStyles>;
   colors: ThemeColors;
@@ -535,54 +457,46 @@ const AnimalInfoChips = React.memo<{
     () =>
       [
         {
-          icon: 'restaurant',
-          emoji: '🍃',
+          icon: 'restaurant-outline',
           label: 'Alimentación',
           value: animal.feeding,
           color: colors.leaf
         },
         {
-          icon: 'heart',
-          emoji: '💝',
+          icon: 'heart-outline',
           label: 'Reproducción',
           value: animal.reproduction,
           color: colors.error
         },
         {
-          icon: 'map',
-          emoji: '🗺️',
+          icon: 'map-outline',
           label: 'Distribución',
           value: animal.distribution,
           color: colors.water
         }
       ].filter(item => item.value && item.value.trim().length > 0),
-    [animal.feeding, animal.reproduction, animal.distribution, colors]
+    [animal, colors]
   );
 
   if (infoItems.length === 0) return null;
 
-  const truncateText = (text: string, maxLength: number = 18) =>
+  const truncateText = (text: string, maxLength: number = 15) =>
     text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
 
   return (
-    <View style={styles.animalInfoChips}>
-      {infoItems.slice(0, 2).map((item, index) => (
+    <View style={styles.infoChipsContainer}>
+      {infoItems.slice(0, 3).map((item, index) => (
         <View
           key={`${item.label}-${index}`}
           style={[styles.infoChip, { borderColor: item.color }]}
         >
-          <Text style={styles.infoChipEmoji}>{item.emoji}</Text>
-          <View style={styles.infoChipContent}>
-            <Text style={[styles.infoChipLabel, { color: item.color }]}>
-              {item.label}
-            </Text>
-            <Text
-              style={[styles.infoChipText, { color: item.color }]}
-              numberOfLines={1}
-            >
-              {truncateText(item.value)}
-            </Text>
-          </View>
+          <Ionicons name={item.icon} size={16} color={item.color} />
+          <Text
+            style={[styles.infoChipText, { color: item.color }]}
+            numberOfLines={1}
+          >
+            {truncateText(item.value)}
+          </Text>
         </View>
       ))}
     </View>
@@ -590,11 +504,7 @@ const AnimalInfoChips = React.memo<{
 });
 
 AnimalCard.displayName = 'AnimalCard';
-CategoryBadge.displayName = 'CategoryBadge';
-AnimalHeader.displayName = 'AnimalHeader';
-AnimalActions.displayName = 'AnimalActions';
-AnimalDescription.displayName = 'AnimalDescription';
-AnimalMetadata.displayName = 'AnimalMetadata';
-AnimalInfoChips.displayName = 'AnimalInfoChips';
+QuickActions.displayName = 'QuickActions';
+InfoChips.displayName = 'InfoChips';
 
 export default AnimalCard;

@@ -1,7 +1,6 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Image,
   RefreshControl,
@@ -27,6 +26,8 @@ import {
   QuickActionSkeleton
 } from '../../../components/ui/skeleton-loader.component';
 
+import CustomModal from '../../../components/ui/custom-modal.component';
+
 import { UserModel } from '@/shared/utils/fakeData';
 import { useStyles } from './admin-home-screen.styles';
 import { RootStackParamList } from '@/presentation/navigation/navigation.types';
@@ -39,113 +40,161 @@ const AdminHeader = React.memo<{
   const time = useCurrentTime();
   const { publicationCounts } = useAdminData();
   const { colors } = useTheme();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleSignOut = useCallback(() => {
-    Alert.alert('Confirmar salida', '¿Estás seguro que deseas cerrar sesión?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salir', onPress: signOut, style: 'destructive' }
-    ]);
+    setShowLogoutModal(true);
+  }, []);
+
+  const confirmSignOut = useCallback(() => {
+    setShowLogoutModal(false);
+    signOut();
   }, [signOut]);
 
-  return (
-    <View style={styles.headerContainer}>
-      <View style={styles.headerTopRow}>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.greeting}>
-            Hola, {user?.name || 'Administrador'} 👋
-          </Text>
-          <Text style={styles.subGreeting}>Panel de control</Text>
-        </View>
-        <TouchableOpacity
-          onPress={handleSignOut}
-          accessibilityRole="button"
-          accessibilityLabel="Cerrar sesión"
-          accessibilityHint="Cierra la sesión actual"
-          style={styles.logoutButton}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="log-out-outline" size={26} color={colors.error} />
-        </TouchableOpacity>
-      </View>
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Buenos días';
+    if (hour < 18) return 'Buenas tardes';
+    return 'Buenas noches';
+  };
 
-      <Animated.View style={styles.infoCard}>
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <View
-              style={[
-                styles.statIconContainer,
-                { backgroundColor: colors.primary + '20' }
-              ]}
-            >
+  return (
+    <>
+      <View style={styles.headerContainer}>
+        <View style={styles.headerTopRow}>
+          <View style={styles.headerTextContainer}>
+            <View style={styles.greetingRow}>
+              <Text style={styles.greeting}>
+                {getGreeting()}, {user?.name || 'Administrador'}
+              </Text>
+              <Ionicons name="hand-right" size={24} color={colors.warning} />
+            </View>
+            <View style={styles.subGreetingRow}>
               <Ionicons
-                name="newspaper-outline"
-                size={20}
+                name="shield-checkmark"
+                size={16}
                 color={colors.primary}
               />
+              <Text style={styles.subGreeting}>Panel de administración</Text>
             </View>
-            <View style={styles.statTextContainer}>
-              <Text style={styles.statLabel}>Publicaciones</Text>
-              {publicationCounts.isLoading ? (
-                <SkeletonLoader width={30} height={18} borderRadius={4} />
-              ) : (
-                <Text style={styles.statValue}>{publicationCounts.total}</Text>
-              )}
+          </View>
+          <TouchableOpacity
+            onPress={handleSignOut}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar sesión"
+            accessibilityHint="Cierra la sesión actual"
+            style={styles.logoutButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={24} color={colors.error} />
+          </TouchableOpacity>
+        </View>
+
+        <Animated.View style={styles.infoCard}>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <View
+                style={[
+                  styles.statIconContainer,
+                  { backgroundColor: colors.primary + '20' }
+                ]}
+              >
+                <Ionicons name="newspaper" size={22} color={colors.primary} />
+              </View>
+              <View style={styles.statTextContainer}>
+                <Text style={styles.statLabel}>Publicaciones</Text>
+                {publicationCounts.isLoading ? (
+                  <SkeletonLoader width={30} height={18} borderRadius={4} />
+                ) : (
+                  <Text style={styles.statValue}>
+                    {publicationCounts.total}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statItem}>
+              <View
+                style={[
+                  styles.statIconContainer,
+                  { backgroundColor: colors.info + '20' }
+                ]}
+              >
+                <Ionicons name="people" size={22} color={colors.info} />
+              </View>
+              <View style={styles.statTextContainer}>
+                <Text style={styles.statLabel}>Usuarios</Text>
+                {publicationCounts.isLoading ? (
+                  <SkeletonLoader width={30} height={18} borderRadius={4} />
+                ) : (
+                  <Text style={styles.statValue}>
+                    {publicationCounts.users}
+                  </Text>
+                )}
+              </View>
             </View>
           </View>
 
-          <View style={styles.statDivider} />
+          <View style={styles.dividerLine} />
 
-          <View style={styles.statItem}>
-            <View
-              style={[
-                styles.statIconContainer,
-                { backgroundColor: colors.secondary + '20' }
-              ]}
-            >
-              <Ionicons
-                name="people-outline"
-                size={20}
-                color={colors.secondary}
-              />
-            </View>
-            <View style={styles.statTextContainer}>
-              <Text style={styles.statLabel}>Usuarios</Text>
-              {publicationCounts.isLoading ? (
-                <SkeletonLoader width={30} height={18} borderRadius={4} />
-              ) : (
-                <Text style={styles.statValue}>{publicationCounts.users}</Text>
-              )}
-            </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="time" size={18} color={colors.textSecondary} />
+            <Text style={styles.infoText}>{time}</Text>
           </View>
-        </View>
 
-        <View style={styles.dividerLine} />
+          <View style={styles.infoRow}>
+            <Ionicons name="location" size={18} color={colors.textSecondary} />
+            {locLoading ? (
+              <SkeletonLoader width={100} height={14} borderRadius={4} />
+            ) : (
+              <Text style={styles.infoText}>
+                {city}, {state}
+              </Text>
+            )}
+          </View>
+        </Animated.View>
+      </View>
 
-        <View style={styles.infoRow}>
-          <Ionicons
-            name="time-outline"
-            size={18}
-            color={colors.textSecondary}
-          />
-          <Text style={styles.infoText}>{time}</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Ionicons
-            name="location-outline"
-            size={18}
-            color={colors.textSecondary}
-          />
-          {locLoading ? (
-            <SkeletonLoader width={100} height={14} borderRadius={4} />
-          ) : (
-            <Text style={styles.infoText}>
-              {city}, {state}
-            </Text>
-          )}
-        </View>
-      </Animated.View>
-    </View>
+      <CustomModal
+        isVisible={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title="Confirmar salida"
+        size="small"
+        type="confirmation"
+        icon={
+          <View
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              backgroundColor: colors.error + '15',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}
+          >
+            <Ionicons name="log-out-outline" size={32} color={colors.error} />
+          </View>
+        }
+        description="¿Estás seguro que deseas cerrar sesión?"
+        centered
+        showFooter
+        footerAlignment="space-between"
+        buttons={[
+          {
+            label: 'Cancelar',
+            onPress: () => setShowLogoutModal(false),
+            variant: 'outline'
+          },
+          {
+            label: 'Salir',
+            onPress: confirmSignOut,
+            variant: 'danger'
+          }
+        ]}
+      />
+    </>
   );
 });
 
@@ -156,44 +205,62 @@ const QuickActionButton = React.memo<{
   styles: ReturnType<typeof useStyles>;
   disabled?: boolean;
   color?: string;
-}>(({ icon, label, onPress, styles, disabled = false, color }) => {
-  const [isPressed, setIsPressed] = React.useState(false);
-  const { colors } = useTheme();
-  const iconColor = color || colors.primary;
+  iconType?: 'ionicons' | 'material';
+}>(
+  ({
+    icon,
+    label,
+    onPress,
+    styles,
+    disabled = false,
+    color,
+    iconType = 'ionicons'
+  }) => {
+    const [isPressed, setIsPressed] = React.useState(false);
+    const { colors } = useTheme();
+    const iconColor = color || colors.primary;
 
-  return (
-    <TouchableOpacity
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      style={[
-        styles.quickActionButton,
-        isPressed && styles.quickActionButtonPressed,
-        disabled && styles.quickActionButtonDisabled
-      ]}
-      onPress={disabled ? undefined : onPress}
-      onPressIn={() => !disabled && setIsPressed(true)}
-      onPressOut={() => setIsPressed(false)}
-      activeOpacity={0.8}
-      disabled={disabled}
-    >
-      <View style={styles.quickActionContent}>
-        <View
-          style={[
-            styles.quickActionIconContainer,
-            { backgroundColor: iconColor + '15' }
-          ]}
-        >
-          <Ionicons name={icon} size={22} color={iconColor} />
+    const IconComponent =
+      iconType === 'material' ? MaterialCommunityIcons : Ionicons;
+
+    return (
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled }}
+        style={[
+          styles.quickActionButton,
+          isPressed && styles.quickActionButtonPressed,
+          disabled && styles.quickActionButtonDisabled
+        ]}
+        onPress={disabled ? undefined : onPress}
+        onPressIn={() => !disabled && setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
+        activeOpacity={0.8}
+        disabled={disabled}
+      >
+        <View style={styles.quickActionContent}>
+          <View
+            style={[
+              styles.quickActionIconContainer,
+              { backgroundColor: iconColor + '15' }
+            ]}
+          >
+            <IconComponent name={icon} size={24} color={iconColor} />
+          </View>
+          <Text style={styles.quickActionText} numberOfLines={2}>
+            {label}
+          </Text>
         </View>
-        <Text style={styles.quickActionText} numberOfLines={2}>
-          {label}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-    </TouchableOpacity>
-  );
-});
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={colors.textSecondary}
+        />
+      </TouchableOpacity>
+    );
+  }
+);
 
 const QuickActionsSection = React.memo<{
   onNavigate: (route: keyof RootStackParamList) => void;
@@ -205,12 +272,20 @@ const QuickActionsSection = React.memo<{
   if (isLoading) {
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Acciones rápidas</Text>
+        <View style={styles.sectionTitleRow}>
+          <SkeletonLoader width={24} height={24} borderRadius={12} />
+          <SkeletonLoader
+            width={140}
+            height={20}
+            borderRadius={4}
+            style={{ marginLeft: 8 }}
+          />
+        </View>
         <SkeletonLoader
           width="60%"
           height={14}
           borderRadius={4}
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: 16 }}
         />
         <View style={styles.quickActions}>
           {[...Array(4)].map((_, i) => (
@@ -223,25 +298,29 @@ const QuickActionsSection = React.memo<{
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Acciones rápidas</Text>
+      <View style={styles.sectionTitleRow}>
+        <Ionicons name="flash" size={24} color={colors.warning} />
+        <Text style={styles.sectionTitle}>Acciones rápidas</Text>
+      </View>
       <Text style={styles.sectionSubtitle}>
         Gestiona el contenido de la aplicación
       </Text>
 
       <View style={styles.quickActions}>
         <QuickActionButton
-          icon="people-outline"
+          icon="account-group"
+          iconType="material"
           label="Gestionar usuarios"
           onPress={() => console.log('UserManagement')}
           styles={styles}
           color={colors.info}
         />
         <QuickActionButton
-          icon="file-tray-full-outline"
+          icon="file-tray-full"
           label="Fichas descargadas"
           onPress={() => onNavigate('DownloadedFiles')}
           styles={styles}
-          color={colors.warning}
+          color={colors.secondary}
         />
       </View>
     </View>
@@ -271,11 +350,26 @@ const UserListItem = React.memo<{
       activeOpacity={0.8}
     >
       <View style={styles.avatarContainer}>
-        <Image
-          source={{ uri: user.avatarUrl }}
-          style={styles.userAvatar}
-          accessibilityIgnoresInvertColors
-        />
+        {user.avatarUrl ? (
+          <Image
+            source={{ uri: user.avatarUrl }}
+            style={styles.userAvatar}
+            accessibilityIgnoresInvertColors
+          />
+        ) : (
+          <View
+            style={[
+              styles.userAvatar,
+              {
+                backgroundColor: colors.primaryLight,
+                justifyContent: 'center',
+                alignItems: 'center'
+              }
+            ]}
+          >
+            <Ionicons name="person" size={28} color={colors.textOnPrimary} />
+          </View>
+        )}
         <View
           style={[styles.statusIndicator, { backgroundColor: colors.success }]}
         />
@@ -284,9 +378,16 @@ const UserListItem = React.memo<{
         <Text style={styles.userName} numberOfLines={1}>
           {user.name}
         </Text>
-        <Text style={styles.userEmail} numberOfLines={1}>
-          {user.email}
-        </Text>
+        <View style={styles.userEmailRow}>
+          <Ionicons
+            name="mail-outline"
+            size={14}
+            color={colors.textSecondary}
+          />
+          <Text style={styles.userEmail} numberOfLines={1}>
+            {user.email}
+          </Text>
+        </View>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
     </TouchableOpacity>
@@ -300,18 +401,28 @@ const UsersSection = React.memo<{
   onUserPress: (user: UserModel) => void;
   styles: ReturnType<typeof useStyles>;
 }>(({ users, isLoading, onSeeAll, onUserPress, styles }) => {
+  const { colors } = useTheme();
+
   if (isLoading) {
     return (
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <SkeletonLoader width={120} height={20} borderRadius={4} />
-          <SkeletonLoader width={60} height={14} borderRadius={4} />
+          <View style={styles.sectionTitleRow}>
+            <SkeletonLoader width={24} height={24} borderRadius={12} />
+            <SkeletonLoader
+              width={140}
+              height={20}
+              borderRadius={4}
+              style={{ marginLeft: 8 }}
+            />
+          </View>
+          <SkeletonLoader width={80} height={14} borderRadius={4} />
         </View>
         <SkeletonLoader
           width="70%"
           height={14}
           borderRadius={4}
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: 16 }}
         />
         {[...Array(3)].map((_, i) => (
           <UserListSkeleton key={i} />
@@ -323,12 +434,25 @@ const UsersSection = React.memo<{
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Usuarios recientes</Text>
-        <TouchableOpacity onPress={onSeeAll} activeOpacity={0.7}>
-          <Text style={styles.seeAll}>Ver todos →</Text>
+        <View style={styles.sectionTitleRow}>
+          <Ionicons name="people-circle" size={24} color={colors.info} />
+          <Text style={styles.sectionTitle}>Usuarios recientes</Text>
+        </View>
+        <TouchableOpacity
+          onPress={onSeeAll}
+          activeOpacity={0.7}
+          style={styles.seeAllButton}
+        >
+          <Text style={styles.seeAll}>Ver todos</Text>
+          <Ionicons name="arrow-forward" size={16} color={colors.primary} />
         </TouchableOpacity>
       </View>
-      <Text style={styles.sectionSubtitle}>Últimos 5 usuarios registrados</Text>
+      <View style={styles.sectionSubtitleRow}>
+        <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+        <Text style={styles.sectionSubtitle}>
+          Últimos 5 usuarios registrados
+        </Text>
+      </View>
 
       {users.length === 0 ? (
         <EmptyUsersList styles={styles} />
@@ -350,52 +474,70 @@ const UsersSection = React.memo<{
 
 const EmptyUsersList = React.memo<{
   styles: ReturnType<typeof useStyles>;
-}>(({ styles }) => (
-  <View style={styles.emptyContainer}>
-    <MaterialCommunityIcons
-      name="account-group-outline"
-      size={80}
-      color={styles.emptyIcon.color}
-    />
-    <Text style={styles.emptyTitle}>No hay usuarios</Text>
-    <Text style={styles.emptySubtitle}>
-      Cuando se registren nuevos usuarios aparecerán aquí
-    </Text>
-  </View>
-));
+}>(({ styles }) => {
+  const { colors } = useTheme();
+
+  return (
+    <View style={styles.emptyContainer}>
+      <View style={styles.emptyIconContainer}>
+        <MaterialCommunityIcons
+          name="account-group-outline"
+          size={60}
+          color={colors.textSecondary}
+        />
+      </View>
+      <Text style={styles.emptyTitle}>No hay usuarios registrados</Text>
+      <Text style={styles.emptySubtitle}>
+        Cuando se registren nuevos usuarios aparecerán aquí
+      </Text>
+    </View>
+  );
+});
 
 const LoadingIndicator = React.memo<{
   styles: ReturnType<typeof useStyles>;
-}>(({ styles }) => (
-  <View style={styles.loadingContainer}>
-    <ActivityIndicator size="large" color={styles.loadingIndicator.color} />
-    <Text style={styles.loadingText}>Cargando datos...</Text>
-  </View>
-));
+}>(({ styles }) => {
+  const { colors } = useTheme();
+
+  return (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={styles.loadingText}>Cargando datos...</Text>
+    </View>
+  );
+});
 
 const ErrorMessage = React.memo<{
   error: string;
   onRetry: () => void;
   styles: ReturnType<typeof useStyles>;
-}>(({ error, onRetry, styles }) => (
-  <View style={styles.errorContainer}>
-    <MaterialCommunityIcons
-      name="alert-circle-outline"
-      size={50}
-      color={styles.errorIcon.color}
-    />
-    <Text style={styles.errorText}>{error}</Text>
-    <TouchableOpacity
-      onPress={onRetry}
-      style={styles.retryButton}
-      accessibilityLabel="Reintentar"
-      accessibilityHint="Intenta cargar los datos nuevamente"
-      activeOpacity={0.8}
-    >
-      <Text style={styles.retryButtonText}>Reintentar</Text>
-    </TouchableOpacity>
-  </View>
-));
+}>(({ error, onRetry, styles }) => {
+  const { colors } = useTheme();
+
+  return (
+    <View style={styles.errorContainer}>
+      <View style={styles.errorIconContainer}>
+        <MaterialCommunityIcons
+          name="alert-circle-outline"
+          size={60}
+          color={colors.error}
+        />
+      </View>
+      <Text style={styles.errorTitle}>Error al cargar datos</Text>
+      <Text style={styles.errorText}>{error}</Text>
+      <TouchableOpacity
+        onPress={onRetry}
+        style={styles.retryButton}
+        accessibilityLabel="Reintentar"
+        accessibilityHint="Intenta cargar los datos nuevamente"
+        activeOpacity={0.8}
+      >
+        <Ionicons name="refresh" size={20} color={colors.textOnPrimary} />
+        <Text style={styles.retryButtonText}>Reintentar</Text>
+      </TouchableOpacity>
+    </View>
+  );
+});
 
 const AdminHomeScreen: React.FC = React.memo(() => {
   const { push } = useNavigationActions();

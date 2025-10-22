@@ -4,13 +4,14 @@ import {
   View,
   TextInput,
   StyleSheet,
-  NativeSyntheticEvent,
-  TextInputKeyPressEventData,
   Animated,
   Text,
   TouchableOpacity,
-  ViewStyle
+  ViewStyle,
+  NativeSyntheticEvent,
+  TextInputKeyPressEventData
 } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 
 interface CodeInputProps {
   code: string;
@@ -49,117 +50,143 @@ const CodeInput: React.FC<CodeInputProps> = ({
     () => createStyles(variables, variant, size, spacing),
     [variables, variant, size, spacing]
   );
-  const inputRefs = useRef<(TextInput | null)[]>([]);
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
+  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const animatedValues = useRef(
+    Array.from({ length: digitCount }, () => new Animated.Value(0))
+  );
+
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const [maskedDigits, setMaskedDigits] = useState<boolean[]>(
     new Array(digitCount).fill(false)
   );
-  const animatedValues = useRef<Animated.Value[]>([]);
+  const [clipboardText, setClipboardText] = useState<string>('');
 
   const hasError = Boolean(error);
   const errorMessage = typeof error === 'string' ? error : undefined;
 
   useEffect(() => {
-    animatedValues.current = Array.from(
-      { length: digitCount },
-      () => new Animated.Value(0)
-    );
-  }, [digitCount]);
+    let mounted = true;
+    const interval = setInterval(async () => {
+      try {
+        const text = await Clipboard.getString();
+        if (!mounted) return;
+        setClipboardText(text || '');
+      } catch {}
+    }, 1000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
-    if (autoFocus && inputRefs.current[0]) {
+    if (autoFocus) {
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
   }, [autoFocus]);
 
   useEffect(() => {
     const isComplete = code.length === digitCount;
-    if (isComplete && onComplete) {
-      onComplete(code);
-    }
-    if (onCodeChange) {
-      onCodeChange(code, isComplete);
-    }
+    if (isComplete && onComplete) onComplete(code);
+    if (onCodeChange) onCodeChange(code, isComplete);
   }, [code, digitCount, onComplete, onCodeChange]);
 
   useEffect(() => {
-    if (maskDelay > 0) {
-      const timeouts: number[] = [];
-      code.split('').forEach((digit, index) => {
-        if (digit && !maskedDigits[index]) {
-          const timeout = setTimeout(() => {
-            setMaskedDigits(prev => {
-              const newMasked = [...prev];
-              newMasked[index] = true;
-              return newMasked;
-            });
-          }, maskDelay);
-          timeouts.push(timeout);
-        }
-      });
+    if (!maskDelay) return;
+    const timers: number[] = [];
+    const codeArr = code.split('');
 
-      return () => timeouts.forEach(clearTimeout);
-    }
-  }, [code, maskDelay, maskedDigits]);
-
-  const codeDigits = useMemo(() => {
-    const digits = code.padEnd(digitCount, '').split('');
-    return digits.map((digit, index) => {
-      if (maskDelay > 0 && digit && maskedDigits[index]) {
-        return '•';
-      }
-      return digit;
+    setMaskedDigits(prev => {
+      const arr =
+        prev.length === digitCount
+          ? [...prev]
+          : new Array(digitCount).fill(false);
+      return arr;
     });
-  }, [code, digitCount, maskDelay, maskedDigits]);
 
-  const animateCell = (index: number, focused: boolean) => {
-    Animated.spring(animatedValues.current[index], {
-      toValue: focused ? 1 : 0,
-      useNativeDriver: false,
-      tension: 100,
-      friction: 8
-    }).start();
+    codeArr.forEach((ch, idx) => {
+      if (ch) {
+        const t = setTimeout(() => {
+          setMaskedDigits(prev => {
+            const newArr = [...prev];
+            newArr[idx] = true;
+            return newArr;
+          });
+        }, maskDelay);
+        timers.push(t);
+      } else {
+        setMaskedDigits(prev => {
+          const newArr = [...prev];
+          newArr[idx] = false;
+          return newArr;
+        });
+      }
+    });
+
+    return () => timers.forEach(clearTimeout);
+  }, [code, maskDelay, digitCount]);
+
+  useEffect(() => {
+    animatedValues.current.forEach((av, idx) => {
+      Animated.spring(av, {
+        toValue: idx === focusedIndex ? 1 : 0,
+        useNativeDriver: false,
+        tension: 100,
+        friction: 8
+      }).start();
+    });
+  }, [focusedIndex]);
+
+  const updateCode = (newCode: string) => {
+    const clean = newCode.replace(/[^0-9]/g, '').slice(0, digitCount);
+    setCode(clean);
   };
 
-  const handleTextChange = (text: string, index: number) => {
-    if (text.length > 1 && index === 0) {
-      const cleanText = text.replace(/[^0-9]/g, '');
-      const newCode = cleanText.slice(0, digitCount);
-      setCode(newCode);
+  const handleChangeText = (text: string, index: number) => {
+    const codeArray = code.split('');
 
-      if (maskDelay > 0) {
-        setMaskedDigits(new Array(digitCount).fill(false));
+    if (text.length > 1) {
+      const pastedDigits = text.replace(/[^0-9]/g, '').slice(0, digitCount);
+      const newCodeArray = [...codeArray];
+
+      for (let i = 0; i < pastedDigits.length && index + i < digitCount; i++) {
+        newCodeArray[index + i] = pastedDigits[i];
       }
 
-      const focusIndex = Math.min(newCode.length, digitCount - 1);
-      if (inputRefs.current[focusIndex]) {
-        setTimeout(() => inputRefs.current[focusIndex]?.focus(), 50);
-      }
+      const newCode = newCodeArray.join('').slice(0, digitCount);
+      updateCode(newCode);
+
+      const nextIndex = Math.min(index + pastedDigits.length, digitCount - 1);
+      setTimeout(() => inputRefs.current[nextIndex]?.focus(), 10);
       return;
     }
 
-    const cleanText = text.replace(/[^0-9]/g, '');
-    const newCodeArray = code.split('');
+    const digit = text.replace(/[^0-9]/g, '');
 
-    if (cleanText) {
-      newCodeArray[index] = cleanText[cleanText.length - 1];
-    } else {
-      newCodeArray[index] = '';
-    }
+    if (digit) {
+      codeArray[index] = digit;
+      const newCode = codeArray.join('');
+      updateCode(newCode);
 
-    const newCode = newCodeArray.join('');
-    setCode(newCode);
+      if (index < digitCount - 1) {
+        const nextIndex = index + 1;
+        setTimeout(() => {
+          inputRefs.current[nextIndex]?.focus();
 
-    if (maskDelay > 0 && cleanText) {
-      setMaskedDigits(prev => {
-        const newMasked = [...prev];
-        newMasked[index] = false;
-        return newMasked;
-      });
-    }
-
-    if (cleanText && index < digitCount - 1) {
-      setTimeout(() => inputRefs.current[index + 1]?.focus(), 50);
+          setTimeout(() => {
+            inputRefs.current[nextIndex]?.setNativeProps({
+              selection: { start: 0, end: 1 }
+            });
+          }, 50);
+        }, 10);
+      } else {
+        inputRefs.current[index]?.blur();
+      }
+    } else if (text === '') {
+      codeArray[index] = '';
+      const newCode = codeArray.join('');
+      updateCode(newCode);
     }
   };
 
@@ -167,119 +194,159 @@ const CodeInput: React.FC<CodeInputProps> = ({
     e: NativeSyntheticEvent<TextInputKeyPressEventData>,
     index: number
   ) => {
-    if (e.nativeEvent.key === 'Backspace') {
-      if (!code[index] && index > 0) {
-        setTimeout(() => inputRefs.current[index - 1]?.focus(), 50);
-      } else if (code[index]) {
-        const newCodeArray = code.split('');
-        newCodeArray[index] = '';
-        setCode(newCodeArray.join(''));
+    const key = e.nativeEvent.key;
 
-        if (maskDelay > 0) {
-          setMaskedDigits(prev => {
-            const newMasked = [...prev];
-            newMasked[index] = false;
-            return newMasked;
-          });
-        }
+    if (key === 'Backspace') {
+      const codeArray = code.split('');
+
+      if (codeArray[index]) {
+        codeArray[index] = '';
+        updateCode(codeArray.join(''));
+      } else if (index > 0) {
+        codeArray[index - 1] = '';
+        updateCode(codeArray.join(''));
+        setTimeout(() => inputRefs.current[index - 1]?.focus(), 10);
       }
     }
   };
 
   const handleFocus = (index: number) => {
     setFocusedIndex(index);
-    animateCell(index, true);
+
+    setTimeout(() => {
+      inputRefs.current[index]?.setNativeProps({
+        selection: { start: 0, end: 1 }
+      });
+    }, 0);
   };
 
-  const handleBlur = (index: number) => {
-    if (focusedIndex === index) {
-      setFocusedIndex(null);
+  const handleBlur = () => {
+    setFocusedIndex(-1);
+  };
+
+  const handleSelectionChange = (index: number) => {
+    if (focusedIndex === index && code[index]) {
+      setTimeout(() => {
+        inputRefs.current[index]?.setNativeProps({
+          selection: { start: 0, end: 1 }
+        });
+      }, 0);
     }
-    animateCell(index, false);
   };
 
-  const handleCellPress = (index: number) => {
-    inputRefs.current[index]?.focus();
+  const clearCode = () => {
+    setCode('');
+    setMaskedDigits(new Array(digitCount).fill(false));
+    setTimeout(() => inputRefs.current[0]?.focus(), 30);
   };
 
-  const getCellStyle = (index: number, digit: string) => {
-    const animatedStyle = {
-      borderColor:
-        animatedValues.current[index]?.interpolate({
+  const pasteCode = async () => {
+    const text = await Clipboard.getString();
+    const clean = text.replace(/[^0-9]/g, '').slice(0, digitCount);
+    if (!clean) return;
+
+    setCode(clean);
+    setMaskedDigits(new Array(digitCount).fill(false));
+
+    const nextIndex = Math.min(clean.length, digitCount - 1);
+    setTimeout(() => inputRefs.current[nextIndex]?.focus(), 30);
+  };
+
+  const getCellStyle = (index: number, filled: boolean) => {
+    const av = animatedValues.current[index];
+
+    const borderColor = av?.interpolate
+      ? av.interpolate({
           inputRange: [0, 1],
           outputRange: [
             hasError ? variables['--error'] : variables['--border'],
             hasError ? variables['--error'] : variables['--primary']
           ]
-        }) || variables['--border'],
-      transform: [
-        {
-          scale: animatedValues.current[index]?.interpolate({
-            inputRange: [0, 1],
-            outputRange: [1, 1.05]
-          })
-        }
-      ]
+        })
+      : hasError
+        ? variables['--error']
+        : variables['--border'];
+
+    const scale = av?.interpolate
+      ? av.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 1.05]
+        })
+      : 1;
+
+    const animatedStyle: Animated.WithAnimatedObject<ViewStyle> = {
+      borderColor,
+      transform: [{ scale }]
     };
 
     return [
       styles.codeInput,
       focusedIndex === index && styles.focused,
       hasError && styles.error,
-      digit && styles.filled,
+      filled && styles.filled,
       animatedStyle
-    ].filter(Boolean);
+    ];
   };
 
-  const clearCode = () => {
-    setCode('');
-    setMaskedDigits(new Array(digitCount).fill(false));
-    inputRefs.current[0]?.focus();
+  const getDisplayValue = (index: number) => {
+    const digit = code[index] || '';
+    if (maskDelay > 0 && digit && maskedDigits[index]) {
+      return '•';
+    }
+    return digit;
   };
 
   return (
     <View style={[styles.container, containerStyle]}>
       <View style={styles.inputsContainer}>
-        {Array.from({ length: digitCount }).map((_, index) => (
-          <TouchableOpacity
-            key={index}
-            activeOpacity={0.7}
-            onPress={() => handleCellPress(index)}
-            style={styles.cellTouchable}
-          >
-            <Animated.View style={getCellStyle(index, codeDigits[index])}>
+        {Array.from({ length: digitCount }).map((_, index) => {
+          const digit = code[index] || '';
+          const filled = Boolean(digit);
+          const displayValue = getDisplayValue(index);
+
+          return (
+            <Animated.View key={index} style={getCellStyle(index, filled)}>
               <TextInput
                 ref={ref => {
                   inputRefs.current[index] = ref;
                 }}
-                style={styles.hiddenInput}
-                keyboardType="number-pad"
-                maxLength={1}
-                value={codeDigits[index] === ' ' ? '' : codeDigits[index]}
-                onChangeText={text => handleTextChange(text, index)}
+                value={displayValue}
+                onChangeText={text => handleChangeText(text, index)}
                 onKeyPress={e => handleKeyPress(e, index)}
                 onFocus={() => handleFocus(index)}
-                onBlur={() => handleBlur(index)}
-                selectTextOnFocus
+                onBlur={handleBlur}
+                onSelectionChange={() => handleSelectionChange(index)}
+                keyboardType="number-pad"
+                maxLength={1}
+                style={styles.digitInput}
+                placeholder={placeholder}
+                placeholderTextColor={variables['--text-secondary']}
+                selectTextOnFocus={true}
                 textContentType="oneTimeCode"
                 autoComplete="sms-otp"
-                caretHidden
+                caretHidden={true}
+                selectionColor="transparent"
               />
-              <Text style={styles.digitText}>
-                {codeDigits[index] || placeholder}
-              </Text>
             </Animated.View>
-          </TouchableOpacity>
-        ))}
+          );
+        })}
       </View>
 
       {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
-      {code.length > 0 && (
-        <TouchableOpacity style={styles.clearButton} onPress={clearCode}>
-          <Text style={styles.clearButtonText}>Clear</Text>
-        </TouchableOpacity>
-      )}
+      <View style={styles.buttonsContainer}>
+        {code.length > 0 && (
+          <TouchableOpacity style={styles.clearButton} onPress={clearCode}>
+            <Text style={styles.clearButtonText}>Clear</Text>
+          </TouchableOpacity>
+        )}
+
+        {Boolean(clipboardText && clipboardText.match(/\d/)) && (
+          <TouchableOpacity style={styles.clearButton} onPress={pasteCode}>
+            <Text style={styles.clearButtonText}>Paste</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 };
@@ -338,9 +405,6 @@ const createStyles = (
       justifyContent: 'center',
       gap: gap
     },
-    cellTouchable: {
-      borderRadius: variables['--border-radius-medium']
-    },
     codeInput: {
       width: config.width,
       height: config.height,
@@ -349,7 +413,6 @@ const createStyles = (
         variant === 'underlined' ? 0 : variables['--border-radius-medium'],
       justifyContent: 'center',
       alignItems: 'center',
-      position: 'relative',
       shadowColor: variables['--shadow'],
       shadowOffset: {
         width: 0,
@@ -374,19 +437,15 @@ const createStyles = (
       borderColor: variables['--error'],
       borderWidth: 2
     },
-    hiddenInput: {
-      position: 'absolute',
+    digitInput: {
       width: '100%',
       height: '100%',
-      opacity: 0,
-      textAlign: 'center'
-    },
-    digitText: {
       fontSize: config.fontSize,
       fontWeight: 'bold',
       color: variables['--text'],
       fontFamily: variables['--font-family-primary'],
-      textAlign: 'center'
+      textAlign: 'center',
+      padding: 0
     },
     errorText: {
       fontSize: variables['--font-size-small'],
@@ -394,6 +453,11 @@ const createStyles = (
       fontFamily: variables['--font-family-primary'],
       marginTop: variables['--spacing-small'],
       textAlign: 'center'
+    },
+    buttonsContainer: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 10
     },
     clearButton: {
       marginTop: variables['--spacing-medium'],

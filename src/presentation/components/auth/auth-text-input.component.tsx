@@ -296,7 +296,7 @@ const createStyles = (
     },
     iconTouchable: {
       padding: 4,
-      borderRadius: 20
+      borderRadius: variables['--border-radius-medium']
     },
     input: {
       flex: 1,

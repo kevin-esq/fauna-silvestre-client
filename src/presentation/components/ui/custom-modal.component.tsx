@@ -235,6 +235,10 @@ const CustomModal = React.memo(
         >
           {icon && <View style={styles.iconContainer}>{icon}</View>}
 
+          {description && !children && type !== 'input' && (
+            <Text style={styles.description}>{description}</Text>
+          )}
+
           {type === 'input' && (
             <View>
               {inputLabel && <Text style={styles.label}>{inputLabel}</Text>}

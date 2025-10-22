@@ -173,7 +173,7 @@ const getLoadingColor = (
 const createStyles = (variables: ThemeVariablesType | undefined) =>
   StyleSheet.create({
     button: {
-      borderRadius: 16,
+      borderRadius: variables?.['--border-radius-medium'],
       alignItems: 'center',
       justifyContent: 'center',
       marginVertical: 6,

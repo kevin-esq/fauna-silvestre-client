@@ -54,7 +54,7 @@ const createStyles = (variables: ThemeVariablesType | undefined) =>
       flexDirection: 'row',
       alignItems: 'center',
       padding: 12,
-      borderRadius: 8,
+      borderRadius: variables?.['--border-radius-medium'],
       marginBottom: 16
     },
     errorContainer: {

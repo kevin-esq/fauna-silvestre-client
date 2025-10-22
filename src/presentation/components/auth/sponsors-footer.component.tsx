@@ -10,6 +10,7 @@ import {
   Alert,
   ImageSourcePropType
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ConaforLogo from '@/assets/sponsors/conafor.jpeg';
 import MayasurLogo from '@/assets/sponsors/mayasur.jpeg';
 import FomentoLogo from '@/assets/sponsors/fomento.jpg';
@@ -23,6 +24,13 @@ interface SponsorData {
   description?: string;
 }
 
+interface DeveloperData {
+  name: string;
+  role: string;
+  description: string;
+  icon: string;
+}
+
 interface SponsorsFooterProps {
   variables: ThemeVariablesType;
 }
@@ -31,6 +39,8 @@ const SponsorsFooter: React.FC<SponsorsFooterProps> = ({ variables }) => {
   const styles = useMemo(() => createStyles(variables), [variables]);
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+  const [isDevelopmentTeamExpanded, setIsDevelopmentTeamExpanded] =
+    useState(false);
 
   const sponsors: SponsorData[] = [
     {
@@ -48,13 +58,27 @@ const SponsorsFooter: React.FC<SponsorsFooterProps> = ({ variables }) => {
       color: variables['--leaf'],
       logo: FomentoLogo,
       description: 'Soluciones científicas para el futuro'
+    }
+  ];
+
+  const developers: DeveloperData[] = [
+    {
+      name: 'Alexis Sherioshar Yama Moguel',
+      role: 'Project Manager',
+      description: 'Gestión y coordinación del proyecto',
+      icon: 'account-tie'
     },
     {
-      name: 'MAYA SUR SYSTEMS',
-      role: 'Desarrollador de la aplicación',
-      color: variables['--water'],
-      logo: MayasurLogo,
-      description: 'Innovación tecnológica para el desarrollo sostenible'
+      name: 'Ulises Antonio Montalvo Campos',
+      role: 'Desarrollador Backend',
+      description: 'Arquitectura y desarrollo del servidor',
+      icon: 'server'
+    },
+    {
+      name: 'Kevin Alexander Esquivel Hernandez',
+      role: 'Desarrollador Frontend',
+      description: 'Diseño y desarrollo de la interfaz de usuario',
+      icon: 'monitor-edit'
     }
   ];
 
@@ -150,7 +174,8 @@ const SponsorsFooter: React.FC<SponsorsFooterProps> = ({ variables }) => {
                   </Text>
                   {sponsor.website && (
                     <View style={styles.linkBadge}>
-                      <Text style={styles.linkBadgeText}>🔗 Visitar</Text>
+                      <Icon name="link-variant" size={12} color="#FFFFFF" />
+                      <Text style={styles.linkBadgeText}>Visitar</Text>
                     </View>
                   )}
                 </View>
@@ -169,6 +194,53 @@ const SponsorsFooter: React.FC<SponsorsFooterProps> = ({ variables }) => {
             </TouchableOpacity>
           );
         })}
+      </View>
+
+      <View style={styles.developmentCompanySection}>
+        <TouchableOpacity
+          style={styles.developmentTeamHeader}
+          onPress={() =>
+            setIsDevelopmentTeamExpanded(!isDevelopmentTeamExpanded)
+          }
+          activeOpacity={0.7}
+        >
+          <View style={styles.companyLogoContainer}>
+            <Image
+              source={MayasurLogo}
+              style={styles.companyLogo}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.companyInfo}>
+            <Text style={styles.companyName}>MAYA SUR SYSTEMS</Text>
+            <Text style={styles.teamSubtitle}>Empresa de Desarrollo</Text>
+          </View>
+          <Icon
+            name={isDevelopmentTeamExpanded ? 'chevron-up' : 'chevron-down'}
+            size={28}
+            color={variables['--primary']}
+          />
+        </TouchableOpacity>
+
+        {isDevelopmentTeamExpanded && (
+          <View style={styles.developersContainer}>
+            <Text style={styles.teamMembersTitle}>Equipo de Desarrollo</Text>
+            {developers.map((dev, index) => (
+              <View key={index} style={styles.developerCard}>
+                <View style={styles.developerIcon}>
+                  <Icon name={dev.icon} size={24} color="#FFFFFF" />
+                </View>
+                <View style={styles.developerInfo}>
+                  <Text style={styles.developerName}>{dev.name}</Text>
+                  <Text style={styles.developerRole}>{dev.role}</Text>
+                  <Text style={styles.developerDescription}>
+                    {dev.description}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
 
       <View style={styles.creditsSection}>
@@ -200,7 +272,7 @@ const createStyles = (variables: ThemeVariablesType) =>
       height: 2,
       backgroundColor: variables['--primary'],
       marginBottom: 20,
-      borderRadius: 1,
+      borderRadius: variables['--border-radius-medium'],
       opacity: 0.3
     },
     footerTitle: {
@@ -216,7 +288,7 @@ const createStyles = (variables: ThemeVariablesType) =>
     sponsorCard: {
       backgroundColor: variables['--card-background'],
       padding: 16,
-      borderRadius: 16,
+      borderRadius: variables['--border-radius-medium'],
       marginBottom: 16,
       flexDirection: 'row',
       alignItems: 'center',
@@ -241,7 +313,7 @@ const createStyles = (variables: ThemeVariablesType) =>
     logoContainer: {
       width: 64,
       height: 64,
-      borderRadius: 12,
+      borderRadius: variables['--border-radius-medium'],
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 16,
@@ -301,20 +373,124 @@ const createStyles = (variables: ThemeVariablesType) =>
     },
     linkBadge: {
       backgroundColor: variables['--primary'],
-      borderRadius: 12,
+      borderRadius: variables['--border-radius-medium'],
       paddingHorizontal: 10,
       paddingVertical: 4,
-      marginLeft: 8
+      marginLeft: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4
     },
     linkBadgeText: {
       fontSize: 10,
       color: '#FFFFFF',
       fontWeight: '600'
     },
+    developmentCompanySection: {
+      backgroundColor: variables['--card-background'],
+      padding: 16,
+      borderRadius: variables['--border-radius-large'],
+      marginBottom: 24,
+      shadowColor: variables['--shadow'],
+      shadowOffset: {
+        width: 0,
+        height: 4
+      },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 4,
+      borderWidth: 1,
+      borderColor: variables['--border']
+    },
+    developmentTeamHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 4
+    },
+    companyLogoContainer: {
+      width: 56,
+      height: 56,
+      borderRadius: variables['--border-radius-medium'],
+      backgroundColor: variables['--water'],
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+      overflow: 'hidden'
+    },
+    companyLogo: {
+      width: '100%',
+      height: '100%'
+    },
+    companyInfo: {
+      flex: 1
+    },
+    companyName: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: variables['--text'],
+      marginBottom: 2
+    },
+    teamSubtitle: {
+      fontSize: 13,
+      color: variables['--primary'],
+      fontWeight: '600'
+    },
+    developersContainer: {
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: variables['--border']
+    },
+    teamMembersTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: variables['--primary'],
+      marginBottom: 12,
+      textAlign: 'center'
+    },
+    developerCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: variables['--surface-variant'],
+      padding: 12,
+      borderRadius: variables['--border-radius-medium'],
+      marginBottom: 8,
+      borderLeftWidth: 3,
+      borderLeftColor: variables['--primary']
+    },
+    developerIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: variables['--border-radius-xlarge'],
+      backgroundColor: variables['--primary'],
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12
+    },
+    developerInfo: {
+      flex: 1
+    },
+    developerName: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: variables['--text'],
+      marginBottom: 2
+    },
+    developerRole: {
+      fontSize: 12,
+      color: variables['--primary'],
+      fontWeight: '600',
+      marginBottom: 2
+    },
+    developerDescription: {
+      fontSize: 11,
+      color: variables['--text-secondary'],
+      fontStyle: 'italic'
+    },
     creditsSection: {
       backgroundColor: variables['--surface-variant'],
       padding: 16,
-      borderRadius: 12,
+      borderRadius: variables['--border-radius-medium'],
       marginBottom: 20
     },
     creditsTitle: {
