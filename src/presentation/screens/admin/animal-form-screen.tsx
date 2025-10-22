@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,14 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
-  Image
+  Image,
+  AppState,
+  AppStateStatus
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import FontAwesome5Icons from 'react-native-vector-icons/FontAwesome5';
 import { useAnimalForm } from '../../hooks/use-animal-form.hook';
 import { useAnimalImagePicker } from '../../hooks/use-animal-image-picker.hook';
 import { useTheme, Theme } from '../../contexts/theme.context';
@@ -22,6 +25,8 @@ import { createStyles } from './animal-form-screen.styles';
 import { useRoute } from '@react-navigation/native';
 import { CatalogAnimalCard } from '../catalog/catalog-animals-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRequestPermissions } from '../../hooks/use-request-permissions.hook';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
 
 const VERTEBRATE_CLASSES = [
   'Mamíferos',
@@ -30,6 +35,21 @@ const VERTEBRATE_CLASSES = [
   'Anfibios',
   'Peces'
 ];
+
+interface ModalState {
+  isVisible: boolean;
+  type:
+    | 'discard'
+    | 'success'
+    | 'error'
+    | 'imageSuccess'
+    | 'cameraPermission'
+    | 'galleryPermission'
+    | 'blockedPermission';
+  title: string;
+  description: string;
+  onConfirm?: () => void;
+}
 
 const FormHeader = React.memo<{
   isEditMode: boolean;
@@ -47,7 +67,11 @@ const FormHeader = React.memo<{
       accessibilityRole="button"
       accessibilityLabel="Volver"
     >
-      <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+      <Ionicons
+        name="arrow-back"
+        size={theme.iconSizes.medium}
+        color={theme.colors.text}
+      />
     </TouchableOpacity>
 
     <Text style={styles.headerTitle}>
@@ -69,7 +93,7 @@ const FormHeader = React.memo<{
       ) : (
         <Ionicons
           name="checkmark"
-          size={24}
+          size={theme.iconSizes.medium}
           color={theme.colors.textOnPrimary}
         />
       )}
@@ -137,28 +161,78 @@ const FormField = React.memo<{
 const ClassSelector = React.memo<{
   selectedClass: string;
   onClassSelect: (animalClass: string) => void;
+  theme: Theme;
   styles: ReturnType<typeof createStyles>;
-}>(({ selectedClass, onClassSelect, styles }) => {
+}>(({ selectedClass, onClassSelect, theme, styles }) => {
   const getClassIcon = (animalClass: string) => {
     switch (animalClass) {
       case 'Mamíferos':
-        return '🐾';
+        return { name: 'paw', type: 'fa5' };
       case 'Aves':
-        return '🦅';
+        return { name: 'bird', type: 'material' };
       case 'Reptiles':
-        return '🦎';
+        return { name: 'snake', type: 'material' };
       case 'Anfibios':
-        return '🐸';
+        return { name: 'frog', type: 'fa5' };
       case 'Peces':
-        return '🐠';
+        return { name: 'fish', type: 'ionicons' };
       default:
-        return '❓';
+        return { name: 'help-circle-outline', type: 'ionicons' };
     }
+  };
+
+  const renderIcon = (animalClass: string, isSelected: boolean) => {
+    const icon = getClassIcon(animalClass);
+    const iconColor = isSelected
+      ? theme.colors.textOnPrimary
+      : theme.colors.text;
+
+    if (icon.type === 'material') {
+      return (
+        <MaterialCommunityIcons
+          name={icon.name}
+          size={24}
+          color={iconColor}
+          style={{ marginRight: theme.spacing.small }}
+        />
+      );
+    } else if (icon.type === 'fa5') {
+      return (
+        <FontAwesome5Icons
+          name={icon.name}
+          size={24}
+          color={iconColor}
+          style={{ marginRight: theme.spacing.small }}
+        />
+      );
+    }
+    return (
+      <Ionicons
+        name={icon.name}
+        size={24}
+        color={iconColor}
+        style={{ marginRight: theme.spacing.small }}
+      />
+    );
   };
 
   return (
     <View style={styles.classSelectorContainer}>
-      <Text style={styles.classSelectorLabel}>🧬 Clase de Vertebrado *</Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: theme.spacing.tiny
+        }}
+      >
+        <MaterialCommunityIcons
+          name="dna"
+          size={20}
+          color={theme.colors.text}
+          style={{ marginRight: theme.spacing.small }}
+        />
+        <Text style={styles.classSelectorLabel}>Clase de Vertebrado *</Text>
+      </View>
       <Text style={styles.classSelectorSubtext}>
         Selecciona la clase del animal
       </Text>
@@ -174,10 +248,10 @@ const ClassSelector = React.memo<{
               style={[
                 styles.classOption,
                 isSelected && styles.classOptionSelected,
-                index % 2 === 0 && { marginRight: 8 }
+                index % 2 === 0 && { marginRight: theme.spacing.small }
               ]}
             >
-              <Text style={styles.classIcon}>{getClassIcon(animalClass)}</Text>
+              {renderIcon(animalClass, isSelected)}
               <Text
                 style={[
                   styles.classLabel,
@@ -196,11 +270,31 @@ const ClassSelector = React.memo<{
 
 const FormSection = React.memo<{
   title: string;
+  icon: string;
+  iconType?: 'ionicons' | 'material';
   children: React.ReactNode;
+  theme: Theme;
   styles: ReturnType<typeof createStyles>;
-}>(({ title, children, styles }) => (
+}>(({ title, icon, iconType = 'ionicons', children, theme, styles }) => (
   <View style={styles.sectionContainer}>
-    <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      {iconType === 'material' ? (
+        <MaterialCommunityIcons
+          name={icon}
+          size={24}
+          color={theme.colors.primary}
+          style={{ marginRight: theme.spacing.small }}
+        />
+      ) : (
+        <Ionicons
+          name={icon}
+          size={24}
+          color={theme.colors.primary}
+          style={{ marginRight: theme.spacing.small }}
+        />
+      )}
+      <Text style={styles.sectionTitle}>{title}</Text>
+    </View>
     {children}
   </View>
 ));
@@ -231,7 +325,7 @@ const AnimalPreview = React.memo<{
       <View style={styles.previewPlaceholder}>
         <Ionicons
           name="eye-outline"
-          size={48}
+          size={theme.iconSizes.xlarge}
           color={theme.colors.placeholder}
         />
         <Text style={styles.previewPlaceholderText}>
@@ -266,43 +360,227 @@ const AnimalFormScreen = () => {
   const { state, actions, isEditMode } = useAnimalForm(initialAnimal);
   const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
 
+  const {
+    requestAlertPermissions,
+    checkPermissions,
+    blockedPermissions,
+    openAppSettings
+  } = useRequestPermissions();
+
+  const [modalState, setModalState] = useState<ModalState>({
+    isVisible: false,
+    type: 'success',
+    title: '',
+    description: ''
+  });
+
+  const [isReturningFromCamera, setIsReturningFromCamera] = useState(false);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      'change',
+      (nextAppState: AppStateStatus) => {
+        if (nextAppState === 'active' && isReturningFromCamera) {
+          console.log('App returned from camera');
+          setIsReturningFromCamera(false);
+        }
+      }
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isReturningFromCamera]);
+
+  const showModal = useCallback(
+    (
+      type: ModalState['type'],
+      title: string,
+      description: string,
+      onConfirm?: () => void
+    ) => {
+      setModalState({
+        isVisible: true,
+        type,
+        title,
+        description,
+        onConfirm
+      });
+    },
+    []
+  );
+
   const { openCamera, openGallery } = useAnimalImagePicker({
     onImageSelected: (imageUri: string, base64?: string) => {
       if (base64) {
         actions.updateField('image', base64);
-        Alert.alert('Éxito', 'Imagen seleccionada correctamente');
+        showModal(
+          'imageSuccess',
+          'Éxito',
+          'La imagen se ha seleccionado correctamente'
+        );
       }
     },
     onImageError: (error: string) => {
-      Alert.alert('Error', `Error al seleccionar imagen: ${error}`);
+      showModal('error', 'Error', `No se pudo seleccionar la imagen: ${error}`);
     }
   });
 
+  const closeModal = useCallback(() => {
+    setModalState(prev => ({ ...prev, isVisible: false }));
+  }, []);
+
+  const handleCameraPermission = useCallback(async () => {
+    try {
+      const { allGranted } = await checkPermissions(['camera']);
+
+      if (allGranted) {
+        setIsReturningFromCamera(true);
+        await openCamera();
+        setIsReturningFromCamera(false);
+        return;
+      }
+
+      if (blockedPermissions.includes('camera')) {
+        showModal(
+          'blockedPermission',
+          'Permiso de Cámara Bloqueado',
+          'Para usar la cámara, debes habilitar el permiso en la configuración de tu dispositivo.',
+          () => {
+            closeModal();
+            openAppSettings();
+          }
+        );
+        return;
+      }
+
+      const granted = await requestAlertPermissions(['camera']);
+
+      if (granted) {
+        setIsReturningFromCamera(true);
+        await openCamera();
+        setIsReturningFromCamera(false);
+      } else {
+        showModal(
+          'cameraPermission',
+          'Permiso de Cámara Necesario',
+          'Para tomar fotos del animal, necesitamos acceso a tu cámara.',
+          async () => {
+            closeModal();
+            const retryGranted = await requestAlertPermissions(['camera']);
+            if (retryGranted) {
+              setIsReturningFromCamera(true);
+              await openCamera();
+              setIsReturningFromCamera(false);
+            }
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error in handleCameraPermission:', error);
+      setIsReturningFromCamera(false);
+      showModal(
+        'error',
+        'Error',
+        'Ocurrió un error al intentar abrir la cámara'
+      );
+    }
+  }, [
+    checkPermissions,
+    blockedPermissions,
+    requestAlertPermissions,
+    openAppSettings,
+    showModal,
+    closeModal,
+    openCamera
+  ]);
+
+  const handleGalleryPermission = useCallback(async () => {
+    try {
+      const { allGranted } = await checkPermissions(['gallery']);
+
+      if (allGranted) {
+        await openGallery();
+        return;
+      }
+
+      if (blockedPermissions.includes('gallery')) {
+        showModal(
+          'blockedPermission',
+          'Permiso de Galería Bloqueado',
+          'Para acceder a tus fotos, debes habilitar el permiso en la configuración de tu dispositivo.',
+          () => {
+            closeModal();
+            openAppSettings();
+          }
+        );
+        return;
+      }
+
+      const granted = await requestAlertPermissions(['gallery']);
+
+      if (granted) {
+        await openGallery();
+      } else {
+        showModal(
+          'galleryPermission',
+          'Permiso de Galería Necesario',
+          'Para seleccionar fotos del animal, necesitamos acceso a tu galería.',
+          async () => {
+            closeModal();
+            const retryGranted = await requestAlertPermissions(['gallery']);
+            if (retryGranted) {
+              await openGallery();
+            }
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error in handleGalleryPermission:', error);
+      showModal(
+        'error',
+        'Error',
+        'Ocurrió un error al intentar abrir la galería'
+      );
+    }
+  }, [
+    checkPermissions,
+    blockedPermissions,
+    requestAlertPermissions,
+    openAppSettings,
+    showModal,
+    closeModal,
+    openGallery
+  ]);
+
   const handleBack = useCallback(() => {
     if (Object.values(state.formData).some(value => value.trim() !== '')) {
-      Alert.alert(
+      showModal(
+        'discard',
         'Descartar cambios',
         '¿Estás seguro de que quieres salir? Se perderán los cambios no guardados.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Salir',
-            style: 'destructive',
-            onPress: () => navigation.goBack()
-          }
-        ]
+        () => {
+          closeModal();
+          navigation.goBack();
+        }
       );
     } else {
       navigation.goBack();
     }
-  }, [state.formData, navigation]);
+  }, [state.formData, navigation, showModal, closeModal]);
 
   const handleSave = useCallback(async () => {
     const result = await actions.saveAnimal();
     if (!result?.error) {
       navigation.goBack();
+    } else {
+      showModal(
+        'error',
+        'Error',
+        'No se pudo guardar el animal. Por favor, intenta nuevamente.'
+      );
     }
-  }, [actions, navigation]);
+  }, [actions, navigation, showModal]);
 
   const createFieldHandler = useCallback(
     (field: keyof typeof state.formData) => (value: string) =>
@@ -316,6 +594,69 @@ const AnimalFormScreen = () => {
     },
     [actions]
   );
+
+  const getModalButtons = useCallback(() => {
+    switch (modalState.type) {
+      case 'discard':
+        return [
+          {
+            label: 'Cancelar',
+            onPress: closeModal,
+            variant: 'outline' as const
+          },
+          {
+            label: 'Salir',
+            onPress: () => {
+              modalState.onConfirm?.();
+            },
+            variant: 'danger' as const
+          }
+        ];
+      case 'cameraPermission':
+      case 'galleryPermission':
+        return [
+          {
+            label: 'Cancelar',
+            onPress: closeModal,
+            variant: 'outline' as const
+          },
+          {
+            label: 'Permitir',
+            onPress: () => {
+              modalState.onConfirm?.();
+            },
+            variant: 'primary' as const
+          }
+        ];
+      case 'blockedPermission':
+        return [
+          {
+            label: 'Cancelar',
+            onPress: closeModal,
+            variant: 'outline' as const
+          },
+          {
+            label: 'Abrir Configuración',
+            onPress: () => {
+              modalState.onConfirm?.();
+            },
+            variant: 'primary' as const
+          }
+        ];
+      case 'error':
+      case 'success':
+      case 'imageSuccess':
+        return [
+          {
+            label: 'Aceptar',
+            onPress: closeModal,
+            variant: 'primary' as const
+          }
+        ];
+      default:
+        return [];
+    }
+  }, [modalState, closeModal]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -339,7 +680,12 @@ const AnimalFormScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <FormSection title="Información Básica" styles={styles}>
+          <FormSection
+            title="Información Básica"
+            icon="document-text"
+            theme={theme}
+            styles={styles}
+          >
             <FormField
               label="Nombre Común"
               value={state.formData.commonNoun}
@@ -367,6 +713,7 @@ const AnimalFormScreen = () => {
             <ClassSelector
               selectedClass={state.formData.category}
               onClassSelect={handleClassSelect}
+              theme={theme}
               styles={styles}
             />
             {state.errors.category && (
@@ -374,7 +721,12 @@ const AnimalFormScreen = () => {
             )}
           </FormSection>
 
-          <FormSection title="Descripción" styles={styles}>
+          <FormSection
+            title="Descripción"
+            icon="book"
+            theme={theme}
+            styles={styles}
+          >
             <FormField
               label="Descripción General"
               value={state.formData.description}
@@ -390,7 +742,12 @@ const AnimalFormScreen = () => {
             />
           </FormSection>
 
-          <FormSection title="Características" styles={styles}>
+          <FormSection
+            title="Características"
+            icon="search"
+            theme={theme}
+            styles={styles}
+          >
             <FormField
               label="Hábitos"
               value={state.formData.habits}
@@ -463,7 +820,12 @@ const AnimalFormScreen = () => {
           </FormSection>
 
           {!isEditMode && (
-            <FormSection title="Imagen del Animal" styles={styles}>
+            <FormSection
+              title="Imagen del Animal"
+              icon="camera"
+              theme={theme}
+              styles={styles}
+            >
               {state.formData.image ? (
                 <View style={styles.imagePreviewContainer}>
                   <Image
@@ -483,26 +845,32 @@ const AnimalFormScreen = () => {
                   >
                     <Ionicons
                       name="close-circle"
-                      size={24}
+                      size={theme.iconSizes.medium}
                       color={theme.colors.error}
                     />
                   </TouchableOpacity>
                 </View>
               ) : (
                 <View style={styles.imageSelectionContainer}>
+                  <Ionicons
+                    name="image-outline"
+                    size={theme.iconSizes.xlarge}
+                    color={theme.colors.primary}
+                    style={{ marginBottom: theme.spacing.small }}
+                  />
                   <Text style={styles.imageSelectionText}>
-                    📸 Selecciona una imagen para el animal
+                    Selecciona una imagen para el animal
                   </Text>
                   <View style={styles.imageButtonsContainer}>
                     <TouchableOpacity
                       style={styles.cameraButton}
-                      onPress={openCamera}
+                      onPress={handleCameraPermission}
                       accessibilityRole="button"
                       accessibilityLabel="Tomar foto con cámara"
                     >
                       <Ionicons
                         name="camera"
-                        size={24}
+                        size={theme.iconSizes.medium}
                         color={theme.colors.textOnPrimary}
                       />
                       <Text style={styles.cameraButtonText}>Cámara</Text>
@@ -510,13 +878,13 @@ const AnimalFormScreen = () => {
 
                     <TouchableOpacity
                       style={styles.galleryButton}
-                      onPress={openGallery}
+                      onPress={handleGalleryPermission}
                       accessibilityRole="button"
                       accessibilityLabel="Seleccionar de galería"
                     >
                       <Ionicons
                         name="images"
-                        size={24}
+                        size={theme.iconSizes.medium}
                         color={theme.colors.forest}
                       />
                       <Text style={styles.galleryButtonText}>Galería</Text>
@@ -530,7 +898,12 @@ const AnimalFormScreen = () => {
             </FormSection>
           )}
 
-          <FormSection title="Vista Previa" styles={styles}>
+          <FormSection
+            title="Vista Previa"
+            icon="eye"
+            theme={theme}
+            styles={styles}
+          >
             <AnimalPreview
               animal={state.formData}
               theme={theme}
@@ -541,6 +914,19 @@ const AnimalFormScreen = () => {
           <View style={styles.bottomSpacer} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <CustomModal
+        isVisible={modalState.isVisible}
+        onClose={closeModal}
+        title={modalState.title}
+        description={modalState.description}
+        type="confirmation"
+        size="medium"
+        showFooter={true}
+        buttons={getModalButtons()}
+        centered={true}
+        closeOnBackdrop={modalState.type !== 'discard'}
+      />
     </SafeAreaView>
   );
 };

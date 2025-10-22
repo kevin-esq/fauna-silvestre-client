@@ -230,8 +230,6 @@ const createStyles = (
       position: 'absolute',
       left: config.padding + (config.iconSize + 10),
       zIndex: 1,
-      backgroundColor:
-        variant === 'outlined' ? variables['--background'] : 'transparent',
       paddingHorizontal: 4
     },
     label: {
