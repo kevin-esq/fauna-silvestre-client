@@ -67,6 +67,7 @@ const AdminHeader = React.memo<{
               <Text style={styles.greeting}>
                 {getGreeting()}, {user?.name || 'Administrador'}
               </Text>
+              <Ionicons name="hand-right" size={24} color={colors.warning} />
             </View>
             <View style={styles.subGreetingRow}>
               <Ionicons

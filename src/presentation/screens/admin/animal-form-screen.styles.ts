@@ -1,8 +1,44 @@
 import { StyleSheet } from 'react-native';
 import { Theme } from '../../contexts/theme.context';
 
-const createShadow = (elevation: number, theme: Theme) => ({
-  shadowColor: theme.colors.shadow,
+const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32
+} as const;
+
+const BORDER_RADIUS = {
+  sm: 6,
+  md: 8,
+  lg: 12,
+  xl: 16,
+  xxl: 24
+} as const;
+
+const ELEVATION = {
+  sm: 2,
+  md: 4,
+  lg: 6,
+  xl: 8,
+  xxl: 12
+} as const;
+
+const TYPOGRAPHY = {
+  h1: { fontSize: 28, fontWeight: '700' as const },
+  h2: { fontSize: 24, fontWeight: '600' as const },
+  h3: { fontSize: 20, fontWeight: '600' as const },
+  body1: { fontSize: 16, fontWeight: '400' as const },
+  body2: { fontSize: 14, fontWeight: '400' as const },
+  caption: { fontSize: 12, fontWeight: '400' as const },
+  button: { fontSize: 16, fontWeight: '600' as const }
+} as const;
+
+const createShadow = (elevation: number) => ({
+  shadowColor: '#000',
   shadowOffset: {
     width: 0,
     height: elevation / 2
@@ -30,8 +66,8 @@ export const createStyles = (
       flex: 1
     },
     scrollContent: {
-      paddingHorizontal: theme.spacing.large,
-      paddingBottom: theme.spacing.xxlarge
+      paddingHorizontal: SPACING.lg,
+      paddingBottom: SPACING.xxxl
     },
     bottomSpacer: {
       height: 100
@@ -41,25 +77,24 @@ export const createStyles = (
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: theme.spacing.large,
-      paddingVertical: theme.spacing.medium,
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md,
       backgroundColor: theme.colors.surface,
-      borderBottomWidth: theme.borderWidth.hairline,
-      borderBottomColor: theme.colors.border,
-      ...createShadow(2, theme)
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.secondary,
+      ...createShadow(ELEVATION.sm)
     },
     headerTitle: {
-      fontSize: theme.typography.fontSize.xlarge,
-      fontWeight: theme.typography.fontWeight.bold,
+      ...TYPOGRAPHY.h2,
       color: theme.colors.text,
       flex: 1,
       textAlign: 'center',
-      marginHorizontal: theme.spacing.medium
+      marginHorizontal: SPACING.lg
     },
     backButton: {
       width: 44,
       height: 44,
-      borderRadius: theme.borderRadius.large,
+      borderRadius: BORDER_RADIUS.lg,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: theme.colors.surfaceVariant
@@ -67,11 +102,11 @@ export const createStyles = (
     saveButton: {
       width: 44,
       height: 44,
-      borderRadius: theme.borderRadius.large,
+      borderRadius: BORDER_RADIUS.lg,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: theme.colors.primary,
-      ...createShadow(4, theme)
+      ...createShadow(ELEVATION.md)
     },
     saveButtonDisabled: {
       backgroundColor: theme.colors.disabled,
@@ -79,66 +114,63 @@ export const createStyles = (
     },
 
     sectionContainer: {
-      marginTop: theme.spacing.xlarge,
-      marginBottom: theme.spacing.large
+      marginTop: SPACING.xl,
+      marginBottom: SPACING.lg
     },
     sectionTitle: {
-      fontSize: theme.typography.fontSize.large,
-      fontWeight: theme.typography.fontWeight.bold,
+      ...TYPOGRAPHY.h3,
       color: theme.colors.primary,
-      marginBottom: theme.spacing.medium,
-      paddingBottom: theme.spacing.small,
+      marginBottom: SPACING.lg,
+      paddingBottom: SPACING.sm,
       borderBottomWidth: 2,
-      borderBottomColor: theme.colors.primaryLight,
-      flex: 1
+      borderBottomColor: theme.colors.primaryLight
     },
 
     fieldContainer: {
-      marginBottom: theme.spacing.large
+      marginBottom: SPACING.lg
     },
     fieldLabel: {
-      fontSize: theme.typography.fontSize.medium,
-      fontWeight: theme.typography.fontWeight.medium,
+      ...TYPOGRAPHY.body1,
       color: theme.colors.text,
-      marginBottom: theme.spacing.small
+      marginBottom: SPACING.sm,
+      fontWeight: '500'
     },
     requiredMark: {
       color: theme.colors.error,
-      fontWeight: theme.typography.fontWeight.bold
+      fontWeight: '600'
     },
     textInput: {
-      fontSize: theme.typography.fontSize.medium,
+      ...TYPOGRAPHY.body1,
       color: theme.colors.text,
       backgroundColor: theme.colors.surface,
-      borderWidth: theme.borderWidths.hairline,
+      borderWidth: 1,
       borderColor: theme.colors.border,
-      borderRadius: theme.borderRadius.medium,
-      paddingHorizontal: theme.spacing.medium,
-      paddingVertical: theme.spacing.medium,
+      borderRadius: BORDER_RADIUS.md,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.md,
       minHeight: 48,
-      ...createShadow(1, theme)
+      ...createShadow(ELEVATION.sm)
     },
     textInputMultiline: {
-      minHeight: 100,
+      minHeight: 80,
       textAlignVertical: 'top',
-      paddingTop: theme.spacing.medium
+      paddingTop: SPACING.md
     },
     textInputError: {
       borderColor: theme.colors.error,
       borderWidth: 2
     },
     errorText: {
-      fontSize: theme.typography.fontSize.small,
+      ...TYPOGRAPHY.caption,
       color: theme.colors.error,
-      marginTop: theme.spacing.tiny,
-      marginLeft: theme.spacing.small,
-      fontWeight: theme.typography.fontWeight.medium
+      marginTop: SPACING.xs,
+      marginLeft: SPACING.sm
     },
     characterCount: {
-      fontSize: theme.typography.fontSize.small,
+      ...TYPOGRAPHY.caption,
       color: theme.colors.textSecondary,
       textAlign: 'right',
-      marginTop: theme.spacing.tiny
+      marginTop: SPACING.xs
     },
 
     imageSelector: {
@@ -146,76 +178,117 @@ export const createStyles = (
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: theme.borderRadius.medium,
-      paddingVertical: theme.spacing.large,
-      paddingHorizontal: theme.spacing.xlarge,
-      marginBottom: theme.spacing.medium,
+      borderRadius: BORDER_RADIUS.md,
+      paddingVertical: SPACING.lg,
+      paddingHorizontal: SPACING.xl,
+      marginBottom: SPACING.md,
       borderWidth: 2,
       borderColor: theme.colors.primary,
       borderStyle: 'dashed'
     },
     imageSelectorText: {
-      fontSize: theme.typography.fontSize.medium,
+      ...TYPOGRAPHY.body1,
       color: theme.colors.primary,
-      marginLeft: theme.spacing.medium,
-      fontWeight: theme.typography.fontWeight.medium
+      marginLeft: SPACING.md,
+      fontWeight: '500'
+    },
+    imageInput: {
+      minHeight: 100,
+      fontSize: 12,
+      fontFamily: 'monospace'
+    },
+
+    previewContainer: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: BORDER_RADIUS.lg,
+      padding: SPACING.lg,
+      marginBottom: SPACING.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...createShadow(ELEVATION.sm)
+    },
+    previewTitle: {
+      ...TYPOGRAPHY.h3,
+      color: theme.colors.forest,
+      textAlign: 'center',
+      marginBottom: SPACING.md
+    },
+    previewNote: {
+      ...TYPOGRAPHY.caption,
+      color: theme.colors.water,
+      textAlign: 'center',
+      marginTop: SPACING.md,
+      fontStyle: 'italic'
+    },
+    previewPlaceholder: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: SPACING.xxl,
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      borderColor: theme.colors.border,
+      borderRadius: BORDER_RADIUS.lg,
+      backgroundColor: theme.colors.surfaceVariant
+    },
+    previewPlaceholderText: {
+      ...TYPOGRAPHY.body2,
+      color: theme.colors.placeholder,
+      textAlign: 'center',
+      marginTop: SPACING.sm
     },
 
     imagePreviewContainer: {
       position: 'relative',
       alignItems: 'center',
-      marginBottom: theme.spacing.medium,
-      marginTop: theme.spacing.small
+      marginBottom: SPACING.md
     },
     imagePreview: {
       width: 200,
       height: 200,
-      borderRadius: theme.borderRadius.large,
-      backgroundColor: theme.colors.surfaceVariant,
-      ...createShadow(4, theme)
+      borderRadius: BORDER_RADIUS.lg,
+      backgroundColor: theme.colors.surfaceVariant
     },
     removeImageButton: {
       position: 'absolute',
       top: -8,
       right: -8,
       backgroundColor: theme.colors.surface,
-      borderRadius: 20,
-      ...createShadow(4, theme)
+      borderRadius: 12,
+      ...createShadow(ELEVATION.sm)
     },
     imageSelectionContainer: {
       alignItems: 'center',
-      padding: theme.spacing.xlarge,
+      padding: SPACING.lg,
       borderWidth: 2,
       borderStyle: 'dashed',
       borderColor: theme.colors.border,
-      borderRadius: theme.borderRadius.large,
+      borderRadius: BORDER_RADIUS.lg,
       backgroundColor: theme.colors.surfaceVariant
     },
     imageSelectionText: {
-      fontSize: theme.typography.fontSize.medium,
-      fontWeight: theme.typography.fontWeight.medium,
+      ...TYPOGRAPHY.body1,
       color: theme.colors.text,
       textAlign: 'center',
-      marginBottom: theme.spacing.large
+      marginBottom: SPACING.lg
     },
     imageButtonsContainer: {
       flexDirection: 'row',
-      gap: theme.spacing.medium,
-      marginTop: theme.spacing.small
+      gap: SPACING.md
     },
     cameraButton: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.forest,
-      paddingHorizontal: theme.spacing.large,
-      paddingVertical: theme.spacing.medium,
-      borderRadius: theme.borderRadius.large,
-      gap: theme.spacing.small,
-      ...createShadow(3, theme)
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md,
+      borderRadius: BORDER_RADIUS.lg,
+      gap: SPACING.sm,
+      ...createShadow(ELEVATION.sm)
     },
     cameraButtonText: {
-      fontSize: theme.typography.fontSize.medium,
-      fontWeight: theme.typography.fontWeight.bold,
+      ...TYPOGRAPHY.button,
       color: theme.colors.textOnPrimary
     },
     galleryButton: {
@@ -224,118 +297,72 @@ export const createStyles = (
       backgroundColor: theme.colors.surface,
       borderWidth: 2,
       borderColor: theme.colors.forest,
-      paddingHorizontal: theme.spacing.large,
-      paddingVertical: theme.spacing.medium,
-      borderRadius: theme.borderRadius.large,
-      gap: theme.spacing.small,
-      ...createShadow(2, theme)
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md,
+      borderRadius: BORDER_RADIUS.lg,
+      gap: SPACING.sm,
+      ...createShadow(ELEVATION.sm)
     },
     galleryButtonText: {
-      fontSize: theme.typography.fontSize.medium,
-      fontWeight: theme.typography.fontWeight.bold,
+      ...TYPOGRAPHY.button,
       color: theme.colors.forest
     },
 
     classSelectorContainer: {
-      marginBottom: theme.spacing.large,
-      padding: theme.spacing.large,
+      marginBottom: SPACING.lg,
+      padding: SPACING.lg,
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.large,
-      borderWidth: theme.borderWidths.hairline,
+      borderRadius: BORDER_RADIUS.lg,
+      borderWidth: 1,
       borderColor: theme.colors.border,
-      ...createShadow(2, theme)
+      ...createShadow(ELEVATION.sm)
     },
     classSelectorLabel: {
-      fontSize: theme.typography.fontSize.medium,
-      fontWeight: theme.typography.fontWeight.bold,
+      ...TYPOGRAPHY.body1,
       color: theme.colors.text,
-      flex: 1
+      marginBottom: SPACING.xs,
+      fontWeight: '600'
     },
     classSelectorSubtext: {
-      fontSize: theme.typography.fontSize.small,
+      ...TYPOGRAPHY.caption,
       color: theme.colors.textSecondary,
-      marginBottom: theme.spacing.medium
+      marginBottom: SPACING.md
     },
     classOptionsContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      gap: theme.spacing.small
+      justifyContent: 'space-between'
     },
     classOption: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: theme.spacing.medium,
-      paddingHorizontal: theme.spacing.medium,
-      borderRadius: theme.borderRadius.medium,
-      borderWidth: theme.borderWidths.hairline,
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.md,
+      borderRadius: BORDER_RADIUS.md,
+      borderWidth: 1,
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.surface,
+      marginBottom: SPACING.sm,
       flex: 1,
       minWidth: '48%',
-      ...createShadow(1, theme)
+      ...createShadow(ELEVATION.sm)
     },
     classOptionSelected: {
       backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary,
-      borderWidth: 2,
-      ...createShadow(3, theme)
+      borderColor: theme.colors.primary
     },
     classIcon: {
-      fontSize: theme.typography.fontSize.large,
-      marginRight: theme.spacing.small
+      fontSize: 16,
+      marginRight: SPACING.sm
     },
     classLabel: {
-      fontSize: theme.typography.fontSize.medium,
-      fontWeight: theme.typography.fontWeight.medium,
+      ...TYPOGRAPHY.body2,
       color: theme.colors.text,
-      flex: 1
+      flex: 1,
+      fontWeight: '500'
     },
     classLabelSelected: {
       color: theme.colors.textOnPrimary,
-      fontWeight: theme.typography.fontWeight.bold
-    },
-
-    previewContainer: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.large,
-      padding: theme.spacing.large,
-      marginBottom: theme.spacing.medium,
-      borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.border,
-      alignItems: 'center',
-      justifyContent: 'center',
-      ...createShadow(2, theme)
-    },
-    previewTitle: {
-      fontSize: theme.typography.fontSize.large,
-      fontWeight: theme.typography.fontWeight.bold,
-      color: theme.colors.forest,
-      textAlign: 'center',
-      marginBottom: theme.spacing.medium
-    },
-    previewNote: {
-      fontSize: theme.typography.fontSize.small,
-      color: theme.colors.water,
-      textAlign: 'center',
-      marginTop: theme.spacing.medium,
-      fontStyle: 'italic'
-    },
-    previewPlaceholder: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: theme.spacing.xxlarge,
-      borderWidth: 2,
-      borderStyle: 'dashed',
-      borderColor: theme.colors.border,
-      borderRadius: theme.borderRadius.large,
-      backgroundColor: theme.colors.surfaceVariant
-    },
-    previewPlaceholderText: {
-      fontSize: theme.typography.fontSize.medium,
-      color: theme.colors.placeholder,
-      textAlign: 'center',
-      marginTop: theme.spacing.small,
-      fontWeight: theme.typography.fontWeight.regular
+      fontWeight: '600'
     }
   });
