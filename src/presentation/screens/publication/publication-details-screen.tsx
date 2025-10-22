@@ -693,7 +693,6 @@ export default function PublicationDetailsScreen() {
         </View>
       )}
 
-      {/* Modales de edición */}
       <CustomModal
         isVisible={editModalVisible === 'description'}
         onClose={closeEditModal}
@@ -956,7 +955,6 @@ export default function PublicationDetailsScreen() {
         </View>
       </CustomModal>
 
-      {/* Modales de acción */}
       <CustomModal
         isVisible={actionModalVisible === 'approve'}
         onClose={closeActionModal}
@@ -1241,7 +1239,6 @@ export default function PublicationDetailsScreen() {
         )}
       </CustomModal>
 
-      {/* Modal de imagen expandida */}
       <Modal
         isVisible={isImageExpanded}
         onBackdropPress={toggleImageExpand}

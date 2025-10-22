@@ -78,8 +78,8 @@ export const createModalStyles = (theme: Theme) =>
     },
     iconContainer: {
       alignItems: 'center',
-      marginBottom: theme.spacing.large,
-      paddingTop: theme.spacing.small
+      marginBottom: theme.spacing.medium,
+      paddingTop: theme.spacing.tiny
     },
 
     footer: {
@@ -221,10 +221,12 @@ export const createModalStyles = (theme: Theme) =>
       letterSpacing: 0.1
     },
     description: {
-      fontSize: theme.typography.fontSize.small,
+      fontSize: theme.typography.fontSize.medium,
       color: theme.colors.textSecondary,
-      marginTop: theme.spacing.small,
-      lineHeight: theme.typography.lineHeight.medium
+      marginTop: theme.spacing.tiny,
+      lineHeight: theme.typography.lineHeight.large,
+      textAlign: 'center',
+      letterSpacing: 0.2
     },
     errorText: {
       fontSize: theme.typography.fontSize.small,

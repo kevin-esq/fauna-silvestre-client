@@ -118,7 +118,7 @@ const createStyles = (variables: ThemeVariablesType) =>
     stepCircle: {
       width: 36,
       height: 36,
-      borderRadius: 18,
+      borderRadius: variables['--border-radius-xlarge'],
       backgroundColor: variables['--surface-variant'] || '#EEEEEE',
       borderWidth: 2,
       borderColor: variables['--border'] || '#E0E0E0',
@@ -181,12 +181,12 @@ const createStyles = (variables: ThemeVariablesType) =>
       right: 0,
       height: 4,
       backgroundColor: variables['--border'] || '#E0E0E0',
-      borderRadius: 2
+      borderRadius: variables['--border-radius-small']
     },
     progressBar: {
       height: 4,
       backgroundColor: variables['--primary'] || '#007A33',
-      borderRadius: 2
+      borderRadius: variables['--border-radius-small']
     }
   });
 

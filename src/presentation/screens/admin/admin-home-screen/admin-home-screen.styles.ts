@@ -22,7 +22,7 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
         ios: {
           shadowColor: vars['--shadow'],
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.06,
+          shadowOpacity: isDark ? 0.4 : 0.06,
           shadowRadius: 8
         },
         android: {
@@ -37,15 +37,26 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       marginBottom: vars['--spacing-medium']
     },
     headerTextContainer: {
-      flex: 1
+      flex: 1,
+      paddingRight: vars['--spacing-small']
+    },
+    greetingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: vars['--spacing-tiny']
     },
     greeting: {
-      fontSize: 26,
+      fontSize: vars['--font-size-xxlarge'] + 2,
       fontWeight: vars['--font-weight-bold'],
       color: vars['--text'],
-      marginBottom: 4,
+      marginRight: vars['--spacing-small'],
       letterSpacing: 0.2,
-      lineHeight: 32
+      lineHeight: vars['--line-height-xxlarge']
+    },
+    subGreetingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 2
     },
     subGreeting: {
       fontSize: vars['--font-size-small'],
@@ -53,29 +64,31 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       fontWeight: vars['--font-weight-medium'],
       letterSpacing: 0.8,
       textTransform: 'uppercase',
-      opacity: 0.75
+      opacity: 0.75,
+      marginLeft: vars['--spacing-tiny']
     },
     logoutButton: {
       padding: vars['--spacing-small'],
-      marginLeft: vars['--spacing-small'],
       borderRadius: vars['--border-radius-large'],
       backgroundColor: vars['--error'] + '10'
     },
 
     infoCard: {
-      backgroundColor: vars['--surface'],
-      borderRadius: 18,
+      backgroundColor: isDark ? vars['--surface-variant'] : vars['--surface'],
+      borderRadius: vars['--border-radius-large'] + 6,
       padding: vars['--spacing-medium'],
       marginHorizontal: 2,
+      borderWidth: vars['--border-width-hairline'],
+      borderColor: vars['--border'],
       ...Platform.select({
         ios: {
           shadowColor: vars['--shadow'],
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDark ? 0.3 : 0.08,
-          shadowRadius: 8
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: isDark ? 0.4 : 0.08,
+          shadowRadius: 10
         },
         android: {
-          elevation: 3
+          elevation: isDark ? 4 : 3
         }
       })
     },
@@ -92,7 +105,7 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
     statIconContainer: {
       width: 48,
       height: 48,
-      borderRadius: 14,
+      borderRadius: vars['--border-radius-medium'] + 2,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: vars['--spacing-small']
@@ -108,17 +121,17 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       letterSpacing: 0.3
     },
     statValue: {
-      fontSize: 22,
+      fontSize: vars['--font-size-xlarge'] + 2,
       color: vars['--text'],
       fontWeight: vars['--font-weight-bold'],
       letterSpacing: -0.3
     },
     statDivider: {
-      width: 1,
+      width: vars['--border-width-hairline'],
       height: 40,
       backgroundColor: vars['--divider'],
       marginHorizontal: vars['--spacing-medium'],
-      opacity: 0.4
+      opacity: 0.5
     },
     dividerLine: {
       height: StyleSheet.hairlineWidth,
@@ -131,9 +144,6 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       alignItems: 'center',
       marginVertical: vars['--spacing-tiny'],
       paddingVertical: 2
-    },
-    infoIcon: {
-      marginRight: vars['--spacing-small']
     },
     infoText: {
       fontSize: vars['--font-size-small'],
@@ -151,27 +161,45 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 4
+      marginBottom: vars['--spacing-tiny']
+    },
+    sectionTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center'
     },
     sectionTitle: {
-      fontSize: 22,
+      fontSize: vars['--font-size-xlarge'] + 2,
       fontWeight: vars['--font-weight-bold'],
       color: vars['--text'],
-      letterSpacing: 0.2
+      letterSpacing: 0.2,
+      marginLeft: vars['--spacing-small']
+    },
+    sectionSubtitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: vars['--spacing-medium'],
+      marginTop: 2
     },
     sectionSubtitle: {
       fontSize: vars['--font-size-small'],
       color: vars['--text-secondary'],
-      marginBottom: vars['--spacing-medium'],
       fontWeight: vars['--font-weight-medium'],
       letterSpacing: 0.3,
-      opacity: 0.75
+      opacity: 0.75,
+      marginLeft: vars['--spacing-tiny']
+    },
+    seeAllButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: vars['--spacing-tiny'],
+      paddingHorizontal: vars['--spacing-small']
     },
     seeAll: {
       color: vars['--primary'],
       fontSize: vars['--font-size-medium'],
       fontWeight: vars['--font-weight-bold'],
-      letterSpacing: 0.2
+      letterSpacing: 0.2,
+      marginRight: 4
     },
 
     quickActions: {
@@ -179,7 +207,7 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
     },
     quickActionButton: {
       backgroundColor: vars['--surface'],
-      borderRadius: 18,
+      borderRadius: vars['--border-radius-large'] + 6,
       padding: vars['--spacing-medium'],
       marginBottom: vars['--spacing-medium'],
       flexDirection: 'row',
@@ -187,11 +215,12 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       justifyContent: 'space-between',
       borderWidth: vars['--border-width-hairline'],
       borderColor: vars['--border'],
+      minHeight: 72,
       ...Platform.select({
         ios: {
           shadowColor: vars['--shadow'],
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDark ? 0.3 : 0.08,
+          shadowOpacity: isDark ? 0.4 : 0.08,
           shadowRadius: 8
         },
         android: {
@@ -200,19 +229,22 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       })
     },
     quickActionButtonPressed: {
-      opacity: 0.85,
-      transform: [{ scale: 0.98 }]
+      opacity: 0.8,
+      transform: [{ scale: 0.98 }],
+      backgroundColor: isDark ? vars['--surface-variant'] : vars['--surface']
     },
     quickActionButtonDisabled: {
-      opacity: 0.5
+      opacity: 0.4,
+      backgroundColor: vars['--disabled']
     },
     quickActionContent: {
       flexDirection: 'row',
       alignItems: 'center',
-      flex: 1
+      flex: 1,
+      paddingRight: vars['--spacing-small']
     },
     quickActionIconContainer: {
-      borderRadius: 14,
+      borderRadius: vars['--border-radius-medium'] + 2,
       width: 46,
       height: 46,
       justifyContent: 'center',
@@ -224,27 +256,25 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       fontWeight: vars['--font-weight-medium'],
       color: vars['--text'],
       flex: 1,
-      letterSpacing: 0.2
+      letterSpacing: 0.2,
+      lineHeight: vars['--line-height-medium']
     },
 
-    listContent: {
-      paddingBottom: 100
-    },
     userListItem: {
       backgroundColor: vars['--surface'],
-      borderRadius: 18,
+      borderRadius: vars['--border-radius-large'] + 6,
       padding: vars['--spacing-medium'],
-      marginHorizontal: vars['--spacing-large'],
       marginBottom: vars['--spacing-medium'],
       flexDirection: 'row',
       alignItems: 'center',
       borderWidth: vars['--border-width-hairline'],
       borderColor: vars['--border'],
+      minHeight: 80,
       ...Platform.select({
         ios: {
           shadowColor: vars['--shadow'],
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDark ? 0.3 : 0.08,
+          shadowOpacity: isDark ? 0.4 : 0.08,
           shadowRadius: 8
         },
         android: {
@@ -253,8 +283,9 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       })
     },
     userListItemPressed: {
-      opacity: 0.85,
-      transform: [{ scale: 0.98 }]
+      opacity: 0.8,
+      transform: [{ scale: 0.98 }],
+      backgroundColor: isDark ? vars['--surface-variant'] : vars['--surface']
     },
     avatarContainer: {
       position: 'relative',
@@ -263,8 +294,8 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
     userAvatar: {
       width: 54,
       height: 54,
-      borderRadius: 18,
-      borderWidth: 2,
+      borderRadius: vars['--border-radius-large'] + 6,
+      borderWidth: vars['--border-width-small'],
       borderColor: vars['--border']
     },
     statusIndicator: {
@@ -273,7 +304,7 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       right: 2,
       width: 14,
       height: 14,
-      borderRadius: 7,
+      borderRadius: vars['--border-radius-small'] + 3,
       borderWidth: 2.5,
       borderColor: vars['--surface'],
       ...Platform.select({
@@ -289,37 +320,58 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       })
     },
     userInfo: {
-      flex: 1
+      flex: 1,
+      justifyContent: 'center'
     },
     userName: {
       fontSize: vars['--font-size-medium'],
       fontWeight: vars['--font-weight-medium'],
       color: vars['--text'],
       marginBottom: 4,
-      letterSpacing: 0.2
+      letterSpacing: 0.2,
+      lineHeight: vars['--line-height-medium']
+    },
+    userEmailRow: {
+      flexDirection: 'row',
+      alignItems: 'center'
     },
     userEmail: {
       fontSize: vars['--font-size-small'],
       color: vars['--text-secondary'],
       fontWeight: vars['--font-weight-regular'],
-      letterSpacing: 0.2
+      letterSpacing: 0.2,
+      marginLeft: vars['--spacing-tiny'],
+      flex: 1
     },
 
     emptyContainer: {
       alignItems: 'center',
-      padding: vars['--spacing-xxlarge'],
-      marginTop: vars['--spacing-medium']
+      justifyContent: 'center',
+      paddingVertical: vars['--spacing-xxlarge'],
+      paddingHorizontal: vars['--spacing-large'],
+      marginTop: vars['--spacing-medium'],
+      backgroundColor: vars['--surface'],
+      borderRadius: vars['--border-radius-large'] + 6,
+      borderWidth: vars['--border-width-hairline'],
+      borderColor: vars['--border'],
+      borderStyle: 'dashed'
     },
-    emptyIcon: {
-      color: vars['--text-secondary'],
-      opacity: 0.3
+    emptyIconContainer: {
+      width: 100,
+      height: 100,
+      borderRadius: vars['--border-radius-xlarge'] + 34,
+      backgroundColor: vars['--surface-variant'],
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: vars['--spacing-medium']
     },
     emptyTitle: {
       fontSize: vars['--font-size-large'],
       color: vars['--text'],
       fontWeight: vars['--font-weight-bold'],
-      marginTop: vars['--spacing-medium'],
-      letterSpacing: 0.2
+      marginTop: vars['--spacing-small'],
+      letterSpacing: 0.2,
+      textAlign: 'center'
     },
     emptySubtitle: {
       fontSize: vars['--font-size-medium'],
@@ -327,21 +379,20 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       marginTop: vars['--spacing-small'],
       textAlign: 'center',
       lineHeight: vars['--line-height-large'],
-      letterSpacing: 0.2
+      letterSpacing: 0.2,
+      paddingHorizontal: vars['--spacing-medium']
     },
 
     loadingContainer: {
       flex: 1,
       justifyContent: 'center',
-      alignItems: 'center'
-    },
-    loadingIndicator: {
-      color: vars['--primary']
+      alignItems: 'center',
+      backgroundColor: vars['--background']
     },
     loadingText: {
       marginTop: vars['--spacing-medium'],
       fontSize: vars['--font-size-medium'],
-      color: vars['--text'],
+      color: vars['--text-secondary'],
       fontWeight: vars['--font-weight-medium'],
       letterSpacing: 0.2
     },
@@ -350,25 +401,47 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      padding: vars['--spacing-xxlarge']
+      padding: vars['--spacing-xxlarge'],
+      backgroundColor: vars['--background']
     },
-    errorIcon: {
-      color: vars['--error']
+    errorIconContainer: {
+      width: 100,
+      height: 100,
+      borderRadius: vars['--border-radius-xlarge'] + 34,
+      backgroundColor: vars['--error'] + '15',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: vars['--spacing-medium']
+    },
+    errorTitle: {
+      fontSize: vars['--font-size-large'],
+      color: vars['--text'],
+      fontWeight: vars['--font-weight-bold'],
+      marginTop: vars['--spacing-small'],
+      marginBottom: vars['--spacing-small'],
+      letterSpacing: 0.2,
+      textAlign: 'center'
     },
     errorText: {
       fontSize: vars['--font-size-medium'],
-      color: vars['--text'],
-      marginTop: vars['--spacing-medium'],
+      color: vars['--text-secondary'],
+      marginTop: vars['--spacing-small'],
+      marginBottom: vars['--spacing-large'],
       textAlign: 'center',
       lineHeight: vars['--line-height-large'],
-      letterSpacing: 0.2
+      letterSpacing: 0.2,
+      paddingHorizontal: vars['--spacing-medium']
     },
     retryButton: {
       backgroundColor: vars['--primary'],
       paddingHorizontal: vars['--spacing-large'],
-      paddingVertical: 14,
-      borderRadius: 14,
-      marginTop: vars['--spacing-large'],
+      paddingVertical: vars['--spacing-medium'],
+      borderRadius: vars['--border-radius-medium'] + 2,
+      marginTop: vars['--spacing-medium'],
+      flexDirection: 'row',
+      alignItems: 'center',
+      minWidth: 150,
+      justifyContent: 'center',
       ...Platform.select({
         ios: {
           shadowColor: vars['--primary'],
@@ -385,11 +458,12 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       color: vars['--text-on-primary'],
       fontSize: vars['--font-size-medium'],
       fontWeight: vars['--font-weight-bold'],
-      letterSpacing: 0.5
+      letterSpacing: 0.5,
+      marginLeft: vars['--spacing-small']
     },
 
-    refreshControl: {
-      color: vars['--primary']
+    listContent: {
+      paddingBottom: vars['--spacing-xxlarge'] + vars['--spacing-xlarge']
     }
   });
 };

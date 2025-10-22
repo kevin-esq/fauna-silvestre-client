@@ -7,8 +7,8 @@ export const useLoginForm = () => {
   const auth = useAuth();
   const { showLoading, hideLoading } = useLoading();
 
-  const [username, setUsername] = useState('MizunoCM');
-  const [password, setPassword] = useState('Mizuno1508');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
   const handleUsernameChange = useCallback(

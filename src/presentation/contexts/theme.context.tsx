@@ -661,12 +661,12 @@ export const themeVariables = (theme: Theme) => ({
   '--spacing-xlarge': theme.spacing.xlarge,
   '--spacing-xxlarge': theme.spacing.xxlarge,
 
-  '--icon-size-tiny': `${theme.iconSizes.tiny}px`,
-  '--icon-size-small': `${theme.iconSizes.small}px`,
-  '--icon-size-medium': `${theme.iconSizes.medium}px`,
-  '--icon-size-large': `${theme.iconSizes.large}px`,
-  '--icon-size-xlarge': `${theme.iconSizes.xlarge}px`,
-  '--icon-size-xxlarge': `${theme.iconSizes.xxlarge}px`,
+  '--icon-size-tiny': theme.iconSizes.tiny,
+  '--icon-size-small': theme.iconSizes.small,
+  '--icon-size-medium': theme.iconSizes.medium,
+  '--icon-size-large': theme.iconSizes.large,
+  '--icon-size-xlarge': theme.iconSizes.xlarge,
+  '--icon-size-xxlarge': theme.iconSizes.xxlarge,
 
   '--font-size-small': theme.typography.fontSize.small,
   '--font-size-medium': theme.typography.fontSize.medium,
@@ -686,10 +686,10 @@ export const themeVariables = (theme: Theme) => ({
   '--line-height-xlarge': theme.typography.lineHeight.xlarge,
   '--line-height-xxlarge': theme.typography.lineHeight.xxlarge,
 
-  '--border-radius-small': `${theme.borderRadius.small}px`,
-  '--border-radius-medium': `${theme.borderRadius.medium}px`,
-  '--border-radius-large': `${theme.borderRadius.large}px`,
-  '--border-radius-xlarge': `${theme.borderRadius.xlarge}px`,
+  '--border-radius-small': theme.borderRadius.small,
+  '--border-radius-medium': theme.borderRadius.medium,
+  '--border-radius-large': theme.borderRadius.large,
+  '--border-radius-xlarge': theme.borderRadius.xlarge,
 
   '--border-width-hairline': theme.borderWidth.hairline,
   '--border-width-small': theme.borderWidths.small,

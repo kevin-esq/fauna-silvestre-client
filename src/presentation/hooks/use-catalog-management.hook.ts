@@ -61,19 +61,18 @@ const DEFAULT_PAGE_SIZE = 10;
 
 export const useCatalogManagement = (): CatalogManagementReturn => {
   const abortControllerRef = useRef<AbortController | null>(null);
-  const searchTimeoutRef = useRef<number | null>(null);
   const stateRef = useRef<CatalogManagementState>(null);
 
   const [state, setState] = useState<CatalogManagementState>({
     animals: [],
-    isLoading: false,
+    isLoading: true,
     isRefreshing: false,
     isLoadingMore: false,
     error: null,
     searchQuery: '',
     selectedCategory: 'Todas',
-    selectedSort: 'Nombre',
-    selectedHabitat: 'Todos',
+    selectedSort: 'name',
+    selectedHabitat: 'all',
     currentPage: 1,
     hasNextPage: true,
     totalItems: 0,
@@ -89,10 +88,86 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
+  }, []);
+
+  const filteredAnimals = useMemo(() => {
+    let filtered = [...state.animals];
+
+    if (state.searchQuery.trim()) {
+      const query = state.searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(animal => {
+        const commonNoun = animal.commonNoun?.toLowerCase() || '';
+        const specie = animal.specie?.toLowerCase() || '';
+        const category = animal.category?.toLowerCase() || '';
+
+        return (
+          commonNoun.includes(query) ||
+          specie.includes(query) ||
+          category.includes(query)
+        );
+      });
     }
+
+    if (state.selectedCategory !== 'Todas') {
+      filtered = filtered.filter(
+        animal => animal.category === state.selectedCategory
+      );
+    }
+
+    if (state.selectedHabitat !== 'all' && state.selectedHabitat !== 'Todos') {
+      filtered = filtered.filter(
+        animal => animal.habitat === state.selectedHabitat
+      );
+    }
+
+    const sortedFiltered = [...filtered];
+
+    switch (state.selectedSort) {
+      case 'name':
+      case 'Nombre':
+        sortedFiltered.sort((a, b) =>
+          (a.commonNoun || '').localeCompare(b.commonNoun || '')
+        );
+        break;
+      case 'specie':
+      case 'Especie':
+        sortedFiltered.sort((a, b) =>
+          (a.specie || '').localeCompare(b.specie || '')
+        );
+        break;
+      case 'class':
+      case 'Clase':
+        sortedFiltered.sort((a, b) =>
+          (a.category || '').localeCompare(b.category || '')
+        );
+        break;
+      default:
+        break;
+    }
+
+    return sortedFiltered;
+  }, [
+    state.animals,
+    state.searchQuery,
+    state.selectedCategory,
+    state.selectedHabitat,
+    state.selectedSort
+  ]);
+
+  const searchAnimals = useCallback((query: string) => {
+    setState(prev => ({ ...prev, searchQuery: query }));
+  }, []);
+
+  const filterByCategory = useCallback((category: string) => {
+    setState(prev => ({ ...prev, selectedCategory: category }));
+  }, []);
+
+  const sortAnimals = useCallback((sort: string) => {
+    setState(prev => ({ ...prev, selectedSort: sort }));
+  }, []);
+
+  const filterByHabitat = useCallback((habitat: string) => {
+    setState(prev => ({ ...prev, selectedHabitat: habitat }));
   }, []);
 
   const loadMoreAnimals = useCallback(async () => {
@@ -140,7 +215,6 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
 
       const refreshedAnimals = response.catalog.map(animal => ({
         ...animal,
-
         image: animal.image
           ? `${animal.image}?refresh=${Date.now()}`
           : animal.image
@@ -163,170 +237,6 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
           catchError instanceof Error
             ? catchError.message
             : 'Error refreshing animals'
-      }));
-    }
-  }, []);
-
-  const searchAnimals = useCallback((query: string) => {
-    setState(prev => ({ ...prev, searchQuery: query }));
-
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(async () => {
-      try {
-        const response = await catalogService.getAllCatalogs(
-          1,
-          DEFAULT_PAGE_SIZE
-        );
-
-        const searchedAnimals = response.catalog.map(animal => ({
-          ...animal,
-          image: animal.image
-            ? `${animal.image}?search=${Date.now()}`
-            : animal.image
-        }));
-
-        setState(prev => ({
-          ...prev,
-          animals: searchedAnimals,
-          currentPage: 1,
-          hasNextPage: response.pagination.hasNext,
-          totalItems: response.pagination.total,
-          error: null
-        }));
-      } catch (catchError) {
-        setState(prev => ({
-          ...prev,
-          error:
-            catchError instanceof Error
-              ? catchError.message
-              : 'Error searching animals'
-        }));
-      }
-    }, 500);
-  }, []);
-
-  const filterByCategory = useCallback(async (category: string) => {
-    setState(prev => ({
-      ...prev,
-      selectedCategory: category,
-      currentPage: 1,
-      hasNextPage: true
-    }));
-
-    try {
-      const response = await catalogService.getAllCatalogs(
-        1,
-        DEFAULT_PAGE_SIZE
-      );
-
-      const filteredAnimals = response.catalog.map(animal => ({
-        ...animal,
-        image: animal.image
-          ? `${animal.image}?filter=${Date.now()}`
-          : animal.image
-      }));
-
-      setState(prev => ({
-        ...prev,
-        animals: filteredAnimals,
-        currentPage: 1,
-        hasNextPage: response.pagination.hasNext,
-        totalItems: response.pagination.total,
-        error: null
-      }));
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setState(prev => ({
-          ...prev,
-          error: error.message
-        }));
-      } else {
-        setState(prev => ({
-          ...prev,
-          error: 'Error filtering animals'
-        }));
-      }
-    }
-  }, []);
-
-  const sortAnimals = useCallback(async (sort: string) => {
-    setState(prev => ({ ...prev, selectedSort: sort }));
-
-    try {
-      const response = await catalogService.getAllCatalogs(
-        1,
-        DEFAULT_PAGE_SIZE
-      );
-
-      const sortedAnimals = response.catalog.map(animal => ({
-        ...animal,
-        image: animal.image
-          ? `${animal.image}?sort=${Date.now()}`
-          : animal.image
-      }));
-
-      setState(prev => ({
-        ...prev,
-        animals: sortedAnimals,
-        currentPage: 1,
-        hasNextPage: response.pagination.hasNext,
-        totalItems: response.pagination.total,
-        error: null
-      }));
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setState(prev => ({
-          ...prev,
-          error: error.message
-        }));
-      } else {
-        setState(prev => ({
-          ...prev,
-          error: 'Error sorting animals'
-        }));
-      }
-    }
-  }, []);
-
-  const filterByHabitat = useCallback(async (habitat: string) => {
-    setState(prev => ({
-      ...prev,
-      selectedHabitat: habitat,
-      currentPage: 1,
-      hasNextPage: true
-    }));
-
-    try {
-      const response = await catalogService.getAllCatalogs(
-        1,
-        DEFAULT_PAGE_SIZE
-      );
-
-      const filteredAnimals = response.catalog.map(animal => ({
-        ...animal,
-        image: animal.image
-          ? `${animal.image}?filter=${Date.now()}`
-          : animal.image
-      }));
-
-      setState(prev => ({
-        ...prev,
-        animals: filteredAnimals,
-        currentPage: 1,
-        hasNextPage: response.pagination.hasNext,
-        totalItems: response.pagination.total,
-        error: null
-      }));
-    } catch (catchError) {
-      setState(prev => ({
-        ...prev,
-        error:
-          catchError instanceof Error
-            ? catchError.message
-            : 'Error filtering animals'
       }));
     }
   }, []);
@@ -493,68 +403,28 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
     setState(prev => ({ ...prev, error: null }));
   }, []);
 
-  const filteredAnimals = useMemo(() => {
-    let filtered = state.animals;
-
-    if (state.searchQuery.trim()) {
-      const query = state.searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        animal =>
-          animal.commonNoun.toLowerCase().includes(query) ||
-          animal.specie.toLowerCase().includes(query) ||
-          animal.category.toLowerCase().includes(query)
-      );
-    }
-
-    if (state.selectedCategory !== 'Todas') {
-      filtered = filtered.filter(
-        animal => animal.category === state.selectedCategory
-      );
-    }
-
-    if (state.selectedHabitat !== 'Todos') {
-      filtered = filtered.filter(
-        animal => animal.habitat === state.selectedHabitat
-      );
-    }
-
-    if (state.selectedSort === 'Nombre') {
-      filtered = filtered.sort((a, b) =>
-        a.commonNoun.localeCompare(b.commonNoun)
-      );
-    } else if (state.selectedSort === 'Especie') {
-      filtered = filtered.sort((a, b) => a.specie.localeCompare(b.specie));
-    }
-
-    return filtered;
-  }, [
-    state.animals,
-    state.searchQuery,
-    state.selectedCategory,
-    state.selectedHabitat,
-    state.selectedSort
-  ]);
-
   const categories = useMemo(() => {
     const uniqueCategories = [
-      ...new Set(state.animals.map(animal => animal.category))
+      ...new Set(state.animals.map(animal => animal.category).filter(Boolean))
     ];
     return ['Todas', ...uniqueCategories.sort()];
   }, [state.animals]);
 
   const sorts = useMemo(() => {
-    return ['Nombre', 'Especie'];
+    return ['name', 'specie', 'class', 'date'];
   }, []);
 
   const habitats = useMemo(() => {
     const uniqueHabitats = [
-      ...new Set(state.animals.map(animal => animal.habitat))
+      ...new Set(state.animals.map(animal => animal.habitat).filter(Boolean))
     ];
-    return ['Todos', ...uniqueHabitats.sort()];
+    return ['all', ...uniqueHabitats.sort()];
   }, [state.animals]);
 
   useEffect(() => {
     const loadInitialData = async () => {
+      setState(prev => ({ ...prev, isLoading: true }));
+
       try {
         const response = await catalogService.getAllCatalogs(
           1,

@@ -1,11 +1,10 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   SafeAreaView,
   FlatList,
-  Alert,
   RefreshControl,
   ScrollView,
   StatusBar
@@ -19,6 +18,7 @@ import { useHomeData } from '../../hooks/use-home-data.hook';
 
 import { CatalogAnimalCard } from '../catalog/catalog-animals-screen';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
+import CustomModal from '../../components/ui/custom-modal.component';
 import {
   SkeletonLoader,
   StatCardSkeleton,
@@ -196,10 +196,18 @@ const QuickActions = React.memo<{
             color={theme.colors.textOnPrimary}
           />
         </View>
-        <Text style={styles.quickActionTitle}>Nueva Publicación</Text>
-        <Text style={styles.quickActionSubtitle}>
-          Comparte tu descubrimiento
-        </Text>
+        <View style={styles.quickActionContent}>
+          <Text style={styles.quickActionTitle}>Nueva Publicación</Text>
+          <Text style={styles.quickActionSubtitle}>
+            Comparte tu descubrimiento
+          </Text>
+        </View>
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={theme.colors.textOnPrimary}
+          style={{ opacity: 0.7 }}
+        />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -217,14 +225,23 @@ const QuickActions = React.memo<{
         >
           <Ionicons name="library" size={24} color={theme.colors.forest} />
         </View>
-        <Text style={[styles.quickActionTitle, { color: theme.colors.forest }]}>
-          Explorar Catálogo
-        </Text>
-        <Text
-          style={[styles.quickActionSubtitle, { color: theme.colors.forest }]}
-        >
-          Descubre especies
-        </Text>
+        <View style={styles.quickActionContent}>
+          <Text
+            style={[styles.quickActionTitle, { color: theme.colors.forest }]}
+          >
+            Explorar Catálogo
+          </Text>
+          <Text
+            style={[styles.quickActionSubtitle, { color: theme.colors.forest }]}
+          >
+            Descubre especies
+          </Text>
+        </View>
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={theme.colors.forest}
+        />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -242,14 +259,17 @@ const QuickActions = React.memo<{
         >
           <Ionicons name="file-tray-full" size={24} color={theme.colors.info} />
         </View>
-        <Text style={[styles.quickActionTitle, { color: theme.colors.info }]}>
-          Fichas Descargadas
-        </Text>
-        <Text
-          style={[styles.quickActionSubtitle, { color: theme.colors.info }]}
-        >
-          Ver fichas guardadas
-        </Text>
+        <View style={styles.quickActionContent}>
+          <Text style={[styles.quickActionTitle, { color: theme.colors.info }]}>
+            Fichas Descargadas
+          </Text>
+          <Text
+            style={[styles.quickActionSubtitle, { color: theme.colors.info }]}
+          >
+            Ver fichas guardadas
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={theme.colors.info} />
       </TouchableOpacity>
     </View>
   </View>
@@ -382,10 +402,11 @@ const LoadingState = React.memo<{
 ));
 
 const HomeScreen: React.FC = React.memo(() => {
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const { user, signOut } = useAuth();
-  const { navigate, push } = useNavigationActions();
+  const { push, navigateAndReset } = useNavigationActions();
   const styles = createStyles(theme);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const {
     state,
@@ -402,24 +423,21 @@ const HomeScreen: React.FC = React.memo(() => {
   });
 
   const handleLogout = useCallback(() => {
-    Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro de que quieres cerrar sesión?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Cerrar sesión', onPress: signOut, style: 'destructive' }
-      ],
-      { cancelable: true }
-    );
+    setShowLogoutModal(true);
+  }, []);
+
+  const confirmLogout = useCallback(() => {
+    setShowLogoutModal(false);
+    signOut();
   }, [signOut]);
 
   const handleAddPublication = useCallback(() => {
-    navigate('AddPublication' as never);
-  }, [navigate]);
+    navigateAndReset('AddPublication' as never);
+  }, [navigateAndReset]);
 
   const handleViewCatalog = useCallback(() => {
-    navigate('Catalog');
-  }, [navigate]);
+    push('Catalog');
+  }, [push]);
 
   const handleDownloadedCards = useCallback(() => {
     push('DownloadedFiles');
@@ -427,9 +445,9 @@ const HomeScreen: React.FC = React.memo(() => {
 
   const handleAnimalPress = useCallback(
     (animal: AnimalModelResponse) => {
-      navigate('AnimalDetails', { animal });
+      push('AnimalDetails', { animal });
     },
-    [navigate]
+    [push]
   );
 
   const renderAnimalItem = useCallback(
@@ -543,6 +561,44 @@ const HomeScreen: React.FC = React.memo(() => {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      <CustomModal
+        isVisible={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title="Cerrar Sesión"
+        size="small"
+        type="confirmation"
+        icon={
+          <View
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              backgroundColor: colors.error + '15',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}
+          >
+            <Ionicons name="log-out-outline" size={32} color={colors.error} />
+          </View>
+        }
+        description="¿Estás seguro de que quieres cerrar sesión?"
+        centered
+        showFooter
+        footerAlignment="space-between"
+        buttons={[
+          {
+            label: 'Cancelar',
+            onPress: () => setShowLogoutModal(false),
+            variant: 'outline'
+          },
+          {
+            label: 'Cerrar sesión',
+            onPress: confirmLogout,
+            variant: 'danger'
+          }
+        ]}
+      />
     </SafeAreaView>
   );
 });

@@ -41,7 +41,6 @@ export const createStyles = (vars: ThemeVariablesType) =>
     },
     button: {
       marginBottom: vars['--spacing-medium'],
-      borderRadius: vars['--border-radius-medium'],
       paddingVertical: 4
     },
     forgotPassword: {
