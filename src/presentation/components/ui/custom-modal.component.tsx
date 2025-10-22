@@ -1,5 +1,5 @@
 import { useTheme } from '@/presentation/contexts/theme.context';
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,8 @@ import {
   Pressable,
   ViewStyle,
   TextStyle,
-  ActivityIndicator
+  ActivityIndicator,
+  useWindowDimensions
 } from 'react-native';
 import { Animation, CustomAnimation } from 'react-native-animatable';
 import Modal from 'react-native-modal';
@@ -147,31 +148,52 @@ const CustomModal = React.memo(
   }: CustomModalProps): React.ReactElement => {
     const themeContext = useTheme();
     const { theme } = themeContext;
-    const styles = createModalStyles(theme);
+    const { width: screenWidth } = useWindowDimensions();
+    const styles = useMemo(() => createModalStyles(theme), [theme]);
     const [inputFocused, setInputFocused] = useState(false);
 
-    const handleBackdropPress =
-      onBackdropPress || (closeOnBackdrop ? onClose : undefined);
-    const handleBackButtonPress =
-      onBackButtonPress || (closeOnBackButton ? onClose : undefined);
+    const handleBackdropPress = useMemo(
+      () => onBackdropPress || (closeOnBackdrop ? onClose : undefined),
+      [onBackdropPress, closeOnBackdrop, onClose]
+    );
+    const handleBackButtonPress = useMemo(
+      () => onBackButtonPress || (closeOnBackButton ? onClose : undefined),
+      [onBackButtonPress, closeOnBackButton, onClose]
+    );
 
-    const getSizeStyle = useCallback((): ViewStyle => {
+    const getSizeStyle = useMemo((): ViewStyle => {
+      // Calcular el ancho máximo considerando el padding/margin del modal
+      const modalHorizontalSpacing = theme.spacing.medium * 2; // margin left + right
+      const safeMaxWidth = screenWidth - modalHorizontalSpacing;
+
       switch (size) {
         case 'small':
-          return { width: '85%', maxWidth: maxWidth || 400 };
+          return {
+            width: '85%',
+            maxWidth: Math.min(maxWidth || 400, safeMaxWidth)
+          };
         case 'medium':
-          return { width: '92%', maxWidth: maxWidth || 600 };
+          return {
+            width: '92%',
+            maxWidth: Math.min(maxWidth || 600, safeMaxWidth)
+          };
         case 'large':
-          return { width: '95%', maxWidth: maxWidth || 800 };
+          return {
+            width: '95%',
+            maxWidth: Math.min(maxWidth || 800, safeMaxWidth)
+          };
         case 'full':
           return {
-            maxWidth: maxWidth || '100%',
-            width: '100%'
+            width: '100%',
+            maxWidth: safeMaxWidth
           };
         default:
-          return { width: '92%', maxWidth: maxWidth || 600 };
+          return {
+            width: '92%',
+            maxWidth: Math.min(maxWidth || 600, safeMaxWidth)
+          };
       }
-    }, [size, maxWidth]);
+    }, [size, maxWidth, screenWidth, theme.spacing.medium]);
 
     const characterCountInfo = useMemo(() => {
       if (!showCharacterCount || !inputMaxLength) return null;
@@ -212,7 +234,7 @@ const CustomModal = React.memo(
                 styles.closeButton,
                 pressed && styles.closeButtonPressable
               ]}
-              hitSlop={12}
+              hitSlop={theme.spacing.medium}
               accessibilityLabel="Cerrar modal"
               accessibilityRole="button"
             >
@@ -246,7 +268,9 @@ const CustomModal = React.memo(
                 style={[
                   styles.input,
                   {
-                    width: maxWidth ? maxWidth - 64 : '100%'
+                    width: maxWidth
+                      ? maxWidth - theme.spacing.large * 4
+                      : '100%'
                   },
                   inputMultiline && styles.textArea,
                   inputFocused && styles.inputFocused
@@ -293,6 +317,8 @@ const CustomModal = React.memo(
             showsVerticalScrollIndicator={true}
             bounces={true}
             persistentScrollbar={true}
+            removeClippedSubviews={true}
+            scrollEventThrottle={16}
           >
             {bodyContent}
           </ScrollView>
@@ -399,12 +425,12 @@ const CustomModal = React.memo(
         hideModalContentWhileAnimating={hideModalContentWhileAnimating}
         avoidKeyboard={avoidKeyboard}
         style={[
-          size === 'full' ? { margin: 0 } : { margin: 16 },
+          size === 'full' ? { margin: 0 } : { margin: theme.spacing.medium },
           { alignItems: 'center', justifyContent: 'center' },
           modalStyle
         ]}
       >
-        <View style={[styles.modalContent, getSizeStyle(), contentStyle]}>
+        <View style={[styles.modalContent, getSizeStyle, contentStyle]}>
           {renderHeader()}
           {renderBody()}
           {renderFooter()}

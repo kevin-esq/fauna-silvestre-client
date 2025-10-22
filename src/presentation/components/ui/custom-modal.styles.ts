@@ -41,9 +41,9 @@ export const createModalStyles = (theme: Theme) =>
       letterSpacing: -0.5
     },
     closeButton: {
-      width: 32,
-      height: 32,
-      borderRadius: theme.borderRadius.large,
+      width: theme.spacing.xlarge,
+      height: theme.spacing.xlarge,
+      borderRadius: theme.borderRadius.medium,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.surfaceVariant
@@ -53,9 +53,9 @@ export const createModalStyles = (theme: Theme) =>
       transform: [{ scale: 0.95 }]
     },
     closeButtonIcon: {
-      fontSize: 18,
+      fontSize: theme.typography.fontSize.large + 2,
       color: theme.colors.textSecondary,
-      fontWeight: '600'
+      fontWeight: theme.typography.fontWeight.bold
     },
 
     body: {
@@ -70,7 +70,7 @@ export const createModalStyles = (theme: Theme) =>
       padding: 0
     },
     bodyScrollable: {
-      maxHeight: 500
+      maxHeight: theme.spacing.xxlarge * 10.5
     },
     contentCentered: {
       alignItems: 'center',
@@ -110,12 +110,12 @@ export const createModalStyles = (theme: Theme) =>
 
     button: {
       paddingVertical: theme.spacing.medium,
-      paddingHorizontal: theme.spacing.large + theme.spacing.small,
+      paddingHorizontal: theme.spacing.large,
       borderRadius: theme.borderRadius.medium,
       alignItems: 'center',
       justifyContent: 'center',
-      minWidth: 100,
-      minHeight: 44
+      minWidth: theme.spacing.xlarge * 3,
+      minHeight: theme.spacing.xlarge + theme.spacing.medium
     },
     buttonPrimary: {
       backgroundColor: theme.primaryButton,
@@ -162,6 +162,7 @@ export const createModalStyles = (theme: Theme) =>
     buttonText: {
       fontSize: theme.typography.fontSize.medium,
       fontWeight: theme.typography.fontWeight.medium,
+      lineHeight: theme.typography.lineHeight.medium,
       letterSpacing: 0.2
     },
     buttonTextPrimary: {
@@ -184,9 +185,11 @@ export const createModalStyles = (theme: Theme) =>
       paddingHorizontal: theme.spacing.medium,
       paddingVertical: theme.spacing.medium,
       fontSize: theme.typography.fontSize.medium,
+      fontWeight: theme.typography.fontWeight.regular,
+      lineHeight: theme.typography.lineHeight.large,
       color: theme.textOnModalBackground,
       backgroundColor: theme.colors.surface,
-      minHeight: 48,
+      minHeight: theme.spacing.xxlarge,
       width: '100%',
       maxWidth: '100%',
       flexShrink: 1,
@@ -209,13 +212,15 @@ export const createModalStyles = (theme: Theme) =>
       borderWidth: theme.borderWidths.small
     },
     textArea: {
-      minHeight: 120,
+      minHeight: theme.spacing.xxlarge * 2.5,
       textAlignVertical: 'top',
-      paddingTop: theme.spacing.medium
+      paddingTop: theme.spacing.medium,
+      lineHeight: theme.typography.lineHeight.large
     },
     label: {
       fontSize: theme.typography.fontSize.medium,
       fontWeight: theme.typography.fontWeight.medium,
+      lineHeight: theme.typography.lineHeight.medium,
       color: theme.textOnModalBackground,
       marginBottom: theme.spacing.small,
       letterSpacing: 0.1
@@ -237,10 +242,11 @@ export const createModalStyles = (theme: Theme) =>
 
     characterCount: {
       fontSize: theme.typography.fontSize.small,
+      fontWeight: theme.typography.fontWeight.medium,
+      lineHeight: theme.typography.lineHeight.small,
       color: theme.colors.textSecondary,
       textAlign: 'right',
-      marginTop: theme.spacing.tiny,
-      fontWeight: theme.typography.fontWeight.medium
+      marginTop: theme.spacing.tiny
     },
     characterCountWarning: {
       color: theme.colors.warning
