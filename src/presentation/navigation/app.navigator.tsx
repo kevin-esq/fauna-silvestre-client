@@ -254,7 +254,7 @@ const AppNavigator: React.FC = () => {
       case 'admin':
         return <stacks.adminRootStack />;
       case 'user':
-        return <stacks.adminRootStack />;
+        return <stacks.userRootStack />;
       default:
         console.warn('Unknown navigation state:', navigationState);
         return <SplashScreen />;
