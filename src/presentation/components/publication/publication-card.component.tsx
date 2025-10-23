@@ -92,8 +92,14 @@ const PublicationContent = React.memo<PublicationContentProps>(
     const { theme, colors, iconSizes } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
 
-    const { commonNoun, description, animalState, location, createdDate } =
-      publication;
+    const {
+      commonNoun,
+      description,
+      animalState,
+      location,
+      createdDate,
+      acceptedDate
+    } = publication;
 
     const statusData = useMemo(() => STATUS_CONFIG[status], [status]);
     const animalData = useMemo(
@@ -103,7 +109,7 @@ const PublicationContent = React.memo<PublicationContentProps>(
       [animalState]
     );
 
-    const formattedDate = useMemo(
+    const formattedCreatedDate = useMemo(
       () =>
         createdDate
           ? format(new Date(createdDate), "dd 'de' MMMM yyyy, HH:mm", {
@@ -111,6 +117,16 @@ const PublicationContent = React.memo<PublicationContentProps>(
             })
           : null,
       [createdDate]
+    );
+
+    const formattedAcceptedDate = useMemo(
+      () =>
+        acceptedDate
+          ? format(new Date(acceptedDate), "dd 'de' MMMM yyyy, HH:mm", {
+              locale: es
+            })
+          : null,
+      [acceptedDate]
     );
 
     const truncateDescription = useCallback(
@@ -128,14 +144,27 @@ const PublicationContent = React.memo<PublicationContentProps>(
           <StatusBadge status={status} statusData={statusData} />
         </View>
 
-        {formattedDate && (
+        {formattedCreatedDate && (
           <View style={styles.metaRow}>
             <FontAwesome
               name="calendar"
               size={iconSizes.small - 4}
               color={colors.textSecondary}
             />
-            <Text style={styles.dateText}>{formattedDate}</Text>
+            <Text style={styles.dateText}>Creado: {formattedCreatedDate}</Text>
+          </View>
+        )}
+
+        {formattedAcceptedDate && (
+          <View style={styles.metaRow}>
+            <FontAwesome
+              name="check-circle"
+              size={iconSizes.small - 4}
+              color={colors.success}
+            />
+            <Text style={styles.dateText}>
+              Aceptado: {formattedAcceptedDate}
+            </Text>
           </View>
         )}
 

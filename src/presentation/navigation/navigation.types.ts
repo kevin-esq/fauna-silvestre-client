@@ -16,6 +16,7 @@ export type RootStackParamList = {
   ReviewPublication: undefined;
   ViewPublications: undefined;
   CatalogManagement: undefined;
+  Notifications: undefined;
   PublicationDetails: {
     publication: PublicationModelResponse;
     status: PublicationStatus;

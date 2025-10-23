@@ -26,7 +26,9 @@ import favicon from '@/assets/favicon.png';
 import { Theme, useTheme } from '@/presentation/contexts/theme.context';
 import { createStyles } from './top-tabs-navigation-bar.styles';
 import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
+import { useNotifications } from '@/presentation/hooks/use-notifications.hook';
 import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
+import HelpModal from './help-modal.component';
 
 type TabButtonProps = {
   routeKey: string;
@@ -38,6 +40,8 @@ type TabButtonProps = {
   activeColor: string;
   inactiveColor: string;
   styles: ReturnType<typeof createStyles>;
+  badgeCount?: number;
+  theme: Theme;
 };
 
 const TabButton = React.memo(
@@ -50,7 +54,9 @@ const TabButton = React.memo(
     tabWidth,
     activeColor,
     inactiveColor,
-    styles
+    styles,
+    badgeCount,
+    theme
   }: TabButtonProps) => {
     const scaleAnim = useRef(new RNAnimated.Value(1)).current;
     const opacityAnim = useRef(
@@ -126,6 +132,23 @@ const TabButton = React.memo(
               focused: isFocused,
               color: isFocused ? activeColor : inactiveColor
             })}
+            {badgeCount !== undefined && badgeCount > 0 && (
+              <View
+                style={[
+                  styles.tabBadge,
+                  {
+                    backgroundColor: theme.colors.leaf,
+                    borderColor: theme.colors.surface
+                  }
+                ]}
+              >
+                <Text
+                  style={[styles.tabBadgeText, { color: theme.colors.surface }]}
+                >
+                  {badgeCount > 99 ? '99+' : badgeCount}
+                </Text>
+              </View>
+            )}
           </View>
         </TouchableOpacity>
       </RNAnimated.View>
@@ -383,17 +406,82 @@ const CreatePostButton = React.memo(
 
 CreatePostButton.displayName = 'CreatePostButton';
 
+const HelpButton = React.memo(
+  ({ onPress, theme }: { onPress: () => void; theme: Theme }) => {
+    const { colors, spacing, iconSizes } = theme;
+    const scaleAnim = useRef(new RNAnimated.Value(1)).current;
+
+    const handlePressIn = () => {
+      RNAnimated.spring(scaleAnim, {
+        toValue: 0.88,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true
+      }).start();
+    };
+
+    const handlePressOut = () => {
+      RNAnimated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 60,
+        friction: 7,
+        useNativeDriver: true
+      }).start();
+    };
+
+    const buttonStyle = useMemo(
+      () => ({
+        width: iconSizes.large + spacing.small + spacing.tiny,
+        height: iconSizes.large + spacing.small + spacing.tiny,
+        borderRadius: (iconSizes.large + spacing.small + spacing.tiny) / 2,
+        backgroundColor: `${colors.water}15`,
+        justifyContent: 'center' as const,
+        alignItems: 'center' as const,
+        borderWidth: 2,
+        borderColor: colors.water
+      }),
+      [iconSizes, spacing, colors]
+    );
+
+    return (
+      <RNAnimated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <TouchableOpacity
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={buttonStyle}
+          activeOpacity={0.9}
+          accessibilityRole="button"
+          accessibilityLabel="Ayuda y tutorial"
+          accessibilityHint="Abre la guía de uso de la aplicación"
+        >
+          <FontAwesome5Icon
+            name="question-circle"
+            size={iconSizes.medium}
+            color={colors.water}
+            solid
+          />
+        </TouchableOpacity>
+      </RNAnimated.View>
+    );
+  }
+);
+
+HelpButton.displayName = 'HelpButton';
+
 export default function TopTabsNavigationBar({
   state,
   descriptors,
   navigation
 }: MaterialTopTabBarProps): React.JSX.Element {
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
+  const { colors } = theme;
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const position = useSharedValue(state.index);
-  const [notificationCount, setNotificationCount] = useState(3);
   const { navigateAndReset } = useNavigationActions();
+  const { unreadCount } = useNotifications();
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const { tabWidth, availableWidth, indicatorWidth } = useMemo(() => {
     const horizontalInsets = insets.left + insets.right;
@@ -471,9 +559,12 @@ export default function TopTabsNavigationBar({
     navigateAndReset('AddPublication');
   }, [navigateAndReset]);
 
-  const handleNotifications = useCallback(() => {
-    console.log('Abrir notificaciones');
-    setNotificationCount(0);
+  const handleHelp = useCallback(() => {
+    setShowHelpModal(true);
+  }, []);
+
+  const handleCloseHelp = useCallback(() => {
+    setShowHelpModal(false);
   }, []);
 
   return (
@@ -503,12 +594,7 @@ export default function TopTabsNavigationBar({
         </View>
 
         <View style={styles.headerRight}>
-          <NotificationButton
-            onPress={handleNotifications}
-            notificationCount={notificationCount}
-            theme={theme}
-          />
-
+          <HelpButton onPress={handleHelp} theme={theme} />
           <CreatePostButton onPress={handleCreatePost} theme={theme} />
         </View>
       </View>
@@ -518,6 +604,7 @@ export default function TopTabsNavigationBar({
           {state.routes.map((route, index) => {
             const descriptor = descriptors[route.key];
             const isFocused = state.index === index;
+            const isNotificationsTab = route.name === 'Notifications';
 
             return (
               <TabButton
@@ -531,6 +618,8 @@ export default function TopTabsNavigationBar({
                 activeColor={colors.primary}
                 inactiveColor={colors.textSecondary}
                 styles={styles}
+                badgeCount={isNotificationsTab ? unreadCount : undefined}
+                theme={theme}
               />
             );
           })}
@@ -546,6 +635,9 @@ export default function TopTabsNavigationBar({
           />
         </View>
       </View>
+
+      {/* Help Modal */}
+      <HelpModal visible={showHelpModal} onClose={handleCloseHelp} />
     </View>
   );
 }

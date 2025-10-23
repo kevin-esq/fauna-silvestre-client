@@ -14,8 +14,7 @@ import {
   TouchableOpacity,
   NativeSyntheticEvent,
   NativeScrollEvent,
-  Animated,
-  TextInput
+  Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -25,6 +24,7 @@ import PublicationCard, {
   ITEM_HEIGHT
 } from '../../components/publication/publication-card.component';
 import PublicationSkeleton from '../../components/ui/publication-skeleton.component';
+import SearchBar from '../../components/ui/search-bar.component';
 import PublicationFilters, {
   FilterOptions
 } from '../../components/publication/publication-filters.component';
@@ -73,8 +73,8 @@ const CARD_MARGIN = 16;
 const ACTUAL_ITEM_HEIGHT = ITEM_HEIGHT + CARD_MARGIN;
 
 const useSearch = (publications: PublicationModelResponse[]) => {
+  const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
   const searchTimeoutRef = useRef<number | null>(null);
 
   const filteredPublications = useMemo(() => {
@@ -97,6 +97,8 @@ const useSearch = (publications: PublicationModelResponse[]) => {
   }, [publications, searchQuery]);
 
   const handleSearchChange = useCallback((text: string) => {
+    setInputValue(text);
+
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
@@ -107,7 +109,11 @@ const useSearch = (publications: PublicationModelResponse[]) => {
   }, []);
 
   const clearSearch = useCallback(() => {
+    setInputValue('');
     setSearchQuery('');
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
   }, []);
 
   useEffect(() => {
@@ -119,13 +125,12 @@ const useSearch = (publications: PublicationModelResponse[]) => {
   }, []);
 
   return {
+    inputValue,
     searchQuery,
     setSearchQuery,
     filteredPublications,
     handleSearchChange,
-    clearSearch,
-    isFocused,
-    setIsFocused
+    clearSearch
   };
 };
 
@@ -335,95 +340,6 @@ const useScrollOptimization = (
   return { handleScroll };
 };
 
-const SearchBar: React.FC<{
-  value: string;
-  onChangeText: (text: string) => void;
-  onClear: () => void;
-  isFocused: boolean;
-  onFocus: () => void;
-  onBlur: () => void;
-  resultsCount?: number;
-  totalCount?: number;
-}> = React.memo(
-  ({
-    value,
-    onChangeText,
-    onClear,
-    isFocused,
-    onFocus,
-    onBlur,
-    resultsCount,
-    totalCount
-  }) => {
-    const { theme } = useTheme();
-    const styles = useMemo(() => createPublicationScreenStyles(theme), [theme]);
-    const [inputValue, setInputValue] = useState(value);
-
-    const handleChange = (text: string) => {
-      setInputValue(text);
-      onChangeText(text);
-    };
-
-    const handleClear = () => {
-      setInputValue('');
-      onClear();
-    };
-
-    return (
-      <View style={styles.searchContainer}>
-        <View
-          style={[
-            styles.searchInputContainer,
-            isFocused && styles.searchInputFocused
-          ]}
-        >
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar publicaciones..."
-            placeholderTextColor={theme.colors.placeholder}
-            value={inputValue}
-            onChangeText={handleChange}
-            onFocus={onFocus}
-            onBlur={onBlur}
-          />
-          {inputValue.length > 0 && (
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={handleClear}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={styles.clearIcon}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {inputValue.length > 0 &&
-          resultsCount !== undefined &&
-          totalCount !== undefined && (
-            <View style={styles.searchResultsCount}>
-              <Text style={styles.searchResultsText}>
-                Mostrando{' '}
-                <Text style={styles.searchResultsHighlight}>
-                  {resultsCount}
-                </Text>{' '}
-                de {totalCount} publicaciones
-              </Text>
-              {resultsCount === 0 && (
-                <TouchableOpacity
-                  style={styles.clearSearchButton}
-                  onPress={handleClear}
-                >
-                  <Text style={styles.clearSearchText}>Limpiar búsqueda</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-      </View>
-    );
-  }
-);
-
 const StatusTabs: React.FC<{
   selectedStatus: PublicationStatus;
   onStatusChange: (status: PublicationStatus) => void;
@@ -591,13 +507,11 @@ const StatusTabs: React.FC<{
 
 const PublicationScreen: React.FC = () => {
   const { user } = useAuth();
-  const theme = useTheme();
+  const themeContext = useTheme();
+  const theme = themeContext.theme;
   const insets = useSafeAreaInsets();
   const { navigate } = useNavigationActions();
-  const styles = useMemo(
-    () => createPublicationScreenStyles(theme.theme),
-    [theme]
-  );
+  const styles = useMemo(() => createPublicationScreenStyles(theme), [theme]);
 
   const [selectedStatus, setSelectedStatus] = useState<PublicationStatus>(
     user?.role === 'Admin'
@@ -756,10 +670,7 @@ const PublicationScreen: React.FC = () => {
       return (
         <View style={styles.listFooter}>
           <View style={styles.footerLoadingContainer}>
-            <ActivityIndicator
-              size="small"
-              color={theme.theme.colors.primary}
-            />
+            <ActivityIndicator size="small" color={theme.colors.primary} />
             <Text style={styles.footerLoadingText}>
               Cargando más publicaciones...
             </Text>
@@ -822,10 +733,7 @@ const PublicationScreen: React.FC = () => {
         {errorState.showDelayedError ? (
           <View style={styles.emptyStateContent}>
             <View style={styles.emptyStateIconContainer}>
-              <ActivityIndicator
-                size="large"
-                color={theme.theme.colors.primary}
-              />
+              <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
             <Text style={styles.emptyStateTitle}>
               Conectando con el servidor
@@ -943,6 +851,7 @@ const PublicationScreen: React.FC = () => {
             zIndex: 1000
           }
         ]}
+        pointerEvents="box-none"
       >
         <TouchableOpacity
           style={styles.collapseHeaderButton}
@@ -980,20 +889,17 @@ const PublicationScreen: React.FC = () => {
         )}
 
         <SearchBar
-          value={search.searchQuery}
+          value={search.inputValue}
           onChangeText={search.handleSearchChange}
           onClear={search.clearSearch}
-          isFocused={search.isFocused}
-          onFocus={() => search.setIsFocused(true)}
-          onBlur={() => search.setIsFocused(false)}
-          resultsCount={search.filteredPublications.length}
-          totalCount={publicationData.publications.length}
+          placeholder="Buscar publicaciones..."
+          theme={theme}
         />
 
         <PublicationFilters
           publications={search.filteredPublications}
           onFilterChange={handleFilterChange}
-          theme={theme}
+          theme={themeContext}
           isVisible={isHeaderVisible}
         />
 
@@ -1069,10 +975,10 @@ const PublicationScreen: React.FC = () => {
             <RefreshControl
               refreshing={publicationData.isRefreshing}
               onRefresh={operations.handleRefresh}
-              colors={[theme.theme.colors.primary]}
-              tintColor={theme.theme.colors.primary}
+              colors={[theme.colors.primary]}
+              tintColor={theme.colors.primary}
               title="Actualizando..."
-              titleColor={theme.theme.colors.textSecondary}
+              titleColor={theme.colors.textSecondary}
             />
           }
           onEndReached={operations.handleLoadMore}
