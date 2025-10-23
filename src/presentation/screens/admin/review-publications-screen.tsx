@@ -137,6 +137,7 @@ const usePublicationLoader = () => {
 };
 
 const useSearch = (publications: PublicationModelResponse[]) => {
+  const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const searchTimeoutRef = useRef<number | null>(null);
@@ -161,6 +162,8 @@ const useSearch = (publications: PublicationModelResponse[]) => {
   }, [publications, searchQuery]);
 
   const handleSearchChange = useCallback((text: string) => {
+    setInputValue(text);
+
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
@@ -171,7 +174,11 @@ const useSearch = (publications: PublicationModelResponse[]) => {
   }, []);
 
   const clearSearch = useCallback(() => {
+    setInputValue('');
     setSearchQuery('');
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
   }, []);
 
   useEffect(() => {
@@ -183,6 +190,7 @@ const useSearch = (publications: PublicationModelResponse[]) => {
   }, []);
 
   return {
+    inputValue,
     searchQuery,
     setSearchQuery,
     filteredPublications,
@@ -657,7 +665,7 @@ const ReviewPublicationsScreen: React.FC = () => {
 
         <View style={styles.searchContainer}>
           <SearchBar
-            value={search.searchQuery}
+            value={search.inputValue}
             onChangeText={search.handleSearchChange}
             placeholder="Buscar publicaciones..."
             theme={theme}

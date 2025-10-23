@@ -16,6 +16,7 @@ interface CatalogManagementState {
   isRefreshing: boolean;
   isLoadingMore: boolean;
   error: string | null;
+  inputValue: string;
   searchQuery: string;
   selectedCategory: string;
   selectedSort: string;
@@ -62,6 +63,7 @@ const DEFAULT_PAGE_SIZE = 10;
 export const useCatalogManagement = (): CatalogManagementReturn => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const stateRef = useRef<CatalogManagementState>(null);
+  const searchTimeoutRef = useRef<number | null>(null);
 
   const [state, setState] = useState<CatalogManagementState>({
     animals: [],
@@ -69,6 +71,7 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
     isRefreshing: false,
     isLoadingMore: false,
     error: null,
+    inputValue: '',
     searchQuery: '',
     selectedCategory: 'Todas',
     selectedSort: 'name',
@@ -87,6 +90,10 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
+    }
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
     }
   }, []);
 
@@ -155,7 +162,15 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
   ]);
 
   const searchAnimals = useCallback((query: string) => {
-    setState(prev => ({ ...prev, searchQuery: query }));
+    setState(prev => ({ ...prev, inputValue: query }));
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setState(prev => ({ ...prev, searchQuery: query }));
+    }, 300);
   }, []);
 
   const filterByCategory = useCallback((category: string) => {

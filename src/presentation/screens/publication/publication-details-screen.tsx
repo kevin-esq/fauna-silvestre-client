@@ -584,6 +584,16 @@ export default function PublicationDetailsScreen() {
           styles={styles}
         />
 
+        {publication.acceptedDate && (
+          <InfoSection
+            title="Fecha de Aceptación"
+            icon="checkmark-circle"
+            content={formatDate(publication.acceptedDate)}
+            theme={theme}
+            styles={styles}
+          />
+        )}
+
         {isAdmin && publication.author && (
           <InfoSection
             title="Usuario"

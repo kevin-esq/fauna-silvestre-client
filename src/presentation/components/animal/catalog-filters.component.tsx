@@ -1,364 +1,591 @@
-import React, {
-  useState,
-  useMemo,
-  useCallback,
-  useRef,
-  useEffect
-} from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
-  TextInput,
+  Animated,
   StyleSheet,
   Platform
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { Theme } from '../../contexts/theme.context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import { AnimalModelResponse } from '@/domain/models/animal.models';
+import { ThemeContextType } from '@/presentation/contexts/theme.context';
+
+export type CategoryOption =
+  | 'Todas'
+  | 'Mamíferos'
+  | 'Aves'
+  | 'Reptiles'
+  | 'Anfibios'
+  | 'Peces';
+
+export type SortOption = 'name' | 'specie' | 'class' | 'date';
+
+export interface FilterOptions {
+  category: CategoryOption;
+  sortBy: SortOption;
+}
 
 interface CatalogFiltersProps {
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  selectedCategory: string;
-  onCategoryChange: (category: string) => void;
-  selectedSort: string;
-  onSortChange: (sort: string) => void;
-  isVisible: boolean;
-  theme: Theme;
-  onVisibilityChange?: (visible: boolean) => void;
+  animals: AnimalModelResponse[];
+  onFilterChange: (
+    filtered: AnimalModelResponse[],
+    options: FilterOptions
+  ) => void;
+  theme: ThemeContextType;
+  hideToggle?: boolean;
+  defaultExpanded?: boolean;
+  isVisible?: boolean;
+  onExpandChange?: (isExpanded: boolean) => void;
 }
 
-interface FilterChipProps {
+interface CategoryConfig {
+  value: CategoryOption;
   label: string;
   icon: string;
-  isSelected: boolean;
-  onPress: () => void;
-  theme: Theme;
-  color?: string;
+  iconType: 'ionicons' | 'material' | 'fa5';
 }
 
-const VERTEBRATE_CLASSES = [
-  { id: 'Todas', label: 'Todas', icon: 'paw-outline' },
-  { id: 'Mamíferos', label: 'Mamíferos', icon: 'paw' },
-  { id: 'Aves', label: 'Aves', icon: 'airplane' },
-  { id: 'Reptiles', label: 'Reptiles', icon: 'git-branch' },
-  { id: 'Anfibios', label: 'Anfibios', icon: 'water' },
-  { id: 'Peces', label: 'Peces', icon: 'fish' }
-];
-
-const SORT_OPTIONS = [
-  { id: 'name', label: 'Nombre', icon: 'text' },
-  { id: 'specie', label: 'Especie', icon: 'leaf' },
-  { id: 'class', label: 'Clase', icon: 'layers' },
-  { id: 'date', label: 'Fecha', icon: 'calendar' }
-];
-
-const FilterChip: React.FC<FilterChipProps> = React.memo(
-  ({ label, icon, isSelected, onPress, theme, color }) => {
-    const chipColor = color || theme.colors.primary;
-
-    return (
-      <TouchableOpacity
-        style={[
-          createChipStyles(theme).chip,
-          isSelected && [
-            createChipStyles(theme).chipSelected,
-            { backgroundColor: chipColor, borderColor: chipColor }
-          ]
-        ]}
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
-        <Ionicons
-          name={icon}
-          size={14}
-          color={
-            isSelected ? theme.colors.textOnPrimary : theme.colors.textSecondary
-          }
-        />
-        <Text
-          style={[
-            createChipStyles(theme).chipText,
-            isSelected && createChipStyles(theme).chipTextSelected
-          ]}
-        >
-          {label}
-        </Text>
-      </TouchableOpacity>
-    );
-  }
-);
-
+interface SortConfig {
+  value: SortOption;
+  label: string;
+  icon: string;
+}
 const CatalogFilters: React.FC<CatalogFiltersProps> = ({
-  searchQuery,
-  onSearchChange,
-  selectedCategory,
-  onCategoryChange,
-  selectedSort,
-  onSortChange,
-  isVisible,
-  theme
+  animals,
+  onFilterChange,
+  theme,
+  hideToggle = false,
+  defaultExpanded = false,
+  isVisible = true,
+  onExpandChange
 }) => {
-  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
-  const searchTimeoutRef = useRef<number | null>(null);
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const { colors, spacing, iconSizes } = theme;
+  const [isExpanded, setIsExpanded] = useState(
+    hideToggle ? true : defaultExpanded
+  );
+  const [category, setCategory] = useState<CategoryOption>('Todas');
+  const [sortBy, setSortBy] = useState<SortOption>('name');
 
-  const handleSearchChange = useCallback(
-    (text: string) => {
-      setLocalSearchQuery(text);
+  const animatedHeight = React.useRef(
+    new Animated.Value(hideToggle ? 1 : 0)
+  ).current;
+  const animatedRotation = React.useRef(new Animated.Value(0)).current;
 
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+  const styles = useMemo(() => createFilterStyles(theme), [theme]);
+
+  const categoryOptions: CategoryConfig[] = useMemo(
+    () => [
+      {
+        value: 'Todas' as const,
+        label: 'Todas',
+        icon: 'paw-outline',
+        iconType: 'ionicons'
+      },
+      {
+        value: 'Mamíferos' as const,
+        label: 'Mamíferos',
+        icon: 'paw',
+        iconType: 'fa5'
+      },
+      {
+        value: 'Aves' as const,
+        label: 'Aves',
+        icon: 'bird',
+        iconType: 'material'
+      },
+      {
+        value: 'Reptiles' as const,
+        label: 'Reptiles',
+        icon: 'snake',
+        iconType: 'material'
+      },
+      {
+        value: 'Anfibios' as const,
+        label: 'Anfibios',
+        icon: 'frog',
+        iconType: 'fa5'
+      },
+      {
+        value: 'Peces' as const,
+        label: 'Peces',
+        icon: 'fish',
+        iconType: 'ionicons'
       }
-
-      searchTimeoutRef.current = setTimeout(() => {
-        onSearchChange(text);
-      }, 300);
-    },
-    [onSearchChange]
+    ],
+    []
   );
 
-  const clearSearch = useCallback(() => {
-    setLocalSearchQuery('');
-    onSearchChange('');
-  }, [onSearchChange]);
+  const sortOptions: SortConfig[] = useMemo(
+    () => [
+      { value: 'name' as const, label: 'Nombre', icon: 'text' },
+      { value: 'specie' as const, label: 'Especie', icon: 'leaf' },
+      { value: 'class' as const, label: 'Clase', icon: 'layers' },
+      { value: 'date' as const, label: 'Fecha', icon: 'calendar' }
+    ],
+    []
+  );
 
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
+  const applyFilters = useCallback(() => {
+    let filtered = [...animals];
+
+    if (category !== 'Todas') {
+      filtered = filtered.filter(a => a.category === category);
+    }
+
+    switch (sortBy) {
+      case 'name':
+        filtered.sort((a, b) =>
+          (a.commonNoun || '').localeCompare(b.commonNoun || '')
+        );
+        break;
+      case 'specie':
+        filtered.sort((a, b) => (a.specie || '').localeCompare(b.specie || ''));
+        break;
+      case 'class':
+        filtered.sort((a, b) =>
+          (a.category || '').localeCompare(b.category || '')
+        );
+        break;
+      case 'date':
+        filtered.sort((a, b) => b.catalogId - a.catalogId);
+        break;
+    }
+
+    onFilterChange(filtered, { category, sortBy });
+  }, [animals, category, sortBy, onFilterChange]);
+
+  React.useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
+  const toggleExpanded = useCallback(() => {
+    const toValue = isExpanded ? 0 : 1;
+
+    Animated.parallel([
+      Animated.spring(animatedHeight, {
+        toValue,
+        useNativeDriver: false,
+        tension: 40,
+        friction: 8
+      }),
+      Animated.timing(animatedRotation, {
+        toValue,
+        duration: 200,
+        useNativeDriver: true
+      })
+    ]).start();
+
+    const newExpandedState = !isExpanded;
+    setIsExpanded(newExpandedState);
+
+    if (onExpandChange) {
+      onExpandChange(newExpandedState);
+    }
+  }, [isExpanded, animatedHeight, animatedRotation, onExpandChange]);
+
+  const handleCategoryChange = useCallback((cat: CategoryOption) => {
+    setCategory(cat);
   }, []);
 
-  useEffect(() => {
-    if (searchQuery !== localSearchQuery) {
-      setLocalSearchQuery(searchQuery);
-    }
-  }, [searchQuery, localSearchQuery]);
+  const handleSortChange = useCallback((sort: SortOption) => {
+    setSortBy(sort);
+  }, []);
 
-  if (!isVisible) return null;
+  const clearFilters = useCallback(() => {
+    setCategory('Todas');
+    setSortBy('name');
+  }, []);
 
-  return (
-    <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        nestedScrollEnabled
-        style={styles.scrollView}
-      >
-        <View style={styles.searchContainer}>
-          <Ionicons
-            name="search"
-            size={20}
-            color={theme.colors.textSecondary}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar animales..."
-            placeholderTextColor={theme.colors.placeholder}
-            value={localSearchQuery}
-            onChangeText={handleSearchChange}
-            returnKeyType="search"
-          />
-          {localSearchQuery.length > 0 && (
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (category !== 'Todas') count++;
+    if (sortBy !== 'name') count++;
+    return count;
+  }, [category, sortBy]);
+
+  const rotation = animatedRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg']
+  });
+
+  const renderFilterContent = () => (
+    <Animated.View
+      style={[
+        styles.filterContent,
+        hideToggle
+          ? styles.filterContentNoAnimation
+          : {
+              opacity: animatedHeight,
+              transform: [
+                {
+                  scaleY: animatedHeight.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.95, 1]
+                  })
+                }
+              ]
+            }
+      ]}
+    >
+      <View style={styles.filterSection}>
+        <Text style={styles.filterSectionTitle}>Clase de Animal</Text>
+        <View style={styles.categoryOptions}>
+          {categoryOptions.map(option => {
+            const iconColor =
+              category === option.value ? colors.textOnPrimary : colors.text;
+            const IconComponent =
+              option.iconType === 'material'
+                ? MaterialCommunityIcons
+                : option.iconType === 'fa5'
+                  ? FontAwesome5
+                  : Ionicons;
+
+            return (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.categoryOption,
+                  category === option.value && styles.categoryOptionSelected
+                ]}
+                onPress={() => handleCategoryChange(option.value)}
+                activeOpacity={0.7}
+              >
+                <IconComponent
+                  name={option.icon}
+                  size={iconSizes.medium}
+                  color={iconColor}
+                  style={styles.categoryOptionIcon}
+                />
+                <Text
+                  style={[
+                    styles.categoryOptionText,
+                    category === option.value &&
+                      styles.categoryOptionTextSelected
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={[styles.filterSection, styles.filterSectionLast]}>
+        <Text style={styles.filterSectionTitle}>Ordenar por</Text>
+        <View style={styles.sortOptions}>
+          {sortOptions.map(option => (
             <TouchableOpacity
-              style={styles.clearSearchButton}
-              onPress={clearSearch}
+              key={option.value}
+              style={[
+                styles.sortOption,
+                sortBy === option.value && styles.sortOptionSelected
+              ]}
+              onPress={() => handleSortChange(option.value)}
+              activeOpacity={0.7}
             >
               <Ionicons
-                name="close-circle"
-                size={20}
-                color={theme.colors.textSecondary}
+                name={option.icon}
+                size={iconSizes.small}
+                color={
+                  sortBy === option.value ? colors.textOnPrimary : colors.text
+                }
+                style={styles.sortOptionIcon}
               />
+              <Text
+                style={[
+                  styles.sortOptionText,
+                  sortBy === option.value && styles.sortOptionTextSelected
+                ]}
+              >
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </Animated.View>
+  );
+
+  return (
+    <View
+      style={[
+        styles.filterContainer,
+        !isVisible && styles.filterContainerHidden
+      ]}
+    >
+      {!hideToggle && isVisible && (
+        <View style={styles.filterHeader}>
+          <View style={styles.filterHeaderLeft}>
+            <TouchableOpacity
+              style={styles.filterToggleButton}
+              onPress={toggleExpanded}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="filter"
+                size={iconSizes.small}
+                color={colors.text}
+                style={{ marginRight: spacing.tiny }}
+              />
+              <Text style={styles.filterToggleText}>Filtros</Text>
+              <Animated.View style={{ transform: [{ rotate: rotation }] }}>
+                <Ionicons
+                  name="chevron-down"
+                  size={iconSizes.small}
+                  color={colors.text}
+                />
+              </Animated.View>
+            </TouchableOpacity>
+
+            {activeFiltersCount > 0 && (
+              <View style={styles.activeFiltersCount}>
+                <Text style={styles.activeFiltersCountText}>
+                  {activeFiltersCount}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {activeFiltersCount > 0 && (
+            <TouchableOpacity
+              style={styles.clearFiltersButton}
+              onPress={clearFilters}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.clearFiltersText}>Limpiar</Text>
             </TouchableOpacity>
           )}
         </View>
+      )}
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="paw" size={18} color={theme.colors.primary} />
-            <Text style={styles.sectionTitle}>Clase de Animal</Text>
-          </View>
-          <View style={styles.chipsContainer}>
-            {VERTEBRATE_CLASSES.map(category => (
-              <FilterChip
-                key={category.id}
-                label={category.label}
-                icon={category.icon}
-                isSelected={selectedCategory === category.id}
-                onPress={() => onCategoryChange(category.id)}
-                theme={theme}
-                color={theme.colors.primary}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={[styles.section, styles.sectionLast]}>
-          <View style={styles.sectionHeader}>
-            <Ionicons
-              name="swap-vertical"
-              size={18}
-              color={theme.colors.secondary}
-            />
-            <Text style={styles.sectionTitle}>Ordenar por</Text>
-          </View>
-          <View style={styles.chipsContainer}>
-            {SORT_OPTIONS.map(option => (
-              <FilterChip
-                key={option.id}
-                label={option.label}
-                icon={option.icon}
-                isSelected={selectedSort === option.id}
-                onPress={() => onSortChange(option.id)}
-                theme={theme}
-                color={theme.colors.secondary}
-              />
-            ))}
-          </View>
-        </View>
-      </ScrollView>
+      {isVisible && (hideToggle || isExpanded) && renderFilterContent()}
     </View>
   );
 };
 
-const createStyles = (theme: Theme) =>
-  StyleSheet.create({
-    container: {
-      backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: theme.borderRadius.xlarge,
-      padding: theme.spacing.xlarge,
-      marginHorizontal: theme.spacing.xlarge,
-      marginBottom: theme.spacing.large,
-      maxHeight: 500,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4
-        },
-        android: {
-          elevation: 3
-        }
-      })
+const createNatureShadow = (elevation: number, color: string) => {
+  if (Platform.OS === 'ios') {
+    return {
+      shadowColor: color,
+      shadowOffset: { width: 0, height: elevation / 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: elevation * 0.8
+    };
+  }
+  return { elevation };
+};
+
+const createFilterStyles = (theme: ThemeContextType) => {
+  const { colors, spacing, typography, borderRadius, borderWidths } = theme;
+
+  return StyleSheet.create({
+    filterContainer: {
+      marginBottom: spacing.small,
+      overflow: 'hidden'
     },
-    scrollView: {
-      flexGrow: 1
+
+    filterContainerHidden: {
+      display: 'none'
     },
-    searchContainer: {
+
+    filterHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.xlarge,
-      paddingHorizontal: theme.spacing.large,
-      paddingVertical: theme.spacing.medium,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      marginBottom: theme.spacing.xlarge,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2
-        },
-        android: {
-          elevation: 1
-        }
-      })
+      justifyContent: 'space-between',
+      paddingVertical: spacing.small + 2,
+      paddingHorizontal: spacing.medium,
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.large,
+      marginHorizontal: spacing.medium,
+      marginBottom: spacing.small,
+      ...createNatureShadow(2, colors.forest)
     },
-    searchIcon: {
-      marginRight: theme.spacing.medium
-    },
-    searchInput: {
-      flex: 1,
-      fontSize: 14,
-      color: theme.colors.text,
-      padding: 0
-    },
-    clearSearchButton: {
-      padding: theme.spacing.medium,
-      marginLeft: theme.spacing.medium
-    },
-    section: {
-      marginBottom: theme.spacing.xlarge
-    },
-    sectionLast: {
-      marginBottom: 0
-    },
-    sectionHeader: {
+
+    filterHeaderLeft: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.small,
-      marginBottom: theme.spacing.large
+      gap: spacing.small
     },
-    sectionTitle: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: theme.colors.text,
-      textTransform: 'uppercase',
+
+    filterToggleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.small,
+      paddingVertical: spacing.small + 2,
+      paddingHorizontal: spacing.large,
+      borderRadius: borderRadius.xlarge,
+      backgroundColor: colors.forest,
+      borderWidth: 0
+    },
+
+    filterToggleText: {
+      fontSize: typography.fontSize.medium,
+      color: colors.textOnPrimary,
+      fontWeight: typography.fontWeight.bold,
+      lineHeight: typography.lineHeight.medium,
       letterSpacing: 0.5
     },
-    chipsContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: theme.spacing.medium
-    }
-  });
 
-const createChipStyles = (theme: Theme) =>
-  StyleSheet.create({
-    chip: {
+    activeFiltersCount: {
+      backgroundColor: colors.error,
+      borderRadius: 999,
+      paddingHorizontal: spacing.small,
+      paddingVertical: spacing.tiny,
+      minWidth: 24,
+      height: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: colors.forest,
+      ...createNatureShadow(2, colors.error)
+    },
+
+    activeFiltersCountText: {
+      fontSize: typography.fontSize.small,
+      color: colors.textOnPrimary,
+      fontWeight: typography.fontWeight.black,
+      lineHeight: typography.lineHeight.small
+    },
+
+    clearFiltersButton: {
+      paddingVertical: spacing.small + 2,
+      paddingHorizontal: spacing.large,
+      borderRadius: borderRadius.xlarge,
+      backgroundColor: colors.error,
+      ...createNatureShadow(3, colors.error)
+    },
+
+    clearFiltersText: {
+      fontSize: typography.fontSize.small,
+      color: colors.textOnPrimary,
+      fontWeight: typography.fontWeight.bold,
+      letterSpacing: 0.5
+    },
+
+    filterContent: {
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.large,
+      padding: spacing.large,
+      marginHorizontal: spacing.medium,
+      marginTop: spacing.tiny,
+      borderWidth: borderWidths.small,
+      borderColor: colors.divider,
+      ...createNatureShadow(3, colors.forest)
+    },
+
+    filterContentNoAnimation: {
+      opacity: 1,
+      transform: []
+    },
+
+    filterSection: {
+      marginBottom: spacing.large
+    },
+
+    filterSectionLast: {
+      marginBottom: 0
+    },
+
+    filterSectionTitle: {
+      fontSize: typography.fontSize.medium,
+      fontWeight: typography.fontWeight.bold,
+      color: colors.forest,
+      marginBottom: spacing.medium,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      lineHeight: typography.lineHeight.medium
+    },
+
+    categoryOptions: {
+      gap: spacing.small
+    },
+
+    categoryOption: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: theme.spacing.medium,
-      paddingHorizontal: theme.spacing.large,
-      borderRadius: theme.borderRadius.xlarge,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      gap: theme.spacing.small,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 2
-        },
-        android: {
-          elevation: 2
-        }
-      })
+      paddingVertical: spacing.medium + 2,
+      paddingHorizontal: spacing.large,
+      borderRadius: borderRadius.large,
+      backgroundColor: colors.chipBackground,
+      borderWidth: borderWidths.small,
+      borderColor: colors.border,
+      ...createNatureShadow(1, colors.shadow)
     },
-    chipSelected: {
-      borderWidth: 2,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 3
-        },
-        android: {
-          elevation: 4
-        }
-      })
+
+    categoryOptionSelected: {
+      backgroundColor: colors.forest,
+      borderColor: colors.forest,
+      borderWidth: 0,
+      ...createNatureShadow(4, colors.forest)
     },
-    chipText: {
-      fontSize: 12,
-      color: theme.colors.textSecondary,
-      fontWeight: '500'
+
+    categoryOptionText: {
+      flex: 1,
+      fontSize: typography.fontSize.large,
+      color: colors.text,
+      fontWeight: typography.fontWeight.medium,
+      lineHeight: typography.lineHeight.large,
+      letterSpacing: 0.3
     },
-    chipTextSelected: {
-      color: theme.colors.textOnPrimary,
-      fontWeight: '600'
+
+    categoryOptionTextSelected: {
+      color: colors.textOnPrimary,
+      fontWeight: typography.fontWeight.bold,
+      letterSpacing: 0.5
+    },
+
+    categoryOptionIcon: {
+      marginRight: spacing.small
+    },
+
+    sortOptions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.small
+    },
+
+    sortOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.small + 4,
+      paddingHorizontal: spacing.large,
+      borderRadius: borderRadius.xlarge,
+      backgroundColor: colors.chipBackground,
+      borderWidth: borderWidths.small,
+      borderColor: colors.border,
+      gap: spacing.small,
+      ...createNatureShadow(1, colors.shadow)
+    },
+
+    sortOptionSelected: {
+      backgroundColor: colors.water,
+      borderColor: colors.water,
+      borderWidth: 0,
+      ...createNatureShadow(4, colors.water)
+    },
+
+    sortOptionText: {
+      fontSize: typography.fontSize.medium,
+      color: colors.text,
+      fontWeight: typography.fontWeight.medium,
+      lineHeight: typography.lineHeight.medium,
+      letterSpacing: 0.3
+    },
+
+    sortOptionTextSelected: {
+      color: colors.textOnPrimary,
+      fontWeight: typography.fontWeight.bold,
+      letterSpacing: 0.5
+    },
+
+    sortOptionIcon: {
+      marginRight: 0
     }
   });
-
-FilterChip.displayName = 'FilterChip';
-CatalogFilters.displayName = 'CatalogFilters';
+};
 
 export default CatalogFilters;

@@ -9,6 +9,7 @@ import HomeScreen from '../screens/home/home-screen';
 import PublicationScreen from '../screens/publication/publication-screen';
 import ReviewPublicationsScreen from '../screens/admin/review-publications-screen';
 import CatalogManagementScreen from '../screens/admin/catalog-management-screen';
+import NotificationsScreen from '../screens/notifications/notifications-screen';
 import { ParamListBase } from '@react-navigation/native';
 
 type TabConfig<ParamList extends ParamListBase> = {
@@ -49,6 +50,14 @@ export const adminTabs: TabConfig<RootStackParamList>[] = [
         size={24}
         color={color}
       />
+    )
+  },
+  {
+    name: 'Notifications',
+    component: NotificationsScreen,
+    title: 'Notificaciones',
+    tabBarIcon: ({ focused, color }) => (
+      <FontAwesome5 name="bell" solid={focused} size={24} color={color} />
     )
   },
   {

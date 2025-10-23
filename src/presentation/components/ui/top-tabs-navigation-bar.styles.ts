@@ -159,6 +159,36 @@ export const createStyles = (
       zIndex: 2
     },
 
+    tabBadge: {
+      position: 'absolute',
+      top: -spacing.tiny - 2,
+      right: -spacing.small,
+      minWidth: 18,
+      height: 18,
+      borderRadius: borderRadius.xlarge * 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.tiny,
+      borderWidth: 2,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.shadow,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.3,
+          shadowRadius: 3
+        },
+        android: {
+          elevation: 3
+        }
+      })
+    },
+
+    tabBadgeText: {
+      fontSize: typography.fontSize.small - 3,
+      fontWeight: typography.fontWeight.bold,
+      lineHeight: typography.fontSize.small - 1
+    },
+
     indicator: {
       position: 'absolute',
       height: 3.5,

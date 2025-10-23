@@ -7,12 +7,16 @@ import {
   StyleSheet,
   Platform
 } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { PublicationModelResponse } from '../../../domain/models/publication.models';
 import { ThemeContextType } from '@/presentation/contexts/theme.context';
 
 export type SortOption =
   | 'date-desc'
   | 'date-asc'
+  | 'accepted-desc'
+  | 'accepted-asc'
   | 'location-asc'
   | 'location-desc'
   | 'species-asc'
@@ -38,25 +42,12 @@ interface PublicationFiltersProps {
   onExpandChange?: (isExpanded: boolean) => void;
 }
 
-const SPACING = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 20
-};
-
-const BORDER_RADIUS = {
-  sm: 4,
-  md: 8,
-  lg: 12
-};
-
-const FONT_SIZE = {
-  xs: 11,
-  sm: 12,
-  md: 14,
-  lg: 16
-};
+interface SortOptionConfig {
+  value: SortOption;
+  label: string;
+  iconName: string;
+  iconLibrary: 'ionicons' | 'material';
+}
 
 const PublicationFilters: React.FC<PublicationFiltersProps> = ({
   publications,
@@ -67,6 +58,7 @@ const PublicationFilters: React.FC<PublicationFiltersProps> = ({
   isVisible = true,
   onExpandChange
 }) => {
+  const { colors, spacing, iconSizes } = theme;
   const [isExpanded, setIsExpanded] = useState(
     hideToggle ? true : defaultExpanded
   );
@@ -87,6 +79,13 @@ const PublicationFilters: React.FC<PublicationFiltersProps> = ({
     return ['all', ...Array.from(states)];
   }, [publications]);
 
+  const getStateLabel = useCallback((state: string) => {
+    if (state === 'all') return 'Todos los estados';
+    if (state === 'ALIVE') return 'Vivo';
+    if (state === 'DEAD') return 'Muerto';
+    return state;
+  }, []);
+
   const applyFilters = useCallback(() => {
     let filtered = [...publications];
 
@@ -106,6 +105,20 @@ const PublicationFilters: React.FC<PublicationFiltersProps> = ({
         filtered.sort((a, b) => {
           const dateA = new Date(a.createdDate || 0).getTime();
           const dateB = new Date(b.createdDate || 0).getTime();
+          return dateA - dateB;
+        });
+        break;
+      case 'accepted-desc':
+        filtered.sort((a, b) => {
+          const dateA = new Date(a.acceptedDate || 0).getTime();
+          const dateB = new Date(b.acceptedDate || 0).getTime();
+          return dateB - dateA;
+        });
+        break;
+      case 'accepted-asc':
+        filtered.sort((a, b) => {
+          const dateA = new Date(a.acceptedDate || 0).getTime();
+          const dateB = new Date(b.acceptedDate || 0).getTime();
           return dateA - dateB;
         });
         break;
@@ -188,14 +201,59 @@ const PublicationFilters: React.FC<PublicationFiltersProps> = ({
     outputRange: ['0deg', '180deg']
   });
 
-  const sortOptions = [
-    { value: 'date-desc', label: 'Más recientes', icon: '📅' },
-    { value: 'date-asc', label: 'Más antiguos', icon: '📆' },
-    { value: 'location-asc', label: 'Ubicación A-Z', icon: '📍' },
-    { value: 'location-desc', label: 'Ubicación Z-A', icon: '📌' },
-    { value: 'species-asc', label: 'Especie A-Z', icon: '🦎' },
-    { value: 'species-desc', label: 'Especie Z-A', icon: '🐍' }
-  ] as const;
+  const sortOptions: SortOptionConfig[] = useMemo(
+    () => [
+      {
+        value: 'date-desc' as const,
+        label: 'Creación reciente',
+        iconName: 'calendar',
+        iconLibrary: 'ionicons' as const
+      },
+      {
+        value: 'date-asc' as const,
+        label: 'Creación antigua',
+        iconName: 'calendar-outline',
+        iconLibrary: 'ionicons' as const
+      },
+      {
+        value: 'accepted-desc' as const,
+        label: 'Aceptación reciente',
+        iconName: 'checkmark-circle',
+        iconLibrary: 'ionicons' as const
+      },
+      {
+        value: 'accepted-asc' as const,
+        label: 'Aceptación antigua',
+        iconName: 'checkmark-circle-outline',
+        iconLibrary: 'ionicons' as const
+      },
+      {
+        value: 'location-asc' as const,
+        label: 'Ubicación A-Z',
+        iconName: 'location',
+        iconLibrary: 'ionicons' as const
+      },
+      {
+        value: 'location-desc' as const,
+        label: 'Ubicación Z-A',
+        iconName: 'location-outline',
+        iconLibrary: 'ionicons' as const
+      },
+      {
+        value: 'species-asc' as const,
+        label: 'Especie A-Z',
+        iconName: 'paw',
+        iconLibrary: 'ionicons' as const
+      },
+      {
+        value: 'species-desc' as const,
+        label: 'Especie Z-A',
+        iconName: 'paw-outline',
+        iconLibrary: 'ionicons' as const
+      }
+    ],
+    []
+  );
 
   const renderFilterContent = () => (
     <Animated.View
@@ -229,7 +287,25 @@ const PublicationFilters: React.FC<PublicationFiltersProps> = ({
               onPress={() => handleSortChange(option.value)}
               activeOpacity={0.7}
             >
-              <Text style={styles.filterOptionIcon}>{option.icon}</Text>
+              {option.iconLibrary === 'ionicons' ? (
+                <Ionicons
+                  name={option.iconName}
+                  size={iconSizes.small}
+                  color={
+                    sortBy === option.value ? colors.textOnPrimary : colors.text
+                  }
+                  style={styles.sortOptionIcon}
+                />
+              ) : (
+                <MaterialCommunityIcons
+                  name={option.iconName}
+                  size={iconSizes.small}
+                  color={
+                    sortBy === option.value ? colors.textOnPrimary : colors.text
+                  }
+                  style={styles.sortOptionIcon}
+                />
+              )}
               <Text
                 style={[
                   styles.sortOptionText,
@@ -263,7 +339,11 @@ const PublicationFilters: React.FC<PublicationFiltersProps> = ({
                 ]}
               >
                 {filterByState === state && (
-                  <Text style={styles.filterCheckmark}>✓</Text>
+                  <Ionicons
+                    name="checkmark"
+                    size={iconSizes.small - 2}
+                    color={colors.textOnPrimary}
+                  />
                 )}
               </View>
               <Text
@@ -272,7 +352,7 @@ const PublicationFilters: React.FC<PublicationFiltersProps> = ({
                   filterByState === state && styles.filterOptionTextSelected
                 ]}
               >
-                {state === 'all' ? 'Todos los estados' : state}
+                {getStateLabel(state)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -296,15 +376,20 @@ const PublicationFilters: React.FC<PublicationFiltersProps> = ({
               onPress={toggleExpanded}
               activeOpacity={0.7}
             >
+              <Ionicons
+                name="filter"
+                size={iconSizes.small}
+                color={colors.text}
+                style={{ marginRight: spacing.tiny }}
+              />
               <Text style={styles.filterToggleText}>Filtros</Text>
-              <Animated.Text
-                style={[
-                  styles.filterIcon,
-                  { transform: [{ rotate: rotation }] }
-                ]}
-              >
-                ▼
-              </Animated.Text>
+              <Animated.View style={{ transform: [{ rotate: rotation }] }}>
+                <Ionicons
+                  name="chevron-down"
+                  size={iconSizes.small}
+                  color={colors.text}
+                />
+              </Animated.View>
             </TouchableOpacity>
 
             {activeFiltersCount > 0 && (
@@ -333,10 +418,12 @@ const PublicationFilters: React.FC<PublicationFiltersProps> = ({
   );
 };
 
-const createFilterStyles = (theme: ThemeContextType) =>
-  StyleSheet.create({
+const createFilterStyles = (theme: ThemeContextType) => {
+  const { colors, spacing, typography, borderRadius, borderWidths } = theme;
+
+  return StyleSheet.create({
     filterContainer: {
-      marginBottom: SPACING.md,
+      marginBottom: spacing.medium,
       overflow: 'hidden'
     },
 
@@ -348,70 +435,72 @@ const createFilterStyles = (theme: ThemeContextType) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.xs
+      paddingVertical: spacing.small,
+      paddingHorizontal: spacing.tiny
     },
 
     filterHeaderLeft: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: SPACING.sm
+      gap: spacing.small
     },
 
     filterToggleButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: SPACING.xs,
-      paddingVertical: SPACING.xs,
-      paddingHorizontal: SPACING.sm,
-      borderRadius: BORDER_RADIUS.sm,
-      backgroundColor: theme.colors.surfaceVariant
+      gap: spacing.tiny,
+      paddingVertical: spacing.small,
+      paddingHorizontal: spacing.medium,
+      borderRadius: borderRadius.medium,
+      backgroundColor: colors.surfaceVariant,
+      borderWidth: borderWidths.hairline,
+      borderColor: colors.border
     },
 
     filterToggleText: {
-      fontSize: FONT_SIZE.sm,
-      color: theme.colors.text,
-      fontWeight: '500'
-    },
-
-    filterIcon: {
-      fontSize: FONT_SIZE.md,
-      color: theme.colors.text
+      fontSize: typography.fontSize.small,
+      color: colors.text,
+      fontWeight: typography.fontWeight.bold,
+      lineHeight: typography.lineHeight.small
     },
 
     activeFiltersCount: {
-      backgroundColor: theme.colors.primary,
-      borderRadius: 10,
-      paddingHorizontal: SPACING.xs,
-      paddingVertical: 2,
-      minWidth: 20,
+      backgroundColor: colors.primary,
+      borderRadius: borderRadius.xlarge,
+      paddingHorizontal: spacing.small,
+      paddingVertical: spacing.tiny,
+      minWidth: 22,
+      height: 22,
       alignItems: 'center',
       justifyContent: 'center'
     },
 
     activeFiltersCountText: {
-      fontSize: FONT_SIZE.xs,
-      color: '#FFFFFF',
-      fontWeight: '700'
+      fontSize: typography.fontSize.small,
+      color: colors.textOnPrimary,
+      fontWeight: typography.fontWeight.black,
+      lineHeight: typography.lineHeight.small
     },
 
     clearFiltersButton: {
-      paddingVertical: SPACING.xs,
-      paddingHorizontal: SPACING.sm,
-      borderRadius: BORDER_RADIUS.sm
+      paddingVertical: spacing.small,
+      paddingHorizontal: spacing.medium,
+      borderRadius: borderRadius.medium
     },
 
     clearFiltersText: {
-      fontSize: FONT_SIZE.sm,
-      color: theme.colors.error,
-      fontWeight: '500'
+      fontSize: typography.fontSize.small,
+      color: colors.error,
+      fontWeight: typography.fontWeight.bold
     },
 
     filterContent: {
-      backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: BORDER_RADIUS.md,
-      padding: SPACING.md,
-      marginTop: SPACING.sm
+      backgroundColor: colors.surfaceVariant,
+      borderRadius: borderRadius.large,
+      padding: spacing.medium,
+      marginTop: spacing.small,
+      borderWidth: borderWidths.hairline,
+      borderColor: colors.border
     },
 
     filterContentNoAnimation: {
@@ -420,7 +509,7 @@ const createFilterStyles = (theme: ThemeContextType) =>
     },
 
     filterSection: {
-      marginBottom: SPACING.md
+      marginBottom: spacing.medium
     },
 
     filterSectionLast: {
@@ -428,35 +517,36 @@ const createFilterStyles = (theme: ThemeContextType) =>
     },
 
     filterSectionTitle: {
-      fontSize: FONT_SIZE.sm,
-      fontWeight: '600',
-      color: theme.colors.text,
-      marginBottom: SPACING.sm,
+      fontSize: typography.fontSize.small,
+      fontWeight: typography.fontWeight.bold,
+      color: colors.text,
+      marginBottom: spacing.small,
       textTransform: 'uppercase',
-      letterSpacing: 0.5
+      letterSpacing: 0.5,
+      lineHeight: typography.lineHeight.small
     },
 
     filterOptions: {
-      gap: SPACING.sm
+      gap: spacing.small
     },
 
     filterOption: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.md,
-      borderRadius: BORDER_RADIUS.md,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1,
-      borderColor: theme.colors.border
+      paddingVertical: spacing.medium,
+      paddingHorizontal: spacing.medium,
+      borderRadius: borderRadius.medium,
+      backgroundColor: colors.surface,
+      borderWidth: borderWidths.hairline,
+      borderColor: colors.border
     },
 
     filterOptionSelected: {
-      backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary,
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
       ...Platform.select({
         ios: {
-          shadowColor: theme.colors.primary,
+          shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.3,
           shadowRadius: 3
@@ -469,75 +559,83 @@ const createFilterStyles = (theme: ThemeContextType) =>
 
     filterOptionText: {
       flex: 1,
-      fontSize: FONT_SIZE.md,
-      color: theme.colors.text,
-      fontWeight: '500'
+      fontSize: typography.fontSize.medium,
+      color: colors.text,
+      fontWeight: typography.fontWeight.medium,
+      lineHeight: typography.lineHeight.medium
     },
 
     filterOptionTextSelected: {
-      color: '#FFFFFF',
-      fontWeight: '600'
-    },
-
-    filterOptionIcon: {
-      fontSize: FONT_SIZE.lg,
-      marginRight: SPACING.sm
+      color: colors.textOnPrimary,
+      fontWeight: typography.fontWeight.bold
     },
 
     filterCheckbox: {
-      width: 20,
-      height: 20,
-      borderRadius: 4,
-      borderWidth: 2,
-      borderColor: theme.colors.border,
+      width: 22,
+      height: 22,
+      borderRadius: borderRadius.small,
+      borderWidth: borderWidths.medium,
+      borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: SPACING.sm
+      marginRight: spacing.small
     },
 
     filterCheckboxSelected: {
-      backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary
-    },
-
-    filterCheckmark: {
-      color: '#FFFFFF',
-      fontSize: FONT_SIZE.sm,
-      fontWeight: '700'
+      backgroundColor: colors.primary,
+      borderColor: colors.primary
     },
 
     sortOptions: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: SPACING.sm
+      gap: spacing.small
     },
 
     sortOption: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.md,
-      borderRadius: BORDER_RADIUS.lg,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1,
-      borderColor: theme.colors.border
+      paddingVertical: spacing.small + 2,
+      paddingHorizontal: spacing.medium,
+      borderRadius: borderRadius.large,
+      backgroundColor: colors.surface,
+      borderWidth: borderWidths.hairline,
+      borderColor: colors.border,
+      gap: spacing.tiny
     },
 
     sortOptionSelected: {
-      backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 4
+        },
+        android: {
+          elevation: 3
+        }
+      })
     },
 
     sortOptionText: {
-      fontSize: FONT_SIZE.sm,
-      color: theme.colors.text,
-      fontWeight: '500'
+      fontSize: typography.fontSize.small,
+      color: colors.text,
+      fontWeight: typography.fontWeight.medium,
+      lineHeight: typography.lineHeight.small
     },
 
     sortOptionTextSelected: {
-      color: '#FFFFFF',
-      fontWeight: '600'
+      color: colors.textOnPrimary,
+      fontWeight: typography.fontWeight.bold
+    },
+
+    sortOptionIcon: {
+      marginRight: 0
     }
   });
+};
 
 export default PublicationFilters;

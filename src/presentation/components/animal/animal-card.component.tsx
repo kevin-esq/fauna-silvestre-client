@@ -340,7 +340,8 @@ const AnimalCard = React.memo<AnimalCardProps>(
               lineHeight: typography.lineHeight.small + 2
             }}
           >
-            Esta acción no se puede deshacer.
+            Esta acción no se puede deshacer. PROXIMAMENTE SE IMPLEMENTARÁ LA
+            FUNCIONALIDAD en el backend.
           </Text>
         </CustomModal>
       </>

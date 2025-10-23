@@ -8,6 +8,7 @@ import {
 import { NavigationContainer } from '@react-navigation/native';
 import { ThemeProvider } from '../presentation/contexts/theme.context';
 import { PublicationProvider } from '../presentation/contexts/publication.context';
+import { NotificationProvider } from '../presentation/contexts/notification.context';
 import { LoadingProvider } from '../presentation/contexts/loading.context';
 import { CatalogProvider } from '../presentation/contexts/catalog.context';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -24,7 +25,9 @@ export default function App() {
                 <LoadingProvider>
                   <CatalogProvider>
                     <PublicationProvider>
-                      <AppNavigator />
+                      <NotificationProvider>
+                        <AppNavigator />
+                      </NotificationProvider>
                     </PublicationProvider>
                   </CatalogProvider>
                 </LoadingProvider>

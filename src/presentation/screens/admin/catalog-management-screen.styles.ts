@@ -1,21 +1,25 @@
 import { StyleSheet, Platform } from 'react-native';
 import { Theme } from '../../contexts/theme.context';
 
-const createShadow = (elevation: number) => {
+const createShadow = (elevation: number, color: string = '#000') => {
   if (Platform.OS === 'ios') {
     return {
-      shadowColor: '#000',
+      shadowColor: color,
       shadowOffset: {
         width: 0,
         height: elevation / 2
       },
-      shadowOpacity: 0.1 + elevation * 0.02,
-      shadowRadius: elevation
+      shadowOpacity: 0.15 + elevation * 0.015,
+      shadowRadius: elevation * 0.8
     };
   }
   return {
     elevation
   };
+};
+
+const createNatureShadow = (elevation: number, theme: Theme) => {
+  return createShadow(elevation, theme.colors.forest);
 };
 
 export const createStyles = (theme: Theme) =>
@@ -40,51 +44,52 @@ export const createStyles = (theme: Theme) =>
 
     cleanHeader: {
       backgroundColor: theme.colors.surface,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-      paddingHorizontal: theme.spacing.large,
-      paddingBottom: theme.spacing.medium,
-      ...createShadow(2)
+      borderBottomWidth: theme.borderWidths.hairline,
+      borderBottomColor: theme.colors.divider,
+      paddingHorizontal: theme.spacing.medium,
+      paddingBottom: theme.spacing.small,
+      ...createShadow(3)
     },
     collapseHeaderButton: {
       alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.surfaceVariant,
-      paddingVertical: theme.spacing.small,
+      backgroundColor: theme.colors.primary,
+      paddingVertical: theme.spacing.small + 2,
       paddingHorizontal: theme.spacing.large,
       borderRadius: theme.borderRadius.xlarge,
-      marginBottom: theme.spacing.medium,
       gap: theme.spacing.small,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      ...createShadow(2)
+      borderWidth: 0,
+      ...createNatureShadow(4, theme)
     },
     collapseHeaderIcon: {
-      fontSize: 11,
-      color: theme.colors.textSecondary,
+      fontSize: theme.typography.fontSize.small,
+      color: theme.colors.textOnPrimary,
       fontWeight: theme.typography.fontWeight.bold
     },
     collapseHeaderText: {
-      fontSize: 12,
-      color: theme.colors.textSecondary,
-      fontWeight: theme.typography.fontWeight.medium
+      fontSize: theme.typography.fontSize.medium,
+      color: theme.colors.textOnPrimary,
+      fontWeight: theme.typography.fontWeight.bold,
+      letterSpacing: 0.3
     },
     headerBadge: {
       backgroundColor: theme.colors.error,
       borderRadius: 999,
-      minWidth: 18,
-      height: 18,
+      minWidth: 20,
+      height: 20,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: 4,
+      paddingHorizontal: theme.spacing.tiny,
       marginLeft: theme.spacing.small,
+      borderWidth: 2,
+      borderColor: theme.colors.primary,
       ...createShadow(2)
     },
     headerBadgeText: {
-      fontSize: 10,
+      fontSize: theme.typography.fontSize.small - 1,
       color: theme.colors.textOnPrimary,
-      fontWeight: theme.typography.fontWeight.bold
+      fontWeight: theme.typography.fontWeight.black
     },
     cleanHeaderCenter: {
       alignItems: 'center',
@@ -109,59 +114,60 @@ export const createStyles = (theme: Theme) =>
 
     floatingFilterButton: {
       position: 'absolute',
-      left: theme.spacing.large,
+      left: theme.spacing.medium,
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.forest,
       paddingVertical: theme.spacing.medium,
       paddingHorizontal: theme.spacing.large,
       borderRadius: theme.borderRadius.xlarge,
       gap: theme.spacing.small,
       zIndex: 999,
-      ...createShadow(12)
+      ...createNatureShadow(8, theme)
     },
     floatingButtonText: {
       color: theme.colors.textOnPrimary,
-      fontSize: 14,
-      fontWeight: theme.typography.fontWeight.bold
+      fontSize: theme.typography.fontSize.medium,
+      fontWeight: theme.typography.fontWeight.bold,
+      letterSpacing: 0.5
     },
     floatingButtonBadge: {
       backgroundColor: theme.colors.error,
       borderRadius: 999,
-      minWidth: 18,
-      height: 18,
+      minWidth: 20,
+      height: 20,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: 4,
-      marginLeft: theme.spacing.small,
+      paddingHorizontal: theme.spacing.tiny,
+      marginLeft: theme.spacing.tiny,
       borderWidth: 2,
-      borderColor: theme.colors.primary
+      borderColor: theme.colors.forest
     },
     floatingButtonBadgeText: {
-      fontSize: 10,
+      fontSize: theme.typography.fontSize.small - 1,
       color: theme.colors.textOnPrimary,
-      fontWeight: theme.typography.fontWeight.bold
+      fontWeight: theme.typography.fontWeight.black
     },
     floatingAddButton: {
       position: 'absolute',
-      right: theme.spacing.large,
-      width: 56,
-      height: 56,
-      borderRadius: theme.borderRadius.xlarge,
-      backgroundColor: theme.colors.primary,
+      right: theme.spacing.medium,
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: theme.colors.leaf,
       justifyContent: 'center',
       alignItems: 'center',
-      ...createShadow(12)
+      ...createNatureShadow(10, theme)
     },
 
     quickFiltersBar: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: theme.spacing.large,
-      paddingVertical: theme.spacing.small,
-      backgroundColor: theme.colors.surface,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border
+      paddingHorizontal: theme.spacing.medium,
+      paddingVertical: theme.spacing.small + 2,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderBottomWidth: theme.borderWidths.hairline,
+      borderBottomColor: theme.colors.divider
     },
     quickFiltersScroll: {
       flex: 1
@@ -174,30 +180,37 @@ export const createStyles = (theme: Theme) =>
     quickFilterChip: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.surfaceVariant,
+      backgroundColor: theme.colors.chipBackground,
       paddingHorizontal: theme.spacing.medium,
-      paddingVertical: theme.spacing.small,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      gap: theme.spacing.small,
+      paddingVertical: theme.spacing.small + 2,
+      borderRadius: theme.borderRadius.xlarge,
+      borderWidth: theme.borderWidths.hairline,
+      borderColor: theme.colors.forest,
+      gap: theme.spacing.tiny,
       ...createShadow(2)
     },
     quickFilterChipText: {
-      fontSize: 12,
+      fontSize: theme.typography.fontSize.small,
       fontWeight: theme.typography.fontWeight.bold,
-      lineHeight: 16,
-      color: theme.colors.primary
+      lineHeight: theme.typography.lineHeight.small,
+      color: theme.colors.forest,
+      letterSpacing: 0.3
     },
     clearAllButton: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: theme.spacing.medium,
-      paddingVertical: theme.spacing.small,
-      borderRadius: 999,
-      backgroundColor: theme.colors.surfaceVariant,
-      gap: theme.spacing.small,
-      ...createShadow(2)
+      paddingVertical: theme.spacing.small + 2,
+      borderRadius: theme.borderRadius.xlarge,
+      backgroundColor: theme.colors.secondary,
+      gap: theme.spacing.tiny,
+      ...createShadow(3)
+    },
+    clearAllButtonText: {
+      fontSize: theme.typography.fontSize.small,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: theme.colors.textOnPrimary,
+      letterSpacing: 0.3
     },
 
     emptyContainer: {
@@ -209,68 +222,74 @@ export const createStyles = (theme: Theme) =>
       minHeight: 400
     },
     emptyIcon: {
-      width: 120,
-      height: 120,
-      borderRadius: 999,
-      backgroundColor: theme.colors.primaryLight,
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: theme.colors.chipBackground,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: theme.spacing.xlarge,
-      ...createShadow(4)
+      marginBottom: theme.spacing.large,
+      borderWidth: 3,
+      borderColor: theme.colors.forest,
+      ...createNatureShadow(4, theme)
     },
     emptyTitle: {
-      fontSize: 24,
+      fontSize: theme.typography.fontSize.xxlarge,
       fontWeight: theme.typography.fontWeight.bold,
-      lineHeight: 30,
+      lineHeight: theme.typography.lineHeight.xxlarge,
       color: theme.colors.text,
       textAlign: 'center',
-      marginBottom: theme.spacing.medium
+      marginBottom: theme.spacing.small,
+      letterSpacing: 0.5
     },
     emptySubtitle: {
-      fontSize: 16,
+      fontSize: theme.typography.fontSize.large,
       fontWeight: theme.typography.fontWeight.regular,
-      lineHeight: 24,
+      lineHeight: theme.typography.lineHeight.large,
       color: theme.colors.textSecondary,
       textAlign: 'center',
-      marginBottom: theme.spacing.xlarge
+      marginBottom: theme.spacing.xlarge,
+      maxWidth: 300
     },
 
     footerError: {
       alignItems: 'center',
       paddingVertical: theme.spacing.large,
       paddingHorizontal: theme.spacing.xlarge,
-      backgroundColor: theme.colors.surfaceVariant,
+      backgroundColor: theme.colors.surface,
       borderRadius: theme.borderRadius.large,
-      marginHorizontal: theme.spacing.large,
-      borderWidth: 1,
+      marginHorizontal: theme.spacing.medium,
+      marginVertical: theme.spacing.medium,
+      borderWidth: 2,
       borderColor: theme.colors.error,
-      ...createShadow(2)
+      ...createShadow(3)
     },
     errorIconContainer: {
-      marginBottom: theme.spacing.medium
+      marginBottom: theme.spacing.small
     },
     footerErrorText: {
-      fontSize: 16,
+      fontSize: theme.typography.fontSize.large,
       fontWeight: theme.typography.fontWeight.bold,
-      lineHeight: 24,
+      lineHeight: theme.typography.lineHeight.large,
       color: theme.colors.error,
       textAlign: 'center',
       marginBottom: theme.spacing.medium
     },
     footerRetryButton: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.forest,
       paddingHorizontal: theme.spacing.xlarge,
       paddingVertical: theme.spacing.medium,
       borderRadius: theme.borderRadius.large,
-      minWidth: 120,
-      ...createShadow(4)
+      minWidth: 140,
+      ...createNatureShadow(4, theme)
     },
     footerRetryText: {
-      fontSize: 16,
+      fontSize: theme.typography.fontSize.large,
       fontWeight: theme.typography.fontWeight.bold,
-      lineHeight: 20,
+      lineHeight: theme.typography.lineHeight.large,
       color: theme.colors.textOnPrimary,
-      textAlign: 'center'
+      textAlign: 'center',
+      letterSpacing: 0.5
     },
     footerLoading: {
       flexDirection: 'row',
@@ -280,9 +299,9 @@ export const createStyles = (theme: Theme) =>
       paddingVertical: theme.spacing.large
     },
     footerLoadingText: {
-      fontSize: 14,
-      fontWeight: theme.typography.fontWeight.regular,
-      lineHeight: 20,
+      fontSize: theme.typography.fontSize.medium,
+      fontWeight: theme.typography.fontWeight.medium,
+      lineHeight: theme.typography.lineHeight.medium,
       color: theme.colors.textSecondary
     },
     footerEnd: {
@@ -294,13 +313,14 @@ export const createStyles = (theme: Theme) =>
     },
     footerEndDivider: {
       flex: 1,
-      height: 1,
-      backgroundColor: theme.colors.border
+      height: theme.borderWidths.hairline,
+      backgroundColor: theme.colors.divider
     },
     footerEndText: {
-      fontSize: 14,
+      fontSize: theme.typography.fontSize.medium,
       fontWeight: theme.typography.fontWeight.medium,
-      lineHeight: 20,
-      color: theme.colors.textSecondary
+      lineHeight: theme.typography.lineHeight.medium,
+      color: theme.colors.textSecondary,
+      letterSpacing: 0.3
     }
   });

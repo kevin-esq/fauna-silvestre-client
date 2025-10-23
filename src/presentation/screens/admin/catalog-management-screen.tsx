@@ -20,6 +20,7 @@ import { AnimalModelResponse } from '@/domain/models/animal.models';
 import { SkeletonLoader } from '../../components/ui/skeleton-loader.component';
 import AnimalCard from '../../components/animal/animal-card.component';
 import CatalogFilters from '../../components/animal/catalog-filters.component';
+import SearchBar from '../../components/ui/search-bar.component';
 import { createStyles } from './catalog-management-screen.styles';
 
 const FILTER_CONSTANTS = {
@@ -115,11 +116,6 @@ const CleanHeader = React.memo<CleanHeaderProps>(
           </View>
         )}
       </TouchableOpacity>
-
-      <View style={styles.cleanHeaderCenter}>
-        <Text style={styles.cleanHeaderTitle}>Catálogo de Animales</Text>
-        <Text style={styles.cleanHeaderSubtitle}>Gestiona tu colección 🐾</Text>
-      </View>
     </Animated.View>
   )
 );
@@ -298,7 +294,8 @@ const QuickFiltersBar = React.memo<QuickFiltersBarProps>(
 );
 
 const useCatalogScreen = () => {
-  const { theme } = useTheme();
+  const themeContext = useTheme();
+  const theme = themeContext.theme;
   const navigation = useNavigationActions();
   const insets = useSafeAreaInsets();
   const { state, actions, filteredAnimals, isLoading } = useCatalogManagement();
@@ -368,6 +365,7 @@ const useCatalogScreen = () => {
 
   return {
     theme,
+    themeContext,
     styles,
     state,
     actions,
@@ -390,6 +388,7 @@ const useCatalogScreen = () => {
 const CatalogManagementScreen: React.FC = () => {
   const {
     theme,
+    themeContext,
     styles,
     state,
     actions,
@@ -530,52 +529,54 @@ const CatalogManagementScreen: React.FC = () => {
         </TouchableOpacity>
       )}
 
-      <View style={styles.content}>
-        {filtersVisible && (
-          <>
-            <CatalogFilters
-              searchQuery={state.searchQuery}
-              onSearchChange={actions.searchAnimals}
-              selectedCategory={state.selectedCategory}
-              onCategoryChange={actions.filterByCategory}
-              selectedSort={state.selectedSort}
-              onSortChange={actions.sortAnimals}
-              isVisible={filtersVisible}
-              theme={theme}
-              onVisibilityChange={() => {}}
-            />
+      <FlatList
+        data={filteredAnimals}
+        keyExtractor={keyExtractor}
+        renderItem={renderAnimalCard}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={FILTER_CONSTANTS.PAGINATION_THRESHOLD}
+        refreshControl={refreshControl}
+        ListHeaderComponent={
+          filtersVisible ? (
+            <View>
+              <SearchBar
+                value={state.inputValue}
+                onChangeText={actions.searchAnimals}
+                onClear={clearActions.clearSearch}
+                placeholder="Buscar animales..."
+                theme={theme}
+              />
 
-            <QuickFiltersBar
-              searchQuery={state.searchQuery}
-              selectedCategory={state.selectedCategory}
-              selectedSort={state.selectedSort}
-              onClearSearch={clearActions.clearSearch}
-              onClearCategory={clearActions.clearCategory}
-              onClearSort={clearActions.clearSort}
-              onClearAll={clearActions.clearAll}
-              styles={styles}
-              theme={theme}
-            />
-          </>
-        )}
+              <CatalogFilters
+                animals={filteredAnimals}
+                onFilterChange={() => {}}
+                theme={themeContext}
+                isVisible={filtersVisible}
+              />
 
-        <FlatList
-          data={filteredAnimals}
-          keyExtractor={keyExtractor}
-          renderItem={renderAnimalCard}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={FILTER_CONSTANTS.PAGINATION_THRESHOLD}
-          refreshControl={refreshControl}
-          ListFooterComponent={renderFooter}
-          ListEmptyComponent={renderEmptyComponent}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          windowSize={10}
-          initialNumToRender={10}
-        />
-      </View>
+              <QuickFiltersBar
+                searchQuery={state.searchQuery}
+                selectedCategory={state.selectedCategory}
+                selectedSort={state.selectedSort}
+                onClearSearch={clearActions.clearSearch}
+                onClearCategory={clearActions.clearCategory}
+                onClearSort={clearActions.clearSort}
+                onClearAll={clearActions.clearAll}
+                styles={styles}
+                theme={theme}
+              />
+            </View>
+          ) : null
+        }
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmptyComponent}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={10}
+      />
 
       <TouchableOpacity
         style={[styles.floatingAddButton, { bottom: insets.bottom + 20 }]}

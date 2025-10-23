@@ -22,6 +22,7 @@ export interface PublicationModelResponse {
   img: string;
   location: string;
   createdDate?: string;
+  acceptedDate?: string;
   author?: string;
 }
 
