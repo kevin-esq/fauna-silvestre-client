@@ -5,14 +5,14 @@ export const createStyles = (
   insets: { top: number; left: number; right: number },
   theme: Theme
 ) => {
-  const colors = theme.colors;
+  const { colors, spacing, borderRadius, typography, borderWidths } = theme;
 
   return StyleSheet.create({
     container: {
-      paddingTop: insets.top + 8,
-      paddingHorizontal: 16,
+      paddingTop: insets.top + spacing.small,
+      paddingHorizontal: spacing.medium,
       backgroundColor: colors.surface,
-      borderBottomWidth: 1,
+      borderBottomWidth: borderWidths.hairline,
       borderBottomColor: colors.border,
       ...Platform.select({
         ios: {
@@ -28,24 +28,24 @@ export const createStyles = (
     },
 
     headerOuter: {
-      marginTop: 12,
-      marginBottom: 16,
+      marginTop: spacing.small + spacing.tiny,
+      marginBottom: spacing.medium,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 4
+      paddingHorizontal: spacing.tiny
     },
 
     headerLeft: {
       flexDirection: 'row',
       alignItems: 'center',
       flex: 1,
-      marginRight: 12
+      marginRight: spacing.small + spacing.tiny
     },
 
     logoContainer: {
-      marginRight: 14,
-      borderRadius: 50,
+      marginRight: spacing.medium - 2,
+      borderRadius: borderRadius.xlarge * 3,
       overflow: 'hidden',
       ...Platform.select({
         ios: {
@@ -72,18 +72,18 @@ export const createStyles = (
     },
 
     headerText: {
-      fontSize: 22,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontSize: typography.fontSize.xxlarge - 2,
+      fontWeight: typography.fontWeight.bold,
       color: colors.text,
       letterSpacing: 0.2,
-      lineHeight: 28,
-      marginBottom: 2,
+      lineHeight: typography.lineHeight.xlarge,
+      marginBottom: spacing.tiny / 2,
       fontFamily: 'Cabin Regular'
     },
 
     headerSubtitle: {
-      fontSize: 11,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontSize: typography.fontSize.small - 1,
+      fontWeight: typography.fontWeight.bold,
       color: colors.textSecondary,
       letterSpacing: 0.8,
       textTransform: 'uppercase',
@@ -93,22 +93,22 @@ export const createStyles = (
     headerRight: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10
+      gap: spacing.small + spacing.tiny / 2
     },
 
     tabsOuterContainer: {
       position: 'relative',
       alignItems: 'center',
-      marginBottom: 14,
-      paddingHorizontal: 4
+      marginBottom: spacing.medium - 2,
+      paddingHorizontal: spacing.tiny
     },
 
     tabsContainer: {
       flexDirection: 'row',
       position: 'relative',
       backgroundColor: colors.surfaceVariant,
-      borderRadius: 18,
-      padding: 6,
+      borderRadius: borderRadius.large + 6,
+      padding: spacing.tiny + 2,
       overflow: 'hidden',
       ...Platform.select({
         ios: {
@@ -126,9 +126,9 @@ export const createStyles = (
     tabButton: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 14,
-      paddingHorizontal: 8,
-      borderRadius: 14,
+      paddingVertical: spacing.medium - 2,
+      paddingHorizontal: spacing.small,
+      borderRadius: borderRadius.large + 2,
       minHeight: 52,
       position: 'relative',
       overflow: 'hidden',
@@ -138,7 +138,7 @@ export const createStyles = (
     tabButtonBackground: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: colors.surface,
-      borderRadius: 14,
+      borderRadius: borderRadius.large + 2,
       ...Platform.select({
         ios: {
           shadowColor: colors.shadow,
@@ -162,8 +162,8 @@ export const createStyles = (
     indicator: {
       position: 'absolute',
       height: 3.5,
-      bottom: 8,
-      borderRadius: 2,
+      bottom: spacing.small,
+      borderRadius: borderRadius.small / 2,
       ...Platform.select({
         ios: {
           shadowColor: colors.primary,
@@ -179,16 +179,16 @@ export const createStyles = (
 
     badge: {
       position: 'absolute',
-      top: -4,
-      right: -6,
+      top: -spacing.tiny,
+      right: -spacing.tiny - 2,
       minWidth: 20,
       height: 20,
-      borderRadius: 10,
+      borderRadius: borderRadius.medium + 2,
       backgroundColor: colors.error,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 5,
-      borderWidth: 2.5,
+      paddingHorizontal: spacing.tiny + 1,
+      borderWidth: borderWidths.small + 0,
       borderColor: colors.surface,
       ...Platform.select({
         ios: {
@@ -205,9 +205,9 @@ export const createStyles = (
 
     badgeText: {
       color: colors.textOnPrimary,
-      fontSize: 10,
-      fontWeight: theme.typography.fontWeight.bold,
-      lineHeight: 12,
+      fontSize: typography.fontSize.small - 2,
+      fontWeight: typography.fontWeight.bold,
+      lineHeight: typography.lineHeight.small - 4,
       letterSpacing: -0.2
     },
 
@@ -215,7 +215,7 @@ export const createStyles = (
       ...StyleSheet.absoluteFillObject,
       backgroundColor: colors.primary,
       opacity: 0.08,
-      borderRadius: 14
+      borderRadius: borderRadius.large + 2
     },
 
     divider: {
@@ -227,7 +227,7 @@ export const createStyles = (
 
     skeletonContainer: {
       backgroundColor: colors.surfaceVariant,
-      borderRadius: 14,
+      borderRadius: borderRadius.large + 2,
       overflow: 'hidden',
       height: 52
     },
@@ -241,9 +241,9 @@ export const createStyles = (
     tooltip: {
       position: 'absolute',
       backgroundColor: colors.text,
-      borderRadius: 10,
-      paddingVertical: 10,
-      paddingHorizontal: 16,
+      borderRadius: borderRadius.medium + 2,
+      paddingVertical: spacing.small + 2,
+      paddingHorizontal: spacing.medium,
       bottom: -52,
       zIndex: 1000,
       minWidth: 90,
@@ -263,8 +263,8 @@ export const createStyles = (
 
     tooltipText: {
       color: colors.textOnPrimary,
-      fontSize: 13,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontSize: typography.fontSize.medium - 1,
+      fontWeight: typography.fontWeight.bold,
       textAlign: 'center',
       letterSpacing: 0.2
     },
@@ -298,8 +298,8 @@ export const createStyles = (
 
     error: {
       borderColor: colors.error,
-      borderWidth: 1.5,
-      borderRadius: 14
+      borderWidth: borderWidths.hairline + 0,
+      borderRadius: borderRadius.large + 2
     },
 
     fadeIn: {

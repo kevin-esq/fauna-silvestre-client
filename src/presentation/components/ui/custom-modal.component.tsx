@@ -1,5 +1,5 @@
 import { useTheme } from '@/presentation/contexts/theme.context';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
   ViewStyle,
   TextStyle,
   ActivityIndicator,
-  useWindowDimensions
+  useWindowDimensions,
+  DimensionValue
 } from 'react-native';
 import { Animation, CustomAnimation } from 'react-native-animatable';
 import Modal from 'react-native-modal';
@@ -94,7 +95,7 @@ export interface CustomModalProps {
   maxWidth?: number;
 }
 
-const CustomModal = React.memo(
+const CustomModal = React.memo<CustomModalProps>(
   ({
     isVisible,
     onClose,
@@ -145,55 +146,49 @@ const CustomModal = React.memo(
     onBackdropPress,
     onBackButtonPress,
     maxWidth
-  }: CustomModalProps): React.ReactElement => {
-    const themeContext = useTheme();
-    const { theme } = themeContext;
+  }) => {
+    const { theme, spacing } = useTheme();
     const { width: screenWidth } = useWindowDimensions();
     const styles = useMemo(() => createModalStyles(theme), [theme]);
     const [inputFocused, setInputFocused] = useState(false);
 
-    const handleBackdropPress = useMemo(
-      () => onBackdropPress || (closeOnBackdrop ? onClose : undefined),
-      [onBackdropPress, closeOnBackdrop, onClose]
-    );
-    const handleBackButtonPress = useMemo(
-      () => onBackButtonPress || (closeOnBackButton ? onClose : undefined),
-      [onBackButtonPress, closeOnBackButton, onClose]
-    );
+    const handleBackdropPress = useCallback(() => {
+      if (onBackdropPress) {
+        onBackdropPress();
+      } else if (closeOnBackdrop) {
+        onClose();
+      }
+    }, [onBackdropPress, closeOnBackdrop, onClose]);
+
+    const handleBackButtonPress = useCallback(() => {
+      if (onBackButtonPress) {
+        onBackButtonPress();
+      } else if (closeOnBackButton) {
+        onClose();
+      }
+    }, [onBackButtonPress, closeOnBackButton, onClose]);
+
+    const handleInputFocus = useCallback(() => setInputFocused(true), []);
+    const handleInputBlur = useCallback(() => setInputFocused(false), []);
 
     const getSizeStyle = useMemo((): ViewStyle => {
-      // Calcular el ancho máximo considerando el padding/margin del modal
-      const modalHorizontalSpacing = theme.spacing.medium * 2; // margin left + right
+      const modalHorizontalSpacing = spacing.medium * 2;
       const safeMaxWidth = screenWidth - modalHorizontalSpacing;
 
-      switch (size) {
-        case 'small':
-          return {
-            width: '85%',
-            maxWidth: Math.min(maxWidth || 400, safeMaxWidth)
-          };
-        case 'medium':
-          return {
-            width: '92%',
-            maxWidth: Math.min(maxWidth || 600, safeMaxWidth)
-          };
-        case 'large':
-          return {
-            width: '95%',
-            maxWidth: Math.min(maxWidth || 800, safeMaxWidth)
-          };
-        case 'full':
-          return {
-            width: '100%',
-            maxWidth: safeMaxWidth
-          };
-        default:
-          return {
-            width: '92%',
-            maxWidth: Math.min(maxWidth || 600, safeMaxWidth)
-          };
-      }
-    }, [size, maxWidth, screenWidth, theme.spacing.medium]);
+      const sizeConfig = {
+        small: { width: '85%', defaultMax: 400 },
+        medium: { width: '92%', defaultMax: 600 },
+        large: { width: '95%', defaultMax: 800 },
+        full: { width: '100%', defaultMax: safeMaxWidth }
+      };
+
+      const config = sizeConfig[size] || sizeConfig.medium;
+
+      return {
+        width: config.width as DimensionValue,
+        maxWidth: Math.min(maxWidth || config.defaultMax, safeMaxWidth)
+      };
+    }, [size, maxWidth, screenWidth, spacing.medium]);
 
     const characterCountInfo = useMemo(() => {
       if (!showCharacterCount || !inputMaxLength) return null;
@@ -207,11 +202,9 @@ const CustomModal = React.memo(
       };
     }, [inputValue, inputMaxLength, showCharacterCount]);
 
-    const renderHeader = () => {
+    const renderHeader = useCallback(() => {
       if (!showHeader && !title) return null;
-
       if (customHeader) return customHeader;
-
       if (!title && !showCloseButton) return null;
 
       return (
@@ -232,9 +225,9 @@ const CustomModal = React.memo(
               onPress={onClose}
               style={({ pressed }) => [
                 styles.closeButton,
-                pressed && styles.closeButtonPressable
+                pressed && styles.closeButtonPressed
               ]}
-              hitSlop={theme.spacing.medium}
+              hitSlop={spacing.medium}
               accessibilityLabel="Cerrar modal"
               accessibilityRole="button"
             >
@@ -243,10 +236,21 @@ const CustomModal = React.memo(
           )}
         </View>
       );
-    };
+    }, [
+      showHeader,
+      title,
+      customHeader,
+      showCloseButton,
+      styles,
+      headerBorder,
+      headerStyle,
+      titleStyle,
+      onClose,
+      spacing.medium
+    ]);
 
-    const renderBody = () => {
-      const bodyContent = (
+    const renderBodyContent = useCallback(() => {
+      return (
         <View
           style={[
             styles.body,
@@ -262,16 +266,11 @@ const CustomModal = React.memo(
           )}
 
           {type === 'input' && (
-            <View>
+            <View style={styles.inputContainer}>
               {inputLabel && <Text style={styles.label}>{inputLabel}</Text>}
               <TextInput
                 style={[
                   styles.input,
-                  {
-                    width: maxWidth
-                      ? maxWidth - theme.spacing.large * 4
-                      : '100%'
-                  },
                   inputMultiline && styles.textArea,
                   inputFocused && styles.inputFocused
                 ]}
@@ -282,8 +281,8 @@ const CustomModal = React.memo(
                 multiline={inputMultiline}
                 numberOfLines={inputMultiline ? 4 : 1}
                 maxLength={inputMaxLength}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setInputFocused(false)}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
                 accessibilityLabel={inputLabel || inputPlaceholder}
                 accessibilityHint={description}
                 scrollEnabled={inputMultiline}
@@ -301,7 +300,7 @@ const CustomModal = React.memo(
                 </Text>
               )}
               {description && (
-                <Text style={styles.description}>{description}</Text>
+                <Text style={styles.inputDescription}>{description}</Text>
               )}
             </View>
           )}
@@ -309,7 +308,29 @@ const CustomModal = React.memo(
           {children}
         </View>
       );
+    }, [
+      styles,
+      bodyPadding,
+      centered,
+      bodyStyle,
+      icon,
+      description,
+      children,
+      type,
+      inputLabel,
+      inputValue,
+      onInputChange,
+      inputPlaceholder,
+      theme.colors.placeholder,
+      inputMultiline,
+      inputMaxLength,
+      handleInputFocus,
+      handleInputBlur,
+      inputFocused,
+      characterCountInfo
+    ]);
 
+    const renderBody = useCallback(() => {
       if (scrollable) {
         return (
           <ScrollView
@@ -320,17 +341,15 @@ const CustomModal = React.memo(
             removeClippedSubviews={true}
             scrollEventThrottle={16}
           >
-            {bodyContent}
+            {renderBodyContent()}
           </ScrollView>
         );
       }
+      return renderBodyContent();
+    }, [scrollable, styles.bodyScrollable, renderBodyContent]);
 
-      return bodyContent;
-    };
-
-    const renderFooter = () => {
+    const renderFooter = useCallback(() => {
       if (!showFooter && !buttons && !customFooter) return null;
-
       if (customFooter) return customFooter;
 
       const footerAlignmentStyle =
@@ -340,7 +359,7 @@ const CustomModal = React.memo(
             ? styles.footerStart
             : footerAlignment === 'space-between'
               ? styles.footerSpaceBetween
-              : null;
+              : styles.footerEnd;
 
       return (
         <View
@@ -351,58 +370,75 @@ const CustomModal = React.memo(
             footerStyle
           ]}
         >
-          {buttons?.map((button, index) => (
-            <Pressable
-              key={index}
-              onPress={button.onPress}
-              disabled={button.disabled || button.loading}
-              style={({ pressed }) => [
-                styles.button,
-                button.variant === 'primary' && styles.buttonPrimary,
-                button.variant === 'secondary' && styles.buttonSecondary,
-                button.variant === 'danger' && styles.buttonDanger,
-                button.variant === 'outline' && styles.buttonOutline,
-                pressed && styles.buttonPressed,
-                (button.disabled || button.loading) && styles.buttonDisabled
-              ]}
-              accessibilityLabel={button.label}
-              accessibilityRole="button"
-              accessibilityState={{
-                disabled: button.disabled || button.loading
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text
-                  style={[
-                    styles.buttonText,
-                    button.variant === 'primary' && styles.buttonTextPrimary,
-                    button.variant === 'secondary' &&
-                      styles.buttonTextSecondary,
-                    button.variant === 'danger' && styles.buttonTextDanger,
-                    button.variant === 'outline' && styles.buttonTextOutline
-                  ]}
-                >
-                  {button.label}
-                </Text>
-                {button.loading && (
-                  <ActivityIndicator
-                    size="small"
-                    color={
-                      button.variant === 'primary'
-                        ? theme.textOnPrimaryButton
-                        : button.variant === 'danger'
-                          ? '#FFFFFF'
-                          : theme.colors.primary
-                    }
-                    style={styles.loadingIndicator}
-                  />
-                )}
-              </View>
-            </Pressable>
-          ))}
+          {buttons?.map((button, index) => {
+            const isDisabled = button.disabled || button.loading;
+            const buttonVariantStyle =
+              button.variant === 'primary'
+                ? styles.buttonPrimary
+                : button.variant === 'secondary'
+                  ? styles.buttonSecondary
+                  : button.variant === 'danger'
+                    ? styles.buttonDanger
+                    : styles.buttonOutline;
+
+            const textVariantStyle =
+              button.variant === 'primary'
+                ? styles.buttonTextPrimary
+                : button.variant === 'secondary'
+                  ? styles.buttonTextSecondary
+                  : button.variant === 'danger'
+                    ? styles.buttonTextDanger
+                    : styles.buttonTextOutline;
+
+            const loaderColor =
+              button.variant === 'primary'
+                ? theme.colors.textOnPrimary
+                : button.variant === 'danger'
+                  ? '#FFFFFF'
+                  : theme.colors.primary;
+
+            return (
+              <Pressable
+                key={`button-${index}`}
+                onPress={button.onPress}
+                disabled={isDisabled}
+                style={({ pressed }) => [
+                  styles.button,
+                  buttonVariantStyle,
+                  pressed && !isDisabled && styles.buttonPressed,
+                  isDisabled && styles.buttonDisabled
+                ]}
+                accessibilityLabel={button.label}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: isDisabled }}
+              >
+                <View style={styles.buttonContent}>
+                  <Text style={[styles.buttonText, textVariantStyle]}>
+                    {button.label}
+                  </Text>
+                  {button.loading && (
+                    <ActivityIndicator
+                      size="small"
+                      color={loaderColor}
+                      style={styles.loadingIndicator}
+                    />
+                  )}
+                </View>
+              </Pressable>
+            );
+          })}
         </View>
       );
-    };
+    }, [
+      showFooter,
+      buttons,
+      customFooter,
+      footerAlignment,
+      styles,
+      footerBorder,
+      footerStyle,
+      theme.colors
+    ]);
 
     return (
       <Modal
@@ -424,11 +460,7 @@ const CustomModal = React.memo(
         useNativeDriver={useNativeDriver}
         hideModalContentWhileAnimating={hideModalContentWhileAnimating}
         avoidKeyboard={avoidKeyboard}
-        style={[
-          size === 'full' ? { margin: 0 } : { margin: theme.spacing.medium },
-          { alignItems: 'center', justifyContent: 'center' },
-          modalStyle
-        ]}
+        style={[styles.modal, size === 'full' && styles.modalFull, modalStyle]}
       >
         <View style={[styles.modalContent, getSizeStyle, contentStyle]}>
           {renderHeader()}

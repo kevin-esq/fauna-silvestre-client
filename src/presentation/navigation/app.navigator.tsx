@@ -29,6 +29,8 @@ import AnimalFormScreen from '../screens/admin/animal-form-screen';
 import ImageEditorScreen from '../screens/admin/image-editor-screen';
 import CatalogAnimalsScreen from '../screens/catalog/catalog-animals-screen';
 import DownloadedFilesScreen from '../screens/media/downloaded-files-screen';
+import UserListScreen from '../screens/users/user-list-screen';
+import UserDetailsScreen from '../screens/users/user-details-screen';
 
 import type { RootStackParamList } from './navigation.types';
 import { createRootStack } from './create-root-stack';
@@ -183,7 +185,9 @@ const createStackConfigurations = () => {
     { name: 'AnimalDetails', component: AnimalDetailsScreen },
     { name: 'AnimalForm', component: AnimalFormScreen },
     { name: 'ImageEditor', component: ImageEditorScreen },
-    { name: 'DownloadedFiles', component: DownloadedFilesScreen }
+    { name: 'DownloadedFiles', component: DownloadedFilesScreen },
+    { name: 'UserList', component: UserListScreen },
+    { name: 'UserDetails', component: UserDetailsScreen }
   ]);
 
   const userRootStack = createRootStack<RootStackParamList>([

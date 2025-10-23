@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
-  Image,
   RefreshControl,
   SafeAreaView,
   Text,
@@ -28,7 +27,7 @@ import {
 
 import CustomModal from '../../../components/ui/custom-modal.component';
 
-import { UserModel } from '@/shared/utils/fakeData';
+import { UserData } from '@/domain/models/user.models';
 import { useStyles } from './admin-home-screen.styles';
 import { RootStackParamList } from '@/presentation/navigation/navigation.types';
 
@@ -310,7 +309,7 @@ const QuickActionsSection = React.memo<{
           icon="account-group"
           iconType="material"
           label="Gestionar usuarios"
-          onPress={() => console.log('UserManagement')}
+          onPress={() => onNavigate('UserList')}
           styles={styles}
           color={colors.info}
         />
@@ -327,9 +326,9 @@ const QuickActionsSection = React.memo<{
 });
 
 const UserListItem = React.memo<{
-  user: UserModel;
+  user: UserData;
   styles: ReturnType<typeof useStyles>;
-  onPress?: (user: UserModel) => void;
+  onPress?: (user: UserData) => void;
 }>(({ user, styles, onPress }) => {
   const [isPressed, setIsPressed] = React.useState(false);
   const { colors } = useTheme();
@@ -349,33 +348,25 @@ const UserListItem = React.memo<{
       activeOpacity={0.8}
     >
       <View style={styles.avatarContainer}>
-        {user.avatarUrl ? (
-          <Image
-            source={{ uri: user.avatarUrl }}
-            style={styles.userAvatar}
-            accessibilityIgnoresInvertColors
-          />
-        ) : (
-          <View
-            style={[
-              styles.userAvatar,
-              {
-                backgroundColor: colors.primaryLight,
-                justifyContent: 'center',
-                alignItems: 'center'
-              }
-            ]}
-          >
-            <Ionicons name="person" size={28} color={colors.textOnPrimary} />
-          </View>
-        )}
+        <View
+          style={[
+            styles.userAvatar,
+            {
+              backgroundColor: colors.primaryLight,
+              justifyContent: 'center',
+              alignItems: 'center'
+            }
+          ]}
+        >
+          <Ionicons name="person" size={28} color={colors.textOnPrimary} />
+        </View>
         <View
           style={[styles.statusIndicator, { backgroundColor: colors.success }]}
         />
       </View>
       <View style={styles.userInfo}>
         <Text style={styles.userName} numberOfLines={1}>
-          {user.name}
+          {user.name} {user.lastName}
         </Text>
         <View style={styles.userEmailRow}>
           <Ionicons
@@ -394,10 +385,10 @@ const UserListItem = React.memo<{
 });
 
 const UsersSection = React.memo<{
-  users: UserModel[];
+  users: UserData[];
   isLoading: boolean;
   onSeeAll: () => void;
-  onUserPress: (user: UserModel) => void;
+  onUserPress: (user: UserData) => void;
   styles: ReturnType<typeof useStyles>;
 }>(({ users, isLoading, onSeeAll, onUserPress, styles }) => {
   const { colors } = useTheme();
@@ -449,7 +440,7 @@ const UsersSection = React.memo<{
       <View style={styles.sectionSubtitleRow}>
         <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
         <Text style={styles.sectionSubtitle}>
-          Últimos 5 usuarios registrados
+          Últimos 4 usuarios registrados
         </Text>
       </View>
 
@@ -457,10 +448,10 @@ const UsersSection = React.memo<{
         <EmptyUsersList styles={styles} />
       ) : (
         users
-          .slice(0, 5)
-          .map(user => (
+          .slice(0, 4)
+          .map((user, index) => (
             <UserListItem
-              key={user.id}
+              key={`${user.userName}-${index}`}
               user={user}
               styles={styles}
               onPress={onUserPress}
@@ -554,9 +545,12 @@ const AdminHomeScreen: React.FC = React.memo(() => {
     [push]
   );
 
-  const handleUserPress = useCallback((user: UserModel) => {
-    console.log('User pressed:', user);
-  }, []);
+  const handleUserPress = useCallback(
+    (user: UserData) => {
+      push('UserDetails', { user });
+    },
+    [push]
+  );
 
   const ListHeader = useMemo(
     () => (
@@ -570,9 +564,7 @@ const AdminHomeScreen: React.FC = React.memo(() => {
         <UsersSection
           users={state.users}
           isLoading={state.loading}
-          onSeeAll={() =>
-            console.log('See all users', { users: state.users.slice() })
-          }
+          onSeeAll={() => handleNavigation('UserList')}
           onUserPress={handleUserPress}
           styles={styles}
         />
