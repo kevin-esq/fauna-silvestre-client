@@ -1,5 +1,7 @@
 import User from '../entities/user.entity';
+import { UsersResponse } from '@/domain/models/user.models';
 
 export interface IUserRepository {
-  getUser(): Promise<User>;
+  getLocalUser(): Promise<User>;
+  getAllUsers(page: number, size: number): Promise<UsersResponse>;
 }

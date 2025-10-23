@@ -3,6 +3,7 @@ import { PublicationModelResponse } from '../../domain/models/publication.models
 import type { Location } from 'react-native-get-location';
 import { AnimalModelResponse } from '../../domain/models/animal.models';
 import { PublicationStatus } from '@/services/publication/publication.service';
+import { UserData } from '../../domain/models/user.models';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -53,6 +54,9 @@ export type RootStackParamList = {
     userId: string;
   };
   UserList: undefined;
+  UserDetails: {
+    user: UserData;
+  };
   UserCreate: undefined;
   UserEdit: {
     userId: string;
@@ -138,4 +142,8 @@ export type UserCreateScreenProps = NativeStackScreenProps<
 export type UserEditScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'UserEdit'
+>;
+export type UserDetailsScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'UserDetails'
 >;

@@ -1,16 +1,17 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { usePublications } from '../contexts/publication.context';
-import { UserModel, getAllUsers } from '@/shared/utils/fakeData';
+import { useUsers } from './use-users.hook';
+import { UserData } from '@/domain/models/user.models';
 
 interface AdminDataState {
-  readonly users: UserModel[];
+  readonly users: UserData[];
   readonly loading: boolean;
   readonly refreshing: boolean;
   readonly error: string | null;
 }
 
 interface AdminDataActions {
-  readonly loadUsers: (isRefreshing?: boolean) => Promise<void>;
+  readonly loadUsers: () => Promise<void>;
   readonly handleRefresh: () => void;
   readonly retryLoad: () => void;
 }
@@ -29,71 +30,45 @@ interface AdminDataReturn {
 
 export const useAdminData = (): AdminDataReturn => {
   const { state: publicationState, loadCounts } = usePublications();
-
-  const [state, setState] = useState<AdminDataState>({
-    users: [],
-    loading: true,
-    refreshing: false,
-    error: null
-  });
-
-  const loadUsers = useCallback(async (isRefreshing = false): Promise<void> => {
-    try {
-      setState(prevState => ({
-        ...prevState,
-        loading: !isRefreshing,
-        refreshing: isRefreshing,
-        error: null
-      }));
-
-      await new Promise<void>(resolve => {
-        setTimeout(() => {
-          resolve();
-        }, 800);
-      });
-
-      const users = getAllUsers();
-
-      setState(prevState => ({
-        ...prevState,
-        users,
-        loading: false,
-        refreshing: false
-      }));
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Error al cargar usuarios';
-
-      setState(prevState => ({
-        ...prevState,
-        loading: false,
-        refreshing: false,
-        error: errorMessage
-      }));
-    }
-  }, []);
+  const {
+    users,
+    isLoading,
+    isRefreshing,
+    error,
+    loadUsers: loadUsersFromService,
+    refreshUsers
+  } = useUsers(1, 4);
 
   const handleRefresh = useCallback((): void => {
-    void loadUsers(true);
+    void refreshUsers();
     void loadCounts();
-  }, [loadUsers, loadCounts]);
+  }, [refreshUsers, loadCounts]);
 
   const retryLoad = useCallback((): void => {
-    void loadUsers();
-  }, [loadUsers]);
+    void loadUsersFromService();
+  }, [loadUsersFromService]);
 
   useEffect(() => {
-    void loadUsers();
     void loadCounts();
-  }, [loadUsers, loadCounts]);
+  }, [loadCounts]);
+
+  const state: AdminDataState = useMemo(
+    () => ({
+      users,
+      loading: isLoading,
+      refreshing: isRefreshing,
+      error
+    }),
+    [users, isLoading, isRefreshing, error]
+  );
 
   const actions: AdminDataActions = useMemo(
     () => ({
-      loadUsers,
+      loadUsers: loadUsersFromService,
       handleRefresh,
       retryLoad
     }),
-    [loadUsers, handleRefresh, retryLoad]
+    [loadUsersFromService, handleRefresh, retryLoad]
   );
 
   const publicationCounts: PublicationCounts = useMemo(

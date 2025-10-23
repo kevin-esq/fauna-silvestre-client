@@ -5,12 +5,13 @@ import User from '../../domain/entities/user.entity';
 import { UserMapper } from '../mappers/UserMapper';
 import { UserModel } from '../models/UserModel';
 import { ILogger } from '../../shared/types/ILogger';
+import { UsersResponse } from '@/domain/models/user.models';
 
 export class UserRepository extends BaseRepository implements IUserRepository {
   constructor(api: AxiosInstance, logger: ILogger) {
     super(api, logger);
   }
-  async getUser(): Promise<User> {
+  async getLocalUser(): Promise<User> {
     try {
       this.logger.debug('[UserRepository] Obteniendo datos de usuario');
 
@@ -31,25 +32,43 @@ export class UserRepository extends BaseRepository implements IUserRepository {
     }
   }
 
-  async updateUser(userData: Partial<User>): Promise<User> {
-    try {
-      this.logger.debug('[UserRepository] Actualizando datos de usuario', {
-        userData
-      });
+  // TODO: Implementar en el futuro
+  // async updateUser(userData: Partial<User>): Promise<User> {
+  //   try {
+  //     this.logger.debug('[UserRepository] Actualizando datos de usuario', {
+  //       userData
+  //     });
+  //
+  //     const modelData = UserMapper.toModel(userData as User);
+  //     const response = await this.api.patch<UserModel>(
+  //       '/Users/update',
+  //       modelData
+  //     );
+  //     this.ensureSuccessStatus(response);
+  //
+  //     this.logger.info('[UserRepository] Usuario actualizado exitosamente');
+  //     return UserMapper.toDomain(response.data);
+  //   } catch (error) {
+  //     const processedError = this.handleHttpError(error, 'updateUser');
+  //     this.logger.error(
+  //       '[UserRepository] Error actualizando usuario',
+  //       processedError
+  //     );
+  //     throw processedError;
+  //   }
+  // }
 
-      const modelData = UserMapper.toModel(userData as User);
-      const response = await this.api.patch<UserModel>(
-        '/Users/update',
-        modelData
+  async getAllUsers(page: number, size: number): Promise<UsersResponse> {
+    try {
+      const response = await this.api.get<UsersResponse>(
+        `/Admin/all-users?page=${page}&size=${size}`
       );
       this.ensureSuccessStatus(response);
-
-      this.logger.info('[UserRepository] Usuario actualizado exitosamente');
-      return UserMapper.toDomain(response.data);
+      return response.data;
     } catch (error) {
-      const processedError = this.handleHttpError(error, 'updateUser');
+      const processedError = this.handleHttpError(error, 'getAllUsers');
       this.logger.error(
-        '[UserRepository] Error actualizando usuario',
+        '[UserRepository] Error obteniendo todos los usuarios',
         processedError
       );
       throw processedError;

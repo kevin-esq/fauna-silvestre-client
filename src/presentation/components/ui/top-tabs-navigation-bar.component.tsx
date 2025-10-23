@@ -135,237 +135,253 @@ const TabButton = React.memo(
 
 TabButton.displayName = 'TabButton';
 
-const NotificationButton = ({
-  onPress,
-  notificationCount,
-  theme
-}: {
-  onPress: () => void;
-  notificationCount: number;
-  theme: Theme;
-}) => {
-  const pulseAnim = useRef(new RNAnimated.Value(1)).current;
-  const scaleAnim = useRef(new RNAnimated.Value(1)).current;
+const NotificationButton = React.memo(
+  ({
+    onPress,
+    notificationCount,
+    theme
+  }: {
+    onPress: () => void;
+    notificationCount: number;
+    theme: Theme;
+  }) => {
+    const { colors, spacing, borderRadius, iconSizes } = theme;
+    const pulseAnim = useRef(new RNAnimated.Value(1)).current;
+    const scaleAnim = useRef(new RNAnimated.Value(1)).current;
 
-  useEffect(() => {
-    if (notificationCount > 0) {
-      const animation = RNAnimated.loop(
-        RNAnimated.sequence([
-          RNAnimated.timing(pulseAnim, {
-            toValue: 1.15,
-            duration: 1000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true
-          }),
-          RNAnimated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true
-          })
-        ])
-      );
-      animation.start();
-      return () => animation.stop();
-    } else {
-      pulseAnim.setValue(1);
-    }
-  }, [notificationCount, pulseAnim]);
+    useEffect(() => {
+      if (notificationCount > 0) {
+        const animation = RNAnimated.loop(
+          RNAnimated.sequence([
+            RNAnimated.timing(pulseAnim, {
+              toValue: 1.15,
+              duration: 1000,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true
+            }),
+            RNAnimated.timing(pulseAnim, {
+              toValue: 1,
+              duration: 1000,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true
+            })
+          ])
+        );
+        animation.start();
+        return () => animation.stop();
+      } else {
+        pulseAnim.setValue(1);
+      }
+    }, [notificationCount, pulseAnim]);
 
-  const handlePressIn = () => {
-    RNAnimated.spring(scaleAnim, {
-      toValue: 0.88,
-      tension: 100,
-      friction: 8,
-      useNativeDriver: true
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    RNAnimated.spring(scaleAnim, {
-      toValue: 1,
-      tension: 60,
-      friction: 7,
-      useNativeDriver: true
-    }).start();
-  };
-
-  return (
-    <RNAnimated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <TouchableOpacity
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 22,
-          backgroundColor: theme.colors.surfaceVariant,
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          ...Platform.select({
-            ios: {
-              shadowColor: theme.colors.shadow,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.12,
-              shadowRadius: 4
-            },
-            android: {
-              elevation: 3
-            }
-          })
-        }}
-        activeOpacity={1}
-        accessibilityLabel={`Notificaciones${notificationCount > 0 ? `, ${notificationCount} sin leer` : ''}`}
-        accessibilityRole="button"
-      >
-        <FontAwesome5Icon
-          name="bell"
-          size={20}
-          color={
-            notificationCount > 0
-              ? theme.colors.primary
-              : theme.colors.textSecondary
-          }
-          solid={notificationCount > 0}
-        />
-
-        {notificationCount > 0 && (
-          <RNAnimated.View
-            style={{
-              position: 'absolute',
-              top: -2,
-              right: -2,
-              minWidth: 20,
-              height: 20,
-              borderRadius: 10,
-              backgroundColor: theme.colors.secondary,
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingHorizontal: 5,
-              borderWidth: 2.5,
-              borderColor: theme.colors.surface,
-              transform: [{ scale: pulseAnim }],
-              ...Platform.select({
-                ios: {
-                  shadowColor: theme.colors.secondary,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 4
-                },
-                android: {
-                  elevation: 4
-                }
-              })
-            }}
-          >
-            <Text
-              style={{
-                color: theme.colors.textOnSecondary,
-                fontSize: 10,
-                fontWeight: '800',
-                letterSpacing: -0.2
-              }}
-            >
-              {notificationCount > 99 ? '99+' : notificationCount}
-            </Text>
-          </RNAnimated.View>
-        )}
-      </TouchableOpacity>
-    </RNAnimated.View>
-  );
-};
-
-const CreatePostButton = ({
-  onPress,
-  theme
-}: {
-  onPress: () => void;
-  theme: Theme;
-}) => {
-  const scaleAnim = useRef(new RNAnimated.Value(1)).current;
-  const rotateAnim = useRef(new RNAnimated.Value(0)).current;
-
-  const handlePressIn = () => {
-    RNAnimated.parallel([
+    const handlePressIn = () => {
       RNAnimated.spring(scaleAnim, {
-        toValue: 0.85,
+        toValue: 0.88,
         tension: 100,
         friction: 8,
         useNativeDriver: true
-      }),
-      RNAnimated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 200,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true
-      })
-    ]).start();
-  };
+      }).start();
+    };
 
-  const handlePressOut = () => {
-    RNAnimated.parallel([
+    const handlePressOut = () => {
       RNAnimated.spring(scaleAnim, {
         toValue: 1,
         tension: 60,
         friction: 7,
         useNativeDriver: true
+      }).start();
+    };
+
+    const buttonStyle = useMemo(
+      () => ({
+        width: iconSizes.large + spacing.small + spacing.tiny,
+        height: iconSizes.large + spacing.small + spacing.tiny,
+        borderRadius: (iconSizes.large + spacing.small + spacing.tiny) / 2,
+        backgroundColor: colors.surfaceVariant,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        position: 'relative' as const,
+        ...Platform.select({
+          ios: {
+            shadowColor: colors.shadow,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.12,
+            shadowRadius: 4
+          },
+          android: {
+            elevation: 3
+          }
+        })
       }),
-      RNAnimated.timing(rotateAnim, {
-        toValue: 0,
-        duration: 200,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true
-      })
-    ]).start();
-  };
+      [iconSizes, spacing, colors]
+    );
 
-  const rotation = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '90deg']
-  });
+    const badgeStyle = useMemo(
+      () => ({
+        position: 'absolute' as const,
+        top: -spacing.tiny / 2,
+        right: -spacing.tiny / 2,
+        minWidth: iconSizes.small + spacing.tiny,
+        height: iconSizes.small + spacing.tiny,
+        borderRadius: (iconSizes.small + spacing.tiny) / 2,
+        backgroundColor: colors.secondary,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        paddingHorizontal: spacing.tiny + 1,
+        borderWidth: borderRadius.small / 2,
+        borderColor: colors.surface,
+        ...Platform.select({
+          ios: {
+            shadowColor: colors.secondary,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.4,
+            shadowRadius: 4
+          },
+          android: {
+            elevation: 4
+          }
+        })
+      }),
+      [spacing, iconSizes, borderRadius, colors]
+    );
 
-  return (
-    <RNAnimated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <TouchableOpacity
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: 26,
-          backgroundColor: theme.colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-          ...Platform.select({
-            ios: {
-              shadowColor: theme.colors.primary,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8
-            },
-            android: {
-              elevation: 6
-            }
-          })
-        }}
-        activeOpacity={1}
-        accessibilityLabel="Crear nueva publicación"
-        accessibilityRole="button"
-      >
-        <RNAnimated.View style={{ transform: [{ rotate: rotation }] }}>
+    return (
+      <RNAnimated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <TouchableOpacity
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={buttonStyle}
+          activeOpacity={1}
+          accessibilityLabel={`Notificaciones${notificationCount > 0 ? `, ${notificationCount} sin leer` : ''}`}
+          accessibilityRole="button"
+        >
           <FontAwesome5Icon
-            name="plus"
-            size={24}
-            color={theme.colors.textOnPrimary}
+            name="bell"
+            size={iconSizes.medium - 4}
+            color={
+              notificationCount > 0 ? colors.primary : colors.textSecondary
+            }
+            solid={notificationCount > 0}
           />
-        </RNAnimated.View>
-      </TouchableOpacity>
-    </RNAnimated.View>
-  );
-};
+
+          {notificationCount > 0 && (
+            <RNAnimated.View
+              style={[badgeStyle, { transform: [{ scale: pulseAnim }] }]}
+            >
+              <Text
+                style={{
+                  color: colors.textOnSecondary,
+                  fontSize: theme.typography.fontSize.small - 2,
+                  fontWeight: theme.typography.fontWeight.black,
+                  letterSpacing: -0.2
+                }}
+              >
+                {notificationCount > 99 ? '99+' : notificationCount}
+              </Text>
+            </RNAnimated.View>
+          )}
+        </TouchableOpacity>
+      </RNAnimated.View>
+    );
+  }
+);
+
+NotificationButton.displayName = 'NotificationButton';
+
+const CreatePostButton = React.memo(
+  ({ onPress, theme }: { onPress: () => void; theme: Theme }) => {
+    const { colors, spacing, iconSizes } = theme;
+    const scaleAnim = useRef(new RNAnimated.Value(1)).current;
+    const rotateAnim = useRef(new RNAnimated.Value(0)).current;
+
+    const handlePressIn = () => {
+      RNAnimated.parallel([
+        RNAnimated.spring(scaleAnim, {
+          toValue: 0.85,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true
+        }),
+        RNAnimated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true
+        })
+      ]).start();
+    };
+
+    const handlePressOut = () => {
+      RNAnimated.parallel([
+        RNAnimated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 60,
+          friction: 7,
+          useNativeDriver: true
+        }),
+        RNAnimated.timing(rotateAnim, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true
+        })
+      ]).start();
+    };
+
+    const rotation = rotateAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '90deg']
+    });
+
+    const buttonStyle = useMemo(
+      () => ({
+        width: iconSizes.xlarge + spacing.tiny,
+        height: iconSizes.xlarge + spacing.tiny,
+        borderRadius: (iconSizes.xlarge + spacing.tiny) / 2,
+        backgroundColor: colors.primary,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        ...Platform.select({
+          ios: {
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8
+          },
+          android: {
+            elevation: 6
+          }
+        })
+      }),
+      [iconSizes, spacing, colors]
+    );
+
+    return (
+      <RNAnimated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <TouchableOpacity
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={buttonStyle}
+          activeOpacity={1}
+          accessibilityLabel="Crear nueva publicación"
+          accessibilityRole="button"
+        >
+          <RNAnimated.View style={{ transform: [{ rotate: rotation }] }}>
+            <FontAwesome5Icon
+              name="plus"
+              size={iconSizes.medium}
+              color={colors.textOnPrimary}
+            />
+          </RNAnimated.View>
+        </TouchableOpacity>
+      </RNAnimated.View>
+    );
+  }
+);
+
+CreatePostButton.displayName = 'CreatePostButton';
 
 export default function TopTabsNavigationBar({
   state,
@@ -381,8 +397,11 @@ export default function TopTabsNavigationBar({
 
   const { tabWidth, availableWidth, indicatorWidth } = useMemo(() => {
     const horizontalInsets = insets.left + insets.right;
-    const availableWidth = screenWidth - horizontalInsets - 32;
-    const tabWidth = (availableWidth - 12) / state.routes.length;
+    const availableWidth =
+      screenWidth - horizontalInsets - theme.spacing.medium * 2;
+    const tabWidth =
+      (availableWidth - (theme.spacing.small + theme.spacing.tiny)) /
+      state.routes.length;
 
     const indicatorWidth = tabWidth * 0.4;
 
@@ -391,11 +410,20 @@ export default function TopTabsNavigationBar({
       availableWidth,
       indicatorWidth
     };
-  }, [screenWidth, insets.left, insets.right, state.routes.length]);
+  }, [
+    screenWidth,
+    insets.left,
+    insets.right,
+    state.routes.length,
+    theme.spacing
+  ]);
 
   const animatedIndicatorStyle = useAnimatedStyle(() => {
     const translateX =
-      position.value * tabWidth + (tabWidth - indicatorWidth) / 2 + 6;
+      position.value * tabWidth +
+      (tabWidth - indicatorWidth) / 2 +
+      theme.spacing.tiny +
+      2;
 
     return {
       transform: [
@@ -403,13 +431,14 @@ export default function TopTabsNavigationBar({
           translateX: withSpring(translateX, {
             damping: 20,
             stiffness: 200,
-            mass: 0.5
+            mass: 0.5,
+            overshootClamping: false
           })
         }
       ],
       width: indicatorWidth
     };
-  });
+  }, [tabWidth, indicatorWidth, theme.spacing]);
 
   const styles = useMemo(() => createStyles(insets, theme), [insets, theme]);
 
@@ -422,13 +451,15 @@ export default function TopTabsNavigationBar({
 
   const handleTabPress = useCallback(
     (routeKey: string, routeName: string) => {
+      if (currentRouteRef.current === routeKey) return;
+
       const event = navigation.emit({
         type: 'tabPress',
         target: routeKey,
         canPreventDefault: true
       });
 
-      if (currentRouteRef.current !== routeKey && !event.defaultPrevented) {
+      if (!event.defaultPrevented) {
         navigation.navigate(routeName);
       }
     },
@@ -455,6 +486,7 @@ export default function TopTabsNavigationBar({
               style={styles.headerIcon}
               accessibilityIgnoresInvertColors
               accessibilityLabel="App logo"
+              resizeMode="contain"
             />
           </View>
           <View style={styles.headerTextContainer}>
