@@ -20,6 +20,7 @@ interface UseUsersState {
 interface UseUsersReturn extends UseUsersState {
   loadUsers: (page?: number, size?: number) => Promise<void>;
   refreshUsers: () => Promise<void>;
+  deactivateUser: (userId: number) => Promise<void>;
 }
 
 export const useUsers = (
@@ -89,7 +90,34 @@ export const useUsers = (
     }
   }, [state.pagination, initialPage, initialSize]);
 
-  // Carga inicial
+  const deactivateUser = useCallback(
+    async (userId: number) => {
+      try {
+        setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+        await userService.deactivateUser(userId);
+
+        await loadUsers(
+          state.pagination?.page || initialPage,
+          state.pagination?.size || initialSize
+        );
+
+        setState(prev => ({ ...prev, isLoading: false, error: null }));
+      } catch (error) {
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Error al desactivar usuario'
+        }));
+        throw error;
+      }
+    },
+    [loadUsers, state.pagination, initialPage, initialSize]
+  );
+
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
@@ -97,6 +125,7 @@ export const useUsers = (
   return {
     ...state,
     loadUsers,
-    refreshUsers
+    refreshUsers,
+    deactivateUser
   };
 };

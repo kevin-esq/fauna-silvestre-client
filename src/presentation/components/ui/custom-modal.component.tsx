@@ -64,6 +64,8 @@ export interface CustomModalProps {
   inputMultiline?: boolean;
   inputMaxLength?: number;
   showCharacterCount?: boolean;
+  textAreaHeight?: number;
+  textAreaWidth?: DimensionValue;
 
   type?: ModalType;
   size?: ModalSize;
@@ -149,7 +151,10 @@ const CustomModal = React.memo<CustomModalProps>(
   }) => {
     const { theme, spacing } = useTheme();
     const { width: screenWidth } = useWindowDimensions();
-    const styles = useMemo(() => createModalStyles(theme), [theme]);
+    const styles = useMemo(
+      () => createModalStyles(theme, screenWidth),
+      [theme, screenWidth]
+    );
     const [inputFocused, setInputFocused] = useState(false);
 
     const handleBackdropPress = useCallback(() => {
@@ -268,25 +273,30 @@ const CustomModal = React.memo<CustomModalProps>(
           {type === 'input' && (
             <View style={styles.inputContainer}>
               {inputLabel && <Text style={styles.label}>{inputLabel}</Text>}
-              <TextInput
-                style={[
-                  styles.input,
-                  inputMultiline && styles.textArea,
-                  inputFocused && styles.inputFocused
-                ]}
-                value={inputValue}
-                onChangeText={onInputChange}
-                placeholder={inputPlaceholder}
-                placeholderTextColor={theme.colors.placeholder}
-                multiline={inputMultiline}
-                numberOfLines={inputMultiline ? 4 : 1}
-                maxLength={inputMaxLength}
-                onFocus={handleInputFocus}
-                onBlur={handleInputBlur}
-                accessibilityLabel={inputLabel || inputPlaceholder}
-                accessibilityHint={description}
-                scrollEnabled={inputMultiline}
-              />
+              <View
+                style={inputMultiline ? [styles.textAreaWrapper] : undefined}
+              >
+                <TextInput
+                  style={[
+                    styles.input,
+                    inputMultiline && styles.textArea,
+                    inputFocused && styles.inputFocused
+                  ]}
+                  value={inputValue}
+                  onChangeText={onInputChange}
+                  placeholder={inputPlaceholder}
+                  placeholderTextColor={theme.colors.placeholder}
+                  multiline={inputMultiline}
+                  numberOfLines={inputMultiline ? 8 : 1}
+                  maxLength={inputMaxLength}
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                  accessibilityLabel={inputLabel || inputPlaceholder}
+                  accessibilityHint={description}
+                  scrollEnabled={inputMultiline}
+                  textAlignVertical={inputMultiline ? 'top' : 'center'}
+                />
+              </View>
               {characterCountInfo && (
                 <Text
                   style={[

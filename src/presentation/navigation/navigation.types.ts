@@ -1,7 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PublicationModelResponse } from '../../domain/models/publication.models';
-import type { Location } from 'react-native-get-location';
 import { AnimalModelResponse } from '../../domain/models/animal.models';
+import type { Location } from '../../domain/models/draft.models';
 import { PublicationStatus } from '@/services/publication/publication.service';
 import { UserData } from '../../domain/models/user.models';
 
@@ -30,11 +30,14 @@ export type RootStackParamList = {
   Catalog: undefined;
 
   CameraGallery: undefined;
-  ImagePreview: { imageUri: string; location?: Location };
-  PublicationForm: { imageUri: string; location?: Location };
+  ImagePreview: { imageUri: string; location?: Location; draftId?: string };
+  PublicationForm: { imageUri: string; location?: Location; draftId?: string };
 
   HomeTabs: undefined;
+  OfflineHome: undefined;
   DownloadedFiles: undefined;
+  Drafts: undefined;
+  DraftEditor: { draftId: string };
   UserProfile: undefined;
   UserSettings: {
     userId: string;
@@ -147,4 +150,12 @@ export type UserEditScreenProps = NativeStackScreenProps<
 export type UserDetailsScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'UserDetails'
+>;
+export type DraftsScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'Drafts'
+>;
+export type DraftEditorScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'DraftEditor'
 >;

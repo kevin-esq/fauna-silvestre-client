@@ -2,10 +2,6 @@ import { useCallback, useMemo } from 'react';
 import { useNotificationContext } from '../contexts/notification.context';
 import { NotificationModel } from '../../domain/models/notification.models';
 
-/**
- * Custom hook para gestionar notificaciones
- * Proporciona acceso al estado y funciones del NotificationContext
- */
 export const useNotifications = () => {
   const {
     state,
@@ -16,10 +12,6 @@ export const useNotifications = () => {
     deleteNotification
   } = useNotificationContext();
 
-  // ============================================================================
-  // COMPUTED VALUES
-  // ============================================================================
-
   const hasUnread = useMemo(() => state.unreadCount > 0, [state.unreadCount]);
 
   const hasNotifications = useMemo(
@@ -27,13 +19,6 @@ export const useNotifications = () => {
     [state.notifications.length]
   );
 
-  // ============================================================================
-  // HELPER FUNCTIONS
-  // ============================================================================
-
-  /**
-   * Formatea la fecha de la notificación en tiempo relativo
-   */
   const getRelativeTime = useCallback((date: Date): string => {
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
@@ -57,9 +42,6 @@ export const useNotifications = () => {
     }
   }, []);
 
-  /**
-   * Filtra notificaciones por estado
-   */
   const getNotificationsByStatus = useCallback(
     (status: 'read' | 'unread'): NotificationModel[] => {
       return state.notifications.filter(n => n.status === status);
@@ -67,48 +49,34 @@ export const useNotifications = () => {
     [state.notifications]
   );
 
-  /**
-   * Obtiene notificaciones no leídas
-   */
   const unreadNotifications = useMemo(
     () => getNotificationsByStatus('unread'),
     [getNotificationsByStatus]
   );
 
-  /**
-   * Obtiene notificaciones leídas
-   */
   const readNotifications = useMemo(
     () => getNotificationsByStatus('read'),
     [getNotificationsByStatus]
   );
 
-  // ============================================================================
-  // RETURN
-  // ============================================================================
-
   return {
-    // State
     notifications: state.notifications,
     isLoading: state.isLoading,
     isRefreshing: state.isRefreshing,
     error: state.error,
     unreadCount: state.unreadCount,
 
-    // Computed
     hasUnread,
     hasNotifications,
     unreadNotifications,
     readNotifications,
 
-    // Actions
     loadNotifications,
     refreshNotifications,
     markAsRead,
     markAllAsRead,
     deleteNotification,
 
-    // Helpers
     getRelativeTime,
     getNotificationsByStatus
   };

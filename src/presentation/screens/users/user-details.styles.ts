@@ -214,8 +214,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
     },
 
     actionButtonsContainer: {
-      flexDirection: 'row',
-      gap: spacing.medium,
       paddingHorizontal: spacing.medium,
       paddingVertical: spacing.large,
       backgroundColor: colors.surface,
@@ -224,7 +222,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
     },
 
     actionButton: {
-      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -238,12 +235,8 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
       elevation: 2
     },
 
-    editButton: {
-      backgroundColor: colors.water
-    },
-
-    blockButton: {
-      backgroundColor: colors.error
+    deactivateButton: {
+      backgroundColor: colors.warning
     },
 
     actionButtonText: {
@@ -251,213 +244,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
       fontWeight: typography.fontWeight.medium,
       color: colors.textOnPrimary,
       lineHeight: typography.lineHeight.medium
-    },
-
-    statusTabsContainer: {
-      flexDirection: 'row',
-      backgroundColor: colors.surface,
-      paddingHorizontal: spacing.small,
-      paddingVertical: spacing.small,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      gap: spacing.small
-    },
-
-    statusTab: {
-      flex: 1,
-      paddingVertical: spacing.small,
-      paddingHorizontal: spacing.medium,
-      borderRadius: borderRadius.medium,
-      alignItems: 'center',
-      justifyContent: 'center'
-    },
-
-    statusTabActive: {
-      backgroundColor: colors.forest
-    },
-
-    statusTabInactive: {
-      backgroundColor: colors.surfaceVariant
-    },
-
-    statusTabText: {
-      fontSize: typography.fontSize.small,
-      fontWeight: typography.fontWeight.medium,
-      lineHeight: typography.lineHeight.small
-    },
-
-    statusTabTextActive: {
-      color: colors.textOnPrimary
-    },
-
-    statusTabTextInactive: {
-      color: colors.textSecondary
-    },
-
-    statusBadge: {
-      minWidth: 20,
-      height: 20,
-      borderRadius: 10,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginLeft: spacing.tiny,
-      paddingHorizontal: spacing.tiny
-    },
-
-    statusBadgeActive: {
-      backgroundColor: colors.textOnPrimary + '30'
-    },
-
-    statusBadgeInactive: {
-      backgroundColor: colors.forest + '20'
-    },
-
-    statusBadgeText: {
-      fontSize: 10,
-      fontWeight: typography.fontWeight.bold
-    },
-
-    statusBadgeTextActive: {
-      color: colors.textOnPrimary
-    },
-
-    statusBadgeTextInactive: {
-      color: colors.forest
-    },
-
-    publicationsContainer: {
-      flex: 1,
-      backgroundColor: colors.background
-    },
-
-    publicationsListContainer: {
-      paddingTop: spacing.small
-    },
-
-    publicationCard: {
-      backgroundColor: colors.surface,
-      borderRadius: borderRadius.large,
-      padding: spacing.medium,
-      marginHorizontal: spacing.medium,
-      marginBottom: spacing.small,
-      borderLeftWidth: 4,
-      borderLeftColor: colors.forest,
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2
-    },
-
-    publicationHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: spacing.small
-    },
-
-    publicationTitle: {
-      fontSize: typography.fontSize.large,
-      fontWeight: typography.fontWeight.medium,
-      color: colors.text,
-      flex: 1,
-      marginRight: spacing.small
-    },
-
-    publicationDate: {
-      fontSize: typography.fontSize.small,
-      color: colors.textSecondary
-    },
-
-    publicationDescription: {
-      fontSize: typography.fontSize.medium,
-      color: colors.textSecondary,
-      lineHeight: typography.lineHeight.large,
-      marginBottom: spacing.small
-    },
-
-    publicationFooter: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.medium
-    },
-
-    publicationLocation: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.tiny,
-      flex: 1
-    },
-
-    publicationLocationText: {
-      fontSize: typography.fontSize.small,
-      color: colors.earth
-    },
-
-    publicationStatusBadge: {
-      paddingHorizontal: spacing.small,
-      paddingVertical: spacing.tiny,
-      borderRadius: borderRadius.small,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.tiny
-    },
-
-    statusAccepted: {
-      backgroundColor: colors.leaf + '20'
-    },
-
-    statusRejected: {
-      backgroundColor: colors.error + '20'
-    },
-
-    statusPending: {
-      backgroundColor: colors.warning + '20'
-    },
-
-    publicationStatusText: {
-      fontSize: typography.fontSize.small,
-      fontWeight: typography.fontWeight.medium
-    },
-
-    statusTextAccepted: {
-      color: colors.leaf
-    },
-
-    statusTextRejected: {
-      color: colors.error
-    },
-
-    statusTextPending: {
-      color: colors.warning
-    },
-
-    emptyPublicationsContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingVertical: spacing.xxlarge,
-      paddingHorizontal: spacing.large
-    },
-
-    emptyPublicationsIcon: {
-      fontSize: 60,
-      marginBottom: spacing.medium
-    },
-
-    emptyPublicationsTitle: {
-      fontSize: typography.fontSize.large,
-      fontWeight: typography.fontWeight.medium,
-      color: colors.text,
-      textAlign: 'center',
-      marginBottom: spacing.small
-    },
-
-    emptyPublicationsMessage: {
-      fontSize: typography.fontSize.medium,
-      color: colors.textSecondary,
-      textAlign: 'center',
-      lineHeight: typography.lineHeight.large
     }
   });
 };

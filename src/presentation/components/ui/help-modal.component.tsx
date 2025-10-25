@@ -9,15 +9,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useTheme } from '../../contexts/theme.context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ThemeVariablesType, useTheme } from '../../contexts/theme.context';
 import { createStyles } from './help-modal.styles';
+import SponsorsFooterComponent from '../auth/sponsors-footer.component';
 
 interface HelpModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
-type TabType = 'about' | 'tutorial' | 'faq';
+type TabType = 'about' | 'tutorial' | 'faq' | 'sponsors';
 
 const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
   const { theme } = useTheme();
@@ -26,7 +28,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
   const [activeTab, setActiveTab] = useState<TabType>('about');
 
   const handleContactPress = useCallback(() => {
-    Linking.openURL('mailto:soporte@kaaxilbaalilche.org');
+    Linking.openURL('mailto:soporte@fototrampa.com');
   }, []);
 
   const renderTabButton = useCallback(
@@ -61,7 +63,11 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
     <View style={styles.content}>
       <View style={styles.section}>
         <View style={styles.iconHeader}>
-          <Ionicons name="leaf" size={40} color={theme.colors.forest} />
+          <MaterialCommunityIcons
+            name="leaf"
+            size={48}
+            color={theme.colors.forest}
+          />
         </View>
         <Text style={styles.title}>¿Qué es K'aaxil Ba'alilche'?</Text>
         <Text style={styles.paragraph}>
@@ -72,7 +78,14 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.subtitle}>🎯 Nuestra Misión</Text>
+        <View style={styles.sectionHeader}>
+          <MaterialCommunityIcons
+            name="target"
+            size={24}
+            color={theme.colors.forest}
+          />
+          <Text style={styles.subtitle}>Nuestra Misión</Text>
+        </View>
         <Text style={styles.paragraph}>
           Contribuir a la conservación de la biodiversidad mediante el registro
           ciudadano de avistamientos de fauna silvestre, generando datos
@@ -81,21 +94,56 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.subtitle}>🌿 Importancia</Text>
+        <View style={styles.sectionHeader}>
+          <MaterialCommunityIcons
+            name="sprout"
+            size={24}
+            color={theme.colors.leaf}
+          />
+          <Text style={styles.subtitle}>Importancia</Text>
+        </View>
         <Text style={styles.paragraph}>
           Cada registro que realizas ayuda a:
         </Text>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>
-            • Mapear la distribución de especies
-          </Text>
-          <Text style={styles.bulletItem}>
-            • Identificar patrones de comportamiento
-          </Text>
-          <Text style={styles.bulletItem}>• Detectar especies en riesgo</Text>
-          <Text style={styles.bulletItem}>
-            • Apoyar estudios de conservación
-          </Text>
+          <View style={styles.bulletItem}>
+            <MaterialCommunityIcons
+              name="map-marker-radius"
+              size={16}
+              color={theme.colors.forest}
+            />
+            <Text style={styles.bulletText}>
+              Mapear la distribución de especies
+            </Text>
+          </View>
+          <View style={styles.bulletItem}>
+            <MaterialCommunityIcons
+              name="chart-line"
+              size={16}
+              color={theme.colors.forest}
+            />
+            <Text style={styles.bulletText}>
+              Identificar patrones de comportamiento
+            </Text>
+          </View>
+          <View style={styles.bulletItem}>
+            <MaterialCommunityIcons
+              name="alert-circle"
+              size={16}
+              color={theme.colors.forest}
+            />
+            <Text style={styles.bulletText}>Detectar especies en riesgo</Text>
+          </View>
+          <View style={styles.bulletItem}>
+            <MaterialCommunityIcons
+              name="shield-check"
+              size={16}
+              color={theme.colors.forest}
+            />
+            <Text style={styles.bulletText}>
+              Apoyar estudios de conservación
+            </Text>
+          </View>
         </View>
       </View>
     </View>
@@ -112,10 +160,17 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
           <Text style={styles.stepNumberText}>1</Text>
         </View>
         <View style={styles.stepContent}>
-          <Text style={styles.stepTitle}>📸 Tomar una Foto</Text>
+          <View style={styles.stepTitleContainer}>
+            <MaterialCommunityIcons
+              name="camera"
+              size={20}
+              color={theme.colors.forest}
+            />
+            <Text style={styles.stepTitle}>Tomar una foto</Text>
+          </View>
           <Text style={styles.stepDescription}>
-            Presiona el botón verde "+" en el header para abrir la cámara o
-            seleccionar una foto de tu galería.
+            Toca el botón verde con el ícono de cámara en la parte superior para
+            abrir la cámara o seleccionar una imagen desde tu galería.
           </Text>
         </View>
       </View>
@@ -125,7 +180,14 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
           <Text style={styles.stepNumberText}>2</Text>
         </View>
         <View style={styles.stepContent}>
-          <Text style={styles.stepTitle}>🐾 Seleccionar Animal</Text>
+          <View style={styles.stepTitleContainer}>
+            <MaterialCommunityIcons
+              name="paw"
+              size={20}
+              color={theme.colors.forest}
+            />
+            <Text style={styles.stepTitle}>Seleccionar Animal</Text>
+          </View>
           <Text style={styles.stepDescription}>
             Elige el animal que avistaste del catálogo disponible. Si no está en
             la lista, contacta al administrador.
@@ -138,7 +200,14 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
           <Text style={styles.stepNumberText}>3</Text>
         </View>
         <View style={styles.stepContent}>
-          <Text style={styles.stepTitle}>📝 Agregar Descripción</Text>
+          <View style={styles.stepTitleContainer}>
+            <MaterialCommunityIcons
+              name="text-box"
+              size={20}
+              color={theme.colors.forest}
+            />
+            <Text style={styles.stepTitle}>Agregar Descripción</Text>
+          </View>
           <Text style={styles.stepDescription}>
             Describe el avistamiento: comportamiento observado, número de
             individuos, condiciones del hábitat, etc.
@@ -151,10 +220,19 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
           <Text style={styles.stepNumberText}>4</Text>
         </View>
         <View style={styles.stepContent}>
-          <Text style={styles.stepTitle}>📍 Ubicación Automática</Text>
+          <View style={styles.stepTitleContainer}>
+            <MaterialCommunityIcons
+              name="map-marker"
+              size={20}
+              color={theme.colors.forest}
+            />
+            <Text style={styles.stepTitle}>Ubicación automática</Text>
+          </View>
           <Text style={styles.stepDescription}>
             La app registra automáticamente las coordenadas GPS del avistamiento
-            para mapear la distribución de especies.
+            para mapear la distribución de las especies. Si la foto proviene de
+            tu galería, se extraen los metadatos de ubicación (si están
+            disponibles).
           </Text>
         </View>
       </View>
@@ -164,7 +242,14 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
           <Text style={styles.stepNumberText}>5</Text>
         </View>
         <View style={styles.stepContent}>
-          <Text style={styles.stepTitle}>✅ Revisión y Aprobación</Text>
+          <View style={styles.stepTitleContainer}>
+            <MaterialCommunityIcons
+              name="check-circle"
+              size={20}
+              color={theme.colors.forest}
+            />
+            <Text style={styles.stepTitle}>Revisión y Aprobación</Text>
+          </View>
           <Text style={styles.stepDescription}>
             Tu publicación será revisada por un administrador. Recibirás una
             notificación cuando sea aprobada o rechazada.
@@ -173,19 +258,61 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.subtitle}>💡 Tips para Mejores Fotos</Text>
+        <View style={styles.sectionHeader}>
+          <MaterialCommunityIcons
+            name="lightbulb-on"
+            size={24}
+            color={theme.colors.secondary}
+          />
+          <Text style={styles.subtitle}>Tips para Mejores Fotos</Text>
+        </View>
         <View style={styles.bulletList}>
-          <Text style={styles.bulletItem}>
-            • Toma fotos con buena iluminación natural
-          </Text>
-          <Text style={styles.bulletItem}>• Enfoca bien al animal</Text>
-          <Text style={styles.bulletItem}>
-            • Evita usar flash (puede asustar al animal)
-          </Text>
-          <Text style={styles.bulletItem}>• Mantén una distancia segura</Text>
-          <Text style={styles.bulletItem}>
-            • Incluye el hábitat en la foto si es posible
-          </Text>
+          <View style={styles.bulletItem}>
+            <MaterialCommunityIcons
+              name="white-balance-sunny"
+              size={16}
+              color={theme.colors.secondary}
+            />
+            <Text style={styles.bulletText}>
+              Toma fotos con buena iluminación natural
+            </Text>
+          </View>
+          <View style={styles.bulletItem}>
+            <MaterialCommunityIcons
+              name="focus-field"
+              size={16}
+              color={theme.colors.secondary}
+            />
+            <Text style={styles.bulletText}>Enfoca bien al animal</Text>
+          </View>
+          <View style={styles.bulletItem}>
+            <MaterialCommunityIcons
+              name="flash-off"
+              size={16}
+              color={theme.colors.secondary}
+            />
+            <Text style={styles.bulletText}>
+              Evita usar flash (puede asustar al animal)
+            </Text>
+          </View>
+          <View style={styles.bulletItem}>
+            <MaterialCommunityIcons
+              name="ruler"
+              size={16}
+              color={theme.colors.secondary}
+            />
+            <Text style={styles.bulletText}>Mantén una distancia segura</Text>
+          </View>
+          <View style={styles.bulletItem}>
+            <MaterialCommunityIcons
+              name="forest"
+              size={16}
+              color={theme.colors.secondary}
+            />
+            <Text style={styles.bulletText}>
+              Incluye el hábitat en la foto si es posible
+            </Text>
+          </View>
         </View>
       </View>
     </View>
@@ -198,21 +325,35 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
       </View>
 
       <View style={styles.faqItem}>
-        <Text style={styles.faqQuestion}>❓ ¿Qué significa cada estado?</Text>
+        <View style={styles.faqQuestionContainer}>
+          <MaterialCommunityIcons
+            name="help-circle"
+            size={20}
+            color={theme.colors.info}
+          />
+          <Text style={styles.faqQuestion}>¿Qué significa cada estado?</Text>
+        </View>
         <Text style={styles.faqAnswer}>
-          <Text style={styles.bold}>Pendiente ⏳:</Text> Tu publicación está en
+          <Text style={styles.bold}>Pendiente:</Text> Tu publicación está en
           revisión.{'\n'}
-          <Text style={styles.bold}>Aprobada ✅:</Text> Tu avistamiento fue
+          <Text style={styles.bold}>Aprobada:</Text> Tu avistamiento fue
           verificado y publicado.{'\n'}
-          <Text style={styles.bold}>Rechazada ❌:</Text> La publicación no
-          cumple los criterios (verás el motivo).
+          <Text style={styles.bold}>Rechazada:</Text> La publicación no cumple
+          los criterios (verás el motivo).
         </Text>
       </View>
 
       <View style={styles.faqItem}>
-        <Text style={styles.faqQuestion}>
-          ❓ ¿Por qué fue rechazada mi publicación?
-        </Text>
+        <View style={styles.faqQuestionContainer}>
+          <MaterialCommunityIcons
+            name="help-circle"
+            size={20}
+            color={theme.colors.info}
+          />
+          <Text style={styles.faqQuestion}>
+            ¿Por qué fue rechazada mi publicación?
+          </Text>
+        </View>
         <Text style={styles.faqAnswer}>
           Las razones comunes incluyen: foto borrosa, animal no identificable,
           ubicación incorrecta, o no es fauna silvestre. Revisa el motivo en la
@@ -221,9 +362,14 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
       </View>
 
       <View style={styles.faqItem}>
-        <Text style={styles.faqQuestion}>
-          ❓ ¿Puedo editar una publicación?
-        </Text>
+        <View style={styles.faqQuestionContainer}>
+          <MaterialCommunityIcons
+            name="help-circle"
+            size={20}
+            color={theme.colors.info}
+          />
+          <Text style={styles.faqQuestion}>¿Puedo editar una publicación?</Text>
+        </View>
         <Text style={styles.faqAnswer}>
           No es posible editar publicaciones ya enviadas. Si necesitas hacer
           cambios, elimina la publicación y crea una nueva.
@@ -231,20 +377,34 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
       </View>
 
       <View style={styles.faqItem}>
-        <Text style={styles.faqQuestion}>
-          ❓ ¿Qué hago si el animal no está en el catálogo?
-        </Text>
+        <View style={styles.faqQuestionContainer}>
+          <MaterialCommunityIcons
+            name="help-circle"
+            size={20}
+            color={theme.colors.info}
+          />
+          <Text style={styles.faqQuestion}>
+            ¿Qué puedo hacer si el animal no aparece en el catálogo?
+          </Text>
+        </View>
         <Text style={styles.faqAnswer}>
-          Contacta al administrador a través del correo de soporte. Proporciona
-          el nombre del animal y una descripción para que sea agregado al
-          catálogo.
+          Si el animal no está en el catálogo, contacta al administrador a
+          través del correo de soporte. Incluye el nombre y una breve
+          descripción del animal para que pueda ser agregado. Mientras recibes
+          respuesta, puedes seleccionar la opción "Desconocido" y escribir el
+          nombre del animal manualmente.
         </Text>
       </View>
 
       <View style={styles.faqItem}>
-        <Text style={styles.faqQuestion}>
-          ❓ ¿La app funciona sin internet?
-        </Text>
+        <View style={styles.faqQuestionContainer}>
+          <MaterialCommunityIcons
+            name="help-circle"
+            size={20}
+            color={theme.colors.info}
+          />
+          <Text style={styles.faqQuestion}>¿La app funciona sin internet?</Text>
+        </View>
         <Text style={styles.faqAnswer}>
           Necesitas conexión a internet para enviar publicaciones y ver el
           catálogo actualizado. Sin embargo, puedes tomar fotos offline y
@@ -253,17 +413,31 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
       </View>
 
       <View style={styles.faqItem}>
-        <Text style={styles.faqQuestion}>❓ ¿Cómo contacto a soporte?</Text>
+        <View style={styles.faqQuestionContainer}>
+          <MaterialCommunityIcons
+            name="help-circle"
+            size={20}
+            color={theme.colors.info}
+          />
+          <Text style={styles.faqQuestion}>¿Cómo contacto a soporte?</Text>
+        </View>
         <Text style={styles.faqAnswer}>
           Puedes escribirnos a:{'\n'}
           <Text style={styles.link} onPress={handleContactPress}>
-            soporte@kaaxilbaalilche.org
+            soporte@fototrampa.com
           </Text>
         </Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.subtitle}>📧 Contacto</Text>
+        <View style={styles.sectionHeader}>
+          <MaterialCommunityIcons
+            name="email"
+            size={24}
+            color={theme.colors.forest}
+          />
+          <Text style={styles.subtitle}>Contacto</Text>
+        </View>
         <TouchableOpacity
           style={styles.contactButton}
           onPress={handleContactPress}
@@ -277,6 +451,29 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
     </View>
   );
 
+  const renderSponsorsContent = () => {
+    const variables = {
+      '--primary': theme.colors.primary,
+      '--text': theme.colors.text,
+      '--text-secondary': theme.colors.textSecondary,
+      '--card-background': theme.colors.cardBackground,
+      '--surface-variant': theme.colors.surfaceVariant,
+      '--border': theme.colors.border,
+      '--shadow': theme.colors.shadow,
+      '--forest': theme.colors.forest,
+      '--water': theme.colors.water,
+      '--border-radius-medium': theme.borderRadius.medium,
+      '--border-radius-large': theme.borderRadius.large,
+      '--border-radius-xlarge': theme.borderRadius.xlarge
+    } as ThemeVariablesType;
+
+    return (
+      <View style={styles.content}>
+        <SponsorsFooterComponent variables={variables} />
+      </View>
+    );
+  };
+
   return (
     <Modal
       visible={visible}
@@ -285,10 +482,9 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerContent}>
-            <Ionicons
+            <MaterialCommunityIcons
               name="help-circle"
               size={28}
               color={theme.colors.forest}
@@ -305,14 +501,17 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Tabs */}
         <View style={styles.tabsContainer}>
-          {renderTabButton('about', 'Acerca de', 'information-circle')}
-          {renderTabButton('tutorial', 'Tutorial', 'school')}
-          {renderTabButton('faq', 'FAQ', 'help-circle')}
+          <View style={styles.tabRow}>
+            {renderTabButton('about', 'Acerca', 'information-circle')}
+            {renderTabButton('tutorial', 'Tutorial', 'school')}
+          </View>
+          <View style={styles.tabRow}>
+            {renderTabButton('faq', 'FAQ', 'help-circle')}
+            {renderTabButton('sponsors', 'Patrocinadores', 'business')}
+          </View>
         </View>
 
-        {/* Content */}
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -321,6 +520,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
           {activeTab === 'about' && renderAboutContent()}
           {activeTab === 'tutorial' && renderTutorialContent()}
           {activeTab === 'faq' && renderFAQContent()}
+          {activeTab === 'sponsors' && renderSponsorsContent()}
         </ScrollView>
       </View>
     </Modal>

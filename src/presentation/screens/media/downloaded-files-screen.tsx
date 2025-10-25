@@ -7,7 +7,6 @@ import {
   Alert,
   RefreshControl,
   SafeAreaView,
-  ActivityIndicator,
   Platform
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -241,7 +240,6 @@ const DownloadedFilesScreen: React.FC = () => {
   const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
   const {
     files,
-    isLoading,
     error,
     storageInfo,
     openDownloadedFile,
@@ -364,14 +362,21 @@ const DownloadedFilesScreen: React.FC = () => {
           </TouchableOpacity>
 
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>📁 Fichas Descargadas</Text>
+            <View style={styles.headerTitleRow}>
+              <Ionicons
+                name="folder-open"
+                size={28}
+                color={theme.colors.forest}
+              />
+              <Text style={styles.headerTitle}>Fichas Descargadas</Text>
+            </View>
             <Text style={styles.headerSubtitle}>
               {files.length} {files.length === 1 ? 'ficha' : 'fichas'} •{' '}
               {formatFileSize(storageInfo.totalSize)}
             </Text>
           </View>
 
-          {files.length > 0 && (
+          {files.length > 0 ? (
             <TouchableOpacity
               style={styles.deleteAllButton}
               onPress={handleDeleteAll}
@@ -381,9 +386,9 @@ const DownloadedFilesScreen: React.FC = () => {
               <Ionicons name="trash" size={16} color={theme.colors.error} />
               <Text style={styles.deleteAllText}>Eliminar todas</Text>
             </TouchableOpacity>
+          ) : (
+            <View style={styles.headerPlaceholder} />
           )}
-
-          {files.length === 0 && <View style={styles.headerPlaceholder} />}
         </View>
 
         {files.length > 0 && (
@@ -431,15 +436,6 @@ const DownloadedFilesScreen: React.FC = () => {
   );
 
   const renderFooter = useCallback(() => {
-    if (isLoading && files.length === 0) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.forest} />
-          <Text style={styles.loadingText}>Cargando fichas...</Text>
-        </View>
-      );
-    }
-
     if (files.length > 0) {
       return (
         <View style={styles.footer}>
@@ -456,7 +452,7 @@ const DownloadedFilesScreen: React.FC = () => {
     }
 
     return null;
-  }, [isLoading, files.length, styles, theme]);
+  }, [files.length, styles, theme]);
 
   const refreshControl = useMemo(
     () => (
@@ -484,13 +480,7 @@ const DownloadedFilesScreen: React.FC = () => {
         ListHeaderComponent={renderHeader}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
-          !isLoading ? (
-            <EmptyState
-              styles={styles}
-              theme={theme}
-              onRefresh={handleRefresh}
-            />
-          ) : null
+          <EmptyState styles={styles} theme={theme} onRefresh={handleRefresh} />
         }
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}

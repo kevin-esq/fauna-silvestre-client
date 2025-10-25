@@ -36,35 +36,45 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
     },
     closeButton: {
       padding: theme.spacing.tiny,
-      borderRadius: theme.borderRadius.small
+      borderRadius: theme.borderRadius.small,
+      backgroundColor: theme.colors.surfaceVariant
     },
     tabsContainer: {
-      flexDirection: 'row',
       backgroundColor: theme.colors.surface,
       paddingHorizontal: theme.spacing.small,
-      paddingVertical: theme.spacing.tiny,
+      paddingVertical: theme.spacing.small,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.surfaceVariant
+    },
+    tabRow: {
+      flexDirection: 'row',
+      marginBottom: theme.spacing.tiny
     },
     tabButton: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: theme.spacing.small,
-      paddingHorizontal: theme.spacing.tiny,
+      paddingVertical: theme.spacing.small + 2,
+      paddingHorizontal: theme.spacing.small,
       marginHorizontal: theme.spacing.tiny,
-      borderRadius: theme.borderRadius.small,
+      borderRadius: theme.borderRadius.medium,
       backgroundColor: theme.colors.surfaceVariant,
-      gap: theme.spacing.tiny
+      gap: theme.spacing.small
     },
     tabButtonActive: {
-      backgroundColor: theme.colors.forest
+      backgroundColor: theme.colors.forest,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 3,
+      elevation: 2
     },
     tabButtonText: {
       fontSize: theme.typography.fontSize.small,
       fontWeight: theme.typography.fontWeight.bold,
-      color: theme.colors.forest
+      color: theme.colors.forest,
+      textAlign: 'center'
     },
     tabButtonTextActive: {
       color: theme.colors.surface
@@ -83,7 +93,11 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
     },
     iconHeader: {
       alignItems: 'center',
-      marginBottom: theme.spacing.medium
+      marginBottom: theme.spacing.medium,
+      padding: theme.spacing.medium,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: theme.borderRadius.xlarge,
+      alignSelf: 'center'
     },
     title: {
       fontSize: theme.typography.fontSize.xlarge,
@@ -91,27 +105,40 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       color: theme.colors.forest,
       marginBottom: theme.spacing.small
     },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.small,
+      marginBottom: theme.spacing.small
+    },
     subtitle: {
       fontSize: theme.typography.fontSize.large,
       fontWeight: theme.typography.fontWeight.bold,
       color: theme.colors.earth,
-      marginBottom: theme.spacing.small
+      flex: 1
     },
     paragraph: {
       fontSize: theme.typography.fontSize.medium,
       color: theme.colors.text,
-      lineHeight: theme.typography.lineHeight.medium,
+      lineHeight: theme.typography.lineHeight.large,
       marginBottom: theme.spacing.small
     },
     bulletList: {
       marginLeft: theme.spacing.small,
-      marginTop: theme.spacing.tiny
+      marginTop: theme.spacing.small,
+      gap: theme.spacing.small
     },
     bulletItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: theme.spacing.small,
+      paddingVertical: theme.spacing.tiny
+    },
+    bulletText: {
+      flex: 1,
       fontSize: theme.typography.fontSize.medium,
       color: theme.colors.text,
-      lineHeight: theme.typography.lineHeight.medium,
-      marginBottom: theme.spacing.tiny
+      lineHeight: theme.typography.lineHeight.medium
     },
     tutorialStep: {
       flexDirection: 'row',
@@ -122,19 +149,24 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       borderLeftWidth: 4,
       borderLeftColor: theme.colors.leaf,
       shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
       elevation: 2
     },
     stepNumber: {
-      width: 36,
-      height: 36,
-      borderRadius: theme.borderRadius.xlarge * 2,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
       backgroundColor: theme.colors.leaf,
       justifyContent: 'center',
       alignItems: 'center',
-      marginRight: theme.spacing.small
+      marginRight: theme.spacing.medium,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 3,
+      elevation: 3
     },
     stepNumberText: {
       fontSize: theme.typography.fontSize.large,
@@ -144,15 +176,21 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
     stepContent: {
       flex: 1
     },
+    stepTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.small,
+      marginBottom: theme.spacing.small
+    },
     stepTitle: {
       fontSize: theme.typography.fontSize.medium,
       fontWeight: theme.typography.fontWeight.bold,
       color: theme.colors.forest,
-      marginBottom: theme.spacing.tiny
+      flex: 1
     },
     stepDescription: {
       fontSize: theme.typography.fontSize.medium,
-      color: theme.colors.text,
+      color: theme.colors.textSecondary,
       lineHeight: theme.typography.lineHeight.medium
     },
     faqItem: {
@@ -163,20 +201,26 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       borderLeftWidth: 4,
       borderLeftColor: theme.colors.water,
       shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
       elevation: 2
     },
+    faqQuestionContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.small,
+      marginBottom: theme.spacing.small
+    },
     faqQuestion: {
+      flex: 1,
       fontSize: theme.typography.fontSize.medium,
       fontWeight: theme.typography.fontWeight.bold,
-      color: theme.colors.forest,
-      marginBottom: theme.spacing.small
+      color: theme.colors.forest
     },
     faqAnswer: {
       fontSize: theme.typography.fontSize.medium,
-      color: theme.colors.text,
+      color: theme.colors.textSecondary,
       lineHeight: theme.typography.lineHeight.medium
     },
     bold: {
@@ -185,23 +229,24 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
     },
     link: {
       color: theme.colors.water,
-      textDecorationLine: 'underline'
+      textDecorationLine: 'underline',
+      fontWeight: theme.typography.fontWeight.medium
     },
     contactButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.forest,
-      paddingVertical: theme.spacing.small,
-      paddingHorizontal: theme.spacing.medium,
+      paddingVertical: theme.spacing.medium,
+      paddingHorizontal: theme.spacing.large,
       borderRadius: theme.borderRadius.medium,
       gap: theme.spacing.small,
       marginTop: theme.spacing.small,
       shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
+      shadowOffset: { width: 0, height: 3 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
-      elevation: 3
+      elevation: 4
     },
     contactButtonText: {
       fontSize: theme.typography.fontSize.medium,

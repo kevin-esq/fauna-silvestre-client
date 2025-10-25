@@ -39,6 +39,7 @@ export function useRecentImagesWithLocation(
   const isMountedRef = useRef(true);
   const appStateRef = useRef(AppState.currentState);
   const loadingRef = useRef(false);
+  const hasLoadedInitialRef = useRef(false);
 
   const checkGalleryPermission = useCallback(async (): Promise<boolean> => {
     try {
@@ -79,13 +80,11 @@ export function useRecentImagesWithLocation(
 
   const loadRecentImages = useCallback(async () => {
     if (!enabled) {
-      console.log('⏹️ Carga de imágenes deshabilitada');
       setIsLoading(false);
       return;
     }
 
     if (loadingRef.current) {
-      console.log('⏹️ Ya hay una carga en progreso, saltando...');
       return;
     }
 
@@ -96,7 +95,6 @@ export function useRecentImagesWithLocation(
     try {
       const hasPermission = await checkGalleryPermission();
       if (!hasPermission) {
-        console.warn('⚠️ Permiso de galería denegado');
         setError('Permiso de galería denegado');
         setImages([]);
         return;
@@ -109,12 +107,9 @@ export function useRecentImagesWithLocation(
       });
 
       if (!result.edges || result.edges.length === 0) {
-        console.log('📭 No se encontraron imágenes en la galería');
         setImages([]);
         return;
       }
-
-      console.log(`📸 Procesando ${result.edges.length} imágenes...`);
 
       const BATCH_SIZE = 10;
       const withLocation: RecentImage[] = [];
@@ -160,17 +155,10 @@ export function useRecentImagesWithLocation(
             withLocation.push(result.value as RecentImage);
           }
         });
-
-        console.log(
-          `✅ Lote ${Math.floor(i / BATCH_SIZE) + 1}: ${withLocation.length} con ubicación`
-        );
       }
 
       if (!isMountedRef.current) return;
 
-      console.log(
-        `✨ Total: ${withLocation.length} imágenes con ubicación de ${result.edges.length}`
-      );
       setImages(withLocation);
     } catch (err) {
       const error = err as Error;
@@ -190,18 +178,16 @@ export function useRecentImagesWithLocation(
   }, [limit, includeVideos, checkGalleryPermission, onError, enabled]);
 
   const refresh = useCallback(() => {
-    console.log('🔄 Refrescando imágenes...');
     loadRecentImages();
   }, [loadRecentImages]);
 
   useEffect(() => {
     isMountedRef.current = true;
 
-    if (enabled) {
-      console.log('🚀 Cargando imágenes iniciales...');
+    if (enabled && !hasLoadedInitialRef.current) {
+      hasLoadedInitialRef.current = true;
       loadRecentImages();
-    } else {
-      console.log('⏹️ Carga inicial deshabilitada');
+    } else if (!enabled) {
       setIsLoading(false);
     }
 
@@ -218,7 +204,6 @@ export function useRecentImagesWithLocation(
         appStateRef.current.match(/inactive|background/) &&
         nextAppState === 'active'
       ) {
-        console.log('📱 App volvió a primer plano, recargando imágenes...');
         loadRecentImages();
       }
       appStateRef.current = nextAppState;

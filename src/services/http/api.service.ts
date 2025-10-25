@@ -42,6 +42,9 @@ export class ApiService {
       retries: 3,
       retryDelay: retryCount => retryCount * 2000,
       retryCondition: err => {
+        if (err.code === 'ERR_CANCELED' || err.message?.includes('canceled')) {
+          return false;
+        }
         return (
           axiosRetry.isNetworkError(err) ||
           axiosRetry.isRetryableError(err) ||
@@ -50,7 +53,7 @@ export class ApiService {
       },
       onRetry: (err, attempt) => {
         const errorMessage = this.getErrorMessage(err);
-        this.logger.warn(`[ApiService] Retry #${attempt}: ${errorMessage}`);
+        this.logger.warn(`[ApiService] Retry #${errorMessage}: ${attempt}`);
       }
     });
 
@@ -102,12 +105,20 @@ export class ApiService {
 
   private async onError(error: unknown): Promise<unknown> {
     if (!axios.isAxiosError(error)) {
-      this.logger.error('Non Axios error', error as Error);
+      if (error instanceof Error && !error.message?.includes('canceled')) {
+        this.logger.error('Non Axios error', error);
+      }
       return Promise.reject(new ApiError('Unexpected non-Axios error'));
     }
 
+    if (axios.isCancel(error) || error.code === 'ERR_CANCELED') {
+      return Promise.reject(error);
+    }
+
     if (!error.response) {
-      this.logger.error('No response', error as Error);
+      if (!error.message?.includes('canceled')) {
+        this.logger.error('No response', error as Error);
+      }
       return Promise.reject(new NetworkError('No response from server'));
     }
 

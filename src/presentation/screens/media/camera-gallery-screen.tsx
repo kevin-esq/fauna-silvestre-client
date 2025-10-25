@@ -63,15 +63,7 @@ export const CameraGalleryScreen: React.FC = () => {
   const hasBlockedPermissionsRef = useRef(false);
 
   useEffect(() => {
-    console.log('🔄 Estado de hasPermissions cambió:', hasPermissions);
-  }, [hasPermissions]);
-
-  useEffect(() => {
     if (blockedPermissions.length > 0) {
-      console.log(
-        '🚫 Permisos bloqueados detectados, marcando flag:',
-        blockedPermissions
-      );
       hasBlockedPermissionsRef.current = true;
       setCurrentPermissionStep('blocked');
     }
@@ -79,7 +71,6 @@ export const CameraGalleryScreen: React.FC = () => {
 
   useEffect(() => {
     if (hasPermissions && isInitialCheckComplete) {
-      console.log('✅ Todos los permisos concedidos, reseteando flags');
       hasBlockedPermissionsRef.current = false;
       setCurrentPermissionStep('checking');
     }
@@ -93,8 +84,6 @@ export const CameraGalleryScreen: React.FC = () => {
     let isMounted = true;
 
     const performInitialCheck = async () => {
-      console.log('🔍 Realizando verificación inicial de permisos...');
-
       try {
         const {
           missingPermissions: initialMissing,
@@ -106,9 +95,6 @@ export const CameraGalleryScreen: React.FC = () => {
           'allFiles'
         ]);
 
-        console.log('📋 Permisos faltantes:', initialMissing);
-        console.log('🚫 Permisos bloqueados:', initialBlocked);
-
         if (isMounted) {
           initialCheckDoneRef.current = true;
           setIsInitialCheckComplete(true);
@@ -118,8 +104,6 @@ export const CameraGalleryScreen: React.FC = () => {
           } else if (initialMissing.length > 0) {
             setCurrentPermissionStep('alert');
           }
-
-          console.log('✅ Verificación inicial completada');
         }
       } catch (error) {
         console.error('❌ Error en verificación inicial:', error);
@@ -145,9 +129,14 @@ export const CameraGalleryScreen: React.FC = () => {
     isCapturing,
     cameraPosition,
     flashMode,
+    cameraError,
+    isRetrying,
     flipCamera,
-    toggleFlashMode
+    toggleFlashMode,
+    retryCamera
   } = cameraHook;
+
+  const resetZoomRef = useRef<(() => void) | null>(null);
 
   const freezeHook = useCameraFreeze();
   const { freezeUri, isShowingFreeze } = freezeHook;
@@ -177,6 +166,16 @@ export const CameraGalleryScreen: React.FC = () => {
     handleConfirm
   } = useCameraActions(cameraHook, freezeHook);
 
+  const handleCaptureWithZoomReset = useCallback(async () => {
+    await handleCapture();
+
+    setTimeout(() => {
+      if (resetZoomRef.current) {
+        resetZoomRef.current();
+      }
+    }, 1000);
+  }, [handleCapture]);
+
   const { isModalOpen, openModal, closeModal } = useModalState();
 
   const { theme } = useTheme();
@@ -199,18 +198,12 @@ export const CameraGalleryScreen: React.FC = () => {
   }, [closeModal, refreshImages, hasPermissions]);
 
   const handleRequestAllPermissions = useCallback(async () => {
-    console.log('🔄 Iniciando flujo completo de permisos...');
-    console.log('❌ Permisos faltantes actuales:', missingPermissions);
-    console.log('🚫 Permisos bloqueados actuales:', blockedPermissions);
-
     if (missingPermissions.length === 0) {
-      console.log('✅ Todos los permisos ya están concedidos');
       refreshImages();
       return;
     }
 
     if (blockedPermissions.length > 0) {
-      console.log('🚫 Hay permisos bloqueados, abriendo configuración...');
       setCurrentPermissionStep('blocked');
       openAppSettings();
       return;
@@ -223,26 +216,12 @@ export const CameraGalleryScreen: React.FC = () => {
       perm => perm === 'allFiles'
     );
 
-    console.log('📱 Permisos con alerta:', alertPermissions);
-    console.log(
-      '⚙️ Permisos que requieren configuración:',
-      settingsPermissions
-    );
-
     if (alertPermissions.length > 0) {
-      console.log('🔄 Solicitando permisos con alerta nativa...');
       setCurrentPermissionStep('alert');
 
       const alertGranted = await requestAlertPermissions(alertPermissions);
 
-      console.log(
-        '🔍 Estado de blockedPermissions después de solicitud:',
-        blockedPermissions
-      );
-
       if (alertGranted) {
-        console.log('✅ Permisos con alerta concedidos');
-
         const {
           missingPermissions: updatedMissing,
           blockedPermissions: updatedBlocked
@@ -253,19 +232,7 @@ export const CameraGalleryScreen: React.FC = () => {
           'allFiles'
         ]);
 
-        console.log(
-          '🔍 Permisos faltantes después de alertas:',
-          updatedMissing
-        );
-        console.log(
-          '🚫 Permisos bloqueados después de alertas:',
-          updatedBlocked
-        );
-
         if (updatedBlocked.length > 0) {
-          console.log(
-            '🚫 Algunos permisos fueron bloqueados, ir a configuración'
-          );
           setCurrentPermissionStep('blocked');
           return;
         }
@@ -275,26 +242,15 @@ export const CameraGalleryScreen: React.FC = () => {
         );
 
         if (remainingSettingsPermissions.length > 0) {
-          console.log(
-            '🔄 Aún faltan permisos de configuración, procediendo...'
-          );
           setCurrentPermissionStep('settings');
           requestAllFilesPermission();
         } else if (updatedMissing.length === 0) {
-          console.log(
-            '✅ Todos los permisos concedidos, refrescando imágenes...'
-          );
           setCurrentPermissionStep('checking');
           refreshImages();
         } else {
-          console.log('⚠️ Algunos permisos aún faltan:', updatedMissing);
           setCurrentPermissionStep('alert');
         }
       } else {
-        console.log(
-          '❌ Algunos permisos con alerta fueron denegados o bloqueados'
-        );
-
         await new Promise<void>(resolve => setTimeout(() => resolve(), 500));
 
         const { blockedPermissions: updatedBlocked } = await checkPermissions([
@@ -304,29 +260,13 @@ export const CameraGalleryScreen: React.FC = () => {
           'allFiles'
         ]);
 
-        console.log(
-          '🔍 Verificando permisos bloqueados después de rechazo:',
-          updatedBlocked
-        );
-        console.log(
-          '🔍 Estado actual de blockedPermissions del hook:',
-          blockedPermissions
-        );
-
         if (blockedPermissions.length > 0 || updatedBlocked.length > 0) {
-          console.log(
-            '🚫 Permisos bloqueados detectados, cambiando a modo blocked'
-          );
           setCurrentPermissionStep('blocked');
         } else {
-          console.log(
-            '⚠️ Permisos denegados pero no bloqueados, mantener en alert'
-          );
           setCurrentPermissionStep('alert');
         }
       }
     } else if (settingsPermissions.length > 0) {
-      console.log('🔄 Abriendo configuración para permisos restantes...');
       setCurrentPermissionStep('settings');
       requestAllFilesPermission();
     }
@@ -346,7 +286,6 @@ export const CameraGalleryScreen: React.FC = () => {
 
   const getPermissionMessageType = () => {
     if (blockedPermissions.length > 0 || hasBlockedPermissionsRef.current) {
-      console.log('🚫 Hay permisos bloqueados, mostrando tipo "all"');
       return 'all';
     }
 
@@ -391,9 +330,6 @@ export const CameraGalleryScreen: React.FC = () => {
       hasBlockedPermissionsRef.current ||
       currentPermissionStep === 'blocked'
     ) {
-      console.log(
-        '🚫 Mostrando botón de configuración por permisos bloqueados'
-      );
       return 'Abrir Configuración';
     }
 
@@ -453,12 +389,16 @@ export const CameraGalleryScreen: React.FC = () => {
         styles={styles}
         recentImages={recentImages}
         activeThumbnail={activeThumbnail}
+        cameraError={cameraError}
+        isRetrying={isRetrying}
         onBack={handleBackButtonPress}
         onToggleFlash={toggleFlashMode}
         onFlip={flipCamera}
         onOpenGallery={openModal}
-        onCapture={handleCapture}
+        onCapture={handleCaptureWithZoomReset}
         onThumbnailPress={handleThumbnailPress}
+        onRetryCamera={retryCamera}
+        resetZoomRef={resetZoomRef}
       />
 
       <Modal
@@ -482,25 +422,16 @@ export const CameraGalleryScreen: React.FC = () => {
   );
 
   if (!isInitialCheckComplete) {
-    console.log('⏳ Esperando verificación inicial...');
     return renderLoadingState();
   }
 
-  console.log('🎯 Estado final para render - hasPermissions:', hasPermissions);
-  console.log('❌ Permisos faltantes:', missingPermissions);
-  console.log('🚫 Permisos bloqueados:', blockedPermissions);
-  console.log('📝 Paso actual:', currentPermissionStep);
-
   if (!hasPermissions) {
-    console.log('🚫 Permisos insuficientes, mostrando mensaje...');
     return renderPermissionMessage();
   }
 
   if (!device) {
-    console.log('📷 Dispositivo de cámara no disponible...');
     return renderLoadingState();
   }
 
-  console.log('🎉 Todo listo, mostrando cámara...');
   return renderCameraView();
 };

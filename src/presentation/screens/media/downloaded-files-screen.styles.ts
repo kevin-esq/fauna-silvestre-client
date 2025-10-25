@@ -43,22 +43,30 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
       marginHorizontal: spacing.small
     },
 
+    headerTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.small,
+      marginBottom: spacing.tiny
+    },
+
     headerTitle: {
       fontSize: typography.fontSize.xxlarge,
       fontWeight: typography.fontWeight.bold,
       color: colors.forest,
       textAlign: 'center',
-      marginBottom: spacing.tiny
+      lineHeight: typography.lineHeight.xxlarge
     },
 
     headerSubtitle: {
       fontSize: typography.fontSize.small,
       color: colors.textSecondary,
-      textAlign: 'center'
+      textAlign: 'center',
+      lineHeight: typography.lineHeight.small
     },
 
     headerPlaceholder: {
-      width: 100
+      width: 48
     },
 
     storageProgressContainer: {
@@ -147,14 +155,15 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
       paddingVertical: spacing.small,
       borderRadius: borderRadius.medium,
       borderWidth: 1,
-      borderColor: colors.error + '30'
+      borderColor: colors.error + '30',
+      gap: spacing.tiny
     },
 
     deleteAllText: {
       fontSize: typography.fontSize.small,
       fontWeight: typography.fontWeight.medium,
       color: colors.error,
-      marginLeft: spacing.tiny
+      lineHeight: typography.lineHeight.small
     },
 
     fileCard: {
@@ -286,18 +295,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
 
     deleteButton: {
       backgroundColor: colors.error + '10'
-    },
-
-    loadingContainer: {
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingVertical: spacing.xxlarge
-    },
-
-    loadingText: {
-      marginTop: spacing.medium,
-      fontSize: typography.fontSize.large,
-      color: colors.textSecondary
     },
 
     footer: {

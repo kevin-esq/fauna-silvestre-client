@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -6,9 +6,10 @@ import {
   StyleProp,
   ViewStyle
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+import { useTheme } from '../../contexts/theme.context';
+import { useDeviceOrientation } from '../../hooks/use-device-orientation.hook';
 
 type Props = {
   onBack: () => void;
@@ -27,6 +28,9 @@ export const TopControls: React.FC<Props> = ({
   showFlash,
   style
 }) => {
+  const { colors, spacing, iconSizes, borderRadius } = useTheme();
+  const { iconRotation } = useDeviceOrientation();
+
   const handlePress = (action: () => void) => {
     ReactNativeHapticFeedback.trigger('impactLight', {
       ignoreAndroidSystemSettings: true
@@ -34,67 +38,114 @@ export const TopControls: React.FC<Props> = ({
     action();
   };
 
+  const dynamicStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: spacing.medium,
+          paddingVertical: spacing.small
+        },
+        button: {
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          width: 56,
+          height: 56,
+          borderRadius: borderRadius.xlarge,
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderWidth: 2,
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          elevation: 4,
+          shadowColor: colors.shadow,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4
+        },
+        buttonActive: {
+          backgroundColor: colors.forest,
+          borderColor: colors.leaf
+        },
+        controlGroup: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.medium
+        },
+        iconWrapper: {
+          transform: [{ rotate: iconRotation }]
+        }
+      }),
+    [colors, spacing, borderRadius, iconRotation]
+  );
+
+  const getFlashIcon = () => {
+    switch (flashMode) {
+      case 'on':
+        return 'flash';
+      case 'auto':
+        return 'flash-auto';
+      default:
+        return 'flash-off';
+    }
+  };
+
   return (
-    <View style={[styles.container, style]}>
+    <View style={[dynamicStyles.container, style]}>
       <TouchableOpacity
         onPress={() => handlePress(onBack)}
-        style={styles.button}
+        style={dynamicStyles.button}
         activeOpacity={0.7}
+        accessibilityLabel="Cerrar cámara"
+        accessibilityRole="button"
       >
-        <Ionicons name="close" size={40} color="#fff" />
+        <View style={dynamicStyles.iconWrapper}>
+          <MaterialCommunityIcons
+            name="close-circle"
+            size={iconSizes.large}
+            color="#FFFFFF"
+          />
+        </View>
       </TouchableOpacity>
 
-      <View style={styles.controlGroup}>
+      <View style={dynamicStyles.controlGroup}>
         {showFlash && (
           <TouchableOpacity
             onPress={() => handlePress(onToggleFlash)}
-            style={styles.button}
+            style={[
+              dynamicStyles.button,
+              flashMode !== 'off' && dynamicStyles.buttonActive
+            ]}
             activeOpacity={0.7}
+            accessibilityLabel={`Flash ${flashMode}`}
+            accessibilityRole="button"
           >
-            <MaterialIcons
-              name={
-                flashMode === 'on'
-                  ? 'flash-on'
-                  : flashMode === 'auto'
-                    ? 'flash-auto'
-                    : 'flash-off'
-              }
-              size={40}
-              color="#fff"
-            />
+            <View style={dynamicStyles.iconWrapper}>
+              <MaterialCommunityIcons
+                name={getFlashIcon()}
+                size={iconSizes.large}
+                color="#FFFFFF"
+              />
+            </View>
           </TouchableOpacity>
         )}
 
         <TouchableOpacity
           onPress={() => handlePress(onFlip)}
-          style={styles.button}
+          style={dynamicStyles.button}
           activeOpacity={0.7}
+          accessibilityLabel="Voltear cámara"
+          accessibilityRole="button"
         >
-          <Ionicons name="camera-reverse" size={40} color="#fff" />
+          <View style={dynamicStyles.iconWrapper}>
+            <MaterialCommunityIcons
+              name="camera-flip"
+              size={iconSizes.large}
+              color="#FFFFFF"
+            />
+          </View>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10
-  },
-  button: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    width: 50,
-    height: 50,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  controlGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 15
-  }
-});

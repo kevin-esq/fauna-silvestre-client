@@ -16,40 +16,43 @@ export const createStyles = (vars: ThemeVariablesType) =>
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: '#000000',
-      padding: 20
+      padding: vars['--spacing-large']
     },
     loadingText: {
-      marginTop: 16,
-      fontSize: 16,
-      color: '#ffffff',
+      marginTop: vars['--spacing-medium'],
+      fontSize: vars['--font-size-large'],
+      color: '#FFFFFF',
       textAlign: 'center',
-      lineHeight: 22,
-      fontWeight: '500'
+      lineHeight: vars['--line-height-large'],
+      fontWeight: vars['--font-weight-medium']
     },
     permissionButton: {
-      marginTop: 32,
-      backgroundColor: vars['--primary'],
-      borderRadius: 28,
-      paddingVertical: 14,
-      paddingHorizontal: 32,
-      elevation: 4,
-      shadowColor: '#000',
+      marginTop: vars['--spacing-xlarge'],
+      backgroundColor: vars['--forest'],
+      borderRadius: vars['--border-radius-xlarge'] * 2,
+      paddingVertical: vars['--spacing-medium'],
+      paddingHorizontal: vars['--spacing-xlarge'],
+      elevation: 6,
+      shadowColor: vars['--shadow'],
       shadowOffset: {
         width: 0,
-        height: 2
+        height: 4
       },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      minHeight: 48,
-      minWidth: 140,
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      minHeight: 56,
+      minWidth: 160,
       justifyContent: 'center',
-      alignItems: 'center'
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: vars['--leaf']
     },
     permissionButtonText: {
       color: vars['--text-on-primary'],
-      fontSize: 16,
-      fontWeight: '600',
-      textAlign: 'center'
+      fontSize: vars['--font-size-large'],
+      fontWeight: vars['--font-weight-bold'],
+      textAlign: 'center',
+      letterSpacing: 0.5
     },
     controlsOverlay: {
       position: 'absolute',
@@ -64,12 +67,14 @@ export const createStyles = (vars: ThemeVariablesType) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-end',
-      paddingHorizontal: 24,
-      paddingTop: 20,
-      backgroundColor: 'rgba(0,0,0,0.4)',
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      minHeight: 120
+      paddingHorizontal: vars['--spacing-large'],
+      paddingTop: vars['--spacing-large'],
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      borderTopLeftRadius: vars['--border-radius-xlarge'] * 2,
+      borderTopRightRadius: vars['--border-radius-xlarge'] * 2,
+      minHeight: 140,
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(255, 255, 255, 0.1)'
     },
     captureButtonContainer: {
       alignItems: 'center',
@@ -91,32 +96,38 @@ export const createStyles = (vars: ThemeVariablesType) =>
     },
     thumbnailContainer: {
       position: 'absolute',
-      left: 16,
-      right: 16,
+      left: vars['--spacing-medium'],
+      right: vars['--spacing-medium'],
       zIndex: 10,
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      borderRadius: 20,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      elevation: 10
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      borderRadius: vars['--border-radius-xlarge'],
+      paddingVertical: vars['--spacing-medium'],
+      paddingHorizontal: vars['--spacing-medium'],
+      elevation: 12,
+      shadowColor: vars['--shadow'],
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.4,
+      shadowRadius: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.1)'
     },
     thumbnailItem: {
-      marginRight: 12,
-      borderRadius: 12,
-      borderWidth: 2,
+      marginRight: vars['--spacing-medium'],
+      borderRadius: vars['--border-radius-large'],
+      borderWidth: 3,
       borderColor: 'transparent',
       overflow: 'hidden'
     },
     thumbnailItemActive: {
-      borderColor: vars['--primary'],
-      shadowColor: vars['--primary'],
+      borderColor: vars['--forest'],
+      shadowColor: vars['--forest'],
       shadowOffset: {
         width: 0,
         height: 0
       },
-      shadowOpacity: 0.5,
-      shadowRadius: 4,
-      elevation: 8
+      shadowOpacity: 0.6,
+      shadowRadius: 6,
+      elevation: 10
     },
     modalContent: {
       flex: 1,
