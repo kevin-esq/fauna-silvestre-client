@@ -112,8 +112,8 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
       backgroundColor: colors.surfaceVariant
     },
 
-    userCardBlocked: {
-      borderLeftColor: colors.error,
+    userCardDeactivated: {
+      borderLeftColor: colors.warning,
       opacity: 0.7
     },
 
@@ -136,8 +136,8 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
       elevation: 3
     },
 
-    userAvatarBlocked: {
-      backgroundColor: colors.error
+    userAvatarDeactivated: {
+      backgroundColor: colors.warning
     },
 
     userRoleBadge: {
@@ -154,8 +154,8 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
       borderColor: colors.background
     },
 
-    userRoleBadgeBlocked: {
-      backgroundColor: colors.error + '20'
+    userRoleBadgeDeactivated: {
+      backgroundColor: colors.warning + '20'
     },
 
     userInfo: {
@@ -301,7 +301,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
       lineHeight: typography.lineHeight.medium
     },
 
-    // Filtros
     filterContainer: {
       flexDirection: 'row',
       gap: spacing.small,

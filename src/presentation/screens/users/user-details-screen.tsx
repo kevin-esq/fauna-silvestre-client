@@ -5,15 +5,16 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
-  FlatList
+  ActivityIndicator
 } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../contexts/theme.context';
 import { UserData } from '@/domain/models/user.models';
 import { useBackHandler } from '@/presentation/hooks/use-back-handler.hook';
+import { useUsers } from '@/presentation/hooks/use-users.hook';
 import { createStyles } from './user-details.styles';
 import CustomModal from '../../components/ui/custom-modal.component';
 
@@ -105,19 +106,9 @@ const ComingSoonCard = React.memo<ComingSoonCardProps>(
   }
 );
 
-type PublicationStatus = 'Accepted' | 'Rejected' | 'Pending';
-
-interface UserPublication {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  date: string;
-  status: PublicationStatus;
-}
-
 const UserDetailsScreen: React.FC = () => {
   const route = useRoute();
+  const navigation = useNavigation();
   const { user } = route.params as { user: UserData };
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -125,27 +116,10 @@ const UserDetailsScreen: React.FC = () => {
   const { handleBackPress } = useBackHandler({
     enableSafeMode: true
   });
+  const { deactivateUser } = useUsers();
 
-  const [selectedStatus, setSelectedStatus] =
-    useState<PublicationStatus>('Accepted');
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showBlockModal, setShowBlockModal] = useState(false);
-
-  const mockPublications: UserPublication[] = useMemo(() => [], []);
-
-  const publicationCounts = useMemo(
-    () => ({
-      Accepted: mockPublications.filter(p => p.status === 'Accepted').length,
-      Rejected: mockPublications.filter(p => p.status === 'Rejected').length,
-      Pending: mockPublications.filter(p => p.status === 'Pending').length
-    }),
-    [mockPublications]
-  );
-
-  const filteredPublications = useMemo(
-    () => mockPublications.filter(p => p.status === selectedStatus),
-    [mockPublications, selectedStatus]
-  );
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
 
   const getGenderIcon = useCallback((gender: string) => {
     if (
@@ -169,123 +143,33 @@ const UserDetailsScreen: React.FC = () => {
     return gender;
   }, []);
 
-  const handleEditUser = useCallback(() => {
-    setShowEditModal(true);
+  const handleDeactivateUser = useCallback(() => {
+    setShowDeactivateModal(true);
   }, []);
 
-  const handleCloseEditModal = useCallback(() => {
-    setShowEditModal(false);
+  const handleCloseDeactivateModal = useCallback(() => {
+    setShowDeactivateModal(false);
   }, []);
 
-  const handleBlockUser = useCallback(() => {
-    setShowBlockModal(true);
-  }, []);
-
-  const handleCloseBlockModal = useCallback(() => {
-    setShowBlockModal(false);
-  }, []);
-
-  const handleConfirmBlock = useCallback(() => {
-    // TODO: Implementar bloqueo de usuario cuando el backend lo soporte
-    setShowBlockModal(false);
-  }, []);
-
-  const handleStatusChange = useCallback((status: PublicationStatus) => {
-    setSelectedStatus(status);
-  }, []);
-
-  const getStatusIcon = useCallback((status: PublicationStatus) => {
-    switch (status) {
-      case 'Accepted':
-        return 'checkmark-circle';
-      case 'Rejected':
-        return 'close-circle';
-      case 'Pending':
-        return 'time';
+  const handleConfirmDeactivate = useCallback(async () => {
+    if (!user.userId) {
+      console.error('No se puede desactivar: userId no disponible');
+      return;
     }
-  }, []);
 
-  const getStatusLabel = useCallback((status: PublicationStatus) => {
-    switch (status) {
-      case 'Accepted':
-        return 'Aceptadas';
-      case 'Rejected':
-        return 'Rechazadas';
-      case 'Pending':
-        return 'Pendientes';
+    try {
+      setIsDeactivating(true);
+      await deactivateUser(user.userId);
+      setShowDeactivateModal(false);
+
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error al desactivar usuario:', error);
+      setIsDeactivating(false);
+
+      setShowDeactivateModal(false);
     }
-  }, []);
-
-  const renderPublicationItem = useCallback(
-    ({ item }: { item: UserPublication }) => (
-      <View style={styles.publicationCard}>
-        <View style={styles.publicationHeader}>
-          <Text style={styles.publicationTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-          <Text style={styles.publicationDate}>{item.date}</Text>
-        </View>
-        <Text style={styles.publicationDescription} numberOfLines={2}>
-          {item.description}
-        </Text>
-        <View style={styles.publicationFooter}>
-          <View style={styles.publicationLocation}>
-            <Ionicons name="location" size={14} color={theme.colors.earth} />
-            <Text style={styles.publicationLocationText} numberOfLines={1}>
-              {item.location}
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.publicationStatusBadge,
-              item.status === 'Accepted' && styles.statusAccepted,
-              item.status === 'Rejected' && styles.statusRejected,
-              item.status === 'Pending' && styles.statusPending
-            ]}
-          >
-            <Ionicons
-              name={getStatusIcon(item.status)}
-              size={12}
-              color={
-                item.status === 'Accepted'
-                  ? theme.colors.leaf
-                  : item.status === 'Rejected'
-                    ? theme.colors.error
-                    : theme.colors.warning
-              }
-            />
-            <Text
-              style={[
-                styles.publicationStatusText,
-                item.status === 'Accepted' && styles.statusTextAccepted,
-                item.status === 'Rejected' && styles.statusTextRejected,
-                item.status === 'Pending' && styles.statusTextPending
-              ]}
-            >
-              {getStatusLabel(item.status)}
-            </Text>
-          </View>
-        </View>
-      </View>
-    ),
-    [styles, theme, getStatusIcon, getStatusLabel]
-  );
-
-  const renderEmptyPublications = useCallback(
-    () => (
-      <View style={styles.emptyPublicationsContainer}>
-        <Text style={styles.emptyPublicationsIcon}>📭</Text>
-        <Text style={styles.emptyPublicationsTitle}>
-          Sin publicaciones {getStatusLabel(selectedStatus).toLowerCase()}
-        </Text>
-        <Text style={styles.emptyPublicationsMessage}>
-          Este usuario no tiene publicaciones en estado{' '}
-          {getStatusLabel(selectedStatus).toLowerCase()} por el momento.
-        </Text>
-      </View>
-    ),
-    [styles, selectedStatus, getStatusLabel]
-  );
+  }, [user.userId, deactivateUser, navigation]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -326,33 +210,18 @@ const UserDetailsScreen: React.FC = () => {
 
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity
-            style={[styles.actionButton, styles.editButton]}
-            onPress={handleEditUser}
+            style={[styles.actionButton, styles.deactivateButton]}
+            onPress={handleDeactivateUser}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel="Editar usuario"
+            accessibilityLabel="Desactivar usuario"
           >
             <Ionicons
-              name="create-outline"
+              name="close-circle-outline"
               size={20}
               color={theme.colors.textOnPrimary}
             />
-            <Text style={styles.actionButtonText}>Editar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, styles.blockButton]}
-            onPress={handleBlockUser}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Bloquear usuario"
-          >
-            <Ionicons
-              name="ban-outline"
-              size={20}
-              color={theme.colors.textOnPrimary}
-            />
-            <Text style={styles.actionButtonText}>Bloquear</Text>
+            <Text style={styles.actionButtonText}>Desactivar</Text>
           </TouchableOpacity>
         </View>
 
@@ -395,81 +264,6 @@ const UserDetailsScreen: React.FC = () => {
             color={theme.colors.leaf}
             styles={styles}
           />
-
-          <SectionHeader
-            icon="newspaper-outline"
-            title="Publicaciones"
-            subtitle="Historial de registros del usuario por estado"
-            styles={styles}
-          />
-        </View>
-
-        <View style={styles.statusTabsContainer}>
-          {(['Accepted', 'Rejected', 'Pending'] as PublicationStatus[]).map(
-            status => (
-              <TouchableOpacity
-                key={status}
-                style={[
-                  styles.statusTab,
-                  selectedStatus === status
-                    ? styles.statusTabActive
-                    : styles.statusTabInactive
-                ]}
-                onPress={() => handleStatusChange(status)}
-                activeOpacity={0.7}
-                accessibilityRole="tab"
-                accessibilityLabel={`Ver publicaciones ${getStatusLabel(status).toLowerCase()}`}
-                accessibilityState={{ selected: selectedStatus === status }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text
-                    style={[
-                      styles.statusTabText,
-                      selectedStatus === status
-                        ? styles.statusTabTextActive
-                        : styles.statusTabTextInactive
-                    ]}
-                  >
-                    {getStatusLabel(status)}
-                  </Text>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      selectedStatus === status
-                        ? styles.statusBadgeActive
-                        : styles.statusBadgeInactive
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusBadgeText,
-                        selectedStatus === status
-                          ? styles.statusBadgeTextActive
-                          : styles.statusBadgeTextInactive
-                      ]}
-                    >
-                      {publicationCounts[status]}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )
-          )}
-        </View>
-
-        <View style={styles.publicationsContainer}>
-          <FlatList
-            data={filteredPublications}
-            renderItem={renderPublicationItem}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.publicationsListContainer}
-            ListEmptyComponent={renderEmptyPublications}
-            showsVerticalScrollIndicator={false}
-            removeClippedSubviews
-            maxToRenderPerBatch={10}
-            windowSize={10}
-            initialNumToRender={10}
-          />
         </View>
 
         <View style={styles.contentSection}>
@@ -488,46 +282,39 @@ const UserDetailsScreen: React.FC = () => {
       </ScrollView>
 
       <CustomModal
-        isVisible={showEditModal}
-        onClose={handleCloseEditModal}
-        title="Editar Usuario"
-        type="alert"
-        size="small"
-        icon={
-          <Ionicons
-            name="information-circle"
-            size={50}
-            color={theme.colors.water}
-          />
-        }
-        description="Esta funcionalidad estará disponible próximamente."
-        buttons={[
-          {
-            label: 'Entendido',
-            onPress: handleCloseEditModal,
-            variant: 'primary'
-          }
-        ]}
-      />
-
-      <CustomModal
-        isVisible={showBlockModal}
-        onClose={handleCloseBlockModal}
-        title="Bloquear Usuario"
+        isVisible={showDeactivateModal}
+        onClose={handleCloseDeactivateModal}
+        title="Desactivar Usuario"
         type="confirmation"
         size="small"
-        icon={<Ionicons name="ban" size={50} color={theme.colors.error} />}
-        description={`¿Estás seguro de que deseas bloquear a ${user.name} ${user.lastName}? \n Esta acción estará disponible próximamente.`}
+        icon={
+          isDeactivating ? (
+            <ActivityIndicator size={50} color={theme.colors.warning} />
+          ) : (
+            <Ionicons
+              name="close-circle"
+              size={50}
+              color={theme.colors.warning}
+            />
+          )
+        }
+        description={
+          isDeactivating
+            ? 'Desactivando usuario...'
+            : `¿Estás seguro de que deseas desactivar a ${user.name} ${user.lastName}?`
+        }
         buttons={[
           {
             label: 'Cancelar',
-            onPress: handleCloseBlockModal,
-            variant: 'outline'
+            onPress: handleCloseDeactivateModal,
+            variant: 'outline',
+            disabled: isDeactivating
           },
           {
-            label: 'Bloquear',
-            onPress: handleConfirmBlock,
-            variant: 'danger'
+            label: isDeactivating ? 'Desactivando...' : 'Desactivar',
+            onPress: handleConfirmDeactivate,
+            variant: 'danger',
+            disabled: isDeactivating
           }
         ]}
         footerAlignment="space-between"

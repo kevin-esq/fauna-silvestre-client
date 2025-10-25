@@ -22,21 +22,25 @@ export abstract class BaseRepository {
     }
   }
 
-  protected handleHttpError(
-    error: unknown,
-    context: string
-  ): HttpError | NetworkError {
-    if (error instanceof HttpError) {
-      this.logger.error(`[${context}] HTTP Error: ${error.message}`, error);
-      return error;
-    }
-
+  protected handleHttpError(error: unknown, context: string): HttpError {
     if (this.isAxiosError(error)) {
-      const message = error.response?.data?.toString() || error.message;
-      const statusCode = error.response?.status;
+      if (
+        error.code === 'ERR_CANCELED' ||
+        error.message?.includes('canceled')
+      ) {
+        return new HttpError('Request canceled', 0);
+      }
 
-      if (error.code === 'ECONNABORTED') {
-        const networkError = new NetworkError(message);
+      const statusCode = error.response?.status;
+      const responseData = error.response?.data as
+        | { message?: string }
+        | undefined;
+      const message = responseData?.message || error.message;
+
+      if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') {
+        const networkError = new NetworkError(
+          `Network error in ${context}: ${message}`
+        );
         this.logger.error(`[${context}] Network Error`, networkError);
         return networkError;
       }
@@ -48,6 +52,10 @@ export abstract class BaseRepository {
       );
       this.logger.error(`[${context}] API Error`, httpError);
       return httpError;
+    }
+
+    if (error instanceof Error && error.message?.includes('canceled')) {
+      return new HttpError('Request canceled', 0);
     }
 
     const unknownError = new HttpError(

@@ -801,10 +801,14 @@ export const PublicationProvider: React.FC<{
 
       dispatch({ type: 'RESET_ALL' });
 
-      const timeoutId = setTimeout(() => {
-        loadStatus(PublicationStatus.PENDING);
-        loadCounts();
-      }, 100);
+      const timeoutId = setTimeout(async () => {
+        try {
+          await loadCounts();
+          await loadStatus(PublicationStatus.PENDING);
+        } catch (error) {
+          console.error('[PublicationContext] Error loading initial data:', error);
+        }
+      }, 500);
 
       return () => clearTimeout(timeoutId);
     } else if (!user) {

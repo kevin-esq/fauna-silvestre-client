@@ -13,6 +13,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import { useAuth } from '../../../contexts/auth.context';
 import { useTheme } from '../../../contexts/theme.context';
+import { useDraftContext } from '../../../contexts/draft.context';
 import { useNavigationActions } from '../../../navigation/navigation-provider';
 import { useLocationInfo } from '../../../hooks/use-location-info';
 import { useCurrentTime } from '../../../hooks/use-current-time.hook';
@@ -26,6 +27,7 @@ import {
 } from '../../../components/ui/skeleton-loader.component';
 
 import CustomModal from '../../../components/ui/custom-modal.component';
+import { OfflineBanner } from '../../../components/ui/offline-banner.component';
 
 import { UserData } from '@/domain/models/user.models';
 import { useStyles } from './admin-home-screen.styles';
@@ -264,7 +266,8 @@ const QuickActionsSection = React.memo<{
   onNavigate: (route: keyof RootStackParamList) => void;
   styles: ReturnType<typeof useStyles>;
   isLoading?: boolean;
-}>(({ onNavigate, styles, isLoading = false }) => {
+  draftsCount?: number;
+}>(({ onNavigate, styles, isLoading = false, draftsCount = 0 }) => {
   const { colors } = useTheme();
 
   if (isLoading) {
@@ -319,6 +322,13 @@ const QuickActionsSection = React.memo<{
           onPress={() => onNavigate('DownloadedFiles')}
           styles={styles}
           color={colors.secondary}
+        />
+        <QuickActionButton
+          icon="documents"
+          label={`Mis borradores${draftsCount > 0 ? ` (${draftsCount})` : ''}`}
+          onPress={() => onNavigate('Drafts')}
+          styles={styles}
+          color={colors.water}
         />
       </View>
     </View>
@@ -531,6 +541,7 @@ const ErrorMessage = React.memo<{
 
 const AdminHomeScreen: React.FC = React.memo(() => {
   const { push } = useNavigationActions();
+  const { drafts } = useDraftContext();
   const { theme, isDark, colors } = useTheme();
   const styles = useStyles(theme, isDark);
 
@@ -560,6 +571,7 @@ const AdminHomeScreen: React.FC = React.memo(() => {
           onNavigate={handleNavigation}
           styles={styles}
           isLoading={state.loading}
+          draftsCount={drafts.length}
         />
         <UsersSection
           users={state.users}
@@ -570,7 +582,14 @@ const AdminHomeScreen: React.FC = React.memo(() => {
         />
       </>
     ),
-    [styles, handleNavigation, state.loading, state.users, handleUserPress]
+    [
+      styles,
+      handleNavigation,
+      state.loading,
+      state.users,
+      handleUserPress,
+      drafts.length
+    ]
   );
 
   if (state.loading && state.users.length === 0) {
@@ -595,6 +614,7 @@ const AdminHomeScreen: React.FC = React.memo(() => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <OfflineBanner />
       <Animated.FlatList
         data={[]}
         renderItem={() => null}

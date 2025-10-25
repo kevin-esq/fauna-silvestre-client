@@ -36,16 +36,12 @@ const NotificationsScreen: React.FC = () => {
     getRelativeTime
   } = useNotifications();
 
-  // ============================================================================
-  // HANDLERS
-  // ============================================================================
-
   const handleNotificationPress = useCallback(
     async (notification: NotificationModel) => {
       if (notification.status === 'unread') {
         await markAsRead(notification.id);
       }
-      // TODO: Navegar a detalles cuando el backend esté listo
+
       console.log('Notification pressed:', notification);
     },
     [markAsRead]
@@ -67,10 +63,6 @@ const NotificationsScreen: React.FC = () => {
     },
     [deleteNotification]
   );
-
-  // ============================================================================
-  // RENDER FUNCTIONS
-  // ============================================================================
 
   const renderItem: ListRenderItem<NotificationModel> = useCallback(
     ({ item }) => (
@@ -167,10 +159,6 @@ const NotificationsScreen: React.FC = () => {
     []
   );
 
-  // ============================================================================
-  // REFRESH CONTROL
-  // ============================================================================
-
   const refreshControl = useMemo(
     () => (
       <RefreshControl
@@ -185,10 +173,6 @@ const NotificationsScreen: React.FC = () => {
     [isRefreshing, handleRefresh, theme]
   );
 
-  // ============================================================================
-  // RENDER
-  // ============================================================================
-
   return (
     <View style={styles.container}>
       <FlatList
@@ -200,7 +184,6 @@ const NotificationsScreen: React.FC = () => {
         refreshControl={refreshControl}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        // Performance optimizations
         getItemLayout={getItemLayout}
         initialNumToRender={10}
         maxToRenderPerBatch={10}

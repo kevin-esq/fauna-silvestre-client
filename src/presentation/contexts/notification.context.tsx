@@ -12,10 +12,6 @@ import {
   NotificationStatus
 } from '../../domain/models/notification.models';
 
-// ============================================================================
-// MOCK DATA
-// ============================================================================
-
 const MOCK_NOTIFICATIONS: NotificationModel[] = [
   {
     id: '1',
@@ -24,7 +20,7 @@ const MOCK_NOTIFICATIONS: NotificationModel[] = [
     message:
       'Tu publicación de "Jaguar" ha sido aprobada por el administrador.',
     status: 'unread',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // hace 2 horas
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
     publicationId: 123,
     animalName: 'Jaguar'
   },
@@ -35,7 +31,7 @@ const MOCK_NOTIFICATIONS: NotificationModel[] = [
     message:
       'Tu publicación de "Guacamaya Roja" fue rechazada. Motivo: La imagen no es clara.',
     status: 'unread',
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // hace 5 horas
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
     publicationId: 124,
     animalName: 'Guacamaya Roja'
   },
@@ -45,7 +41,7 @@ const MOCK_NOTIFICATIONS: NotificationModel[] = [
     title: 'Nuevo Animal en el Catálogo',
     message: 'Se ha agregado "Tucán" al catálogo de animales disponibles.',
     status: 'unread',
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // hace 1 día
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
     animalName: 'Tucán'
   },
   {
@@ -55,7 +51,7 @@ const MOCK_NOTIFICATIONS: NotificationModel[] = [
     message:
       'La aplicación ha sido actualizada a la versión 2.0 con nuevas funcionalidades.',
     status: 'read',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // hace 2 días
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
   },
   {
     id: '5',
@@ -63,15 +59,11 @@ const MOCK_NOTIFICATIONS: NotificationModel[] = [
     title: 'Publicación Aprobada',
     message: 'Tu publicación de "Oso Hormiguero" ha sido aprobada.',
     status: 'read',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // hace 3 días
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
     publicationId: 125,
     animalName: 'Oso Hormiguero'
   }
 ];
-
-// ============================================================================
-// TYPES
-// ============================================================================
 
 interface NotificationState {
   readonly notifications: NotificationModel[];
@@ -100,10 +92,6 @@ interface NotificationContextType {
   readonly deleteNotification: (id: string) => Promise<void>;
 }
 
-// ============================================================================
-// INITIAL STATE
-// ============================================================================
-
 const initialState: NotificationState = {
   notifications: [],
   isLoading: false,
@@ -111,10 +99,6 @@ const initialState: NotificationState = {
   error: null,
   unreadCount: 0
 };
-
-// ============================================================================
-// REDUCER
-// ============================================================================
 
 const notificationReducer = (
   state: NotificationState,
@@ -184,41 +168,26 @@ const notificationReducer = (
   }
 };
 
-// ============================================================================
-// CONTEXT
-// ============================================================================
-
 const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined
 );
-
-// ============================================================================
-// PROVIDER
-// ============================================================================
 
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
   children
 }) => {
   const [state, dispatch] = useReducer(notificationReducer, initialState);
 
-  // Simular carga inicial
   useEffect(() => {
     loadNotifications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ============================================================================
-  // LOAD NOTIFICATIONS (Mock)
-  // ============================================================================
-
   const loadNotifications = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
 
     try {
-      // Simular delay de red
       await new Promise<void>(resolve => setTimeout(resolve, 800));
 
-      // Cargar datos mock
       dispatch({ type: 'SET_NOTIFICATIONS', payload: MOCK_NOTIFICATIONS });
     } catch {
       dispatch({
@@ -230,18 +199,12 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
-  // ============================================================================
-  // REFRESH NOTIFICATIONS (Mock)
-  // ============================================================================
-
   const refreshNotifications = useCallback(async () => {
     dispatch({ type: 'SET_REFRESHING', payload: true });
 
     try {
-      // Simular delay de red
       await new Promise<void>(resolve => setTimeout(resolve, 1000));
 
-      // Recargar datos mock
       dispatch({ type: 'SET_NOTIFICATIONS', payload: MOCK_NOTIFICATIONS });
     } catch {
       dispatch({
@@ -253,13 +216,8 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
-  // ============================================================================
-  // MARK AS READ (Mock)
-  // ============================================================================
-
   const markAsRead = useCallback(async (id: string) => {
     try {
-      // Simular delay de red
       await new Promise<void>(resolve => setTimeout(resolve, 300));
 
       dispatch({ type: 'MARK_AS_READ', payload: id });
@@ -268,13 +226,8 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
-  // ============================================================================
-  // MARK ALL AS READ (Mock)
-  // ============================================================================
-
   const markAllAsRead = useCallback(async () => {
     try {
-      // Simular delay de red
       await new Promise<void>(resolve => setTimeout(resolve, 500));
 
       dispatch({ type: 'MARK_ALL_AS_READ' });
@@ -283,13 +236,8 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
-  // ============================================================================
-  // DELETE NOTIFICATION (Mock)
-  // ============================================================================
-
   const deleteNotification = useCallback(async (id: string) => {
     try {
-      // Simular delay de red
       await new Promise<void>(resolve => setTimeout(resolve, 300));
 
       dispatch({ type: 'DELETE_NOTIFICATION', payload: id });
@@ -297,10 +245,6 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
       console.error('Error al eliminar notificación:', error);
     }
   }, []);
-
-  // ============================================================================
-  // CONTEXT VALUE
-  // ============================================================================
 
   const contextValue = useMemo<NotificationContextType>(
     () => ({
@@ -327,10 +271,6 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
     </NotificationContext.Provider>
   );
 };
-
-// ============================================================================
-// HOOK
-// ============================================================================
 
 export const useNotificationContext = (): NotificationContextType => {
   const context = useContext(NotificationContext);

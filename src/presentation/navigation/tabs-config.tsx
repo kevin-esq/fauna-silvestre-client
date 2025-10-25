@@ -52,14 +52,14 @@ export const adminTabs: TabConfig<RootStackParamList>[] = [
       />
     )
   },
-  {
-    name: 'Notifications',
-    component: NotificationsScreen,
-    title: 'Notificaciones',
-    tabBarIcon: ({ focused, color }) => (
-      <FontAwesome5 name="bell" solid={focused} size={24} color={color} />
-    )
-  },
+  // {
+  //   name: 'Notifications',
+  //   component: NotificationsScreen,
+  //   title: 'Notificaciones',
+  //   tabBarIcon: ({ focused, color }) => (
+  //     <FontAwesome5 name="bell" solid={focused} size={24} color={color} />
+  //   )
+  // },
   {
     name: 'CatalogManagement',
     component: CatalogManagementScreen,

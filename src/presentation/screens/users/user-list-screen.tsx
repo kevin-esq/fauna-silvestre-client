@@ -19,18 +19,18 @@ import { SkeletonLoader } from '../../components/ui/skeleton-loader.component';
 import { createStyles } from './user-list-screen.styles.ts';
 import { useBackHandler } from '@/presentation/hooks/use-back-handler.hook';
 
-type UserFilter = 'active' | 'blocked';
+type UserFilter = 'active' | 'deactivated';
 
 interface UserListItemProps {
   user: UserData;
   onPress: (user: UserData) => void;
   styles: ReturnType<typeof createStyles>;
   theme: ReturnType<typeof useTheme>['theme'];
-  isBlocked?: boolean;
+  isDeactivated?: boolean;
 }
 
 const UserListItem = React.memo<UserListItemProps>(
-  ({ user, onPress, styles, theme, isBlocked = false }) => {
+  ({ user, onPress, styles, theme, isDeactivated = false }) => {
     const [isPressed, setIsPressed] = useState(false);
 
     const handlePress = useCallback(() => {
@@ -46,14 +46,17 @@ const UserListItem = React.memo<UserListItemProps>(
         style={[
           styles.userCard,
           isPressed && styles.userCardPressed,
-          isBlocked && styles.userCardBlocked
+          isDeactivated && styles.userCardDeactivated
         ]}
         accessibilityRole="button"
         accessibilityLabel={`Ver detalles de ${user.name} ${user.lastName}`}
       >
         <View style={styles.userAvatarContainer}>
           <View
-            style={[styles.userAvatar, isBlocked && styles.userAvatarBlocked]}
+            style={[
+              styles.userAvatar,
+              isDeactivated && styles.userAvatarDeactivated
+            ]}
           >
             <Ionicons
               name="person"
@@ -64,13 +67,13 @@ const UserListItem = React.memo<UserListItemProps>(
           <View
             style={[
               styles.userRoleBadge,
-              isBlocked && styles.userRoleBadgeBlocked
+              isDeactivated && styles.userRoleBadgeDeactivated
             ]}
           >
             <Ionicons
-              name={isBlocked ? 'ban' : 'shield-checkmark'}
+              name={isDeactivated ? 'close-circle' : 'shield-checkmark'}
               size={12}
-              color={isBlocked ? theme.colors.error : theme.colors.leaf}
+              color={isDeactivated ? theme.colors.warning : theme.colors.leaf}
             />
           </View>
         </View>
@@ -157,17 +160,14 @@ const UserListScreen: React.FC = () => {
     refreshUsers
   } = useUsers(1, 20);
 
-  // TODO: Filtrar usuarios según estado (activo/bloqueado) cuando el backend lo soporte
   const filteredUsers = useMemo(() => {
-    // Por ahora retornamos todos los usuarios
-    // En el futuro: return users.filter(u => selectedFilter === 'active' ? !u.isBlocked : u.isBlocked);
     return users;
   }, [users]);
 
   const userCounts = useMemo(
     () => ({
-      active: users.length, // TODO: Contar usuarios activos cuando el backend lo soporte
-      blocked: 0 // TODO: Contar usuarios bloqueados cuando el backend lo soporte
+      active: users.length,
+      deactivated: 0
     }),
     [users]
   );
@@ -192,7 +192,7 @@ const UserListScreen: React.FC = () => {
         onPress={handleUserPress}
         styles={styles}
         theme={theme}
-        isBlocked={false} // TODO: Usar item.isBlocked cuando el backend lo soporte
+        isDeactivated={false}
       />
     ),
     [handleUserPress, styles, theme]
@@ -299,7 +299,6 @@ const UserListScreen: React.FC = () => {
           <View style={styles.headerPlaceholder} />
         </View>
 
-        {/* Filtros de estado */}
         <View style={styles.filterContainer}>
           <TouchableOpacity
             style={[
@@ -349,45 +348,46 @@ const UserListScreen: React.FC = () => {
           <TouchableOpacity
             style={[
               styles.filterTab,
-              selectedFilter === 'blocked' && styles.filterTabActive
+              selectedFilter === 'deactivated' && styles.filterTabActive
             ]}
-            onPress={() => handleFilterChange('blocked')}
+            onPress={() => handleFilterChange('deactivated')}
             activeOpacity={0.7}
             accessibilityRole="tab"
-            accessibilityLabel="Ver usuarios bloqueados"
-            accessibilityState={{ selected: selectedFilter === 'blocked' }}
+            accessibilityLabel="Ver usuarios desactivados"
+            accessibilityState={{ selected: selectedFilter === 'deactivated' }}
             disabled={true}
           >
             <Ionicons
-              name="ban"
+              name="close-circle-outline"
               size={18}
               color={
-                selectedFilter === 'blocked'
+                selectedFilter === 'deactivated'
                   ? theme.colors.textOnPrimary
-                  : theme.colors.error
+                  : theme.colors.warning
               }
             />
             <Text
               style={[
                 styles.filterTabText,
-                selectedFilter === 'blocked' && styles.filterTabTextActive
+                selectedFilter === 'deactivated' && styles.filterTabTextActive
               ]}
             >
-              Bloqueados
+              Desactivados
             </Text>
             <View
               style={[
                 styles.filterBadge,
-                selectedFilter === 'blocked' && styles.filterBadgeActive
+                selectedFilter === 'deactivated' && styles.filterBadgeActive
               ]}
             >
               <Text
                 style={[
                   styles.filterBadgeText,
-                  selectedFilter === 'blocked' && styles.filterBadgeTextActive
+                  selectedFilter === 'deactivated' &&
+                    styles.filterBadgeTextActive
                 ]}
               >
-                {userCounts.blocked}
+                {userCounts.deactivated}
               </Text>
             </View>
           </TouchableOpacity>

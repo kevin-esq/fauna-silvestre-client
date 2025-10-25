@@ -299,6 +299,24 @@ export const createStyles = (
       fontWeight: '600',
       fontSize: 16
     },
+    draftButton: {
+      backgroundColor: '#E3F2FD',
+      paddingVertical: 16,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      gap: 8,
+      borderWidth: 1,
+      borderColor: '#0288D1'
+    },
+    draftButtonText: {
+      color: '#0288D1',
+      fontWeight: '600',
+      fontSize: 16
+    },
     submitButton: {
       backgroundColor: vars['--primary'],
       paddingVertical: 16,

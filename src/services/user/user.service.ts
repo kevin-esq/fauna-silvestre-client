@@ -51,6 +51,17 @@ export class UserService {
       throw new Error('No se pudieron obtener los usuarios');
     }
   }
+
+  async deactivateUser(userId: number): Promise<void> {
+    try {
+      this.logger.debug('Desactivando usuario', { userId });
+      await this.repository.deactivateUser(userId);
+      this.logger.info('Usuario desactivado exitosamente', { userId });
+    } catch (error) {
+      this.logger.error('Error al desactivar usuario', error as Error);
+      throw new Error('No se pudo desactivar el usuario');
+    }
+  }
 }
 
 export class UserServiceFactory {

@@ -6,7 +6,6 @@ import React, {
   useRef
 } from 'react';
 import {
-  Alert,
   Animated,
   Dimensions,
   Image,
@@ -25,9 +24,12 @@ import {
 import { useRoute, RouteProp } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import CustomModal from '../../components/ui/custom-modal.component';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
+import { OfflineBanner } from '../../components/ui/offline-banner.component';
 import { useLoading } from '../../contexts/loading.context';
+import { useDraftContext } from '../../contexts/draft.context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { publicationService } from '../../../services/publication/publication.service';
 import {
@@ -60,6 +62,7 @@ interface Location {
 interface PublicationFormScreenProps {
   imageUri: string;
   location?: Location;
+  draftId?: string;
 }
 
 interface FormState {
@@ -87,6 +90,8 @@ const PublicationFormScreen: React.FC = () => {
   const route = useRoute<PublicationFormRouteProp>();
   const { showLoading, hideLoading } = useLoading();
   const { navigate, goBack } = useNavigationActions();
+  const { createDraft, getDraftById, updateDraft, isOnline } =
+    useDraftContext();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scrollViewRef = useRef<ScrollView>(null);
@@ -116,7 +121,18 @@ const PublicationFormScreen: React.FC = () => {
     keyboardHeight: 0
   });
 
-  const { imageUri, location } = route.params;
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [validationMessage, setValidationMessage] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showDraftSuccessModal, setShowDraftSuccessModal] = useState(false);
+  const [showDraftErrorModal, setShowDraftErrorModal] = useState(false);
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+
+  const { imageUri, location, draftId } = route.params;
+  const isEditingDraft = !!draftId;
+  const isConnected = isOnline;
 
   const animalOptions = useMemo(() => {
     const options = [UNKNOWN_ANIMAL, ...commonNouns];
@@ -134,6 +150,28 @@ const PublicationFormScreen: React.FC = () => {
       }));
     }
   }, [commonNouns, formState.selectedAnimal]);
+
+  useEffect(() => {
+    const loadDraft = async () => {
+      if (!draftId) return;
+
+      try {
+        const draft = await getDraftById(draftId);
+        if (draft) {
+          setFormState(prev => ({
+            ...prev,
+            description: draft.description,
+            customAnimalName: draft.customAnimalName,
+            animalState: draft.animalState
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading draft:', error);
+      }
+    };
+
+    loadDraft();
+  }, [draftId, getDraftById]);
 
   useEffect(() => {
     const keyboardWillShow = Keyboard.addListener(
@@ -205,7 +243,8 @@ const PublicationFormScreen: React.FC = () => {
   const handleSubmit = useCallback(async (): Promise<void> => {
     const validationError = validateForm();
     if (validationError) {
-      Alert.alert('Formulario incompleto', validationError);
+      setValidationMessage(validationError);
+      setShowValidationModal(true);
       return;
     }
 
@@ -228,33 +267,13 @@ const PublicationFormScreen: React.FC = () => {
       };
 
       await publicationService.createPublication(data);
-
-      Alert.alert(
-        '✅ Publicación creada exitosamente',
-        'Gracias por tu contribución a la comunidad.',
-        [
-          {
-            text: 'Continuar',
-            onPress: () => navigate('HomeTabs')
-          }
-        ]
-      );
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Error al publicar:', error);
-      Alert.alert(
-        '❌ Error',
-        'Ocurrió un problema al crear la publicación. Verifica tu conexión e intenta de nuevo.',
-        [
-          {
-            text: 'Reintentar',
-            onPress: handleSubmit
-          },
-          {
-            text: 'Cancelar',
-            style: 'cancel'
-          }
-        ]
+      setErrorMessage(
+        'Ocurrió un problema al crear la publicación. Verifica tu conexión e intenta de nuevo.'
       );
+      setShowErrorModal(true);
     } finally {
       hideLoading();
     }
@@ -264,8 +283,59 @@ const PublicationFormScreen: React.FC = () => {
     location,
     showLoading,
     hideLoading,
-    navigate,
     validateForm,
+    getAnimalNameForSubmission
+  ]);
+
+  const handleSaveDraft = useCallback(async (): Promise<void> => {
+    if (!imageUri) {
+      setErrorMessage('Se requiere una imagen para guardar el borrador.');
+      setShowDraftErrorModal(true);
+      return;
+    }
+
+    const { description, selectedAnimal, animalState } = formState;
+    const animalName = getAnimalNameForSubmission();
+
+    try {
+      if (isEditingDraft && draftId) {
+        const draft = await getDraftById(draftId);
+        if (draft) {
+          await updateDraft({
+            ...draft,
+            description: description.trim(),
+            customAnimalName: animalName,
+            animalState,
+            updatedAt: new Date()
+          });
+        }
+      } else {
+        await createDraft(
+          imageUri,
+          description.trim(),
+          selectedAnimal,
+          animalName,
+          animalState,
+          location
+        );
+      }
+      setShowDraftSuccessModal(true);
+    } catch (error) {
+      console.error('Error al guardar borrador:', error);
+      setErrorMessage(
+        'No se pudo guardar el borrador. Por favor intenta de nuevo.'
+      );
+      setShowDraftErrorModal(true);
+    }
+  }, [
+    formState,
+    imageUri,
+    location,
+    createDraft,
+    updateDraft,
+    getDraftById,
+    draftId,
+    isEditingDraft,
     getAnimalNameForSubmission
   ]);
 
@@ -366,25 +436,11 @@ const PublicationFormScreen: React.FC = () => {
 
   const handleGoBack = useCallback(() => {
     if (formState.description.trim() || formState.customAnimalName.trim()) {
-      Alert.alert(
-        'Descartar cambios',
-        '¿Estás seguro de que quieres salir? Se perderán los cambios no guardados.',
-        [
-          {
-            text: 'Cancelar',
-            style: 'cancel'
-          },
-          {
-            text: 'Salir',
-            style: 'destructive',
-            onPress: goBack
-          }
-        ]
-      );
+      setShowDiscardModal(true);
     } else {
       goBack();
     }
-  }, [formState, goBack]);
+  }, [formState.description, formState.customAnimalName, goBack]);
 
   const handleInputFocus = useCallback(
     (inputRef: React.RefObject<TextInput | null>) => {
@@ -409,6 +465,7 @@ const PublicationFormScreen: React.FC = () => {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea}>
+        <OfflineBanner />
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -479,12 +536,244 @@ const PublicationFormScreen: React.FC = () => {
               <FooterButtons
                 onCancel={handleGoBack}
                 onSubmit={handleSubmit}
+                onSaveDraft={handleSaveDraft}
                 styles={styles}
                 isValid={validateForm() === null}
+                isOnline={isConnected}
               />
             )}
           </Animated.View>
         </KeyboardAvoidingView>
+
+        <CustomModal
+          isVisible={showValidationModal}
+          onClose={() => setShowValidationModal(false)}
+          title="Formulario incompleto"
+          type="alert"
+          size="small"
+          icon={
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: '#FF9800' + '15',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+            >
+              <Ionicons name="alert-circle" size={32} color="#FF9800" />
+            </View>
+          }
+          description={validationMessage}
+          centered
+          showFooter
+          buttons={[
+            {
+              label: 'Entendido',
+              onPress: () => setShowValidationModal(false),
+              variant: 'primary'
+            }
+          ]}
+        />
+
+        <CustomModal
+          isVisible={showSuccessModal}
+          onClose={() => {
+            setShowSuccessModal(false);
+            navigate('HomeTabs');
+          }}
+          title="¡Publicación creada!"
+          type="alert"
+          size="small"
+          icon={
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: '#4CAF50' + '15',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+            >
+              <Ionicons name="checkmark-circle" size={32} color="#4CAF50" />
+            </View>
+          }
+          description="Gracias por tu contribución a la comunidad."
+          centered
+          showFooter
+          buttons={[
+            {
+              label: 'Continuar',
+              onPress: () => {
+                setShowSuccessModal(false);
+                navigate('HomeTabs');
+              },
+              variant: 'primary'
+            }
+          ]}
+        />
+
+        <CustomModal
+          isVisible={showErrorModal}
+          onClose={() => setShowErrorModal(false)}
+          title="Error al publicar"
+          type="alert"
+          size="small"
+          icon={
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: theme.colors.error + '15',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+            >
+              <Ionicons
+                name="close-circle"
+                size={32}
+                color={theme.colors.error}
+              />
+            </View>
+          }
+          description={errorMessage}
+          centered
+          showFooter
+          footerAlignment="space-between"
+          buttons={[
+            {
+              label: 'Cancelar',
+              onPress: () => setShowErrorModal(false),
+              variant: 'outline'
+            },
+            {
+              label: 'Reintentar',
+              onPress: () => {
+                setShowErrorModal(false);
+                handleSubmit();
+              },
+              variant: 'primary'
+            }
+          ]}
+        />
+
+        <CustomModal
+          isVisible={showDraftSuccessModal}
+          onClose={() => {
+            setShowDraftSuccessModal(false);
+            navigate('HomeTabs');
+          }}
+          title="Borrador guardado"
+          type="alert"
+          size="small"
+          icon={
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: '#0288D1' + '15',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+            >
+              <Ionicons name="save" size={32} color="#0288D1" />
+            </View>
+          }
+          description="Tu borrador ha sido guardado exitosamente. Podrás editarlo y enviarlo más tarde desde la sección de borradores."
+          centered
+          showFooter
+          buttons={[
+            {
+              label: 'Aceptar',
+              onPress: () => {
+                setShowDraftSuccessModal(false);
+                navigate('HomeTabs');
+              },
+              variant: 'primary'
+            }
+          ]}
+        />
+
+        <CustomModal
+          isVisible={showDraftErrorModal}
+          onClose={() => setShowDraftErrorModal(false)}
+          title="Error al guardar"
+          type="alert"
+          size="small"
+          icon={
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: theme.colors.error + '15',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+            >
+              <Ionicons
+                name="close-circle"
+                size={32}
+                color={theme.colors.error}
+              />
+            </View>
+          }
+          description={errorMessage}
+          centered
+          showFooter
+          buttons={[
+            {
+              label: 'Entendido',
+              onPress: () => setShowDraftErrorModal(false),
+              variant: 'primary'
+            }
+          ]}
+        />
+
+        <CustomModal
+          isVisible={showDiscardModal}
+          onClose={() => setShowDiscardModal(false)}
+          title="Descartar cambios"
+          type="confirmation"
+          size="small"
+          icon={
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: '#FF9800' + '15',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+            >
+              <Ionicons name="warning" size={32} color="#FF9800" />
+            </View>
+          }
+          description="¿Estás seguro de que quieres salir? Se perderán los cambios no guardados."
+          centered
+          showFooter
+          footerAlignment="space-between"
+          buttons={[
+            {
+              label: 'Cancelar',
+              onPress: () => setShowDiscardModal(false),
+              variant: 'outline'
+            },
+            {
+              label: 'Salir',
+              onPress: () => {
+                setShowDiscardModal(false);
+                goBack();
+              },
+              variant: 'danger'
+            }
+          ]}
+        />
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -800,15 +1089,19 @@ const FormSection: React.FC<FormSectionProps> = React.memo(
 interface FooterButtonsProps {
   onCancel: () => void;
   onSubmit: () => void;
+  onSaveDraft: () => void;
   styles: ReturnType<typeof createStyles>;
   isValid: boolean;
+  isOnline: boolean;
 }
 
 const FooterButtons: React.FC<FooterButtonsProps> = ({
   onCancel,
   onSubmit,
+  onSaveDraft,
   styles,
-  isValid
+  isValid,
+  isOnline
 }) => (
   <View style={styles.footer}>
     <TouchableOpacity
@@ -821,20 +1114,36 @@ const FooterButtons: React.FC<FooterButtonsProps> = ({
     </TouchableOpacity>
 
     <TouchableOpacity
-      style={[styles.submitButton, !isValid && styles.submitButtonDisabled]}
+      style={styles.draftButton}
+      onPress={onSaveDraft}
+      activeOpacity={0.8}
+    >
+      <Ionicons name="save-outline" size={18} color="#0288D1" />
+      <Text style={styles.draftButtonText}>Guardar</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={[
+        styles.submitButton,
+        (!isValid || !isOnline) && styles.submitButtonDisabled
+      ]}
       onPress={onSubmit}
-      activeOpacity={isValid ? 0.8 : 0.5}
-      disabled={!isValid}
+      activeOpacity={isValid && isOnline ? 0.8 : 0.5}
+      disabled={!isValid || !isOnline}
     >
       <Text
         style={[
           styles.submitButtonText,
-          !isValid && styles.submitButtonTextDisabled
+          (!isValid || !isOnline) && styles.submitButtonTextDisabled
         ]}
       >
-        Publicar
+        {!isOnline ? 'Sin conexión' : 'Publicar'}
       </Text>
-      <Ionicons name="send" size={18} color={isValid ? 'white' : '#999'} />
+      <Ionicons
+        name={!isOnline ? 'cloud-offline' : 'send'}
+        size={18}
+        color={isValid && isOnline ? 'white' : '#999'}
+      />
     </TouchableOpacity>
   </View>
 );

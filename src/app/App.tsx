@@ -11,6 +11,7 @@ import { PublicationProvider } from '../presentation/contexts/publication.contex
 import { NotificationProvider } from '../presentation/contexts/notification.context';
 import { LoadingProvider } from '../presentation/contexts/loading.context';
 import { CatalogProvider } from '../presentation/contexts/catalog.context';
+import { DraftProvider } from '../presentation/contexts/draft.context';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { APIStatusProvider } from '../presentation/contexts/api-status.context';
 
@@ -24,11 +25,13 @@ export default function App() {
               <ThemeProvider>
                 <LoadingProvider>
                   <CatalogProvider>
-                    <PublicationProvider>
-                      <NotificationProvider>
-                        <AppNavigator />
-                      </NotificationProvider>
-                    </PublicationProvider>
+                    <DraftProvider>
+                      <PublicationProvider>
+                        <NotificationProvider>
+                          <AppNavigator />
+                        </NotificationProvider>
+                      </PublicationProvider>
+                    </DraftProvider>
                   </CatalogProvider>
                 </LoadingProvider>
               </ThemeProvider>

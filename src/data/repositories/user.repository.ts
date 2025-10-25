@@ -74,4 +74,24 @@ export class UserRepository extends BaseRepository implements IUserRepository {
       throw processedError;
     }
   }
+
+  async deactivateUser(userId: number): Promise<void> {
+    try {
+      this.logger.debug('[UserRepository] Desactivando usuario', { userId });
+
+      const response = await this.api.delete(`/Users/?userId=${userId}`);
+      this.ensureSuccessStatus(response);
+
+      this.logger.info('[UserRepository] Usuario desactivado exitosamente', {
+        userId
+      });
+    } catch (error) {
+      const processedError = this.handleHttpError(error, 'deactivateUser');
+      this.logger.error(
+        '[UserRepository] Error desactivando usuario',
+        processedError
+      );
+      throw processedError;
+    }
+  }
 }

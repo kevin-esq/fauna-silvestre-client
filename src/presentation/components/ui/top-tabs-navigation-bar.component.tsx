@@ -393,7 +393,7 @@ const CreatePostButton = React.memo(
         >
           <RNAnimated.View style={{ transform: [{ rotate: rotation }] }}>
             <FontAwesome5Icon
-              name="plus"
+              name="camera"
               size={iconSizes.medium}
               color={colors.textOnPrimary}
             />
@@ -636,7 +636,6 @@ export default function TopTabsNavigationBar({
         </View>
       </View>
 
-      {/* Help Modal */}
       <HelpModal visible={showHelpModal} onClose={handleCloseHelp} />
     </View>
   );

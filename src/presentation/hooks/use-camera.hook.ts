@@ -16,6 +16,10 @@ export function useCamera() {
   const [isCapturing, setCapturing] = useState(false);
   const [cameraPosition, setCameraPosition] = useState<CameraPosition>(0);
   const [flashMode, setFlashMode] = useState<'on' | 'off' | 'auto'>('off');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
   const { hasPermissions, permissionStatus, checkPermissions } =
     useRequestPermissions();
@@ -23,7 +27,7 @@ export function useCamera() {
   const devices = useCameraDevices();
   const device = devices[cameraPosition];
 
-  useEffect(() => {
+  const checkCameraAccess = useCallback(async () => {
     const hasCameraPermission = permissionStatus['camera'] === 'granted';
     const hasLocationPermission = permissionStatus['location'] === 'granted';
 
@@ -38,11 +42,38 @@ export function useCamera() {
       hasCameraPermission,
       hasLocationPermission,
       hasDevice: !!device,
-      isCameraReady: isReady
+      isCameraReady: isReady,
+      retryCount: retryCountRef.current
     });
 
-    setCameraReady(isReady);
-  }, [hasPermissions, permissionStatus, device]);
+    if (!isReady && retryCountRef.current < maxRetries) {
+      console.log(
+        `🔄 Reintentando acceso a cámara (${retryCountRef.current + 1}/${maxRetries})...`
+      );
+      setIsRetrying(true);
+      retryCountRef.current += 1;
+
+      await checkPermissions(['camera', 'gallery', 'location', 'allFiles']);
+
+      setTimeout(() => {
+        setIsRetrying(false);
+      }, 1000);
+    } else if (!isReady && retryCountRef.current >= maxRetries) {
+      console.error('❌ Cámara restringida después de reintentos');
+      setCameraError(
+        'Cámara restringida. Por favor, verifica los permisos en configuración.'
+      );
+      setCameraReady(false);
+    } else if (isReady) {
+      retryCountRef.current = 0;
+      setCameraError(null);
+      setCameraReady(true);
+    }
+  }, [hasPermissions, permissionStatus, device, checkPermissions, maxRetries]);
+
+  useEffect(() => {
+    checkCameraAccess();
+  }, [checkCameraAccess]);
 
   useEffect(() => {
     const initPermissions = async () => {
@@ -111,8 +142,11 @@ export function useCamera() {
     hasPermissions,
     cameraPosition,
     flashMode,
+    cameraError,
+    isRetrying,
     takePhoto,
     flipCamera,
-    toggleFlashMode
+    toggleFlashMode,
+    retryCamera: checkCameraAccess
   };
 }

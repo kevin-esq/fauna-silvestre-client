@@ -24,10 +24,6 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
-  // ============================================================================
-  // ICON CONFIG BY TYPE
-  // ============================================================================
-
   const getIconConfig = useCallback(
     (
       type: NotificationType
@@ -71,10 +67,6 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
   const iconConfig = getIconConfig(notification.type);
   const isUnread = notification.status === 'unread';
 
-  // ============================================================================
-  // HANDLERS
-  // ============================================================================
-
   const handlePress = useCallback(() => {
     onPress?.(notification);
   }, [notification, onPress]);
@@ -82,10 +74,6 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
   const handleDelete = useCallback(() => {
     onDelete?.(notification.id);
   }, [notification.id, onDelete]);
-
-  // ============================================================================
-  // RENDER
-  // ============================================================================
 
   return (
     <TouchableOpacity
@@ -100,12 +88,9 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
       accessibilityLabel={`Notificación: ${notification.title}`}
       accessibilityHint={isUnread ? 'No leída' : 'Leída'}
     >
-      {/* Unread Indicator */}
       {isUnread && <View style={styles.unreadDot} />}
 
-      {/* Header */}
       <View style={styles.header}>
-        {/* Icon */}
         <View
           style={[
             styles.iconContainer,
@@ -115,7 +100,6 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
           <Ionicons name={iconConfig.name} size={24} color={iconConfig.color} />
         </View>
 
-        {/* Content */}
         <View style={styles.headerContent}>
           <Text
             style={[styles.title, isUnread && styles.titleUnread]}
@@ -128,7 +112,6 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
           </Text>
         </View>
 
-        {/* Delete Button */}
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={handleDelete}
@@ -144,12 +127,10 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* Message */}
       <Text style={styles.message} numberOfLines={2}>
         {notification.message}
       </Text>
 
-      {/* Animal Name (if available) */}
       {notification.animalName && (
         <View style={styles.animalTag}>
           <Ionicons name="paw" size={12} color={theme.colors.forest} />

@@ -29,12 +29,16 @@ import AnimalFormScreen from '../screens/admin/animal-form-screen';
 import ImageEditorScreen from '../screens/admin/image-editor-screen';
 import CatalogAnimalsScreen from '../screens/catalog/catalog-animals-screen';
 import DownloadedFilesScreen from '../screens/media/downloaded-files-screen';
+import DraftsScreen from '../screens/drafts/drafts-screen';
+import DraftEditorScreen from '../screens/drafts/draft-editor-screen';
 import UserListScreen from '../screens/users/user-list-screen';
 import UserDetailsScreen from '../screens/users/user-details-screen';
 
 import type { RootStackParamList } from './navigation.types';
 import { createRootStack } from './create-root-stack';
 import { adminTabs, userTabs } from './tabs-config';
+import { offlineTabs } from './offline-tabs-config';
+import { useNetworkStatus } from '../hooks/use-network-status.hook';
 export type ValidRole = 'Admin' | 'User';
 
 interface TabConfig {
@@ -97,21 +101,50 @@ const useRoleValidation = () => {
 
 const useNavigationState = () => {
   const { status } = useApiStatus();
-  const { isAuthenticated, initializing } = useAuth();
+  const { isAuthenticated, initializing, user } = useAuth();
   const { role, isValidRole: hasValidRole } = useRoleValidation();
+  const { isOffline } = useNetworkStatus();
 
   return useMemo(() => {
+    console.log('[Navigation] State:', {
+      status,
+      initializing,
+      isAuthenticated,
+      isOffline,
+      hasUser: !!user,
+      role
+    });
+
     if (status === 'BOOTING' || initializing) {
+      console.log('[Navigation] -> splash (booting/initializing)');
       return 'splash';
     }
+
+    if (isOffline) {
+      console.log('[Navigation] -> offline (offline + has user)');
+      return 'offline';
+    }
+
     if (status === 'AUTHENTICATING' || status === 'UNAUTHENTICATED') {
+      console.log('[Navigation] -> auth (authenticating/unauthenticated)');
       return 'auth';
     }
     if (status === 'AUTHENTICATED' && isAuthenticated && hasValidRole) {
-      return role === 'Admin' ? 'admin' : 'user';
+      const navState = role === 'Admin' ? 'admin' : 'user';
+      console.log(`[Navigation] -> ${navState} (authenticated)`);
+      return navState;
     }
+    console.log('[Navigation] -> splash (fallback)');
     return 'splash';
-  }, [status, initializing, isAuthenticated, hasValidRole, role]);
+  }, [
+    status,
+    initializing,
+    isAuthenticated,
+    hasValidRole,
+    role,
+    isOffline,
+    user
+  ]);
 };
 
 const TabsComponent = React.memo<{
@@ -171,6 +204,15 @@ export const UserTabs = React.memo(() => {
 
 UserTabs.displayName = 'UserTabs';
 
+export const OfflineTabs = React.memo(() => {
+  const { theme } = useTheme();
+  return (
+    <TabsComponent screens={offlineTabs} theme={theme} testID="offline-tabs" />
+  );
+});
+
+OfflineTabs.displayName = 'OfflineTabs';
+
 const createStackConfigurations = () => {
   const publicationFormStack = createRootStack<RootStackParamList>([
     { name: 'CameraGallery', component: CameraGalleryScreen },
@@ -181,11 +223,14 @@ const createStackConfigurations = () => {
   const adminRootStack = createRootStack<RootStackParamList>([
     { name: 'HomeTabs', component: AdminTabs },
     { name: 'AddPublication', component: publicationFormStack },
+    { name: 'PublicationForm', component: PublicationFormScreen },
     { name: 'PublicationDetails', component: PublicationDetailsScreen },
     { name: 'AnimalDetails', component: AnimalDetailsScreen },
     { name: 'AnimalForm', component: AnimalFormScreen },
     { name: 'ImageEditor', component: ImageEditorScreen },
     { name: 'DownloadedFiles', component: DownloadedFilesScreen },
+    { name: 'Drafts', component: DraftsScreen },
+    { name: 'DraftEditor', component: DraftEditorScreen },
     { name: 'UserList', component: UserListScreen },
     { name: 'UserDetails', component: UserDetailsScreen }
   ]);
@@ -193,10 +238,13 @@ const createStackConfigurations = () => {
   const userRootStack = createRootStack<RootStackParamList>([
     { name: 'HomeTabs', component: UserTabs },
     { name: 'AddPublication', component: publicationFormStack },
+    { name: 'PublicationForm', component: PublicationFormScreen },
     { name: 'PublicationDetails', component: PublicationDetailsScreen },
     { name: 'AnimalDetails', component: AnimalDetailsScreen },
     { name: 'Catalog', component: CatalogAnimalsScreen },
-    { name: 'DownloadedFiles', component: DownloadedFilesScreen }
+    { name: 'DownloadedFiles', component: DownloadedFilesScreen },
+    { name: 'Drafts', component: DraftsScreen },
+    { name: 'DraftEditor', component: DraftEditorScreen }
   ]);
 
   const authStack = createRootStack<RootStackParamList>([
@@ -205,11 +253,21 @@ const createStackConfigurations = () => {
     { name: 'ForgotPassword', component: ForgotPasswordScreen }
   ]);
 
+  const offlineStack = createRootStack<RootStackParamList>([
+    { name: 'HomeTabs', component: OfflineTabs },
+    { name: 'AddPublication', component: publicationFormStack },
+    { name: 'PublicationForm', component: PublicationFormScreen },
+    { name: 'DownloadedFiles', component: DownloadedFilesScreen },
+    { name: 'Drafts', component: DraftsScreen },
+    { name: 'DraftEditor', component: DraftEditorScreen }
+  ]);
+
   return {
     publicationFormStack,
     adminRootStack,
     userRootStack,
-    authStack
+    authStack,
+    offlineStack
   };
 };
 
@@ -259,6 +317,8 @@ const AppNavigator: React.FC = () => {
         return <stacks.adminRootStack />;
       case 'user':
         return <stacks.userRootStack />;
+      case 'offline':
+        return <stacks.offlineStack />;
       default:
         console.warn('Unknown navigation state:', navigationState);
         return <SplashScreen />;

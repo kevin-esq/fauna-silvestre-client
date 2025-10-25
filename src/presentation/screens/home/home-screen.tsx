@@ -12,6 +12,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../contexts/auth.context';
 import { Theme, useTheme } from '../../contexts/theme.context';
+import { useDraftContext } from '../../contexts/draft.context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { useLocationInfo } from '../../hooks/use-location-info';
 import { useHomeData } from '../../hooks/use-home-data.hook';
@@ -19,6 +20,7 @@ import { useHomeData } from '../../hooks/use-home-data.hook';
 import { CatalogAnimalCard } from '../catalog/catalog-animals-screen';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
 import CustomModal from '../../components/ui/custom-modal.component';
+import { OfflineBanner } from '../../components/ui/offline-banner.component';
 import {
   SkeletonLoader,
   StatCardSkeleton,
@@ -176,104 +178,168 @@ const QuickActions = React.memo<{
   onAddPublication: () => void;
   onViewCatalog: () => void;
   onDownloadedCards: () => void;
+  onDrafts: () => void;
+  draftsCount: number;
   styles: ReturnType<typeof createStyles>;
   theme: Theme;
-}>(({ onAddPublication, onViewCatalog, onDownloadedCards, styles, theme }) => (
-  <View style={styles.quickActionsSection}>
-    <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
-    <View style={styles.quickActionsContainer}>
-      <TouchableOpacity
-        style={[styles.quickActionCard, styles.quickActionPrimary]}
-        onPress={onAddPublication}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-        accessibilityLabel="Nueva publicación"
-      >
-        <View style={styles.quickActionIcon}>
+}>(
+  ({
+    onAddPublication,
+    onViewCatalog,
+    onDownloadedCards,
+    onDrafts,
+    draftsCount,
+    styles,
+    theme
+  }) => (
+    <View style={styles.quickActionsSection}>
+      <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+      <View style={styles.quickActionsContainer}>
+        <TouchableOpacity
+          style={[styles.quickActionCard, styles.quickActionPrimary]}
+          onPress={onAddPublication}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Nueva publicación"
+        >
+          <View style={styles.quickActionIcon}>
+            <Ionicons
+              name="camera"
+              size={24}
+              color={theme.colors.textOnPrimary}
+            />
+          </View>
+          <View style={styles.quickActionContent}>
+            <Text style={styles.quickActionTitle}>Nueva Publicación</Text>
+            <Text style={styles.quickActionSubtitle}>
+              Comparte tu descubrimiento
+            </Text>
+          </View>
           <Ionicons
-            name="camera"
-            size={24}
+            name="chevron-forward"
+            size={20}
             color={theme.colors.textOnPrimary}
+            style={{ opacity: 0.7 }}
           />
-        </View>
-        <View style={styles.quickActionContent}>
-          <Text style={styles.quickActionTitle}>Nueva Publicación</Text>
-          <Text style={styles.quickActionSubtitle}>
-            Comparte tu descubrimiento
-          </Text>
-        </View>
-        <Ionicons
-          name="chevron-forward"
-          size={20}
-          color={theme.colors.textOnPrimary}
-          style={{ opacity: 0.7 }}
-        />
-      </TouchableOpacity>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.quickActionCard, styles.quickActionSecondary]}
-        onPress={onViewCatalog}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-        accessibilityLabel="Explorar catálogo"
-      >
-        <View
-          style={[
-            styles.quickActionIcon,
-            { backgroundColor: theme.colors.forest + '20' }
-          ]}
+        <TouchableOpacity
+          style={[styles.quickActionCard, styles.quickActionSecondary]}
+          onPress={onViewCatalog}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Explorar catálogo"
         >
-          <Ionicons name="library" size={24} color={theme.colors.forest} />
-        </View>
-        <View style={styles.quickActionContent}>
-          <Text
-            style={[styles.quickActionTitle, { color: theme.colors.forest }]}
+          <View
+            style={[
+              styles.quickActionIcon,
+              { backgroundColor: theme.colors.forest + '20' }
+            ]}
           >
-            Explorar Catálogo
-          </Text>
-          <Text
-            style={[styles.quickActionSubtitle, { color: theme.colors.forest }]}
-          >
-            Descubre especies
-          </Text>
-        </View>
-        <Ionicons
-          name="chevron-forward"
-          size={20}
-          color={theme.colors.forest}
-        />
-      </TouchableOpacity>
+            <Ionicons name="library" size={24} color={theme.colors.forest} />
+          </View>
+          <View style={styles.quickActionContent}>
+            <Text
+              style={[styles.quickActionTitle, { color: theme.colors.forest }]}
+            >
+              Explorar Catálogo
+            </Text>
+            <Text
+              style={[
+                styles.quickActionSubtitle,
+                { color: theme.colors.forest }
+              ]}
+            >
+              Descubre especies
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={theme.colors.forest}
+          />
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.quickActionCard, styles.quickActionTertiary]}
-        onPress={onDownloadedCards}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-        accessibilityLabel="Fichas descargadas"
-      >
-        <View
-          style={[
-            styles.quickActionIcon,
-            { backgroundColor: theme.colors.info + '20' }
-          ]}
+        <TouchableOpacity
+          style={[styles.quickActionCard, styles.quickActionTertiary]}
+          onPress={onDownloadedCards}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Fichas descargadas"
         >
-          <Ionicons name="file-tray-full" size={24} color={theme.colors.info} />
-        </View>
-        <View style={styles.quickActionContent}>
-          <Text style={[styles.quickActionTitle, { color: theme.colors.info }]}>
-            Fichas Descargadas
-          </Text>
-          <Text
-            style={[styles.quickActionSubtitle, { color: theme.colors.info }]}
+          <View
+            style={[
+              styles.quickActionIcon,
+              { backgroundColor: theme.colors.info + '20' }
+            ]}
           >
-            Ver fichas guardadas
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={theme.colors.info} />
-      </TouchableOpacity>
+            <Ionicons
+              name="file-tray-full"
+              size={24}
+              color={theme.colors.info}
+            />
+          </View>
+          <View style={styles.quickActionContent}>
+            <Text
+              style={[styles.quickActionTitle, { color: theme.colors.info }]}
+            >
+              Fichas Descargadas
+            </Text>
+            <Text
+              style={[styles.quickActionSubtitle, { color: theme.colors.info }]}
+            >
+              Ver fichas guardadas
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={theme.colors.info}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.quickActionCard, styles.quickActionTertiary]}
+          onPress={onDrafts}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Mis borradores"
+        >
+          <View
+            style={[
+              styles.quickActionIcon,
+              { backgroundColor: theme.colors.water + '20' }
+            ]}
+          >
+            <Ionicons name="documents" size={24} color={theme.colors.water} />
+          </View>
+          <View style={styles.quickActionContent}>
+            <Text
+              style={[styles.quickActionTitle, { color: theme.colors.water }]}
+            >
+              Mis Borradores
+            </Text>
+            <Text
+              style={[
+                styles.quickActionSubtitle,
+                { color: theme.colors.water }
+              ]}
+            >
+              {draftsCount > 0
+                ? `${draftsCount} borrador${draftsCount > 1 ? 'es' : ''}`
+                : 'Sin borradores'}
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={theme.colors.water}
+          />
+        </TouchableOpacity>
+      </View>
     </View>
-  </View>
-));
+  )
+);
 
 const CatalogFilters = React.memo<{
   categories: CommonNounResponse[];
@@ -405,6 +471,7 @@ const HomeScreen: React.FC = React.memo(() => {
   const { theme, colors } = useTheme();
   const { user, signOut } = useAuth();
   const { push, navigateAndReset } = useNavigationActions();
+  const { drafts } = useDraftContext();
   const styles = createStyles(theme);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -443,6 +510,10 @@ const HomeScreen: React.FC = React.memo(() => {
     push('DownloadedFiles');
   }, [push]);
 
+  const handleDrafts = useCallback(() => {
+    push('Drafts');
+  }, [push]);
+
   const handleAnimalPress = useCallback(
     (animal: AnimalModelResponse) => {
       push('AnimalDetails', { animal });
@@ -477,6 +548,7 @@ const HomeScreen: React.FC = React.memo(() => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <OfflineBanner />
       <StatusBar
         backgroundColor={theme.colors.primary}
         barStyle="light-content"
@@ -513,6 +585,8 @@ const HomeScreen: React.FC = React.memo(() => {
           onAddPublication={handleAddPublication}
           onViewCatalog={handleViewCatalog}
           onDownloadedCards={handleDownloadedCards}
+          onDrafts={handleDrafts}
+          draftsCount={drafts.length}
           styles={styles}
           theme={theme}
         />
