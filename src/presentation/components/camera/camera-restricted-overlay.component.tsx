@@ -9,11 +9,9 @@ interface CameraRestrictedOverlayProps {
   onRetry: () => void;
 }
 
-export const CameraRestrictedOverlay: React.FC<CameraRestrictedOverlayProps> = ({
-  message,
-  isRetrying,
-  onRetry
-}) => {
+export const CameraRestrictedOverlay: React.FC<
+  CameraRestrictedOverlayProps
+> = ({ message, isRetrying, onRetry }) => {
   const { colors, spacing, typography, borderRadius } = useTheme();
 
   const styles = StyleSheet.create({
@@ -93,10 +91,7 @@ export const CameraRestrictedOverlay: React.FC<CameraRestrictedOverlayProps> = (
         <Text style={styles.message}>{message}</Text>
 
         <TouchableOpacity
-          style={[
-            styles.retryButton,
-            isRetrying && styles.retryButtonDisabled
-          ]}
+          style={[styles.retryButton, isRetrying && styles.retryButtonDisabled]}
           onPress={onRetry}
           disabled={isRetrying}
           activeOpacity={0.8}

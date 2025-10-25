@@ -244,7 +244,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
       fontWeight: typography.fontWeight.medium,
       color: colors.textOnPrimary,
       lineHeight: typography.lineHeight.medium
-    },
-
+    }
   });
 };

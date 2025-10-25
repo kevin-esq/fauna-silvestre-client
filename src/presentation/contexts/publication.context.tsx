@@ -806,7 +806,10 @@ export const PublicationProvider: React.FC<{
           await loadCounts();
           await loadStatus(PublicationStatus.PENDING);
         } catch (error) {
-          console.error('[PublicationContext] Error loading initial data:', error);
+          console.error(
+            '[PublicationContext] Error loading initial data:',
+            error
+          );
         }
       }, 500);
 

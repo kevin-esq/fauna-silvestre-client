@@ -67,10 +67,7 @@ export const CaptureButton: React.FC<Props> = ({
       onPress={handlePress}
       disabled={disabled}
       activeOpacity={0.8}
-      style={[
-        styles.captureButton,
-        disabled && styles.captureButtonDisabled
-      ]}
+      style={[styles.captureButton, disabled && styles.captureButtonDisabled]}
       accessibilityLabel="Capturar foto"
       accessibilityRole="button"
     >
