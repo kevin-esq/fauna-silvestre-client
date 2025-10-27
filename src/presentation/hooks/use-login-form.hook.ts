@@ -44,14 +44,8 @@ export const useLoginForm = () => {
     };
 
     try {
-      console.log(
-        '[useLoginForm] Attempting login with:',
-        credentials.UserName
-      );
       await auth.signIn(credentials, rememberMe);
-      console.log('[useLoginForm] Login successful');
-    } catch (err) {
-      console.log('[useLoginForm] Login failed with error:', err);
+    } catch {
     } finally {
       hideLoading();
     }

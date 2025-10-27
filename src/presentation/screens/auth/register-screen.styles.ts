@@ -4,57 +4,58 @@ import { StyleSheet } from 'react-native';
 export const createStyles = (variables: ThemeVariablesType) => {
   return StyleSheet.create({
     stepTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: variables['--text'] || '#212121',
+      fontSize: variables['--font-size-xlarge'],
+      fontWeight: variables['--font-weight-bold'],
+      color: variables['--text'],
       textAlign: 'center',
-      marginBottom: 8
+      marginBottom: variables['--spacing-small']
     },
     stepDescription: {
-      fontSize: 14,
-      color: variables['--text-secondary'] || '#616161',
+      fontSize: variables['--font-size-medium'],
+      fontWeight: variables['--font-weight-regular'],
+      color: variables['--text-secondary'],
       textAlign: 'center',
-      marginBottom: 24,
-      lineHeight: 20
+      marginBottom: variables['--spacing-large'],
+      lineHeight: variables['--line-height-large']
     },
 
     buttonContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginTop: 24,
-      gap: 12
+      marginTop: variables['--spacing-large'],
+      gap: variables['--spacing-small']
     },
 
     backButton: {
       flex: 1,
       backgroundColor: 'transparent',
-      borderWidth: 1.5,
-      borderColor: variables['--border'] || '#E0E0E0'
+      borderWidth: variables['--border-width-small'],
+      borderColor: variables['--border']
     },
     nextButton: {
       flex: 1,
-      backgroundColor: variables['--primary'] || '#007A33'
+      backgroundColor: variables['--primary']
     },
     submitButton: {
       flex: 1,
-      backgroundColor: variables['--success'] || '#388E3C'
+      backgroundColor: variables['--success']
     },
 
     loginButton: {
       backgroundColor: 'transparent',
-      borderWidth: 1.5,
-      borderColor: variables['--primary'] || '#007A33',
+      borderWidth: variables['--border-width-small'],
+      borderColor: variables['--primary'],
       marginBottom: 0
     },
 
     orText: {
       textAlign: 'center',
-      fontSize: 15,
-      color: variables['--text-secondary'] || '#616161',
-      marginTop: 32,
-      marginBottom: 16,
-      fontWeight: '500'
+      fontSize: variables['--font-size-large'],
+      color: variables['--text-secondary'],
+      marginTop: variables['--spacing-xlarge'],
+      marginBottom: variables['--spacing-medium'],
+      fontWeight: variables['--font-weight-medium']
     },
 
     formContainer: {
@@ -76,48 +77,51 @@ export const createStyles = (variables: ThemeVariablesType) => {
     },
 
     inputContainer: {
-      marginBottom: 16
+      marginBottom: variables['--spacing-medium']
     },
 
     requiredIndicator: {
-      color: variables['--error'] || '#C62828',
-      fontSize: 16,
-      marginLeft: 4
+      color: variables['--error'],
+      fontSize: variables['--font-size-medium'],
+      marginLeft: variables['--spacing-tiny']
     },
 
     helpText: {
-      fontSize: 12,
-      color: variables['--text-secondary'] || '#616161',
+      fontSize: variables['--font-size-small'],
+      color: variables['--text-secondary'],
       fontStyle: 'italic',
-      marginBottom: 8,
-      textAlign: 'center'
+      marginBottom: variables['--spacing-small'],
+      textAlign: 'center',
+      lineHeight: variables['--line-height-medium']
     },
 
     summaryContainer: {
-      backgroundColor: variables['--surface-variant'] || '#EEEEEE',
-      padding: 16,
-      borderRadius: 12,
-      marginBottom: 20
+      backgroundColor: variables['--surface-variant'],
+      padding: variables['--spacing-medium'],
+      borderRadius: variables['--border-radius-large'],
+      marginBottom: variables['--spacing-large'],
+      borderWidth: variables['--border-width-hairline'],
+      borderColor: variables['--border']
     },
     summaryTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: variables['--text'] || '#212121',
-      marginBottom: 8
+      fontSize: variables['--font-size-large'],
+      fontWeight: variables['--font-weight-bold'],
+      color: variables['--text'],
+      marginBottom: variables['--spacing-small']
     },
     summaryText: {
-      fontSize: 14,
-      color: variables['--text-secondary'] || '#616161',
-      lineHeight: 20
+      fontSize: variables['--font-size-medium'],
+      color: variables['--text-secondary'],
+      lineHeight: variables['--line-height-large']
     },
 
     focusedInput: {
-      borderColor: variables['--primary'] || '#007A33',
-      borderWidth: 2
+      borderColor: variables['--primary'],
+      borderWidth: variables['--border-width-small']
     },
     errorInput: {
-      borderColor: variables['--error'] || '#C62828',
-      borderWidth: 2
+      borderColor: variables['--error'],
+      borderWidth: variables['--border-width-small']
     },
 
     mainContainer: {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, Switch } from 'react-native';
 
 import { useNavigationActions } from '../../navigation/navigation-provider';
@@ -11,6 +11,7 @@ import AuthTextInput from '../../components/auth/auth-text-input.component';
 import ErrorMessage from '../../components/auth/error-message.component';
 import CustomButton from '../../components/ui/custom-button.component';
 import SponsorsFooter from '../../components/auth/sponsors-footer.component';
+import { SupportFooter } from '../../components/auth/support-footer.component';
 import { createStyles } from './login-screen.styles';
 import { useAuth } from '@/presentation/contexts/auth.context';
 
@@ -35,9 +36,50 @@ const LoginScreen = () => {
 
   const { clearError } = useAuth();
 
+  const errorType = useMemo(() => {
+    if (!error) return null;
+
+    const lowerError = error.toLowerCase();
+
+    if (
+      lowerError.includes('usuario') &&
+      (lowerError.includes('no existe') ||
+        lowerError.includes('no encontrado') ||
+        lowerError.includes('not found') ||
+        lowerError.includes('inválido') ||
+        lowerError.includes('no registrado') ||
+        lowerError.includes('no válido'))
+    ) {
+      return 'username';
+    }
+
+    if (
+      lowerError.includes('contraseña') &&
+      (lowerError.includes('incorrecta') ||
+        lowerError.includes('inválida') ||
+        lowerError.includes('incorrecta') ||
+        lowerError.includes('no coincide') ||
+        lowerError.includes('no válida') ||
+        lowerError.includes('errónea') ||
+        lowerError.includes('equivocada'))
+    ) {
+      return 'password';
+    }
+
+    if (
+      lowerError.includes('credenciales incorrectas') ||
+      lowerError.includes('credenciales inválidas') ||
+      lowerError.includes('invalid credentials')
+    ) {
+      return 'both';
+    }
+
+    return null;
+  }, [error]);
+
   return (
     <AuthContainer
-      title="¡Hola! 👋"
+      title="Bienvenido"
       subtitle="Inicia sesión para continuar"
       variables={variables}
     >
@@ -50,7 +92,7 @@ const LoginScreen = () => {
         onChangeText={setUsername}
         autoCapitalize="none"
         autoCorrect={false}
-        error={error ? 'Credenciales incorrectas' : false}
+        error={errorType === 'username' || errorType === 'both' ? true : false}
         variables={variables}
         variant="outlined"
         size="large"
@@ -63,7 +105,7 @@ const LoginScreen = () => {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        error={error ? 'Credenciales incorrectas' : false}
+        error={errorType === 'password' || errorType === 'both' ? true : false}
         variables={variables}
         variant="outlined"
         size="large"
@@ -114,6 +156,11 @@ const LoginScreen = () => {
         style={styles.button}
         variant="secondary"
         variables={variables}
+      />
+
+      <SupportFooter
+        showContextualHelp={!!error}
+        contextMessage="¿Problemas para iniciar sesión?"
       />
 
       <SponsorsFooter variables={variables} />

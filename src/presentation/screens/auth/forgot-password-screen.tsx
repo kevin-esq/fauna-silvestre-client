@@ -6,6 +6,7 @@ import {
   ViewStyle,
   TextStyle
 } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import {
   useForgotPassword,
@@ -17,6 +18,8 @@ import AuthTextInput from '../../components/auth/auth-text-input.component';
 import CodeInput from '../../components/auth/code-input.component';
 import ErrorMessage from '../../components/auth/error-message.component';
 import CustomButton from '../../components/ui/custom-button.component';
+import CustomModal from '../../components/ui/custom-modal.component';
+import { SupportFooter } from '../../components/auth/support-footer.component';
 import { createStyles } from './forgot-password-screen.styles';
 import { useTheme, Theme, themeVariables } from '../../contexts/theme.context';
 import { useAuth } from '@/presentation/contexts/auth.context';
@@ -142,6 +145,8 @@ const ForgotPasswordScreen = () => {
     setConfirmPassword,
     message,
     error,
+    successModal,
+    handleSuccessModalClose,
     sendResetPasswordEmail,
     verifyResetCode,
     handlePasswordReset
@@ -160,7 +165,10 @@ const ForgotPasswordScreen = () => {
 
   return (
     <AuthContainer
-      title="Recuperar Contraseña 🔐"
+      title="Recuperar Contraseña"
+      titleIcon={
+        <Ionicons name="lock-closed" size={24} color={variables['--primary']} />
+      }
       subtitle={subtitles[currentStep]}
       variables={variables}
     >
@@ -211,6 +219,29 @@ const ForgotPasswordScreen = () => {
         variant="secondary"
         style={styles.button}
         variables={variables}
+      />
+
+      <SupportFooter
+        showContextualHelp={!!error}
+        contextMessage="¿Problemas para recuperar tu contraseña?"
+      />
+
+      <CustomModal
+        isVisible={successModal}
+        onClose={handleSuccessModalClose}
+        title="Contraseña Actualizada"
+        description="Tu contraseña ha sido cambiada exitosamente."
+        type="alert"
+        size="small"
+        centered
+        showFooter
+        buttons={[
+          {
+            label: 'OK',
+            onPress: handleSuccessModalClose,
+            variant: 'primary'
+          }
+        ]}
       />
     </AuthContainer>
   );
