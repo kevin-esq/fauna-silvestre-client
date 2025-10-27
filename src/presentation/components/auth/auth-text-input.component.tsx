@@ -68,9 +68,24 @@ const AuthTextInput = forwardRef<TextInput, AuthTextInputProps>(
     const errorMessage = typeof error === 'string' ? error : undefined;
 
     const sizeConfig = {
-      small: { height: 48, fontSize: 14, iconSize: 20, padding: 16 },
-      medium: { height: 56, fontSize: 16, iconSize: 24, padding: 18 },
-      large: { height: 64, fontSize: 18, iconSize: 26, padding: 20 }
+      small: {
+        height: 48,
+        fontSize: variables['--font-size-medium'],
+        iconSize: variables['--icon-size-medium'],
+        padding: variables['--spacing-medium']
+      },
+      medium: {
+        height: 56,
+        fontSize: variables['--font-size-large'],
+        iconSize: variables['--icon-size-large'],
+        padding: variables['--spacing-medium'] + 2
+      },
+      large: {
+        height: 64,
+        fontSize: variables['--font-size-xlarge'],
+        iconSize: variables['--icon-size-large'] + 4,
+        padding: variables['--spacing-large']
+      }
     };
 
     const config = sizeConfig[size];
@@ -215,9 +230,24 @@ const createStyles = (
   size: 'small' | 'medium' | 'large'
 ) => {
   const sizeConfig = {
-    small: { height: 40, fontSize: 14, iconSize: 20, padding: 12 },
-    medium: { height: 50, fontSize: 16, iconSize: 24, padding: 15 },
-    large: { height: 60, fontSize: 18, iconSize: 28, padding: 18 }
+    small: {
+      height: 48,
+      fontSize: variables['--font-size-medium'],
+      iconSize: variables['--icon-size-medium'],
+      padding: variables['--spacing-medium']
+    },
+    medium: {
+      height: 56,
+      fontSize: variables['--font-size-large'],
+      iconSize: variables['--icon-size-large'],
+      padding: variables['--spacing-medium'] + 2
+    },
+    large: {
+      height: 64,
+      fontSize: variables['--font-size-xlarge'],
+      iconSize: variables['--icon-size-large'] + 4,
+      padding: variables['--spacing-large']
+    }
   };
 
   const config = sizeConfig[size];
@@ -228,15 +258,15 @@ const createStyles = (
     },
     labelContainer: {
       position: 'absolute',
-      left: config.padding + (config.iconSize + 10),
+      left: config.padding + config.iconSize + variables['--spacing-small'],
       zIndex: 1,
-      paddingHorizontal: 4
+      paddingHorizontal: variables['--spacing-tiny']
     },
     label: {
       fontSize: config.fontSize,
       color: variables['--text-secondary'],
       fontFamily: variables['--font-family-primary'],
-      fontWeight: '400'
+      fontWeight: variables['--font-weight-regular']
     },
     labelFocused: {
       color: variables['--primary']
@@ -251,7 +281,7 @@ const createStyles = (
         variant === 'filled'
           ? variables['--surface-variant']
           : variables['--surface'],
-      borderRadius: variables['--border-radius-medium'],
+      borderRadius: variables['--border-radius-large'],
       borderWidth: variables['--border-width-hairline'],
       borderColor: variables['--border'],
       paddingHorizontal: config.padding,
@@ -259,41 +289,42 @@ const createStyles = (
       shadowColor: variables['--shadow'],
       shadowOffset: {
         width: 0,
-        height: 1
+        height: 2
       },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      elevation: 2
     },
     filledVariant: {
       backgroundColor: variables['--surface-variant'],
-      borderBottomWidth: 2,
+      borderBottomWidth: variables['--border-width-small'],
       borderTopWidth: 0,
       borderLeftWidth: 0,
       borderRightWidth: 0,
       borderBottomLeftRadius: 0,
-      borderBottomRightRadius: 0
+      borderBottomRightRadius: 0,
+      borderRadius: variables['--border-radius-medium']
     },
     focused: {
       borderColor: variables['--primary'],
-      borderWidth: 2,
+      borderWidth: variables['--border-width-small'],
       shadowColor: variables['--primary'],
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      elevation: 3
     },
     errorBorder: {
       borderColor: variables['--error'],
-      borderWidth: 2
+      borderWidth: variables['--border-width-small']
     },
     leftIcon: {
-      marginRight: 10
+      marginRight: variables['--spacing-small']
     },
     rightIcon: {
-      marginLeft: 10
+      marginLeft: variables['--spacing-small']
     },
     iconTouchable: {
-      padding: 4,
+      padding: variables['--spacing-tiny'],
       borderRadius: variables['--border-radius-medium']
     },
     input: {
@@ -301,7 +332,9 @@ const createStyles = (
       fontSize: config.fontSize,
       color: variables['--text'],
       fontFamily: variables['--font-family-primary'],
-      paddingVertical: 0
+      fontWeight: variables['--font-weight-regular'],
+      paddingVertical: 0,
+      lineHeight: variables['--line-height-large']
     },
     helperText: {
       fontSize: variables['--font-size-small'],

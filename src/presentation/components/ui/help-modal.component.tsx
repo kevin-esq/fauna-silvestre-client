@@ -9,10 +9,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ThemeVariablesType, useTheme } from '../../contexts/theme.context';
 import { createStyles } from './help-modal.styles';
 import SponsorsFooterComponent from '../auth/sponsors-footer.component';
+import {
+  SUPPORT_CONTACT_METHODS,
+  SUPPORT_INFO,
+  type ContactMethod
+} from '@/shared/constants/support.constants';
 
 interface HelpModalProps {
   visible: boolean;
@@ -27,9 +34,36 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
   const styles = createStyles(theme, insets);
   const [activeTab, setActiveTab] = useState<TabType>('about');
 
-  const handleContactPress = useCallback(() => {
-    Linking.openURL('mailto:soporte@fototrampa.com');
+  const activeContactMethods = SUPPORT_CONTACT_METHODS.filter(
+    method => method.value && method.value.trim() !== ''
+  );
+
+  const handleContactMethod = useCallback(async (method: ContactMethod) => {
+    const url = method.url(method.value);
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error(method.errorMessage, error);
+    }
   }, []);
+
+  const renderIcon = useCallback(
+    (method: ContactMethod, size: number, color: string) => {
+      const iconProps = { name: method.icon, size, color };
+
+      switch (method.iconLibrary) {
+        case 'ionicons':
+          return <Ionicons {...iconProps} />;
+        case 'material':
+          return <MaterialIcons {...iconProps} />;
+        case 'fontawesome5':
+          return <FontAwesome5 {...iconProps} />;
+        default:
+          return <Ionicons {...iconProps} />;
+      }
+    },
+    []
+  );
 
   const renderTabButton = useCallback(
     (tab: TabType, label: string, icon: string) => (
@@ -422,31 +456,74 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
           <Text style={styles.faqQuestion}>¿Cómo contacto a soporte?</Text>
         </View>
         <Text style={styles.faqAnswer}>
-          Puedes escribirnos a:{'\n'}
-          <Text style={styles.link} onPress={handleContactPress}>
-            soporte@fototrampa.com
-          </Text>
+          Consulta los métodos de contacto disponibles en la sección "Métodos de
+          Contacto" más abajo.
         </Text>
       </View>
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <MaterialCommunityIcons
-            name="email"
+            name="contacts"
             size={24}
             color={theme.colors.forest}
           />
-          <Text style={styles.subtitle}>Contacto</Text>
+          <Text style={styles.subtitle}>Métodos de Contacto</Text>
         </View>
-        <TouchableOpacity
-          style={styles.contactButton}
-          onPress={handleContactPress}
-          accessibilityRole="button"
-          accessibilityLabel="Enviar correo de soporte"
-        >
-          <Ionicons name="mail" size={20} color={theme.colors.surface} />
-          <Text style={styles.contactButtonText}>Enviar Correo</Text>
-        </TouchableOpacity>
+        <View style={styles.contactMethodsGrid}>
+          {activeContactMethods.map(method => (
+            <TouchableOpacity
+              key={method.id}
+              style={[
+                styles.contactMethodCard,
+                { borderLeftColor: method.color }
+              ]}
+              onPress={() => handleContactMethod(method)}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.contactMethodIcon,
+                  { backgroundColor: method.color }
+                ]}
+              >
+                {renderIcon(method, 22, '#FFFFFF')}
+              </View>
+              <View style={styles.contactMethodInfo}>
+                <Text style={styles.contactMethodLabel}>{method.label}</Text>
+                <Text style={styles.contactMethodValue}>{method.value}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {(SUPPORT_INFO.workingHours || SUPPORT_INFO.responseTime) && (
+          <View style={styles.supportInfoBox}>
+            {SUPPORT_INFO.workingHours && (
+              <View style={styles.infoItem}>
+                <Ionicons
+                  name="time-outline"
+                  size={16}
+                  color={theme.colors.forest}
+                />
+                <Text style={styles.infoItemText}>
+                  {SUPPORT_INFO.workingHours}
+                </Text>
+              </View>
+            )}
+            {SUPPORT_INFO.responseTime && (
+              <View style={styles.infoItem}>
+                <Ionicons
+                  name="chatbubble-outline"
+                  size={16}
+                  color={theme.colors.forest}
+                />
+                <Text style={styles.infoItemText}>
+                  Respuesta: {SUPPORT_INFO.responseTime}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -469,7 +546,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ visible, onClose }) => {
 
     return (
       <View style={styles.content}>
-        <SponsorsFooterComponent variables={variables} />
+        <SponsorsFooterComponent variables={variables} mode="screen" />
       </View>
     );
   };

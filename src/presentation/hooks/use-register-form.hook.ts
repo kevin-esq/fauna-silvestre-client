@@ -7,7 +7,6 @@ import { UserData } from '../../domain/models/auth.models';
 import { validateRegisterFields } from '../../shared/utils/validation';
 import { sanitizeRegisterFields } from '../../shared/utils/sanitize';
 import { genderOptions } from '../../shared/constants/registerOptions';
-import { Alert } from 'react-native';
 
 const initialState: RegisterState = {
   username: '',
@@ -36,6 +35,7 @@ export const useRegisterForm = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [currentStep, setCurrentStep] = useState(1);
   const [stepErrors, setStepErrors] = useState<Record<number, string>>({});
+  const [successModal, setSuccessModal] = useState(false);
 
   const auth = useAuth();
   const { showLoading, hideLoading } = useLoading();
@@ -112,18 +112,34 @@ export const useRegisterForm = () => {
 
     setStepErrors({ ...stepErrors, [currentStep]: '' });
     setCurrentStep(prev => Math.min(prev + 1, 3));
+
+    if (auth.error) {
+      auth.clearError();
+    }
+
     return true;
-  }, [currentStep, validateStep, stepErrors]);
+  }, [currentStep, validateStep, stepErrors, auth]);
 
   const goToPreviousStep = useCallback(() => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
-  }, []);
 
-  const goToStep = useCallback((step: number) => {
-    if (step >= 1 && step <= 3) {
-      setCurrentStep(step);
+    if (auth.error) {
+      auth.clearError();
     }
-  }, []);
+  }, [auth]);
+
+  const goToStep = useCallback(
+    (step: number) => {
+      if (step >= 1 && step <= 3) {
+        setCurrentStep(step);
+
+        if (auth.error) {
+          auth.clearError();
+        }
+      }
+    },
+    [auth]
+  );
 
   const validateAllSteps = useCallback((): boolean => {
     const errors: Record<number, string> = {};
@@ -213,8 +229,7 @@ export const useRegisterForm = () => {
 
     try {
       await auth.registerUser(userData);
-      navigate('Login');
-      Alert.alert('Registro exitoso', 'Has sido registrado correctamente');
+      setSuccessModal(true);
     } catch (error: unknown) {
       if (error instanceof Error) {
         dispatch({ error: auth.error || error.message });
@@ -225,15 +240,7 @@ export const useRegisterForm = () => {
       isSubmitting.current = false;
       hideLoading();
     }
-  }, [
-    state,
-    auth,
-    showLoading,
-    hideLoading,
-    navigate,
-    validateAllSteps,
-    stepErrors
-  ]);
+  }, [state, auth, showLoading, hideLoading, validateAllSteps, stepErrors]);
 
   const getProgress = useCallback((): number => {
     const completedSteps = [1, 2, 3].filter(step => !validateStep(step)).length;
@@ -246,6 +253,11 @@ export const useRegisterForm = () => {
     },
     [validateStep]
   );
+
+  const handleSuccessModalClose = () => {
+    setSuccessModal(false);
+    navigate('Login');
+  };
 
   return {
     state,
@@ -262,6 +274,8 @@ export const useRegisterForm = () => {
     validateAllSteps,
     getProgress,
     isStepComplete,
+    successModal,
+    handleSuccessModalClose,
 
     isSubmitting: isSubmitting.current
   };

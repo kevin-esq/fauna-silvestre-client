@@ -4,20 +4,23 @@ import { StyleSheet } from 'react-native';
 export const createStyles = (vars: ThemeVariablesType) =>
   StyleSheet.create({
     button: {
-      marginBottom: 12
+      marginBottom: vars['--spacing-medium']
     },
     orText: {
       textAlign: 'center',
-      fontSize: 15,
+      fontSize: vars['--font-size-large'],
+      fontWeight: vars['--font-weight-medium'],
       color: vars['--text-secondary'],
-      marginTop: 16,
-      marginBottom: 8
+      marginTop: vars['--spacing-large'],
+      marginBottom: vars['--spacing-small']
     },
     resendText: {
       textAlign: 'center',
+      fontSize: vars['--font-size-medium'],
       color: vars['--text-secondary'],
-      marginTop: 10,
-      marginBottom: 20,
-      fontWeight: '600'
+      marginTop: vars['--spacing-small'],
+      marginBottom: vars['--spacing-large'],
+      fontWeight: vars['--font-weight-bold'],
+      lineHeight: vars['--line-height-medium']
     }
   });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { useRegisterForm } from '../../hooks/use-register-form.hook';
 import {
@@ -15,6 +16,8 @@ import ErrorMessage from '../../components/auth/error-message.component';
 import CustomButton from '../../components/ui/custom-button.component';
 import CustomPicker from '../../components/ui/custom-picker.component';
 import StepIndicator from '../../components/auth/step-indicator.component';
+import CustomModal from '../../components/ui/custom-modal.component';
+import { SupportFooter } from '../../components/auth/support-footer.component';
 import { createStyles } from './register-screen.styles';
 import { useAuth } from '@/presentation/contexts/auth.context';
 
@@ -24,7 +27,13 @@ const RegisterScreen = () => {
   const { navigate } = useNavigationActions();
   const { theme } = useTheme();
   const variables = themeVariables(theme);
-  const { state, onChange, handleRegister } = useRegisterForm();
+  const {
+    state,
+    onChange,
+    handleRegister,
+    successModal,
+    handleSuccessModalClose
+  } = useRegisterForm();
   const [currentStep, setCurrentStep] = useState(1);
   const [stepErrors, setStepErrors] = useState<Record<number, string>>({});
   const { clearError } = useAuth();
@@ -222,6 +231,9 @@ const RegisterScreen = () => {
   return (
     <AuthContainer
       title="Crear Cuenta"
+      titleIcon={
+        <Ionicons name="person-add" size={24} color={variables['--primary']} />
+      }
       subtitle={`Paso ${currentStep} de ${TOTAL_STEPS}`}
       variables={variables}
     >
@@ -276,6 +288,29 @@ const RegisterScreen = () => {
         variant="outline"
         style={styles.loginButton}
         variables={variables}
+      />
+
+      <SupportFooter
+        showContextualHelp={!!error}
+        contextMessage="¿Problemas con el registro?"
+      />
+
+      <CustomModal
+        isVisible={successModal}
+        onClose={handleSuccessModalClose}
+        title="Registro exitoso"
+        description="Has sido registrado correctamente."
+        type="alert"
+        size="small"
+        centered
+        showFooter
+        buttons={[
+          {
+            label: 'OK',
+            onPress: handleSuccessModalClose,
+            variant: 'primary'
+          }
+        ]}
       />
     </AuthContainer>
   );

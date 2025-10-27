@@ -78,50 +78,34 @@ export class AuthService implements IAuthService {
 
   async signIn(credentials: Credentials, rememberMe = false): Promise<User> {
     try {
-      this.logger.info('[AuthService] Starting signIn process');
-      this.validateCredentials(credentials);
+      const sanitizedCredentials = this.sanitizeCredentials(credentials);
+      this.validateCredentials(sanitizedCredentials);
 
-      this.logger.info('[AuthService] Clearing existing tokens');
       await this.tokenService.clearTokens();
-
-      this.logger.info('[AuthService] Performing sign in request');
-      const response = await this.performSignIn(credentials);
-
-      this.logger.info('[AuthService] Extracting tokens from response');
+      const response = await this.performSignIn(sanitizedCredentials);
       const tokens = this.extractTokensFromResponse(response);
 
-      this.logger.info('[AuthService] Saving tokens');
       await this.tokenService.saveTokens(
         tokens.accessToken,
         tokens.refreshToken
       );
 
-      this.logger.info('[AuthService] User signed in successfully');
       authEventEmitter.emit(AuthEvents.USER_SIGNED_IN);
 
       if (rememberMe) {
-        this.logger.info('[AuthService] Loading and returning stored user');
         return await this.loadAndReturnStoredUser();
       } else {
-        this.logger.info('[AuthService] Getting user from token');
         return await this.tokenService.getUserFromToken(tokens.accessToken);
       }
     } catch (error) {
-      this.logger.error('[AuthService] SignIn failed at step:', error as Error);
+      this.logger.error('[AuthService] Sign in failed');
 
       try {
         await this.tokenService.clearTokens();
-      } catch (clearError) {
-        this.logger.warn(
-          '[AuthService] Failed to clear tokens after login error',
-          clearError
-        );
+      } catch {
+        // Silently fail token cleanup
       }
 
-      this.logger.error(
-        '[AuthService] Sign in failed',
-        this.getErrorDetails(error)
-      );
       throw AuthErrorMapper.map(error);
     }
   }
@@ -131,32 +115,24 @@ export class AuthService implements IAuthService {
       await this.tokenService.clearTokens();
       await this.clearUserData();
       this.triggerLogout();
-      this.logger.info('[AuthService] User signed out successfully');
     } catch (error) {
-      this.logger.error(
-        '[AuthService] Sign out failed',
-        this.getErrorDetails(error)
-      );
+      this.logger.error('[AuthService] Sign out failed');
       throw error;
     }
   }
 
   async register(userData: UserData): Promise<void> {
     try {
-      this.validateUserData(userData);
+      const sanitizedUserData = this.sanitizeUserData(userData);
+      this.validateUserData(sanitizedUserData);
 
       const response = await this.api.post<RegisterResponse>(
         '/Users/Register',
-        userData
+        sanitizedUserData
       );
       this.validateApiResponse(response.data, 'Error en el registro');
-
-      this.logger.info('[AuthService] Registration successful');
     } catch (error) {
-      this.logger.error(
-        '[AuthService] Registration failed',
-        this.getErrorDetails(error)
-      );
+      this.logger.error('[AuthService] Registration failed');
       throw AuthErrorMapper.map(error);
     }
   }
@@ -172,14 +148,9 @@ export class AuthService implements IAuthService {
         }
       );
       this.validateApiResponse(response.data, 'Error al enviar código');
-
-      this.logger.info('[AuthService] Reset code sent successfully');
       return true;
     } catch (error) {
-      this.logger.error(
-        '[AuthService] Send reset code failed',
-        this.getErrorDetails(error)
-      );
+      this.logger.error('[AuthService] Send reset code failed');
       throw AuthErrorMapper.map(error);
     }
   }
@@ -206,10 +177,7 @@ export class AuthService implements IAuthService {
 
       return response.data.message;
     } catch (error) {
-      this.logger.error(
-        '[AuthService] Verify reset code failed',
-        this.getErrorDetails(error)
-      );
+      this.logger.error('[AuthService] Verify reset code failed');
       throw AuthErrorMapper.map(error);
     }
   }
@@ -219,39 +187,50 @@ export class AuthService implements IAuthService {
     password: string,
     token: string
   ): Promise<void> {
-    this.validateChangePasswordParams(email, password, token);
+    const sanitizedEmail = email.trim().toLowerCase();
+    const sanitizedPassword = password.trim();
+    const sanitizedToken = token.trim();
+
+    this.validateChangePasswordParams(
+      sanitizedEmail,
+      sanitizedPassword,
+      sanitizedToken
+    );
 
     try {
-      console.log('Changing password for', email);
-      console.log('Using token:', token);
-      this.api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      this.api.defaults.headers.common['Authorization'] =
+        `Bearer ${sanitizedToken}`;
       const response = await this.api.post<ChangePasswordResponse>(
         '/Authentication/change-password',
         {
-          email,
-          password
+          email: sanitizedEmail,
+          password: sanitizedPassword
         }
       );
 
+      delete this.api.defaults.headers.common['Authorization'];
+
       this.validateApiResponse(response.data, 'Error al cambiar contraseña');
-      this.logger.info('[AuthService] Password changed successfully');
     } catch (error) {
-      this.logger.error(
-        '[AuthService] Change password failed',
-        this.getErrorDetails(error)
-      );
+      delete this.api.defaults.headers.common['Authorization'];
+
+      this.logger.error('[AuthService] Change password failed');
       throw AuthErrorMapper.map(error);
     }
   }
 
   async refreshToken(refreshToken: string): Promise<string> {
-    if (!refreshToken) {
-      throw new AuthError('Refresh token is required');
+    if (!refreshToken || !refreshToken.trim()) {
+      throw new AuthError('Token de actualización requerido');
+    }
+
+    if (!refreshToken.includes('.')) {
+      throw new AuthError('Token de actualización inválido');
     }
 
     try {
       const response = await this.api.post('/Authentication/refresh-token', {
-        refreshToken
+        refreshToken: refreshToken.trim()
       });
 
       const tokens = this.extractTokensFromResponse(response);
@@ -260,14 +239,10 @@ export class AuthService implements IAuthService {
         tokens.refreshToken
       );
 
-      this.logger.info('[AuthService] Token refreshed successfully');
       return tokens.accessToken;
-    } catch (error) {
-      this.logger.error(
-        '[AuthService] Token refresh failed',
-        this.getErrorDetails(error)
-      );
-      throw new AuthError('Session expired');
+    } catch {
+      this.logger.error('[AuthService] Token refresh failed');
+      throw new AuthError('La sesión ha expirado. Inicia sesión nuevamente.');
     }
   }
 
@@ -281,16 +256,12 @@ export class AuthService implements IAuthService {
       const refreshToken = await this.tokenService.getRefreshToken();
 
       if (!accessToken || !refreshToken) {
-        this.logger.info('[AuthService] No credentials found on hydration');
         return null;
       }
 
       return await this.validateAndRefreshToken(accessToken, refreshToken);
-    } catch (error) {
-      this.logger.error(
-        '[AuthService] Hydration failed',
-        this.getErrorDetails(error)
-      );
+    } catch {
+      this.logger.error('[AuthService] Hydration failed');
       return null;
     }
   }
@@ -305,13 +276,8 @@ export class AuthService implements IAuthService {
       const user = await this.tokenService.getUserFromToken(accessToken);
       const storage = await getSecureStorageService();
       await storage.save(USER_KEY, JSON.stringify(user));
-
-      this.logger.info('[AuthService] User data loaded successfully');
-    } catch (error) {
-      this.logger.error(
-        '[AuthService] Load user data failed',
-        this.getErrorDetails(error)
-      );
+    } catch {
+      this.logger.error('[AuthService] Load user data failed');
       throw new AuthError('Failed to load user data');
     }
   }
@@ -332,16 +298,66 @@ export class AuthService implements IAuthService {
     }
   }
 
+  private sanitizeCredentials(credentials: Credentials): Credentials {
+    return {
+      UserName: credentials.UserName.trim(),
+      Password: credentials.Password
+    };
+  }
+
+  private sanitizeUserData(userData: UserData): UserData {
+    return {
+      ...userData,
+      userName: userData.userName.trim(),
+      name: userData.name.trim(),
+      lastName: userData.lastName.trim(),
+      locality: userData.locality.trim(),
+      email: userData.email.trim().toLowerCase(),
+      password: userData.password
+    };
+  }
+
   private validateCredentials(credentials: Credentials): void {
     if (!credentials.UserName || !credentials.Password) {
-      throw new AuthError('Username and password are required');
+      throw new AuthError('Usuario y contraseña son requeridos');
+    }
+
+    if (credentials.UserName.length < 3) {
+      throw new AuthError(
+        'El nombre de usuario debe tener al menos 3 caracteres'
+      );
+    }
+
+    if (credentials.UserName.length > 50) {
+      throw new AuthError('El nombre de usuario es demasiado largo');
     }
   }
 
   private validateUserData(userData: UserData): void {
     if (!userData.userName || !userData.password) {
       throw new AuthError(
-        'Username and password are required for registration'
+        'Usuario y contraseña son requeridos para el registro'
+      );
+    }
+
+    if (!userData.email) {
+      throw new AuthError('El correo electrónico es requerido');
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email)) {
+      throw new AuthError('El formato del correo electrónico no es válido');
+    }
+
+    if (userData.userName.length < 3) {
+      throw new AuthError(
+        'El nombre de usuario debe tener al menos 3 caracteres'
+      );
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(userData.userName)) {
+      throw new AuthError(
+        'El nombre de usuario solo puede contener letras, números y guión bajo'
       );
     }
 
@@ -351,20 +367,42 @@ export class AuthService implements IAuthService {
   private validatePasswordStrength(password: string): void {
     if (password.length < this.MIN_PASSWORD_LENGTH) {
       throw new AuthError(
-        `Password must be at least ${this.MIN_PASSWORD_LENGTH} characters long`
+        `La contraseña debe tener al menos ${this.MIN_PASSWORD_LENGTH} caracteres`
       );
+    }
+
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      throw new AuthError(
+        'La contraseña debe incluir al menos una letra y un número'
+      );
+    }
+
+    if (password.length > 100) {
+      throw new AuthError('La contraseña es demasiado larga');
     }
   }
 
   private validateEmail(email: string): void {
     if (!email?.trim()) {
-      throw new AuthError('Email is required');
+      throw new AuthError('El correo electrónico es requerido');
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      throw new AuthError('El formato del correo electrónico no es válido');
     }
   }
 
   private validateEmailAndCode(email: string, code: string): void {
     if (!email?.trim() || !code?.trim()) {
-      throw new AuthError('Email and code are required');
+      throw new AuthError('Correo electrónico y código son requeridos');
+    }
+
+    this.validateEmail(email);
+
+    if (code.trim().length < 4) {
+      throw new AuthError('El código debe tener al menos 4 caracteres');
     }
   }
 
@@ -374,10 +412,17 @@ export class AuthService implements IAuthService {
     token: string
   ): void {
     if (!email?.trim() || !password?.trim() || !token?.trim()) {
-      throw new AuthError('Email, password, and token are required');
+      throw new AuthError(
+        'Correo electrónico, contraseña y token son requeridos'
+      );
     }
 
+    this.validateEmail(email);
     this.validatePasswordStrength(password);
+
+    if (!token.includes('.')) {
+      throw new AuthError('Token inválido');
+    }
   }
 
   private validateApiResponse(
@@ -397,31 +442,17 @@ export class AuthService implements IAuthService {
   private async performSignIn(
     credentials: Credentials
   ): Promise<AxiosResponse<AuthResponse>> {
-    this.logger.debug('[AuthService] Attempting sign in', {
-      username: credentials.UserName
-    });
-
-    this.logger.info('[AuthService] Making API call to /Authentication/LogIn');
     const response = await this.api.post<AuthResponse>(
       '/Authentication/LogIn',
       credentials
     );
 
-    this.logger.info('[AuthService] API call completed, validating response');
     this.validateApiResponse(response.data, 'Error de autenticación');
 
-    this.logger.info(
-      '[AuthService] Response validation completed, checking status'
-    );
     if (response.status !== 200) {
-      this.logger.error(
-        '[AuthService] Non-200 status:',
-        Error(response.status.toString())
-      );
       throw AuthErrorMapper.map(response.data);
     }
 
-    this.logger.info('[AuthService] performSignIn completed successfully');
     return response;
   }
 
@@ -431,7 +462,15 @@ export class AuthService implements IAuthService {
     const { accessToken, refreshToken } = response.data;
 
     if (!accessToken || !refreshToken) {
-      throw new AuthError('Invalid response: missing tokens');
+      throw new AuthError('Respuesta inválida: tokens faltantes');
+    }
+
+    if (!accessToken.includes('.') || !refreshToken.includes('.')) {
+      throw new AuthError('Tokens inválidos recibidos del servidor');
+    }
+
+    if (accessToken.length < 20 || refreshToken.length < 20) {
+      throw new AuthError('Tokens inválidos recibidos del servidor');
     }
 
     return { accessToken, refreshToken };
@@ -448,11 +487,8 @@ export class AuthService implements IAuthService {
 
     try {
       return JSON.parse(userData) as User;
-    } catch (parseError) {
-      this.logger.error(
-        '[AuthService] Error parsing stored user data',
-        this.getErrorDetails(parseError)
-      );
+    } catch {
+      this.logger.error('[AuthService] Error parsing stored user data');
       throw new AuthError('Invalid stored user data format');
     }
   }
@@ -463,17 +499,13 @@ export class AuthService implements IAuthService {
   ): Promise<User | null> {
     try {
       if (this.tokenService.isTokenExpired(accessToken)) {
-        this.logger.info('[AuthService] Access token expired, refreshing');
         const newToken = await this.refreshToken(refreshToken);
         return await this.tokenService.getUserFromToken(newToken);
       }
 
       return await this.tokenService.getUserFromToken(accessToken);
-    } catch (error) {
-      this.logger.warn(
-        '[AuthService] Token validation failed, signing out',
-        this.getErrorDetails(error)
-      );
+    } catch {
+      this.logger.warn('[AuthService] Token validation failed');
       return null;
     }
   }
@@ -483,12 +515,8 @@ export class AuthService implements IAuthService {
       if (this.onClearUserDataCallback) {
         this.onClearUserDataCallback();
       }
-      this.logger.info('[AuthService] All user data cleared');
-    } catch (dbError) {
-      this.logger.error(
-        '[AuthService] Error clearing data',
-        this.getErrorDetails(dbError)
-      );
+    } catch {
+      this.logger.error('[AuthService] Error clearing data');
     }
   }
 
@@ -508,18 +536,12 @@ export class AuthService implements IAuthService {
     try {
       await this.tokenService.clearTokens();
       await this.clearUserData();
-
-      this.logger.info('[AuthService] User signed out successfully');
-    } catch (error) {
-      this.logger.error(
-        '[AuthService] Error handling user sign out',
-        this.getErrorDetails(error)
-      );
+    } catch {
+      this.logger.error('[AuthService] Error handling user sign out');
     }
   }
 
   private handleUserSignedIn(): void {
-    this.logger.info('[AuthService] User signed in');
     authEventEmitter.off(
       AuthEvents.USER_SIGNED_IN,
       this.handleUserSignedIn.bind(this)
@@ -529,11 +551,8 @@ export class AuthService implements IAuthService {
   private async handleUnauthorized(): Promise<void> {
     try {
       authEventEmitter.emit(AuthEvents.USER_SIGNED_OUT);
-    } catch (error) {
-      this.logger.error(
-        '[AuthService] Error handling unauthorized',
-        this.getErrorDetails(error)
-      );
+    } catch {
+      this.logger.error('[AuthService] Error handling unauthorized');
     }
   }
 }

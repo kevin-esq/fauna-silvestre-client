@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { Alert } from 'react-native';
 import { useAuth } from '../contexts/auth.context';
 import { useLoading } from '../contexts/loading.context';
 import { useNavigationActions } from '../navigation/navigation-provider';
@@ -23,6 +22,43 @@ export const useForgotPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [successModal, setSuccessModal] = useState(false);
+
+  const handleEmailChange = useCallback(
+    (value: string) => {
+      setEmail(value);
+      if (error) setError(null);
+      if (auth.error) auth.clearError();
+    },
+    [error, auth]
+  );
+
+  const handleCodeChange = useCallback(
+    (value: string) => {
+      setVerificationCode(value);
+      if (error) setError(null);
+      if (auth.error) auth.clearError();
+    },
+    [error, auth]
+  );
+
+  const handlePasswordChange = useCallback(
+    (value: string) => {
+      setNewPassword(value);
+      if (error) setError(null);
+      if (auth.error) auth.clearError();
+    },
+    [error, auth]
+  );
+
+  const handleConfirmPasswordChange = useCallback(
+    (value: string) => {
+      setConfirmPassword(value);
+      if (error) setError(null);
+      if (auth.error) auth.clearError();
+    },
+    [error, auth]
+  );
 
   const sendResetPasswordEmail = useCallback(async () => {
     showLoading();
@@ -34,6 +70,8 @@ export const useForgotPassword = () => {
         return;
       }
       setMessage('Código enviado al correo electrónico');
+      setError(null);
+      if (auth.error) auth.clearError();
       setCurrentStep(ResetStep.CODE);
     } catch {
       if (auth.error) setError(auth.error);
@@ -59,6 +97,8 @@ export const useForgotPassword = () => {
       }
       setToken(tokenValid);
       setMessage('Código verificado correctamente');
+      setError(null);
+      if (auth.error) auth.clearError();
       setCurrentStep(ResetStep.PASSWORD);
     } catch {
       if (auth.error) setError(auth.error);
@@ -80,11 +120,7 @@ export const useForgotPassword = () => {
     showLoading();
     try {
       await auth.resetPassword(token, email.toLowerCase(), newPassword);
-      Alert.alert(
-        'Contraseña Actualizada',
-        'Tu contraseña ha sido cambiada exitosamente.',
-        [{ text: 'OK', onPress: () => navigate('Login') }]
-      );
+      setSuccessModal(true);
     } catch {
       if (auth.error) setError(auth.error);
     } finally {
@@ -97,22 +133,28 @@ export const useForgotPassword = () => {
     email,
     auth,
     showLoading,
-    hideLoading,
-    navigate
+    hideLoading
   ]);
+
+  const handleSuccessModalClose = () => {
+    setSuccessModal(false);
+    navigate('Login');
+  };
 
   return {
     currentStep,
     email,
-    setEmail,
+    setEmail: handleEmailChange,
     verificationCode,
-    setVerificationCode,
+    setVerificationCode: handleCodeChange,
     newPassword,
-    setNewPassword,
+    setNewPassword: handlePasswordChange,
     confirmPassword,
-    setConfirmPassword,
+    setConfirmPassword: handleConfirmPasswordChange,
     message,
     error: error || auth.error,
+    successModal,
+    handleSuccessModalClose,
     sendResetPasswordEmail,
     verifyResetCode,
     handlePasswordReset

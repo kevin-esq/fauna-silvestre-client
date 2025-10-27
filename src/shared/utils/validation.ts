@@ -22,7 +22,9 @@ export const validateRegisterFields = (
 
   const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{8,}$/;
   if (!passwordRegex.test(password))
-    return 'Contraseña inválida: minimo 8 caracteres, debe incluir letras y números';
+    return 'La contraseña debe tener al menos 8 caracteres, incluir al menos una letra y un número';
+
+  if (password.length > 100) return 'La contraseña es demasiado larga';
 
   return null;
 };

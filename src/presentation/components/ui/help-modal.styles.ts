@@ -252,5 +252,60 @@ export const createStyles = (theme: Theme, insets: EdgeInsets) =>
       fontSize: theme.typography.fontSize.medium,
       fontWeight: theme.typography.fontWeight.bold,
       color: theme.colors.surface
+    },
+    contactMethodsGrid: {
+      gap: theme.spacing.medium,
+      marginTop: theme.spacing.small
+    },
+    contactMethodCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      padding: theme.spacing.medium,
+      borderRadius: theme.borderRadius.medium,
+      borderLeftWidth: 4,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      elevation: 2,
+      gap: theme.spacing.medium
+    },
+    contactMethodIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: theme.borderRadius.medium,
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+    contactMethodInfo: {
+      flex: 1
+    },
+    contactMethodLabel: {
+      fontSize: theme.typography.fontSize.medium,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: theme.colors.forest,
+      marginBottom: 2
+    },
+    contactMethodValue: {
+      fontSize: theme.typography.fontSize.small,
+      color: theme.colors.textSecondary
+    },
+    supportInfoBox: {
+      backgroundColor: theme.colors.surfaceVariant,
+      padding: theme.spacing.medium,
+      borderRadius: theme.borderRadius.medium,
+      marginTop: theme.spacing.medium,
+      gap: theme.spacing.small
+    },
+    infoItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.small
+    },
+    infoItemText: {
+      flex: 1,
+      fontSize: theme.typography.fontSize.small,
+      color: theme.colors.textSecondary
     }
   });

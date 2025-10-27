@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import { authService } from '../../services/auth/auth.factory';
 import { authEventEmitter, AuthEvents } from '../../services/auth/auth.events';
+import { AuthErrorMapper } from '../../services/auth/auth-error.mapper';
 import User from '../../domain/entities/user.entity';
 import { Credentials, UserData } from '../../domain/models/auth.models';
 import { useApiStatus } from '@/presentation/contexts/api-status.context';
@@ -17,17 +18,7 @@ import {
   ACCESS_TOKEN_KEY,
   REFRESH_TOKEN_KEY
 } from '@/services/storage/storage-keys';
-
-const ERROR_MESSAGES = {
-  SIGN_IN: 'Error during sign in',
-  SIGN_OUT: 'Error during sign out',
-  REGISTRATION: 'Error during registration',
-  RESET_EMAIL: 'Error sending reset code',
-  RESET_CODE: 'Invalid or expired code',
-  RESET_PASSWORD: 'Error changing password',
-  LOAD_USER: 'Error loading user data',
-  INITIALIZATION: 'Error during initialization'
-} as const;
+import { AUTH_CONTEXT_ERRORS } from '@/shared/constants/error-messages';
 
 interface AuthContextType {
   user: User | null;
@@ -60,43 +51,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const { setStatus } = useApiStatus();
 
-  const handleError = useCallback(
-    (error: unknown, defaultMessage: string): string => {
-      console.error('Auth error:', error);
-
-      if (error instanceof Error) {
-        switch (error.message.toLowerCase()) {
-          case 'the username is incorrect':
-            return 'El usuario no existe';
-          case 'the password is incorrect':
-            return 'La contraseña es incorrecta';
-          case 'invalid credentials':
-            return 'Credenciales inválidas';
-          case 'user not found':
-            return 'Usuario no encontrado';
-          case 'account is disabled':
-            return 'La cuenta está deshabilitada';
-          case 'too many login attempts':
-            return 'Demasiados intentos de inicio de sesión';
-          case 'network error':
-            return 'Error de conexión';
-          case 'request timeout':
-            return 'Tiempo de espera agotado';
-          case 'the email is not registered':
-            return 'El correo no existe';
-          case 'failed: this email is already registered':
-            return 'El correo ya esta registrado';
-          case 'failed: this username is already registered':
-            return 'El nombre de usuario ya esta registrado';
-          default:
-            return error.message || 'Error desconocido';
-        }
-      }
-
-      return defaultMessage || 'Ocurrió un error inesperado';
-    },
-    []
-  );
+  const getErrorMessage = useCallback((error: unknown): string => {
+    const authError = AuthErrorMapper.map(error);
+    return authError.message;
+  }, []);
 
   const resetAuthState = useCallback(() => {
     setUser(null);
@@ -155,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setStatus('UNAUTHENTICATED');
         }
       } catch (error) {
-        console.error(ERROR_MESSAGES.INITIALIZATION, error);
+        console.error(AUTH_CONTEXT_ERRORS.INITIALIZATION, error);
         setStatus('UNAUTHENTICATED');
       } finally {
         setInitializing(false);
@@ -196,7 +154,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const userEntity = await authService.signIn(credentials, rememberMe);
         setAuthenticatedUser(userEntity);
       } catch (error) {
-        const errorMessage = handleError(error, ERROR_MESSAGES.SIGN_IN);
+        const errorMessage = getErrorMessage(error);
         setError(errorMessage);
         setStatus('UNAUTHENTICATED');
         throw error;
@@ -204,7 +162,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsLoading(false);
       }
     },
-    [setStatus, setAuthenticatedUser, handleError]
+    [setStatus, setAuthenticatedUser, getErrorMessage]
   );
 
   const signOut = useCallback(async (): Promise<void> => {
@@ -214,12 +172,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await authService.signOut();
       resetAuthState();
     } catch (error) {
-      const errorMessage = handleError(error, ERROR_MESSAGES.SIGN_OUT);
+      const errorMessage = getErrorMessage(error);
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [resetAuthState, handleError]);
+  }, [resetAuthState, getErrorMessage]);
 
   const registerUser = useCallback(
     async (userData: UserData): Promise<void> => {
@@ -228,14 +186,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         await authService.register(userData);
       } catch (error) {
-        const errorMessage = handleError(error, ERROR_MESSAGES.REGISTRATION);
+        const errorMessage = getErrorMessage(error);
         setError(errorMessage);
         throw error;
       } finally {
         setIsLoading(false);
       }
     },
-    [handleError, setLoadingState]
+    [getErrorMessage, setLoadingState]
   );
 
   const sendResetPasswordEmail = useCallback(
@@ -245,14 +203,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         return await authService.sendResetCode(email);
       } catch (error) {
-        const errorMessage = handleError(error, ERROR_MESSAGES.RESET_EMAIL);
+        const errorMessage = getErrorMessage(error);
         setError(errorMessage);
         throw error;
       } finally {
         setIsLoading(false);
       }
     },
-    [handleError, setLoadingState]
+    [getErrorMessage, setLoadingState]
   );
 
   const verifyResetCode = useCallback(
@@ -262,14 +220,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         return await authService.verifyResetCode(email, code);
       } catch (error) {
-        const errorMessage = handleError(error, ERROR_MESSAGES.RESET_CODE);
+        const errorMessage = getErrorMessage(error);
         setError(errorMessage);
         throw error;
       } finally {
         setIsLoading(false);
       }
     },
-    [handleError, setLoadingState]
+    [getErrorMessage, setLoadingState]
   );
 
   const resetPassword = useCallback(
@@ -279,14 +237,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         await authService.changePassword(email, password, token);
       } catch (error) {
-        const errorMessage = handleError(error, ERROR_MESSAGES.RESET_PASSWORD);
+        const errorMessage = getErrorMessage(error);
         setError(errorMessage);
         throw error;
       } finally {
         setIsLoading(false);
       }
     },
-    [handleError, setLoadingState]
+    [getErrorMessage, setLoadingState]
   );
 
   const loadUserData = useCallback(async (): Promise<void> => {
@@ -302,13 +260,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setAuthenticatedUser(parsedUser);
       }
     } catch (error) {
-      const errorMessage = handleError(error, ERROR_MESSAGES.LOAD_USER);
+      const errorMessage = getErrorMessage(error);
       setError(errorMessage);
       resetAuthState();
     } finally {
       setIsLoading(false);
     }
-  }, [handleError, setAuthenticatedUser, resetAuthState]);
+  }, [getErrorMessage, setAuthenticatedUser, resetAuthState]);
 
   const clearError = useCallback(() => {
     setError(null);

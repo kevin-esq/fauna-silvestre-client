@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   Linking,
   Image,
-  Alert,
   ImageSourcePropType
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import CustomModal from '../ui/custom-modal.component';
 import ConaforLogo from '@/assets/sponsors/conafor.jpeg';
 import MayasurLogo from '@/assets/sponsors/mayasur.jpeg';
 import FomentoLogo from '@/assets/sponsors/fomento.jpg';
@@ -33,14 +33,30 @@ interface DeveloperData {
 
 interface SponsorsFooterProps {
   variables: ThemeVariablesType;
+  mode?: 'footer' | 'screen';
 }
 
-const SponsorsFooter: React.FC<SponsorsFooterProps> = ({ variables }) => {
-  const styles = useMemo(() => createStyles(variables), [variables]);
+const SponsorsFooter: React.FC<SponsorsFooterProps> = ({
+  variables,
+  mode = 'footer'
+}) => {
+  const styles = useMemo(
+    () => createStyles(variables, mode),
+    [variables, mode]
+  );
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
   const [isDevelopmentTeamExpanded, setIsDevelopmentTeamExpanded] =
     useState(false);
+  const [errorModal, setErrorModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    title: '',
+    message: ''
+  });
 
   const sponsors: SponsorData[] = [
     {
@@ -84,7 +100,11 @@ const SponsorsFooter: React.FC<SponsorsFooterProps> = ({ variables }) => {
 
   const handleSponsorPress = async (website?: string, name?: string) => {
     if (!website) {
-      Alert.alert('Sin enlace', `${name} no tiene un sitio web disponible.`);
+      setErrorModal({
+        visible: true,
+        title: 'Sin enlace',
+        message: `${name} no tiene un sitio web disponible.`
+      });
       return;
     }
 
@@ -97,11 +117,12 @@ const SponsorsFooter: React.FC<SponsorsFooterProps> = ({ variables }) => {
         if (canOpen) {
           await Linking.openURL(website);
         } else {
-          Alert.alert(
-            'Enlace no disponible',
-            'Este enlace no se puede abrir en tu dispositivo. Verifica tu conexión a internet.',
-            [{ text: 'OK' }]
-          );
+          setErrorModal({
+            visible: true,
+            title: 'Enlace no disponible',
+            message:
+              'Este enlace no se puede abrir en tu dispositivo. Verifica tu conexión a internet.'
+          });
         }
       } catch {}
     }
@@ -257,49 +278,77 @@ const SponsorsFooter: React.FC<SponsorsFooterProps> = ({ variables }) => {
         </Text>
         <Text style={styles.poweredByText}>Powered by React Native</Text>
       </View>
+
+      <CustomModal
+        isVisible={errorModal.visible}
+        onClose={() =>
+          setErrorModal({ visible: false, title: '', message: '' })
+        }
+        title={errorModal.title}
+        description={errorModal.message}
+        type="alert"
+        size="small"
+        centered
+        showFooter
+        buttons={[
+          {
+            label: 'OK',
+            onPress: () =>
+              setErrorModal({ visible: false, title: '', message: '' }),
+            variant: 'primary'
+          }
+        ]}
+      />
     </View>
   );
 };
 
-const createStyles = (variables: ThemeVariablesType) =>
+const createStyles = (
+  variables: ThemeVariablesType,
+  mode: 'footer' | 'screen' = 'footer'
+) =>
   StyleSheet.create({
     footerContainer: {
-      marginTop: 32,
-      paddingTop: 24,
-      paddingBottom: 16
+      marginTop: mode === 'screen' ? 0 : 32,
+      paddingTop: mode === 'screen' ? 0 : 24,
+      paddingBottom: mode === 'screen' ? 0 : 16,
+      paddingHorizontal: mode === 'screen' ? 0 : undefined
     },
     divider: {
-      height: 2,
+      height: mode === 'screen' ? 0 : 2,
       backgroundColor: variables['--primary'],
-      marginBottom: 20,
+      marginBottom: mode === 'screen' ? 0 : 20,
       borderRadius: variables['--border-radius-medium'],
       opacity: 0.3
     },
     footerTitle: {
-      fontSize: 18,
-      fontWeight: '600',
+      fontSize: mode === 'screen' ? 24 : 18,
+      fontWeight: mode === 'screen' ? '700' : '600',
       color: variables['--text'],
       textAlign: 'center',
-      marginBottom: 16
+      marginBottom: mode === 'screen' ? 24 : 16
     },
     sponsorsGrid: {
       marginBottom: 24
     },
     sponsorCard: {
       backgroundColor: variables['--card-background'],
-      padding: 16,
-      borderRadius: variables['--border-radius-medium'],
-      marginBottom: 16,
+      padding: mode === 'screen' ? 20 : 16,
+      borderRadius:
+        mode === 'screen'
+          ? variables['--border-radius-large']
+          : variables['--border-radius-medium'],
+      marginBottom: mode === 'screen' ? 20 : 16,
       flexDirection: 'row',
       alignItems: 'center',
       shadowColor: variables['--shadow'],
       shadowOffset: {
         width: 0,
-        height: 4
+        height: mode === 'screen' ? 6 : 4
       },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 4,
+      shadowOpacity: mode === 'screen' ? 0.2 : 0.15,
+      shadowRadius: mode === 'screen' ? 10 : 8,
+      elevation: mode === 'screen' ? 5 : 4,
       borderWidth: 1,
       borderColor: variables['--border']
     },
