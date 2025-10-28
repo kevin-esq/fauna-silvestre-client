@@ -460,7 +460,8 @@ const ReviewPublicationsScreen: React.FC = () => {
         status={PublicationStatus.PENDING}
         reviewActions={{
           onApprove: () => operations.handleApprove(item.recordId.toString()),
-          onReject: (reason?: string) => operations.handleReject(item.recordId.toString(), reason)
+          onReject: (reason?: string) =>
+            operations.handleReject(item.recordId.toString(), reason)
         }}
         onPress={() => handlePress(item)}
         viewMode="presentation"
