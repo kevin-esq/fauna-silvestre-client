@@ -23,7 +23,8 @@ export interface PublicationModelResponse {
   location: string;
   createdDate?: string;
   acceptedDate?: string;
-  author?: string;
+  userName?: string;
+  rejectedReason?: string;
 }
 
 export interface PaginationModelResponse {

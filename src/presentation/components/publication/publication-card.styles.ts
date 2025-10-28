@@ -87,6 +87,36 @@ export const createStyles = (theme: Theme) =>
       marginBottom: theme.spacing.small
     },
 
+    rejectedReasonContainer: {
+      backgroundColor: theme.colors.error + '10',
+      borderLeftWidth: 3,
+      borderLeftColor: theme.colors.error,
+      borderRadius: theme.borderRadius.small,
+      padding: theme.spacing.small,
+      marginBottom: theme.spacing.small
+    },
+
+    rejectedReasonHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.tiny,
+      marginBottom: theme.spacing.tiny
+    },
+
+    rejectedReasonTitle: {
+      fontSize: theme.typography.fontSize.small,
+      fontWeight: theme.typography.fontWeight.bold,
+      color: theme.colors.error,
+      letterSpacing: 0.2
+    },
+
+    rejectedReasonText: {
+      fontSize: theme.typography.fontSize.small,
+      lineHeight: theme.typography.lineHeight.small,
+      color: theme.colors.textSecondary,
+      fontStyle: 'italic'
+    },
+
     statusBadge: {
       paddingHorizontal: theme.spacing.small,
       paddingVertical: theme.spacing.tiny,

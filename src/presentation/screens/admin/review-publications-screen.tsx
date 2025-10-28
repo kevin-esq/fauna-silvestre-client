@@ -250,9 +250,9 @@ const usePublicationOperations = () => {
   );
 
   const handleReject = useCallback(
-    async (publicationId: string) => {
+    async (publicationId: string, reason?: string) => {
       await executeOperation('reject', () =>
-        rejectPublication(publicationId, PublicationStatus.PENDING)
+        rejectPublication(publicationId, PublicationStatus.PENDING, reason)
       );
     },
     [executeOperation, rejectPublication]
@@ -460,7 +460,7 @@ const ReviewPublicationsScreen: React.FC = () => {
         status={PublicationStatus.PENDING}
         reviewActions={{
           onApprove: () => operations.handleApprove(item.recordId.toString()),
-          onReject: () => operations.handleReject(item.recordId.toString())
+          onReject: (reason?: string) => operations.handleReject(item.recordId.toString(), reason)
         }}
         onPress={() => handlePress(item)}
         viewMode="presentation"

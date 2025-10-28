@@ -22,6 +22,9 @@ const { width } = Dimensions.get('window');
 
 export const ITEM_HEIGHT = 380;
 
+const REASON_TAG = '[MOTIVO MODIFICADO]:';
+const STATUS_CHANGE_TAG = '[ESTADO MODIFICADO]:';
+
 const STATUS_CONFIG: Record<
   PublicationStatus,
   {
@@ -98,7 +101,8 @@ const PublicationContent = React.memo<PublicationContentProps>(
       animalState,
       location,
       createdDate,
-      acceptedDate
+      acceptedDate,
+      rejectedReason
     } = publication;
 
     const statusData = useMemo(() => STATUS_CONFIG[status], [status]);
@@ -172,6 +176,20 @@ const PublicationContent = React.memo<PublicationContentProps>(
           {truncateDescription(description)}
         </Text>
 
+        {status === PublicationStatus.REJECTED && rejectedReason && (
+          <View style={styles.rejectedReasonContainer}>
+            <View style={styles.rejectedReasonHeader}>
+              <FontAwesome
+                name="info-circle"
+                size={iconSizes.small - 2}
+                color={colors.error}
+              />
+              <Text style={styles.rejectedReasonTitle}>Motivo de Rechazo:</Text>
+            </View>
+            <ReasonWithTag reason={rejectedReason} />
+          </View>
+        )}
+
         <View style={styles.statusRowsContainer}>
           <StatusRow
             icon={animalData.icon}
@@ -222,7 +240,7 @@ const StatusBadge = React.memo<StatusBadgeProps>(({ statusData }) => {
 });
 
 interface ReviewButtonsProps {
-  actions: { onApprove: () => void; onReject: () => void };
+  actions: { onApprove: () => void; onReject: (reason?: string) => void };
   isLoading?: boolean;
   disabled?: boolean;
 }
@@ -276,8 +294,8 @@ const ReviewButtons = React.memo<ReviewButtonsProps>(
       try {
         await actions.onApprove();
         setApproveModalVisible(false);
-      } catch (error) {
-        console.error('Error al aprobar:', error);
+      } catch {
+        // Error manejado por el contexto
       } finally {
         setIsProcessing(false);
       }
@@ -288,11 +306,11 @@ const ReviewButtons = React.memo<ReviewButtonsProps>(
 
       setIsProcessing(true);
       try {
-        await actions.onReject();
+        await actions.onReject(rejectionReason);
         setRejectModalVisible(false);
         setRejectionReason('');
-      } catch (error) {
-        console.error('Error al rechazar:', error);
+      } catch {
+        // Error manejado por el contexto
       } finally {
         setIsProcessing(false);
       }
@@ -378,6 +396,7 @@ const ReviewButtons = React.memo<ReviewButtonsProps>(
         <CustomModal
           isVisible={approveModalVisible}
           onClose={handleCloseApproveModal}
+          disableClose={isProcessing}
           title="Aprobar Publicación"
           centered
           icon={
@@ -408,9 +427,10 @@ const ReviewButtons = React.memo<ReviewButtonsProps>(
               disabled: isProcessing
             },
             {
-              label: 'Aprobar',
+              label: isProcessing ? 'Aprobando...' : 'Aprobar',
               onPress: handleConfirmApprove,
               variant: 'primary',
+              disabled: isProcessing,
               loading: isProcessing
             }
           ]}
@@ -437,6 +457,7 @@ const ReviewButtons = React.memo<ReviewButtonsProps>(
         <CustomModal
           isVisible={rejectModalVisible}
           onClose={handleCloseRejectModal}
+          disableClose={isProcessing}
           title="Rechazar Publicación"
           centered
           icon={
@@ -464,6 +485,7 @@ const ReviewButtons = React.memo<ReviewButtonsProps>(
           inputLabel="Motivo"
           inputMultiline
           inputMaxLength={300}
+          inputEditable={!isProcessing}
           showCharacterCount
           description="Esta información será enviada al usuario"
           showFooter
@@ -476,10 +498,10 @@ const ReviewButtons = React.memo<ReviewButtonsProps>(
               disabled: isProcessing
             },
             {
-              label: 'Rechazar',
+              label: isProcessing ? 'Rechazando...' : 'Rechazar',
               onPress: handleConfirmReject,
               variant: 'danger',
-              disabled: !rejectionReason.trim(),
+              disabled: !rejectionReason.trim() || isProcessing,
               loading: isProcessing
             }
           ]}
@@ -651,6 +673,79 @@ const PublicationCard = React.memo<PublicationCardProps>(
 );
 
 StatusRow.displayName = 'StatusRow';
+
+interface ReasonWithTagProps {
+  reason: string;
+}
+
+const ReasonWithTag = React.memo<ReasonWithTagProps>(({ reason }) => {
+  const { theme } = useTheme();
+  const hasReasonTag = reason.startsWith(REASON_TAG);
+  const hasStatusTag = reason.startsWith(STATUS_CHANGE_TAG);
+
+  if (!hasReasonTag && !hasStatusTag) {
+    return (
+      <Text
+        style={{
+          fontSize: 13,
+          lineHeight: 18,
+          color: theme.colors.error,
+          fontWeight: '400'
+        }}
+        numberOfLines={2}
+      >
+        {reason}
+      </Text>
+    );
+  }
+
+  const tag = hasReasonTag ? REASON_TAG : STATUS_CHANGE_TAG;
+  const cleanReason = reason.substring(tag.length).trim();
+  const tagLabel = hasReasonTag ? 'Modificado' : 'Estado cambiado';
+  const tagIcon = hasReasonTag ? 'create-outline' : 'swap-horizontal-outline';
+
+  return (
+    <View style={{ gap: 6 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          alignSelf: 'flex-start',
+          paddingHorizontal: 8,
+          paddingVertical: 3,
+          borderRadius: 12,
+          backgroundColor: '#FF9800',
+          gap: 4
+        }}
+      >
+        <Ionicons name={tagIcon} size={10} color="#FFFFFF" />
+        <Text
+          style={{
+            fontSize: 9,
+            fontWeight: '600',
+            color: '#FFFFFF',
+            letterSpacing: 0.2
+          }}
+        >
+          {tagLabel}
+        </Text>
+      </View>
+      <Text
+        style={{
+          fontSize: 13,
+          lineHeight: 18,
+          color: theme.colors.text,
+          fontWeight: '400'
+        }}
+        numberOfLines={2}
+      >
+        {cleanReason}
+      </Text>
+    </View>
+  );
+});
+
+ReasonWithTag.displayName = 'ReasonWithTag';
 PublicationContent.displayName = 'PublicationContent';
 StatusBadge.displayName = 'StatusBadge';
 ReviewButtons.displayName = 'ReviewButtons';

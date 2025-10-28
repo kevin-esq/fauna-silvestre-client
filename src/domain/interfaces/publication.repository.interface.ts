@@ -35,6 +35,6 @@ export interface IPublicationRepository {
     size: number
   ): Promise<PublicationResponse>;
   acceptPublication(publicationId: string): Promise<void>;
-  rejectPublication(publicationId: string): Promise<void>;
+  rejectPublication(publicationId: string, reason?: string): Promise<void>;
   getCounts(): Promise<CountsResponse>;
 }
