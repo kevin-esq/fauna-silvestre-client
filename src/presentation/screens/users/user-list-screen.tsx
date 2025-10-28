@@ -19,7 +19,7 @@ import { SkeletonLoader } from '../../components/ui/skeleton-loader.component';
 import { createStyles } from './user-list-screen.styles.ts';
 import { useBackHandler } from '@/presentation/hooks/use-back-handler.hook';
 
-type UserFilter = 'active' | 'deactivated';
+type UserFilter = 'active' | 'blocked';
 
 interface UserListItemProps {
   user: UserData;
@@ -73,7 +73,7 @@ const UserListItem = React.memo<UserListItemProps>(
             <Ionicons
               name={isDeactivated ? 'close-circle' : 'shield-checkmark'}
               size={12}
-              color={isDeactivated ? theme.colors.warning : theme.colors.leaf}
+              color={isDeactivated ? theme.colors.error : theme.colors.leaf}
             />
           </View>
         </View>
@@ -167,7 +167,7 @@ const UserListScreen: React.FC = () => {
   const userCounts = useMemo(
     () => ({
       active: users.length,
-      deactivated: 0
+      blocked: 0
     }),
     [users]
   );
@@ -348,46 +348,45 @@ const UserListScreen: React.FC = () => {
           <TouchableOpacity
             style={[
               styles.filterTab,
-              selectedFilter === 'deactivated' && styles.filterTabActive
+              selectedFilter === 'blocked' && styles.filterTabActive
             ]}
-            onPress={() => handleFilterChange('deactivated')}
+            onPress={() => handleFilterChange('blocked')}
             activeOpacity={0.7}
             accessibilityRole="tab"
-            accessibilityLabel="Ver usuarios desactivados"
-            accessibilityState={{ selected: selectedFilter === 'deactivated' }}
+            accessibilityLabel="Ver usuarios bloqueados"
+            accessibilityState={{ selected: selectedFilter === 'blocked' }}
             disabled={true}
           >
             <Ionicons
-              name="close-circle-outline"
+              name="ban-outline"
               size={18}
               color={
-                selectedFilter === 'deactivated'
+                selectedFilter === 'blocked'
                   ? theme.colors.textOnPrimary
-                  : theme.colors.warning
+                  : theme.colors.error
               }
             />
             <Text
               style={[
                 styles.filterTabText,
-                selectedFilter === 'deactivated' && styles.filterTabTextActive
+                selectedFilter === 'blocked' && styles.filterTabTextActive
               ]}
             >
-              Desactivados
+              Bloqueados
             </Text>
             <View
               style={[
                 styles.filterBadge,
-                selectedFilter === 'deactivated' && styles.filterBadgeActive
+                selectedFilter === 'blocked' && styles.filterBadgeActive
               ]}
             >
               <Text
                 style={[
                   styles.filterBadgeText,
-                  selectedFilter === 'deactivated' &&
-                    styles.filterBadgeTextActive
+                  selectedFilter === 'blocked' && styles.filterBadgeTextActive
                 ]}
               >
-                {userCounts.deactivated}
+                {userCounts.blocked}
               </Text>
             </View>
           </TouchableOpacity>

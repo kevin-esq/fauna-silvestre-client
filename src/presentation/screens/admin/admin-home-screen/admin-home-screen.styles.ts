@@ -76,7 +76,7 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
     infoCard: {
       backgroundColor: isDark ? vars['--surface-variant'] : vars['--surface'],
       borderRadius: vars['--border-radius-large'] + 6,
-      padding: vars['--spacing-medium'],
+      padding: vars['--spacing-medium'] + 2,
       marginHorizontal: 2,
       borderWidth: vars['--border-width-hairline'],
       borderColor: vars['--border'],
@@ -95,7 +95,7 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
     statsRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: vars['--spacing-medium']
+      marginBottom: vars['--spacing-small'] + 2
     },
     statItem: {
       flex: 1,
@@ -138,6 +138,50 @@ export const useStyles = (theme: Theme, isDark?: boolean) => {
       backgroundColor: vars['--divider'],
       marginVertical: vars['--spacing-small'],
       opacity: 0.4
+    },
+    statsRowCompact: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: vars['--spacing-small'],
+      marginTop: vars['--spacing-tiny']
+    },
+    statItemCompact: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center'
+    },
+    statIconContainerCompact: {
+      width: 34,
+      height: 34,
+      borderRadius: vars['--border-radius-medium'],
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: vars['--spacing-small'] - 2
+    },
+    statTextContainerCompact: {
+      flex: 1
+    },
+    statLabelCompact: {
+      fontSize: vars['--font-size-small'] - 1,
+      color: vars['--text-secondary'],
+      marginBottom: 0,
+      fontWeight: vars['--font-weight-medium'],
+      letterSpacing: 0.1,
+      textTransform: 'lowercase'
+    },
+    statValueCompact: {
+      fontSize: vars['--font-size-large'] + 1,
+      color: vars['--text'],
+      fontWeight: vars['--font-weight-bold'],
+      letterSpacing: -0.3,
+      lineHeight: vars['--line-height-large']
+    },
+    statDividerCompact: {
+      width: vars['--border-width-hairline'],
+      height: 30,
+      backgroundColor: vars['--divider'],
+      marginHorizontal: vars['--spacing-small'] - 1,
+      opacity: 0.35
     },
     infoRow: {
       flexDirection: 'row',

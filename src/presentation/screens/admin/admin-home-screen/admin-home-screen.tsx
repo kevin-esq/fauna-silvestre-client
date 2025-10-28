@@ -139,6 +139,89 @@ const AdminHeader = React.memo<{
 
           <View style={styles.dividerLine} />
 
+          <View style={styles.statsRowCompact}>
+            <View style={styles.statItemCompact}>
+              <View
+                style={[
+                  styles.statIconContainerCompact,
+                  { backgroundColor: colors.warning + '20' }
+                ]}
+              >
+                <Ionicons
+                  name="time-outline"
+                  size={18}
+                  color={colors.warning}
+                />
+              </View>
+              <View style={styles.statTextContainerCompact}>
+                <Text style={styles.statLabelCompact}>Pendiente</Text>
+                {publicationCounts.isLoading ? (
+                  <SkeletonLoader width={22} height={14} borderRadius={4} />
+                ) : (
+                  <Text style={styles.statValueCompact}>
+                    {publicationCounts.pending}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.statDividerCompact} />
+
+            <View style={styles.statItemCompact}>
+              <View
+                style={[
+                  styles.statIconContainerCompact,
+                  { backgroundColor: colors.success + '20' }
+                ]}
+              >
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={18}
+                  color={colors.success}
+                />
+              </View>
+              <View style={styles.statTextContainerCompact}>
+                <Text style={styles.statLabelCompact}>Aceptada</Text>
+                {publicationCounts.isLoading ? (
+                  <SkeletonLoader width={22} height={14} borderRadius={4} />
+                ) : (
+                  <Text style={styles.statValueCompact}>
+                    {publicationCounts.accepted}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.statDividerCompact} />
+
+            <View style={styles.statItemCompact}>
+              <View
+                style={[
+                  styles.statIconContainerCompact,
+                  { backgroundColor: colors.error + '20' }
+                ]}
+              >
+                <Ionicons
+                  name="close-circle-outline"
+                  size={18}
+                  color={colors.error}
+                />
+              </View>
+              <View style={styles.statTextContainerCompact}>
+                <Text style={styles.statLabelCompact}>Rechazada</Text>
+                {publicationCounts.isLoading ? (
+                  <SkeletonLoader width={22} height={14} borderRadius={4} />
+                ) : (
+                  <Text style={styles.statValueCompact}>
+                    {publicationCounts.rejected}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.dividerLine} />
+
           <View style={styles.infoRow}>
             <Ionicons name="time" size={18} color={colors.textSecondary} />
             <Text style={styles.infoText}>{time}</Text>

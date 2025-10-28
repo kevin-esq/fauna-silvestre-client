@@ -37,11 +37,10 @@ export interface PaginationModelResponse {
 }
 
 export interface CountsResponse {
-  users: number;
-  records: number;
-  pendingCount?: number;
-  acceptedCount?: number;
-  rejectedCount?: number;
+  pending: number;
+  accepted: number;
+  rejected: number;
+  totalRecords: number;
 }
 
 export interface PublicationsModel {

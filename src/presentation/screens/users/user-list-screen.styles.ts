@@ -113,7 +113,7 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
     },
 
     userCardDeactivated: {
-      borderLeftColor: colors.warning,
+      borderLeftColor: colors.error,
       opacity: 0.7
     },
 
@@ -137,7 +137,7 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
     },
 
     userAvatarDeactivated: {
-      backgroundColor: colors.warning
+      backgroundColor: colors.error
     },
 
     userRoleBadge: {
@@ -155,7 +155,7 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
     },
 
     userRoleBadgeDeactivated: {
-      backgroundColor: colors.warning + '20'
+      backgroundColor: colors.error + '20'
     },
 
     userInfo: {

@@ -236,7 +236,7 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
     },
 
     deactivateButton: {
-      backgroundColor: colors.warning
+      backgroundColor: colors.error
     },
 
     actionButtonText: {

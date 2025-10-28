@@ -118,8 +118,8 @@ const UserDetailsScreen: React.FC = () => {
   });
   const { deactivateUser } = useUsers();
 
-  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
-  const [isDeactivating, setIsDeactivating] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
 
   const getGenderIcon = useCallback((gender: string) => {
     if (
@@ -143,31 +143,28 @@ const UserDetailsScreen: React.FC = () => {
     return gender;
   }, []);
 
-  const handleDeactivateUser = useCallback(() => {
-    setShowDeactivateModal(true);
+  const handleBlockUser = useCallback(() => {
+    setShowBlockModal(true);
   }, []);
 
-  const handleCloseDeactivateModal = useCallback(() => {
-    setShowDeactivateModal(false);
+  const handleCloseBlockModal = useCallback(() => {
+    setShowBlockModal(false);
   }, []);
 
-  const handleConfirmDeactivate = useCallback(async () => {
+  const handleConfirmBlock = useCallback(async () => {
     if (!user.userId) {
-      console.error('No se puede desactivar: userId no disponible');
       return;
     }
 
     try {
-      setIsDeactivating(true);
+      setIsBlocking(true);
       await deactivateUser(user.userId);
-      setShowDeactivateModal(false);
+      setShowBlockModal(false);
 
       navigation.goBack();
-    } catch (error) {
-      console.error('Error al desactivar usuario:', error);
-      setIsDeactivating(false);
-
-      setShowDeactivateModal(false);
+    } catch {
+      setIsBlocking(false);
+      setShowBlockModal(false);
     }
   }, [user.userId, deactivateUser, navigation]);
 
@@ -211,17 +208,17 @@ const UserDetailsScreen: React.FC = () => {
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity
             style={[styles.actionButton, styles.deactivateButton]}
-            onPress={handleDeactivateUser}
+            onPress={handleBlockUser}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel="Desactivar usuario"
+            accessibilityLabel="Bloquear usuario"
           >
             <Ionicons
-              name="close-circle-outline"
+              name="ban-outline"
               size={20}
               color={theme.colors.textOnPrimary}
             />
-            <Text style={styles.actionButtonText}>Desactivar</Text>
+            <Text style={styles.actionButtonText}>Bloquear</Text>
           </TouchableOpacity>
         </View>
 
@@ -282,39 +279,35 @@ const UserDetailsScreen: React.FC = () => {
       </ScrollView>
 
       <CustomModal
-        isVisible={showDeactivateModal}
-        onClose={handleCloseDeactivateModal}
-        title="Desactivar Usuario"
+        isVisible={showBlockModal}
+        onClose={handleCloseBlockModal}
+        title="Bloquear Usuario"
         type="confirmation"
         size="small"
         icon={
-          isDeactivating ? (
-            <ActivityIndicator size={50} color={theme.colors.warning} />
+          isBlocking ? (
+            <ActivityIndicator size={50} color={theme.colors.error} />
           ) : (
-            <Ionicons
-              name="close-circle"
-              size={50}
-              color={theme.colors.warning}
-            />
+            <Ionicons name="ban" size={50} color={theme.colors.error} />
           )
         }
         description={
-          isDeactivating
-            ? 'Desactivando usuario...'
-            : `¿Estás seguro de que deseas desactivar a ${user.name} ${user.lastName}?`
+          isBlocking
+            ? 'Bloqueando usuario...'
+            : `¿Estás seguro de que deseas bloquear a ${user.name} ${user.lastName}?`
         }
         buttons={[
           {
             label: 'Cancelar',
-            onPress: handleCloseDeactivateModal,
+            onPress: handleCloseBlockModal,
             variant: 'outline',
-            disabled: isDeactivating
+            disabled: isBlocking
           },
           {
-            label: isDeactivating ? 'Desactivando...' : 'Desactivar',
-            onPress: handleConfirmDeactivate,
+            label: isBlocking ? 'Bloqueando...' : 'Bloquear',
+            onPress: handleConfirmBlock,
             variant: 'danger',
-            disabled: isDeactivating
+            disabled: isBlocking
           }
         ]}
         footerAlignment="space-between"
