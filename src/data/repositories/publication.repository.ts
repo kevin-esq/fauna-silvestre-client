@@ -31,7 +31,6 @@ export class PublicationRepository
       const response = await this.api.post('/Animal/NewRecord', publication);
       this.ensureSuccessStatus(response);
     } catch (error) {
-      console.log(error);
       throw this.handleHttpError(error, 'Error al crear la publicación');
     }
   }
@@ -167,11 +166,9 @@ export class PublicationRepository
     size: number
   ): Promise<PublicationResponse> {
     try {
-      console.log(`[getUserAcceptedPublications] page=${page}&size=${size}`);
       const response = await this.api.get<PublicationResponse>(
         `/Animal/AnimalRecordByUser/Accepted?page=${page}&size=${size}`
       );
-      console.log(response.data);
       this.ensureSuccessStatus(response);
       return response.data;
     } catch (error) {
@@ -187,7 +184,6 @@ export class PublicationRepository
     size: number
   ): Promise<PublicationResponse> {
     try {
-      console.log(`[getAllAcceptedPublications] page=${page}&size=${size}`);
       const response = await this.api.get<PublicationResponse>(
         `/Admin/all-records/Accepted?page=${page}&size=${size}`
       );
@@ -206,7 +202,6 @@ export class PublicationRepository
     size: number
   ): Promise<PublicationResponse> {
     try {
-      console.log(`[getAllRejectedPublications] page=${page}&size=${size}`);
       const response = await this.api.get<PublicationResponse>(
         `/Admin/all-records/Rejected?page=${page}&size=${size}`
       );
@@ -266,13 +261,13 @@ export class PublicationRepository
 
   async getCounts(): Promise<CountsResponse> {
     try {
-      const response = await this.api.get<CountsResponse>('/Users/counts');
+      const response = await this.api.get<CountsResponse>('/Admin/statistic');
       this.ensureSuccessStatus(response);
       return response.data;
     } catch (error) {
       throw this.handleHttpError(
         error,
-        'Error al obtener los conteos de publicaciones'
+        'Error al obtener las estadísticas de administración'
       );
     }
   }

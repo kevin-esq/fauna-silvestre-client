@@ -18,6 +18,9 @@ interface AdminDataActions {
 
 interface PublicationCounts {
   readonly total: number;
+  readonly pending: number;
+  readonly accepted: number;
+  readonly rejected: number;
   readonly users: number;
   readonly isLoading: boolean;
 }
@@ -73,11 +76,18 @@ export const useAdminData = (): AdminDataReturn => {
 
   const publicationCounts: PublicationCounts = useMemo(
     () => ({
-      total: publicationState.counts.data?.records ?? 0,
-      users: publicationState.counts.data?.users ?? 0,
+      total: publicationState.counts.data?.totalRecords ?? 0,
+      pending: publicationState.counts.data?.pending ?? 0,
+      accepted: publicationState.counts.data?.accepted ?? 0,
+      rejected: publicationState.counts.data?.rejected ?? 0,
+      users: users.length,
       isLoading: publicationState.counts.isLoading
     }),
-    [publicationState.counts.data, publicationState.counts.isLoading]
+    [
+      publicationState.counts.data,
+      publicationState.counts.isLoading,
+      users.length
+    ]
   );
 
   return useMemo(

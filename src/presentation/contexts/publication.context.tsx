@@ -1066,9 +1066,9 @@ export const PublicationProvider: React.FC<{
 
       if (state.counts.data) {
         const countMap: Record<PublicationStatus, number> = {
-          [PublicationStatus.PENDING]: state.counts.data.pendingCount || 0,
-          [PublicationStatus.ACCEPTED]: state.counts.data.acceptedCount || 0,
-          [PublicationStatus.REJECTED]: state.counts.data.rejectedCount || 0
+          [PublicationStatus.PENDING]: state.counts.data.pending || 0,
+          [PublicationStatus.ACCEPTED]: state.counts.data.accepted || 0,
+          [PublicationStatus.REJECTED]: state.counts.data.rejected || 0
         };
 
         const count = countMap[status];
