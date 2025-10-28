@@ -632,7 +632,8 @@ interface PublicationContextType {
   ) => Promise<void>;
   readonly rejectPublication: (
     publicationId: string,
-    currentStatus: PublicationStatus
+    currentStatus: PublicationStatus,
+    reason?: string
   ) => Promise<void>;
   readonly processBulkPublications: (
     publicationIds: readonly string[],
@@ -946,7 +947,8 @@ export const PublicationProvider: React.FC<{
   const rejectPublication = useCallback(
     async (
       publicationId: string,
-      currentStatus: PublicationStatus
+      currentStatus: PublicationStatus,
+      reason?: string
     ): Promise<void> => {
       try {
         checkCircuitBreaker();
@@ -958,7 +960,7 @@ export const PublicationProvider: React.FC<{
           newStatus: PublicationStatus.REJECTED
         });
 
-        await publicationService.rejectPublication(publicationId);
+        await publicationService.rejectPublication(publicationId, reason);
         await refreshStatus(currentStatus);
         await refreshCounts();
       } catch (error) {

@@ -239,6 +239,21 @@ export const createStyles = (
       paddingLeft: 52
     },
 
+    rejectedReasonContainer: {
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      marginLeft: 52,
+      marginTop: 8
+    },
+
+    rejectedReasonText: {
+      fontSize: 15,
+      fontWeight: '600',
+      lineHeight: 22
+    },
+
     actionButtonsContainer: {
       flexDirection: 'row',
       padding: 20,

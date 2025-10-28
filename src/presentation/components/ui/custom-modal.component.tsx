@@ -42,6 +42,7 @@ export interface CustomModalProps {
   title?: string;
   showHeader?: boolean;
   showCloseButton?: boolean;
+  disableClose?: boolean;
   headerBorder?: boolean;
   customHeader?: React.ReactNode;
 
@@ -63,6 +64,7 @@ export interface CustomModalProps {
   inputLabel?: string;
   inputMultiline?: boolean;
   inputMaxLength?: number;
+  inputEditable?: boolean;
   showCharacterCount?: boolean;
   textAreaHeight?: number;
   textAreaWidth?: DimensionValue;
@@ -105,6 +107,7 @@ const CustomModal = React.memo<CustomModalProps>(
     title,
     showHeader = true,
     showCloseButton = true,
+    disableClose = false,
     headerBorder = true,
     customHeader,
     bodyPadding = true,
@@ -123,6 +126,7 @@ const CustomModal = React.memo<CustomModalProps>(
     inputLabel,
     inputMultiline = false,
     inputMaxLength,
+    inputEditable = true,
     showCharacterCount = false,
     type = 'default',
     size = 'medium',
@@ -158,20 +162,22 @@ const CustomModal = React.memo<CustomModalProps>(
     const [inputFocused, setInputFocused] = useState(false);
 
     const handleBackdropPress = useCallback(() => {
+      if (disableClose) return;
       if (onBackdropPress) {
         onBackdropPress();
       } else if (closeOnBackdrop) {
         onClose();
       }
-    }, [onBackdropPress, closeOnBackdrop, onClose]);
+    }, [closeOnBackdrop, disableClose, onClose, onBackdropPress]);
 
     const handleBackButtonPress = useCallback(() => {
+      if (disableClose) return;
       if (onBackButtonPress) {
         onBackButtonPress();
       } else if (closeOnBackButton) {
         onClose();
       }
-    }, [onBackButtonPress, closeOnBackButton, onClose]);
+    }, [closeOnBackButton, disableClose, onClose, onBackButtonPress]);
 
     const handleInputFocus = useCallback(() => setInputFocused(true), []);
     const handleInputBlur = useCallback(() => setInputFocused(false), []);
@@ -227,14 +233,17 @@ const CustomModal = React.memo<CustomModalProps>(
           )}
           {showCloseButton && (
             <Pressable
-              onPress={onClose}
+              onPress={disableClose ? undefined : onClose}
+              disabled={disableClose}
               style={({ pressed }) => [
                 styles.closeButton,
-                pressed && styles.closeButtonPressed
+                pressed && !disableClose && styles.closeButtonPressed,
+                disableClose && styles.closeButtonDisabled
               ]}
               hitSlop={spacing.medium}
               accessibilityLabel="Cerrar modal"
               accessibilityRole="button"
+              accessibilityState={{ disabled: disableClose }}
             >
               <Text style={styles.closeButtonIcon}>✕</Text>
             </Pressable>
@@ -246,6 +255,7 @@ const CustomModal = React.memo<CustomModalProps>(
       title,
       customHeader,
       showCloseButton,
+      disableClose,
       styles,
       headerBorder,
       headerStyle,
@@ -280,7 +290,8 @@ const CustomModal = React.memo<CustomModalProps>(
                   style={[
                     styles.input,
                     inputMultiline && styles.textArea,
-                    inputFocused && styles.inputFocused
+                    inputFocused && styles.inputFocused,
+                    inputEditable === false && styles.inputDisabled
                   ]}
                   value={inputValue}
                   onChangeText={onInputChange}
@@ -289,6 +300,7 @@ const CustomModal = React.memo<CustomModalProps>(
                   multiline={inputMultiline}
                   numberOfLines={inputMultiline ? 8 : 1}
                   maxLength={inputMaxLength}
+                  editable={inputEditable !== false}
                   onFocus={handleInputFocus}
                   onBlur={handleInputBlur}
                   accessibilityLabel={inputLabel || inputPlaceholder}
@@ -334,6 +346,7 @@ const CustomModal = React.memo<CustomModalProps>(
       theme.colors.placeholder,
       inputMultiline,
       inputMaxLength,
+      inputEditable,
       handleInputFocus,
       handleInputBlur,
       inputFocused,
@@ -345,18 +358,21 @@ const CustomModal = React.memo<CustomModalProps>(
         return (
           <ScrollView
             style={styles.bodyScrollable}
+            contentContainerStyle={{ paddingBottom: spacing.large }}
             showsVerticalScrollIndicator={true}
             bounces={true}
             persistentScrollbar={true}
             removeClippedSubviews={true}
             scrollEventThrottle={16}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
           >
             {renderBodyContent()}
           </ScrollView>
         );
       }
       return renderBodyContent();
-    }, [scrollable, styles.bodyScrollable, renderBodyContent]);
+    }, [scrollable, styles.bodyScrollable, renderBodyContent, spacing.large]);
 
     const renderFooter = useCallback(() => {
       if (!showFooter && !buttons && !customFooter) return null;

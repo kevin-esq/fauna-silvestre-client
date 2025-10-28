@@ -204,20 +204,26 @@ export class PublicationService {
     }
   }
 
-  async rejectPublication(publicationId: string): Promise<void> {
+  async rejectPublication(
+    publicationId: string,
+    reason?: string
+  ): Promise<void> {
     if (!publicationId?.trim()) {
       throw new Error('ID de publicación es requerido');
     }
 
     try {
-      this.logger.debug('Rechazando publicación', { publicationId });
-      await this.repository.rejectPublication(publicationId);
+      this.logger.debug('Rechazando publicación', { publicationId, reason });
+      await this.repository.rejectPublication(publicationId, reason);
 
       this.invalidateCountsCache();
 
       this.onCacheInvalidate?.();
 
-      this.logger.info('Publicación rechazada exitosamente', { publicationId });
+      this.logger.info('Publicación rechazada exitosamente', {
+        publicationId,
+        reason
+      });
     } catch (error) {
       this.logger.error('Error al rechazar publicación', error as Error, {
         publicationId

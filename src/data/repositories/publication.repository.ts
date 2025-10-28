@@ -237,20 +237,27 @@ export class PublicationRepository
 
   async acceptPublication(publicationId: string): Promise<void> {
     try {
-      const response = await this.api.patch(
-        `/Admin/process-record/${publicationId}?status=Accepted`
-      );
+      const response = await this.api.patch('/Admin/process-record', {
+        recordId: Number(publicationId),
+        status: 'Accepted',
+        RejectedReason: ''
+      });
       this.ensureSuccessStatus(response);
     } catch (error) {
       throw this.handleHttpError(error, 'Error al aceptar la publicación');
     }
   }
 
-  async rejectPublication(publicationId: string): Promise<void> {
+  async rejectPublication(
+    publicationId: string,
+    reason?: string
+  ): Promise<void> {
     try {
-      const response = await this.api.patch(
-        `/Admin/process-record/${publicationId}?status=Rejected`
-      );
+      const response = await this.api.patch('/Admin/process-record', {
+        recordId: Number(publicationId),
+        status: 'Rejected',
+        RejectedReason: reason || ''
+      });
       this.ensureSuccessStatus(response);
     } catch (error) {
       throw this.handleHttpError(error, 'Error al rechazar la publicación');

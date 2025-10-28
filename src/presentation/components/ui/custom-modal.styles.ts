@@ -60,6 +60,10 @@ export const createModalStyles = (theme: Theme, width: number) =>
       opacity: 0.7,
       transform: [{ scale: 0.95 }]
     },
+    closeButtonDisabled: {
+      opacity: 0.4,
+      backgroundColor: theme.colors.disabled
+    },
     closeButtonIcon: {
       fontSize: theme.typography.fontSize.xlarge,
       color: theme.colors.textSecondary,
@@ -142,6 +146,12 @@ export const createModalStyles = (theme: Theme, width: number) =>
       shadowOpacity: 0.15,
       shadowRadius: 4,
       elevation: 2
+    },
+    inputDisabled: {
+      backgroundColor: theme.colors.disabled,
+      opacity: 0.6,
+      borderColor: theme.colors.border,
+      color: theme.colors.textSecondary
     },
     textArea: {
       height: '100%',

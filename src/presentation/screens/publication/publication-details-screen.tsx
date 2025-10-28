@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   Dimensions,
   Pressable,
-  ActivityIndicator
+  ActivityIndicator,
+  TextInput
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -34,6 +35,9 @@ import { PublicationStatus as PubStatus } from '@/services/publication/publicati
 
 const { width, height } = Dimensions.get('window');
 
+const REASON_TAG = '[MOTIVO MODIFICADO]:';
+const STATUS_CHANGE_TAG = '[ESTADO MODIFICADO]:';
+
 const STATUS_CONFIG = {
   rejected: {
     icon: 'close-circle',
@@ -60,6 +64,7 @@ type EditModalType =
   | 'commonNoun'
   | 'animalState'
   | 'status'
+  | 'reason'
   | null;
 type ActionModalType = 'approve' | 'reject' | 'changeStatus' | null;
 
@@ -111,6 +116,86 @@ const InfoSection = React.memo<InfoSectionProps>(
   )
 );
 
+interface ReasonWithTagProps {
+  reason: string;
+  theme: Theme;
+}
+
+const ReasonWithTag = React.memo<ReasonWithTagProps>(({ reason, theme }) => {
+  // Detectar qué tipo de etiqueta tiene
+  const hasReasonTag = reason.startsWith(REASON_TAG);
+  const hasStatusTag = reason.startsWith(STATUS_CHANGE_TAG);
+
+  if (!hasReasonTag && !hasStatusTag) {
+    // Sin etiqueta, mostrar normal
+    return (
+      <Text
+        style={{
+          fontSize: 15,
+          lineHeight: 24,
+          color: theme.colors.text,
+          fontWeight: '400',
+          letterSpacing: 0.2
+        }}
+      >
+        {reason}
+      </Text>
+    );
+  }
+
+  // Separar etiqueta y motivo
+  const tag = hasReasonTag ? REASON_TAG : STATUS_CHANGE_TAG;
+  const cleanReason = reason.substring(tag.length).trim();
+  const tagLabel = hasReasonTag ? 'Motivo modificado' : 'Estado modificado';
+  const tagIcon = hasReasonTag ? 'create-outline' : 'swap-horizontal-outline';
+
+  return (
+    <View style={{ gap: 12 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          alignSelf: 'flex-start',
+          paddingHorizontal: 12,
+          paddingVertical: 6,
+          borderRadius: 20,
+          backgroundColor: '#FF9800',
+          shadowColor: '#FF9800',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 4,
+          elevation: 3,
+          gap: 6
+        }}
+      >
+        <Ionicons name={tagIcon} size={14} color="#FFFFFF" />
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: '600',
+            color: '#FFFFFF',
+            letterSpacing: 0.3,
+            textTransform: 'capitalize'
+          }}
+        >
+          {tagLabel}
+        </Text>
+      </View>
+      <Text
+        style={{
+          fontSize: 15,
+          lineHeight: 24,
+          color: theme.colors.text,
+          fontWeight: '400',
+          letterSpacing: 0.2
+        }}
+      >
+        {cleanReason}
+      </Text>
+    </View>
+  );
+});
+
 export default function PublicationDetailsScreen() {
   const route = useRoute();
   const { publication, status, reason } = route.params as {
@@ -142,6 +227,7 @@ export default function PublicationDetailsScreen() {
     useState<ActionModalType>(null);
   const [editValue, setEditValue] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [statusChangeReason, setStatusChangeReason] = useState('');
   const [selectedStatus, setSelectedStatus] =
     useState<PublicationStatus>(status);
   const [selectedAnimalState, setSelectedAnimalState] = useState<
@@ -150,6 +236,9 @@ export default function PublicationDetailsScreen() {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [operationError, setOperationError] = useState<string | null>(null);
+  const [editedReason, setEditedReason] = useState(
+    publication.rejectedReason || ''
+  );
 
   const hasAnyModalOpen = useMemo(
     () =>
@@ -165,7 +254,27 @@ export default function PublicationDetailsScreen() {
     setActionModalVisible(null);
     setEditValue('');
     setRejectionReason('');
+    setStatusChangeReason('');
     setOperationError(null);
+  }, []);
+
+  // Helper para remover la etiqueta del motivo
+  const removeReasonTag = useCallback((reason: string): string => {
+    if (reason.startsWith(REASON_TAG)) {
+      return reason.substring(REASON_TAG.length).trim();
+    }
+    if (reason.startsWith(STATUS_CHANGE_TAG)) {
+      return reason.substring(STATUS_CHANGE_TAG.length).trim();
+    }
+    return reason;
+  }, []);
+
+  // Helper para agregar la etiqueta al motivo
+  const addReasonTag = useCallback((reason: string): string => {
+    const cleanReason = reason.trim();
+    if (!cleanReason) return '';
+    if (cleanReason.startsWith(REASON_TAG)) return cleanReason;
+    return `${REASON_TAG} ${cleanReason}`;
   }, []);
 
   const toggleImageExpand = useCallback(
@@ -175,15 +284,19 @@ export default function PublicationDetailsScreen() {
 
   const openEditModal = useCallback(
     (type: EditModalType, currentValue: string) => {
-      setEditValue(currentValue);
+      // Si es el motivo de rechazo, remover la etiqueta para edición
+      const valueToEdit =
+        type === 'reason' ? removeReasonTag(currentValue) : currentValue;
+      setEditValue(valueToEdit);
       setEditModalVisible(type);
     },
-    []
+    [removeReasonTag]
   );
 
   const closeEditModal = useCallback(() => {
     setEditModalVisible(null);
     setEditValue('');
+    setStatusChangeReason('');
     setOperationError(null);
   }, []);
 
@@ -206,24 +319,44 @@ export default function PublicationDetailsScreen() {
     closeOnBack: true
   });
 
-  const handleSaveEdit = useCallback(() => {
-    console.log('Guardar cambios:', {
-      type: editModalVisible,
-      value:
-        editModalVisible === 'status'
-          ? selectedStatus
-          : editModalVisible === 'animalState'
-            ? selectedAnimalState
-            : editValue
-    });
+  const handleSaveEdit = useCallback(async () => {
+    // Si se está editando el motivo de rechazo, actualizar en el backend
+    if (editModalVisible === 'reason' && editValue.trim()) {
+      const reasonWithTag = addReasonTag(editValue);
+
+      try {
+        setIsProcessing(true);
+        setOperationError(null);
+
+        // Usar rejectPublication para actualizar el motivo sin cambiar el estado
+        await rejectPublication(
+          publication.recordId.toString(),
+          PubStatus.REJECTED, // Mantiene el estado actual (rechazada)
+          reasonWithTag
+        );
+
+        setEditedReason(reasonWithTag);
+        closeEditModal();
+      } catch (error) {
+        setOperationError(
+          error instanceof Error
+            ? error.message
+            : 'Error al actualizar el motivo de rechazo'
+        );
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
 
     closeEditModal();
   }, [
     editModalVisible,
     editValue,
-    selectedAnimalState,
-    selectedStatus,
-    closeEditModal
+    closeEditModal,
+    addReasonTag,
+    rejectPublication,
+    publication.recordId
   ]);
 
   const handleApprove = useCallback(async () => {
@@ -238,14 +371,12 @@ export default function PublicationDetailsScreen() {
         PubStatus.PENDING
       );
 
-      console.log('Publicación aprobada exitosamente');
       closeActionModal();
 
       setTimeout(() => {
         handleBackPress();
       }, 500);
     } catch (error) {
-      console.error('Error al aprobar publicación:', error);
       setOperationError(
         error instanceof Error
           ? error.message
@@ -271,17 +402,16 @@ export default function PublicationDetailsScreen() {
     try {
       await rejectPublication(
         publication.recordId.toString(),
-        PubStatus.PENDING
+        PubStatus.PENDING,
+        rejectionReason
       );
 
-      console.log('Publicación rechazada exitosamente');
       closeActionModal();
 
       setTimeout(() => {
         handleBackPress();
       }, 500);
     } catch (error) {
-      console.error('Error al rechazar publicación:', error);
       setOperationError(
         error instanceof Error
           ? error.message
@@ -311,13 +441,17 @@ export default function PublicationDetailsScreen() {
 
       if (selectedStatus === 'accepted') {
         await acceptPublication(publication.recordId.toString(), fromStatus);
-        console.log('Publicación cambiada a ACCEPTED');
       } else {
-        await rejectPublication(publication.recordId.toString(), fromStatus);
-        console.log('Publicación cambiada a REJECTED');
+        const finalReason = statusChangeReason.trim()
+          ? `${STATUS_CHANGE_TAG} ${statusChangeReason.trim()}`
+          : `${STATUS_CHANGE_TAG} Estado cambiado manualmente por administrador`;
+        await rejectPublication(
+          publication.recordId.toString(),
+          fromStatus,
+          finalReason
+        );
       }
 
-      console.log(`Estado cambiado de ${status} a ${selectedStatus}`);
       closeEditModal();
       closeActionModal();
 
@@ -325,7 +459,6 @@ export default function PublicationDetailsScreen() {
         handleBackPress();
       }, 500);
     } catch (error) {
-      console.error('Error al cambiar estado:', error);
       setOperationError(
         error instanceof Error
           ? error.message
@@ -341,6 +474,7 @@ export default function PublicationDetailsScreen() {
     publication.recordId,
     acceptPublication,
     rejectPublication,
+    statusChangeReason,
     closeEditModal,
     closeActionModal,
     handleBackPress
@@ -594,14 +728,67 @@ export default function PublicationDetailsScreen() {
           />
         )}
 
-        {isAdmin && publication.author && (
+        {isAdmin && publication.userName && (
           <InfoSection
             title="Usuario"
             icon="person"
-            content={publication.author}
+            content={publication.userName}
             theme={theme}
             styles={styles}
           />
+        )}
+
+        {status === 'rejected' && publication.rejectedReason && (
+          <View style={styles.infoSection}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: STATUS_CONFIG.rejected.color + '20' }
+                  ]}
+                >
+                  <Ionicons
+                    name="information-circle"
+                    size={20}
+                    color={STATUS_CONFIG.rejected.color}
+                  />
+                </View>
+                <Text style={styles.sectionTitle}>Motivo de Rechazo</Text>
+              </View>
+              {isAdmin && !isProcessing && (
+                <TouchableOpacity
+                  onPress={() =>
+                    openEditModal(
+                      'reason',
+                      editedReason || publication.rejectedReason || ''
+                    )
+                  }
+                  style={styles.editButton}
+                >
+                  <MaterialIcons
+                    name="edit"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+            <View
+              style={[
+                styles.rejectedReasonContainer,
+                {
+                  backgroundColor: STATUS_CONFIG.rejected.bgColor,
+                  borderColor: STATUS_CONFIG.rejected.color
+                }
+              ]}
+            >
+              <ReasonWithTag
+                reason={editedReason || publication.rejectedReason || ''}
+                theme={theme}
+              />
+            </View>
+          </View>
         )}
 
         {isAdmin && publication.location && (
@@ -649,7 +836,7 @@ export default function PublicationDetailsScreen() {
           />
         )}
 
-        {status === 'rejected' && reason && (
+        {status === 'rejected' && reason && !publication.rejectedReason && (
           <View style={styles.rejectionSection}>
             <View style={styles.rejectionHeader}>
               <View
@@ -661,8 +848,22 @@ export default function PublicationDetailsScreen() {
                 <Ionicons name="warning" size={20} color={theme.colors.error} />
               </View>
               <Text style={styles.rejectionTitle}>Motivo de Rechazo</Text>
+              {isAdmin && !isProcessing && (
+                <TouchableOpacity
+                  onPress={() =>
+                    openEditModal('reason', editedReason || reason)
+                  }
+                  style={styles.editButton}
+                >
+                  <MaterialIcons
+                    name="edit"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
+                </TouchableOpacity>
+              )}
             </View>
-            <Text style={styles.rejectionText}>{reason}</Text>
+            <ReasonWithTag reason={editedReason || reason} theme={theme} />
           </View>
         )}
       </ScrollView>
@@ -889,8 +1090,15 @@ export default function PublicationDetailsScreen() {
       <CustomModal
         isVisible={editModalVisible === 'status'}
         onClose={closeEditModal}
+        disableClose={isProcessing}
         title="Cambiar Estado de Publicación"
-        description="Seleccione el nuevo estado para esta publicación"
+        description={
+          selectedStatus === 'rejected' && status === 'accepted'
+            ? 'Escriba el motivo del cambio'
+            : 'Seleccione el nuevo estado para esta publicación'
+        }
+        scrollable={true}
+        avoidKeyboard={true}
         showFooter
         buttons={[
           {
@@ -900,10 +1108,15 @@ export default function PublicationDetailsScreen() {
             disabled: isProcessing
           },
           {
-            label: 'Continuar',
+            label: isProcessing ? 'Cambiando...' : 'Continuar',
             onPress: handleSaveStatusChange,
             variant: 'primary',
-            disabled: isProcessing || selectedStatus === status
+            disabled:
+              isProcessing ||
+              selectedStatus === status ||
+              (selectedStatus === 'rejected' &&
+                status === 'accepted' &&
+                !statusChangeReason.trim())
           }
         ]}
         animationInTiming={200}
@@ -962,12 +1175,122 @@ export default function PublicationDetailsScreen() {
               </Pressable>
             );
           })}
+          {selectedStatus === 'rejected' && status === 'accepted' && (
+            <View style={{ marginTop: 12, marginBottom: 40 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: theme.colors.text,
+                  marginBottom: 8
+                }}
+              >
+                Motivo del cambio
+              </Text>
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  borderRadius: 8,
+                  padding: 12,
+                  backgroundColor: theme.colors.surface
+                }}
+              >
+                <TextInput
+                  value={statusChangeReason}
+                  onChangeText={setStatusChangeReason}
+                  placeholder="Escriba el motivo del cambio..."
+                  placeholderTextColor={theme.colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                  maxLength={200}
+                  editable={!isProcessing}
+                  autoFocus={false}
+                  style={{
+                    fontSize: 14,
+                    color: theme.colors.text,
+                    minHeight: 80,
+                    textAlignVertical: 'top',
+                    opacity: isProcessing ? 0.6 : 1
+                  }}
+                />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: theme.colors.textSecondary,
+                    marginTop: 4,
+                    textAlign: 'right'
+                  }}
+                >
+                  {statusChangeReason.length}/200
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
+      </CustomModal>
+
+      <CustomModal
+        isVisible={editModalVisible === 'reason'}
+        onClose={closeEditModal}
+        disableClose={isProcessing}
+        title="Editar Motivo de Rechazo"
+        type="input"
+        inputValue={editValue}
+        onInputChange={setEditValue}
+        inputPlaceholder="Ingrese el motivo de rechazo"
+        inputMultiline
+        inputMaxLength={300}
+        inputEditable={!isProcessing}
+        description={`${editValue.length}/300 caracteres`}
+        showFooter
+        buttons={[
+          {
+            label: 'Cancelar',
+            onPress: closeEditModal,
+            variant: 'outline',
+            disabled: isProcessing
+          },
+          {
+            label: isProcessing ? 'Guardando...' : 'Guardar',
+            onPress: handleSaveEdit,
+            variant: 'primary',
+            disabled: isProcessing || !editValue.trim()
+          }
+        ]}
+        animationIn="fadeInUp"
+        animationOut="fadeOutDown"
+        animationInTiming={200}
+        animationOutTiming={200}
+        maxWidth={width - 40}
+        size="full"
+      >
+        {operationError && (
+          <View
+            style={{
+              padding: 12,
+              backgroundColor: theme.colors.error + '15',
+              borderRadius: 8,
+              marginTop: 12
+            }}
+          >
+            <Text
+              style={{
+                color: theme.colors.error,
+                fontSize: 14,
+                textAlign: 'center'
+              }}
+            >
+              {operationError}
+            </Text>
+          </View>
+        )}
       </CustomModal>
 
       <CustomModal
         isVisible={actionModalVisible === 'approve'}
         onClose={closeActionModal}
+        disableClose={isProcessing}
         title="Aprobar Publicación"
         centered
         icon={
@@ -1035,6 +1358,7 @@ export default function PublicationDetailsScreen() {
       <CustomModal
         isVisible={actionModalVisible === 'reject'}
         onClose={closeActionModal}
+        disableClose={isProcessing}
         title="Rechazar Publicación"
         centered
         icon={
@@ -1062,6 +1386,7 @@ export default function PublicationDetailsScreen() {
         inputLabel="Motivo"
         inputMultiline
         inputMaxLength={300}
+        inputEditable={!isProcessing}
         showCharacterCount
         description="Esta información será enviada al usuario"
         showFooter
@@ -1110,6 +1435,7 @@ export default function PublicationDetailsScreen() {
       <CustomModal
         isVisible={actionModalVisible === 'changeStatus'}
         onClose={closeActionModal}
+        disableClose={isProcessing}
         title="Confirmar Cambio de Estado"
         centered
         icon={
