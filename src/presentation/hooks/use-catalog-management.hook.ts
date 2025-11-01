@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 import { catalogService } from '../../services/catalog/catalog.service';
 import {
   AnimalModelResponse,
@@ -45,6 +44,7 @@ interface CatalogManagementActions {
   ) => Promise<AnimalCrudResponse>;
   updateAnimalImageInList: (catalogId: string, image: string) => void;
   deleteAnimal: (catalogId: string) => Promise<DeleteAnimalResponse>;
+  getAnimalById: (catalogId: string) => Promise<AnimalModelResponse>;
   clearError: () => void;
 }
 
@@ -244,14 +244,12 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
         isRefreshing: false,
         error: null
       }));
-    } catch (catchError) {
+    } catch (error) {
       setState(prev => ({
         ...prev,
         isRefreshing: false,
         error:
-          catchError instanceof Error
-            ? catchError.message
-            : 'Error refreshing animals'
+          error instanceof Error ? error.message : 'Error refreshing animals'
       }));
     }
   }, []);
@@ -265,20 +263,15 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
 
       try {
         const response = await catalogService.createCatalog(animalData);
-        if (!response.error) {
+        if (!response?.error) {
           await refreshAnimals();
-          Alert.alert('Éxito', 'Animal creado exitosamente');
         }
         return response;
       } catch (catchError: unknown) {
         if (catchError instanceof Error) {
-          const errorMessage = catchError.message || 'Error al crear el animal';
-          Alert.alert('Error', errorMessage);
           throw catchError;
         }
-        const errorMessage = 'Error desconocido al crear el animal';
-        Alert.alert('Error', errorMessage);
-        throw new Error(errorMessage);
+        throw new Error('Error desconocido al crear el animal');
       }
     },
     [refreshAnimals]
@@ -293,7 +286,7 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
 
       try {
         const response = await catalogService.updateCatalog(animalData);
-        if (!response.error) {
+        if (!response?.error) {
           setState(prev => ({
             ...prev,
             animals: prev.animals.map(animal =>
@@ -302,19 +295,13 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
                 : animal
             )
           }));
-          Alert.alert('Éxito', 'Animal actualizado exitosamente');
         }
         return response;
       } catch (catchError: unknown) {
         if (catchError instanceof Error) {
-          const errorMessage =
-            catchError.message || 'Error al actualizar el animal';
-          Alert.alert('Error', errorMessage);
           throw catchError;
         }
-        const errorMessage = 'Error desconocido al actualizar el animal';
-        Alert.alert('Error', errorMessage);
-        throw new Error(errorMessage);
+        throw new Error('Error desconocido al actualizar el animal');
       }
     },
     []
@@ -331,7 +318,7 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
 
       try {
         const response = await catalogService.updateCatalogImage(imageData);
-        if (!response.error) {
+        if (!response?.error) {
           setState(prev => ({
             ...prev,
             animals: prev.animals.map(animal =>
@@ -344,19 +331,13 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
             )
           }));
           await refreshAnimals();
-          Alert.alert('Éxito', 'Imagen actualizada exitosamente');
         }
         return response;
       } catch (catchError: unknown) {
         if (catchError instanceof Error) {
-          const errorMessage =
-            catchError.message || 'Error al actualizar la imagen';
-          Alert.alert('Error', errorMessage);
           throw catchError;
         }
-        const errorMessage = 'Error desconocido al actualizar la imagen';
-        Alert.alert('Error', errorMessage);
-        throw new Error(errorMessage);
+        throw new Error('Error desconocido al actualizar la imagen');
       }
     },
     [refreshAnimals]
@@ -388,7 +369,7 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
 
       try {
         const response = await catalogService.deleteCatalog(catalogId);
-        if (!response.error) {
+        if (!response?.error) {
           setState(prev => ({
             ...prev,
             animals: prev.animals.filter(
@@ -396,19 +377,26 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
             ),
             totalItems: prev.totalItems - 1
           }));
-          Alert.alert('Éxito', 'Animal eliminado exitosamente');
         }
         return response;
       } catch (catchError: unknown) {
         if (catchError instanceof Error) {
-          const errorMessage =
-            catchError.message || 'Error al eliminar el animal';
-          Alert.alert('Error', errorMessage);
           throw catchError;
         }
-        const errorMessage = 'Error desconocido al eliminar el animal';
-        Alert.alert('Error', errorMessage);
-        throw new Error(errorMessage);
+        throw new Error('Error desconocido al eliminar el animal');
+      }
+    },
+    []
+  );
+
+  const getAnimalById = useCallback(
+    async (catalogId: string): Promise<AnimalModelResponse> => {
+      try {
+        const animal = await catalogService.getCatalogById(catalogId);
+        return animal;
+      } catch (error) {
+        console.error('Error al obtener animal:', error);
+        throw error;
       }
     },
     []
@@ -478,23 +466,45 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
     };
 
     loadInitialData();
-    return cleanup;
-  }, [cleanup]);
 
-  const actions: CatalogManagementActions = {
-    loadMoreAnimals,
-    refreshAnimals,
-    searchAnimals,
-    filterByCategory,
-    sortAnimals,
-    filterByHabitat,
-    createAnimal,
-    updateAnimal,
-    updateAnimalImage,
-    updateAnimalImageInList,
-    deleteAnimal,
-    clearError
-  };
+    return () => {
+      cleanup();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const actions: CatalogManagementActions = useMemo(
+    () => ({
+      loadMoreAnimals,
+      refreshAnimals,
+      searchAnimals,
+      filterByCategory,
+      sortAnimals,
+      filterByHabitat,
+      createAnimal,
+      updateAnimal,
+      updateAnimalImage,
+      updateAnimalImageInList,
+      deleteAnimal,
+      getAnimalById,
+      clearError
+    }),
+    [
+      loadMoreAnimals,
+      refreshAnimals,
+      searchAnimals,
+      filterByCategory,
+      sortAnimals,
+      filterByHabitat,
+      createAnimal,
+      updateAnimal,
+      updateAnimalImage,
+      updateAnimalImageInList,
+      deleteAnimal,
+      getAnimalById,
+      clearError
+    ]
+  );
 
   return {
     state,

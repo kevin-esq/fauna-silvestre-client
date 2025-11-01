@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { Alert } from 'react-native';
 import Location, {
   Location as LocationInterface,
   type Location as LocationType
@@ -20,10 +19,17 @@ interface FreezeHook {
   clearFreeze: () => void;
 }
 
-export const useCameraActions = (
-  cameraHook: CameraHook,
-  freezeHook: FreezeHook
-) => {
+interface UseCameraActionsProps {
+  cameraHook: CameraHook;
+  freezeHook: FreezeHook;
+  onError?: (message: string) => void;
+}
+
+export const useCameraActions = ({
+  cameraHook,
+  freezeHook,
+  onError
+}: UseCameraActionsProps) => {
   const { navigate } = useNavigationActions();
   const { showLoading, hideLoading } = useLoading();
   const { takePhoto, isCapturing } = cameraHook;
@@ -45,7 +51,7 @@ export const useCameraActions = (
     try {
       const photo = await takePhoto();
       if (!photo) {
-        Alert.alert('Error', 'No se pudo capturar la foto.');
+        onError?.('No se pudo capturar la foto.');
         return;
       }
 
@@ -70,8 +76,7 @@ export const useCameraActions = (
       }, 800);
     } catch (error) {
       console.error('Error capturing photo:', error);
-      Alert.alert(
-        'Error',
+      onError?.(
         'Ocurrió un error al capturar la foto. Por favor, inténtalo de nuevo.'
       );
     } finally {
@@ -84,7 +89,8 @@ export const useCameraActions = (
     showLoading,
     hideLoading,
     showFreeze,
-    hideFreeze
+    hideFreeze,
+    onError
   ]);
 
   const handleThumbnailPress = useCallback(
@@ -109,12 +115,12 @@ export const useCameraActions = (
         navigate('ImagePreview', { imageUri: uri, location });
       } catch (error) {
         console.error('Error opening thumbnail:', error);
-        Alert.alert('Error', 'No se pudo abrir la imagen.');
+        onError?.('No se pudo abrir la imagen.');
       } finally {
         setTimeout(() => setActiveThumbnail(null), 200);
       }
     },
-    [navigate]
+    [navigate, onError]
   );
 
   const handleConfirm = useCallback(

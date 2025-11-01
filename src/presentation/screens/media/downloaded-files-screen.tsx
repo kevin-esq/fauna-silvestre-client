@@ -1,13 +1,19 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useState,
+  useEffect,
+  useRef
+} from 'react';
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
-  Alert,
   RefreshControl,
   SafeAreaView,
-  Platform
+  Platform,
+  Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -16,16 +22,19 @@ import { useDownloadedFiles } from '../../hooks/use-downloaded-files.hook';
 import { DownloadedFile } from '../../../services/storage/local-file.service';
 import { createStyles } from './downloaded-files-screen.styles';
 import RNFetchBlob from 'react-native-blob-util';
+import CustomModal from '../../components/ui/custom-modal.component';
 import Share from 'react-native-share';
 import { useBackHandler } from '@/presentation/hooks/use-back-handler.hook';
+import { useRoute, RouteProp } from '@react-navigation/native';
 
 interface DownloadedFileCardProps {
   file: DownloadedFile;
   onOpen: (file: DownloadedFile) => void;
-  onDelete: (fileId: string) => void;
   onShare: (file: DownloadedFile) => void;
+  onConfirmDelete: (fileId: string, fileName: string) => void;
   formatFileSize: (bytes: number) => string;
   formatDownloadDate: (date: Date) => string;
+  highlightOpacity?: Animated.Value;
   styles: ReturnType<typeof createStyles>;
   theme: Theme;
 }
@@ -34,123 +43,183 @@ const DownloadedFileCard = React.memo<DownloadedFileCardProps>(
   ({
     file,
     onOpen,
-    onDelete,
     onShare,
     formatFileSize,
     formatDownloadDate,
+    onConfirmDelete,
+    highlightOpacity,
     styles,
     theme
   }) => {
     const [isPressed, setIsPressed] = useState(false);
+    const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handleOpen = useCallback(() => {
       onOpen(file);
     }, [file, onOpen]);
 
     const handleDelete = useCallback(() => {
-      Alert.alert(
-        '🗑️ Eliminar ficha',
-        `¿Estás seguro de que deseas eliminar la ficha "${file.animalName}"?\n\nEsta acción no se puede deshacer.`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Eliminar',
-            style: 'destructive',
-            onPress: () => onDelete(file.id)
-          }
-        ]
-      );
-    }, [file.id, file.animalName, onDelete]);
+      onConfirmDelete(file.id, file.animalName);
+    }, [file, onConfirmDelete]);
 
     const handleShare = useCallback(() => {
       onShare(file);
     }, [file, onShare]);
 
+    const handlePressIn = useCallback(() => {
+      setIsPressed(true);
+      Animated.spring(scaleAnim, {
+        toValue: 0.98,
+        useNativeDriver: true,
+        friction: 8
+      }).start();
+    }, [scaleAnim]);
+
+    const handlePressOut = useCallback(() => {
+      setIsPressed(false);
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 8
+      }).start();
+    }, [scaleAnim]);
+
+    const highlightStyle = highlightOpacity
+      ? {
+          backgroundColor: highlightOpacity.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['transparent', 'rgba(76, 175, 80, 0.08)']
+          }),
+          borderColor: highlightOpacity.interpolate({
+            inputRange: [0, 1],
+            outputRange: [theme.colors.border, theme.colors.leaf]
+          }),
+          borderWidth: highlightOpacity.interpolate({
+            inputRange: [0, 1],
+            outputRange: [1, 2]
+          }),
+          shadowOpacity: highlightOpacity.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.1, 0.25]
+          }),
+          elevation: highlightOpacity.interpolate({
+            inputRange: [0, 1],
+            outputRange: [2, 6]
+          })
+        }
+      : {};
+
+    const iconScale = highlightOpacity
+      ? {
+          transform: [
+            {
+              scale: highlightOpacity.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [1, 1.1, 1]
+              })
+            }
+          ]
+        }
+      : {};
+
     return (
-      <TouchableOpacity
-        style={[styles.fileCard, isPressed && styles.fileCardPressed]}
-        onPress={handleOpen}
-        onPressIn={() => setIsPressed(true)}
-        onPressOut={() => setIsPressed(false)}
-        activeOpacity={0.9}
-        accessibilityRole="button"
-        accessibilityLabel={`Abrir ficha de ${file.animalName}`}
+      <Animated.View
+        style={[highlightStyle, { transform: [{ scale: scaleAnim }] }]}
       >
-        <View style={styles.cardProgressContainer}>
-          <View style={styles.cardProgressBackground} />
-        </View>
-
-        <View style={styles.fileIconContainer}>
-          <Ionicons
-            name="document-text"
-            size={32}
-            color={theme.colors.forest}
-          />
-          <View style={styles.fileTypeBadge}>
-            <Text style={styles.fileTypeText}>{'PDF'}</Text>
+        <TouchableOpacity
+          style={[styles.fileCard, isPressed && styles.fileCardPressed]}
+          onPress={handleOpen}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={1}
+          accessibilityRole="button"
+          accessibilityLabel={`Abrir ficha de ${file.animalName}`}
+        >
+          <View style={styles.cardProgressContainer}>
+            <View style={styles.cardProgressBackground} />
           </View>
-        </View>
 
-        <View style={styles.fileInfo}>
-          <Text style={styles.fileName} numberOfLines={2}>
-            {file.animalName}
-          </Text>
-          <View style={styles.fileMetaContainer}>
-            <View style={styles.fileMetaItem}>
+          <Animated.View style={[styles.fileIconContainer, iconScale]}>
+            <View style={styles.iconWrapper}>
               <Ionicons
-                name="barcode"
-                size={12}
-                color={theme.colors.textSecondary}
+                name="document-text"
+                size={32}
+                color={theme.colors.forest}
               />
-              <Text style={styles.fileMetaText}>{file.catalogId}</Text>
             </View>
-            <View style={styles.fileMetaItem}>
+            <View style={styles.fileTypeBadge}>
+              <Text style={styles.fileTypeText}>PDF</Text>
+            </View>
+          </Animated.View>
+
+          <View style={styles.fileInfo}>
+            <Text style={styles.fileName} numberOfLines={2}>
+              {file.animalName}
+            </Text>
+
+            <View style={styles.fileMetaContainer}>
+              <View style={styles.fileMetaItem}>
+                <Ionicons
+                  name="barcode-outline"
+                  size={14}
+                  color={theme.colors.textSecondary}
+                />
+                <Text style={styles.fileMetaText}>{file.catalogId}</Text>
+              </View>
+              <View style={styles.fileMetaDivider} />
+              <View style={styles.fileMetaItem}>
+                <Ionicons
+                  name="cube-outline"
+                  size={14}
+                  color={theme.colors.textSecondary}
+                />
+                <Text style={styles.fileMetaText}>
+                  {formatFileSize(file.fileSize)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.fileDateContainer}>
               <Ionicons
-                name="analytics"
-                size={12}
+                name="time-outline"
+                size={13}
                 color={theme.colors.textSecondary}
               />
-              <Text style={styles.fileMetaText}>
-                {formatFileSize(file.fileSize)}
+              <Text style={styles.fileDate}>
+                {formatDownloadDate(file.downloadDate)}
               </Text>
             </View>
           </View>
-          <View style={styles.fileDateContainer}>
-            <Ionicons
-              name="calendar"
-              size={12}
-              color={theme.colors.textSecondary}
-            />
-            <Text style={styles.fileDate}>
-              {formatDownloadDate(file.downloadDate)}
-            </Text>
+
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.shareButton]}
+              onPress={handleShare}
+              accessibilityRole="button"
+              accessibilityLabel={`Compartir ficha de ${file.animalName}`}
+            >
+              <Ionicons
+                name="share-social-outline"
+                size={20}
+                color={theme.colors.forest}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.deleteButton]}
+              onPress={handleDelete}
+              accessibilityRole="button"
+              accessibilityLabel={`Eliminar ficha de ${file.animalName}`}
+            >
+              <Ionicons
+                name="trash-outline"
+                size={20}
+                color={theme.colors.error}
+              />
+            </TouchableOpacity>
           </View>
-        </View>
-
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.shareButton]}
-            onPress={handleShare}
-            accessibilityRole="button"
-            accessibilityLabel={`Compartir ficha de ${file.animalName}`}
-          >
-            <Ionicons
-              name="share-social"
-              size={18}
-              color={theme.colors.forest}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton]}
-            onPress={handleDelete}
-            accessibilityRole="button"
-            accessibilityLabel={`Eliminar ficha de ${file.animalName}`}
-          >
-            <Ionicons name="trash" size={18} color={theme.colors.error} />
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </Animated.View>
     );
   }
 );
@@ -234,13 +303,20 @@ const EmptyState = React.memo<{
   </View>
 ));
 
+type RouteParams = {
+  justDownloadedId?: string;
+};
+
 const DownloadedFilesScreen: React.FC = () => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const route = useRoute<RouteProp<{ params: RouteParams }, 'params'>>();
   const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
   const {
     files,
     error,
+    successMessage,
+    infoMessage,
     storageInfo,
     openDownloadedFile,
     deleteDownloadedFile,
@@ -252,6 +328,47 @@ const DownloadedFilesScreen: React.FC = () => {
   } = useDownloadedFiles();
 
   const [refreshing, setRefreshing] = useState(false);
+  const highlightOpacity = useRef(new Animated.Value(0)).current;
+  const justDownloadedId = route.params?.justDownloadedId;
+  const [modalMessage, setModalMessage] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  }>({ visible: false, title: '', message: '' });
+
+  useEffect(() => {
+    if (error) {
+      setModalMessage({ visible: true, title: 'Error', message: error });
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (successMessage) {
+      setModalMessage({
+        visible: true,
+        title: 'Éxito',
+        message: successMessage
+      });
+    }
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (infoMessage) {
+      setModalMessage({ visible: true, title: 'Info', message: infoMessage });
+    }
+  }, [infoMessage]);
+
+  useEffect(() => {
+    if (justDownloadedId && files.length > 0) {
+      highlightOpacity.setValue(1);
+
+      Animated.timing(highlightOpacity, {
+        toValue: 0,
+        duration: 3000,
+        useNativeDriver: false
+      }).start();
+    }
+  }, [justDownloadedId, files.length, highlightOpacity]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -266,35 +383,33 @@ const DownloadedFilesScreen: React.FC = () => {
     [openDownloadedFile]
   );
 
-  const handleDeleteFile = useCallback(
-    (fileId: string) => {
-      deleteDownloadedFile(fileId);
-    },
-    [deleteDownloadedFile]
-  );
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [confirmDeleteOne, setConfirmDeleteOne] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const handleDeleteAll = useCallback(() => {
     if (files.length === 0) return;
+    setConfirmDeleteAll(true);
+  }, [files.length]);
 
-    Alert.alert(
-      '🗑️ Eliminar todas las fichas',
-      `¿Estás seguro de que deseas eliminar las ${files.length} fichas descargadas?\n\nEsta acción no se puede deshacer.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar todas',
-          style: 'destructive',
-          onPress: deleteAllFiles
-        }
-      ]
-    );
-  }, [files.length, deleteAllFiles]);
+  const handleConfirmDeleteOne = useCallback(
+    (fileId: string, fileName: string) => {
+      setConfirmDeleteOne({ id: fileId, name: fileName });
+    },
+    []
+  );
 
   const handleShareFile = useCallback(async (file: DownloadedFile) => {
     try {
       const exists = await RNFetchBlob.fs.exists(file.filePath);
       if (!exists) {
-        Alert.alert('Error', 'El archivo no existe o no se puede acceder');
+        setModalMessage({
+          visible: true,
+          title: 'Error',
+          message: 'El archivo no existe o no se puede acceder'
+        });
         return;
       }
 
@@ -316,7 +431,11 @@ const DownloadedFilesScreen: React.FC = () => {
       });
     } catch (err) {
       console.log('❌ Error compartiendo archivo:', err);
-      Alert.alert('Error', 'No se pudo compartir el archivo.');
+      setModalMessage({
+        visible: true,
+        title: 'Error',
+        message: 'No se pudo compartir el archivo.'
+      });
     }
   }, []);
 
@@ -325,20 +444,25 @@ const DownloadedFilesScreen: React.FC = () => {
       <DownloadedFileCard
         file={item}
         onOpen={handleOpenFile}
-        onDelete={handleDeleteFile}
         onShare={handleShareFile}
+        onConfirmDelete={handleConfirmDeleteOne}
         formatFileSize={formatFileSize}
         formatDownloadDate={formatDownloadDate}
+        highlightOpacity={
+          item.id === justDownloadedId ? highlightOpacity : undefined
+        }
         styles={styles}
         theme={theme}
       />
     ),
     [
       handleOpenFile,
-      handleDeleteFile,
       handleShareFile,
+      handleConfirmDeleteOne,
       formatFileSize,
       formatDownloadDate,
+      justDownloadedId,
+      highlightOpacity,
       styles,
       theme
     ]
@@ -375,49 +499,34 @@ const DownloadedFilesScreen: React.FC = () => {
               {formatFileSize(storageInfo.totalSize)}
             </Text>
           </View>
+        </View>
 
-          {files.length > 0 ? (
+        {files.length > 0 && (
+          <>
+            <StorageProgressBar
+              used={storageInfo.totalSize}
+              total={storageInfo.totalCapacity}
+              styles={styles}
+              theme={theme}
+              formatFileSize={formatFileSize}
+            />
+
             <TouchableOpacity
               style={styles.deleteAllButton}
               onPress={handleDeleteAll}
               accessibilityRole="button"
               accessibilityLabel="Eliminar todas las fichas"
             >
-              <Ionicons name="trash" size={16} color={theme.colors.error} />
-              <Text style={styles.deleteAllText}>Eliminar todas</Text>
+              <Ionicons
+                name="trash-outline"
+                size={20}
+                color={theme.colors.error}
+              />
+              <Text style={styles.deleteAllText}>
+                Eliminar todas las fichas
+              </Text>
             </TouchableOpacity>
-          ) : (
-            <View style={styles.headerPlaceholder} />
-          )}
-        </View>
-
-        {files.length > 0 && (
-          <StorageProgressBar
-            used={storageInfo.totalSize}
-            total={storageInfo.totalCapacity}
-            styles={styles}
-            theme={theme}
-            formatFileSize={formatFileSize}
-          />
-        )}
-
-        {error && (
-          <View style={styles.errorContainer}>
-            <Ionicons
-              name="alert-circle"
-              size={20}
-              color={theme.colors.error}
-            />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity
-              style={styles.clearErrorButton}
-              onPress={clearError}
-              accessibilityRole="button"
-              accessibilityLabel="Limpiar error"
-            >
-              <Ionicons name="close" size={16} color={theme.colors.error} />
-            </TouchableOpacity>
-          </View>
+          </>
         )}
       </View>
     ),
@@ -425,13 +534,11 @@ const DownloadedFilesScreen: React.FC = () => {
       files.length,
       storageInfo.totalSize,
       storageInfo.totalCapacity,
-      error,
-      handleDeleteAll,
       formatFileSize,
+      handleDeleteAll,
+      handleBackPress,
       styles,
-      theme,
-      clearError,
-      handleBackPress
+      theme
     ]
   );
 
@@ -486,6 +593,71 @@ const DownloadedFilesScreen: React.FC = () => {
         maxToRenderPerBatch={10}
         windowSize={10}
         initialNumToRender={10}
+      />
+
+      <CustomModal
+        isVisible={modalMessage.visible}
+        onClose={() => {
+          setModalMessage({ visible: false, title: '', message: '' });
+          clearError();
+        }}
+        title={modalMessage.title}
+        description={modalMessage.message}
+        buttons={[
+          {
+            label: 'OK',
+            onPress: () => {
+              setModalMessage({ visible: false, title: '', message: '' });
+              clearError();
+            }
+          }
+        ]}
+      />
+
+      <CustomModal
+        isVisible={!!confirmDeleteOne}
+        onClose={() => setConfirmDeleteOne(null)}
+        title="🗑️ Eliminar ficha"
+        description={`¿Estás seguro de que deseas eliminar la ficha "${confirmDeleteOne?.name}"?\n\nEsta acción no se puede deshacer.`}
+        buttons={[
+          {
+            label: 'Cancelar',
+            onPress: () => setConfirmDeleteOne(null),
+            variant: 'outline' as const
+          },
+          {
+            label: 'Eliminar',
+            onPress: () => {
+              if (confirmDeleteOne) {
+                deleteDownloadedFile(confirmDeleteOne.id);
+                setConfirmDeleteOne(null);
+              }
+            },
+            variant: 'danger' as const
+          }
+        ]}
+      />
+
+      <CustomModal
+        isVisible={confirmDeleteAll}
+        onClose={() => setConfirmDeleteAll(false)}
+        title="🗑️ Eliminar todas las fichas"
+        description={`¿Estás seguro de que deseas eliminar las ${files.length} fichas descargadas?\n\nEsta acción no se puede deshacer.`}
+        buttons={[
+          {
+            label: 'Cancelar',
+            onPress: () => setConfirmDeleteAll(false),
+            variant: 'outline' as const
+          },
+          {
+            label: 'Eliminar todas',
+            onPress: () => {
+              deleteAllFiles();
+              setConfirmDeleteAll(false);
+            },
+            variant: 'danger' as const
+          }
+        ]}
       />
     </SafeAreaView>
   );

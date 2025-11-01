@@ -1,5 +1,4 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Alert } from 'react-native';
 import {
   AnimalModelResponse,
   UpdateAnimalImageRequest
@@ -12,6 +11,9 @@ interface UseImageEditorProps {
   animal: AnimalModelResponse;
   onImageUpdated?: () => void;
   onError?: (error: string) => void;
+  onSuccess?: (message: string) => void;
+  onInfo?: (message: string) => void;
+  onConfirm?: (message: string, onConfirm: () => void) => void;
   updateListState?: (updatedAnimal: AnimalModelResponse) => void;
   onRefresh?: () => void;
 }
@@ -34,6 +36,9 @@ export const useImageEditor = ({
   animal,
   onImageUpdated,
   onError,
+  onSuccess,
+  onInfo,
+  onConfirm,
   updateListState,
   onRefresh
 }: UseImageEditorProps): UseImageEditorReturn => {
@@ -60,12 +65,11 @@ export const useImageEditor = ({
     onImageSelected: (imageUri: string, base64?: string) => {
       if (base64) {
         setCurrentImage(base64);
-        Alert.alert('Éxito', 'Imagen seleccionada correctamente');
+        onSuccess?.('Imagen seleccionada correctamente');
       }
     },
     onImageError: (error: string) => {
       const errorMessage = `Error al seleccionar imagen: ${error}`;
-      Alert.alert('Error', errorMessage);
       onError?.(errorMessage);
     }
   });
@@ -74,28 +78,22 @@ export const useImageEditor = ({
     setCurrentImage(newImage);
   }, []);
   const handleRemoveImage = useCallback(() => {
-    Alert.alert(
-      'Eliminar imagen',
+    onConfirm?.(
       '¿Estás seguro de que quieres eliminar la imagen actual?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: () => setCurrentImage('')
-        }
-      ]
+      () => {
+        setCurrentImage('');
+      }
     );
-  }, []);
+  }, [onConfirm]);
 
   const handleSave = useCallback(async () => {
     if (!animal) {
-      Alert.alert('Error', 'Animal no encontrado');
+      onError?.('Animal no encontrado');
       return;
     }
 
     if (!hasChanges) {
-      Alert.alert('Info', 'No hay cambios para guardar');
+      onInfo?.('No hay cambios para guardar');
       return;
     }
 
@@ -113,25 +111,14 @@ export const useImageEditor = ({
         throw new Error(response.message);
       }
 
-      Alert.alert(
-        'Éxito',
-        'La imagen del animal se ha actualizado correctamente',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              onImageUpdated?.();
-              updateListState?.({ ...animal, image: currentImage });
-              onRefresh?.();
-            }
-          }
-        ]
-      );
+      onSuccess?.('La imagen del animal se ha actualizado correctamente');
+      onImageUpdated?.();
+      updateListState?.({ ...animal, image: currentImage });
+      onRefresh?.();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Error desconocido al guardar';
-      Alert.alert('Error', `Error al guardar la imagen: ${errorMessage}`);
-      onError?.(errorMessage);
+      onError?.(`Error al guardar la imagen: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
@@ -141,28 +128,24 @@ export const useImageEditor = ({
     hasChanges,
     onImageUpdated,
     onError,
+    onSuccess,
+    onInfo,
     updateListState,
     onRefresh
   ]);
 
   const handleBack = useCallback(() => {
     if (hasChanges) {
-      Alert.alert(
-        'Descartar cambios',
+      onConfirm?.(
         '¿Estás seguro de que quieres salir? Se perderán los cambios no guardados.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Salir',
-            style: 'destructive',
-            onPress: () => navigation.goBack()
-          }
-        ]
+        () => {
+          navigation.goBack();
+        }
       );
     } else {
       navigation.goBack();
     }
-  }, [hasChanges, navigation]);
+  }, [hasChanges, navigation, onConfirm]);
 
   return {
     currentImage,

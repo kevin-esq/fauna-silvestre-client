@@ -307,12 +307,34 @@ export const createStyles = (
       justifyContent: 'center',
       ...createShadow(2, theme)
     },
+    previewHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: theme.spacing.medium
+    },
     previewTitle: {
       fontSize: theme.typography.fontSize.large,
       fontWeight: theme.typography.fontWeight.bold,
-      color: theme.colors.forest,
-      textAlign: 'center',
-      marginBottom: theme.spacing.medium
+      color: theme.colors.forest
+    },
+    layoutSelector: {
+      flexDirection: 'row',
+      gap: theme.spacing.tiny,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: theme.borderRadius.medium,
+      padding: theme.spacing.tiny
+    },
+    layoutButton: {
+      width: 36,
+      height: 36,
+      borderRadius: theme.borderRadius.small,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'transparent'
+    },
+    layoutButtonActive: {
+      backgroundColor: theme.colors.primary
     },
     previewNote: {
       fontSize: theme.typography.fontSize.small,

@@ -5,7 +5,7 @@ import User from '../../domain/entities/user.entity';
 import { UserMapper } from '../mappers/UserMapper';
 import { UserModel } from '../models/UserModel';
 import { ILogger } from '../../shared/types/ILogger';
-import { UsersResponse } from '@/domain/models/user.models';
+import { UsersResponse, UserCountsResponse } from '@/domain/models/user.models';
 
 export class UserRepository extends BaseRepository implements IUserRepository {
   constructor(api: AxiosInstance, logger: ILogger) {
@@ -32,42 +32,21 @@ export class UserRepository extends BaseRepository implements IUserRepository {
     }
   }
 
-  // TODO: Implementar en el futuro
-  // async updateUser(userData: Partial<User>): Promise<User> {
-  //   try {
-  //     this.logger.debug('[UserRepository] Actualizando datos de usuario', {
-  //       userData
-  //     });
-  //
-  //     const modelData = UserMapper.toModel(userData as User);
-  //     const response = await this.api.patch<UserModel>(
-  //       '/Users/update',
-  //       modelData
-  //     );
-  //     this.ensureSuccessStatus(response);
-  //
-  //     this.logger.info('[UserRepository] Usuario actualizado exitosamente');
-  //     return UserMapper.toDomain(response.data);
-  //   } catch (error) {
-  //     const processedError = this.handleHttpError(error, 'updateUser');
-  //     this.logger.error(
-  //       '[UserRepository] Error actualizando usuario',
-  //       processedError
-  //     );
-  //     throw processedError;
-  //   }
-  // }
-
-  async getAllUsers(page: number, size: number): Promise<UsersResponse> {
+  async getAllUsers(
+    page: number,
+    size: number,
+    active: boolean = true
+  ): Promise<UsersResponse> {
     try {
       const response = await this.api.get<UsersResponse>(
-        `/Admin/all-users?page=${page}&size=${size}`
+        `/Admin/all-users/${active}?page=${page}&size=${size}`
       );
       this.ensureSuccessStatus(response);
       return response.data;
     } catch (error) {
       const processedError = this.handleHttpError(error, 'getAllUsers');
-      this.logger.error(
+
+      this.logger.debug(
         '[UserRepository] Error obteniendo todos los usuarios',
         processedError
       );
@@ -89,6 +68,28 @@ export class UserRepository extends BaseRepository implements IUserRepository {
       const processedError = this.handleHttpError(error, 'deactivateUser');
       this.logger.error(
         '[UserRepository] Error desactivando usuario',
+        processedError
+      );
+      throw processedError;
+    }
+  }
+
+  async getCounts(): Promise<UserCountsResponse> {
+    try {
+      this.logger.debug('[UserRepository] Obteniendo conteos de usuarios');
+
+      const response = await this.api.get<UserCountsResponse>('/Users/counts');
+      this.ensureSuccessStatus(response);
+
+      this.logger.info(
+        '[UserRepository] Conteos obtenidos exitosamente',
+        response.data
+      );
+      return response.data;
+    } catch (error) {
+      const processedError = this.handleHttpError(error, 'getCounts');
+      this.logger.error(
+        '[UserRepository] Error obteniendo conteos',
         processedError
       );
       throw processedError;

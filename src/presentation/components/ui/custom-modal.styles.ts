@@ -73,8 +73,8 @@ export const createModalStyles = (theme: Theme, width: number) =>
 
     body: {
       width: '100%',
-      flexGrow: 1,
-      flexShrink: 1,
+      flexGrow: 0,
+      flexShrink: 0,
       overflow: 'hidden',
       paddingHorizontal: theme.spacing.large,
       paddingVertical: theme.spacing.large
@@ -106,8 +106,8 @@ export const createModalStyles = (theme: Theme, width: number) =>
     },
 
     inputContainer: {
-      width: '100%',
-      maxWidth: '100%'
+      width: width - theme.spacing.medium * 5,
+      maxWidth: width - theme.spacing.medium * 5
     },
     textAreaWrapper: {
       height: 140,
@@ -120,11 +120,11 @@ export const createModalStyles = (theme: Theme, width: number) =>
       color: theme.colors.text,
       marginBottom: theme.spacing.small,
       letterSpacing: 0.1,
-      maxWidth: '100%'
+      maxWidth: width - theme.spacing.medium * 5
     },
     input: {
-      width: '100%',
-      maxWidth: '100%',
+      width: width - theme.spacing.medium * 5,
+      maxWidth: width - theme.spacing.medium * 5,
       borderWidth: theme.borderWidths.small,
       borderColor: theme.colors.border,
       borderRadius: theme.borderRadius.medium,
@@ -165,7 +165,7 @@ export const createModalStyles = (theme: Theme, width: number) =>
       color: theme.colors.textSecondary,
       marginTop: theme.spacing.tiny,
       letterSpacing: 0.1,
-      maxWidth: '100%'
+      maxWidth: width - theme.spacing.medium * 5
     },
     characterCount: {
       fontSize: theme.typography.fontSize.small,
@@ -174,7 +174,7 @@ export const createModalStyles = (theme: Theme, width: number) =>
       color: theme.colors.textSecondary,
       textAlign: 'right',
       marginTop: theme.spacing.tiny,
-      maxWidth: '100%'
+      maxWidth: width - theme.spacing.medium * 5
     },
     characterCountWarning: {
       color: theme.colors.warning

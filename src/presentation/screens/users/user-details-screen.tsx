@@ -5,18 +5,28 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking,
+  TextInput,
+  useWindowDimensions
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { useTheme } from '../../contexts/theme.context';
 import { UserData } from '@/domain/models/user.models';
 import { useBackHandler } from '@/presentation/hooks/use-back-handler.hook';
 import { useUsers } from '@/presentation/hooks/use-users.hook';
 import { createStyles } from './user-details.styles';
 import CustomModal from '../../components/ui/custom-modal.component';
+import {
+  SUPPORT_CONTACT_METHODS,
+  ContactMethod,
+  createUnblockRequestMessage
+} from '@/shared/constants/support.constants';
+import { emitEvent, AppEvents } from '@/shared/utils/event-emitter';
 
 interface InfoCardProps {
   icon: string;
@@ -109,17 +119,28 @@ const ComingSoonCard = React.memo<ComingSoonCardProps>(
 const UserDetailsScreen: React.FC = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { user } = route.params as { user: UserData };
+  const { user, isBlocked } = route.params as {
+    user: UserData;
+    isBlocked?: boolean;
+  };
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
   const { handleBackPress } = useBackHandler({
     enableSafeMode: true
   });
   const { deactivateUser } = useUsers();
 
+  const inputWidth = useMemo(() => {
+    return screenWidth * 0.7;
+  }, [screenWidth]);
+
   const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showConfirmBlockModal, setShowConfirmBlockModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
+  const [blockConfirmText, setBlockConfirmText] = useState('');
 
   const getGenderIcon = useCallback((gender: string) => {
     if (
@@ -151,22 +172,69 @@ const UserDetailsScreen: React.FC = () => {
     setShowBlockModal(false);
   }, []);
 
+  const handleProceedToConfirm = useCallback(() => {
+    setShowBlockModal(false);
+    setShowConfirmBlockModal(true);
+    setBlockConfirmText('');
+  }, []);
+
+  const handleCloseConfirmBlockModal = useCallback(() => {
+    setShowConfirmBlockModal(false);
+    setBlockConfirmText('');
+  }, []);
+
   const handleConfirmBlock = useCallback(async () => {
-    if (!user.userId) {
+    if (!user.userId || blockConfirmText.toUpperCase() !== 'BLOQUEAR') {
       return;
     }
 
     try {
       setIsBlocking(true);
       await deactivateUser(user.userId);
-      setShowBlockModal(false);
+      setShowConfirmBlockModal(false);
+      setBlockConfirmText('');
+
+      emitEvent(AppEvents.USER_BLOCKED, { userId: user.userId });
 
       navigation.goBack();
     } catch {
       setIsBlocking(false);
-      setShowBlockModal(false);
+      setShowConfirmBlockModal(false);
+      setBlockConfirmText('');
     }
-  }, [user.userId, deactivateUser, navigation]);
+  }, [user.userId, deactivateUser, navigation, blockConfirmText]);
+
+  const isConfirmTextValid = blockConfirmText.toUpperCase() === 'BLOQUEAR';
+
+  const handleRequestUnblock = useCallback(() => {
+    setShowSupportModal(true);
+  }, []);
+
+  const handleCloseSupportModal = useCallback(() => {
+    setShowSupportModal(false);
+  }, []);
+
+  const handleContactSupport = useCallback(
+    async (method: ContactMethod) => {
+      setShowSupportModal(false);
+
+      const customMessage = createUnblockRequestMessage({
+        userName: user.userName,
+        name: user.name,
+        lastName: user.lastName,
+        email: user.email
+      });
+
+      const url = method.url(method.value, customMessage);
+
+      try {
+        await Linking.openURL(url);
+      } catch {
+        setShowSupportModal(false);
+      }
+    },
+    [user]
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -206,20 +274,37 @@ const UserDetailsScreen: React.FC = () => {
         </View>
 
         <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.deactivateButton]}
-            onPress={handleBlockUser}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Bloquear usuario"
-          >
-            <Ionicons
-              name="ban-outline"
-              size={20}
-              color={theme.colors.textOnPrimary}
-            />
-            <Text style={styles.actionButtonText}>Bloquear</Text>
-          </TouchableOpacity>
+          {isBlocked ? (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.unblockRequestButton]}
+              onPress={handleRequestUnblock}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Solicitar desbloqueo"
+            >
+              <Ionicons
+                name="help-circle-outline"
+                size={20}
+                color={theme.colors.textOnPrimary}
+              />
+              <Text style={styles.actionButtonText}>Solicitar Desbloqueo</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.deactivateButton]}
+              onPress={handleBlockUser}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Bloquear usuario"
+            >
+              <Ionicons
+                name="ban-outline"
+                size={20}
+                color={theme.colors.textOnPrimary}
+              />
+              <Text style={styles.actionButtonText}>Bloquear</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.contentSection}>
@@ -281,9 +366,35 @@ const UserDetailsScreen: React.FC = () => {
       <CustomModal
         isVisible={showBlockModal}
         onClose={handleCloseBlockModal}
-        title="Bloquear Usuario"
+        title="⚠️ Bloquear Usuario"
         type="confirmation"
         size="small"
+        icon={
+          <Ionicons name="warning" size={50} color={theme.colors.warning} />
+        }
+        description={`¿Estás seguro de que deseas bloquear a ${user.name} ${user.lastName}?\n\n⚠️ Esta acción NO puede ser revertida por un administrador. Para desbloquear al usuario, será necesario contactar a soporte técnico.`}
+        buttons={[
+          {
+            label: 'Cancelar',
+            onPress: handleCloseBlockModal,
+            variant: 'outline'
+          },
+          {
+            label: 'Continuar',
+            onPress: handleProceedToConfirm,
+            variant: 'primary'
+          }
+        ]}
+        footerAlignment="space-between"
+      />
+
+      <CustomModal
+        isVisible={showConfirmBlockModal}
+        onClose={handleCloseConfirmBlockModal}
+        title="🚨 Confirmación Final"
+        type="confirmation"
+        size="large"
+        centered
         icon={
           isBlocking ? (
             <ActivityIndicator size={50} color={theme.colors.error} />
@@ -291,27 +402,164 @@ const UserDetailsScreen: React.FC = () => {
             <Ionicons name="ban" size={50} color={theme.colors.error} />
           )
         }
-        description={
-          isBlocking
-            ? 'Bloqueando usuario...'
-            : `¿Estás seguro de que deseas bloquear a ${user.name} ${user.lastName}?`
-        }
         buttons={[
           {
             label: 'Cancelar',
-            onPress: handleCloseBlockModal,
+            onPress: handleCloseConfirmBlockModal,
             variant: 'outline',
             disabled: isBlocking
           },
           {
-            label: isBlocking ? 'Bloqueando...' : 'Bloquear',
+            label: isBlocking ? 'Bloqueando...' : 'Bloquear Usuario',
             onPress: handleConfirmBlock,
             variant: 'danger',
-            disabled: isBlocking
+            disabled: isBlocking || !isConfirmTextValid
           }
         ]}
         footerAlignment="space-between"
-      />
+      >
+        {isBlocking ? (
+          <Text
+            style={{
+              fontSize: theme.typography.fontSize.medium,
+              color: theme.colors.text,
+              textAlign: 'center',
+              marginVertical: theme.spacing.large
+            }}
+          >
+            Bloqueando usuario...
+          </Text>
+        ) : (
+          <View
+            style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%'
+            }}
+          >
+            <Text
+              style={{
+                fontSize: theme.typography.fontSize.medium,
+                color: theme.colors.text,
+                textAlign: 'center',
+                marginBottom: theme.spacing.large,
+                lineHeight: theme.typography.lineHeight.large
+              }}
+            >
+              Si estás completamente seguro de que deseas bloquear a{' '}
+              <Text style={{ fontWeight: theme.typography.fontWeight.bold }}>
+                {user.name} {user.lastName}
+              </Text>
+              , escribe en el siguiente recuadro la palabra:
+            </Text>
+            <Text
+              style={{
+                fontSize: theme.typography.fontSize.xlarge,
+                fontWeight: theme.typography.fontWeight.bold,
+                color: theme.colors.text,
+                marginBottom: theme.spacing.small,
+                textAlign: 'center'
+              }}
+            >
+              BLOQUEAR
+            </Text>
+            <View style={{ width: inputWidth }}>
+              <TextInput
+                style={[
+                  styles.confirmInput,
+                  {
+                    borderColor: isConfirmTextValid
+                      ? theme.colors.success
+                      : theme.colors.border,
+                    borderWidth: 2
+                  }
+                ]}
+                value={blockConfirmText}
+                onChangeText={setBlockConfirmText}
+                placeholder=""
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={8}
+              />
+            </View>
+            {blockConfirmText.length > 0 && !isConfirmTextValid && (
+              <Text
+                style={{
+                  color: theme.colors.error,
+                  fontSize: theme.typography.fontSize.small,
+                  marginTop: theme.spacing.small,
+                  textAlign: 'center'
+                }}
+              >
+                ❌ Debe escribir exactamente: BLOQUEAR
+              </Text>
+            )}
+            {isConfirmTextValid && (
+              <Text
+                style={{
+                  color: theme.colors.success,
+                  fontSize: theme.typography.fontSize.small,
+                  marginTop: theme.spacing.small,
+                  textAlign: 'center',
+                  fontWeight: theme.typography.fontWeight.bold
+                }}
+              >
+                ✓ Confirmación correcta
+              </Text>
+            )}
+          </View>
+        )}
+      </CustomModal>
+
+      <CustomModal
+        isVisible={showSupportModal}
+        onClose={handleCloseSupportModal}
+        title="Solicitar Desbloqueo"
+        description={`Selecciona cómo contactar a soporte para desbloquear a ${user.name} ${user.lastName}`}
+        type="default"
+        size="medium"
+        centered
+        showFooter={false}
+      >
+        <View style={styles.supportMethodsContainer}>
+          {SUPPORT_CONTACT_METHODS.map(method => {
+            const IconComponent =
+              method.iconLibrary === 'material'
+                ? MaterialCommunityIcons
+                : method.iconLibrary === 'fontawesome5'
+                  ? FontAwesome5
+                  : Ionicons;
+
+            return (
+              <TouchableOpacity
+                key={method.id}
+                style={[
+                  styles.supportMethodButton,
+                  { backgroundColor: method.color }
+                ]}
+                onPress={() => handleContactSupport(method)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={`Contactar por ${method.label}`}
+              >
+                <View style={styles.supportMethodIconContainer}>
+                  <IconComponent name={method.icon} size={32} color="#FFFFFF" />
+                </View>
+                <Text style={styles.supportMethodLabel}>{method.label}</Text>
+                <Text style={styles.supportMethodValue}>{method.value}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={handleCloseSupportModal}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.cancelButtonText}>Cancelar</Text>
+        </TouchableOpacity>
+      </CustomModal>
     </SafeAreaView>
   );
 };

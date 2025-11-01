@@ -1,50 +1,54 @@
 import { StyleSheet } from 'react-native';
 import { Theme } from '@/presentation/contexts/theme.context';
 
-const createShadow = (elevation: number, theme: Theme, opacity = 0.08) => ({
-  shadowColor: theme.colors.shadow,
+const createForestShadow = (elevation: number, theme: Theme) => ({
+  shadowColor: theme.colors.forest,
   shadowOffset: {
     width: 0,
-    height: Math.max(1, elevation / 2)
+    height: elevation
   },
-  shadowOpacity: Math.min(0.3, opacity + elevation * 0.01),
-  shadowRadius: Math.max(3, elevation * 1.2),
-  elevation: elevation + 1
+  shadowOpacity: 0.15,
+  shadowRadius: elevation * 2,
+  elevation: elevation
 });
 
 export const createStyles = (theme: Theme) =>
   StyleSheet.create({
     card: {
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.large,
+      borderRadius: 20,
       overflow: 'hidden',
-      marginBottom: theme.spacing.medium,
-      marginHorizontal: theme.spacing.small,
-      borderWidth: theme.borderWidths.hairline,
+      marginBottom: theme.spacing.medium + 4,
+      marginHorizontal: theme.spacing.medium,
+      borderWidth: 1,
       borderColor: theme.colors.border,
-      ...createShadow(4, theme, 0.06)
+      borderLeftWidth: 5,
+      borderLeftColor: theme.colors.forest,
+      ...createForestShadow(3, theme)
     },
 
     presentationCard: {
       marginHorizontal: theme.spacing.large,
-      borderRadius: theme.borderRadius.xlarge,
-      ...createShadow(8, theme, 0.1)
+      borderRadius: 24,
+      ...createForestShadow(4, theme)
     },
 
     imageContainer: {
-      borderTopLeftRadius: theme.borderRadius.large,
-      borderTopRightRadius: theme.borderRadius.large,
+      borderTopLeftRadius: 19,
+      borderTopRightRadius: 19,
       overflow: 'hidden',
-      backgroundColor: theme.colors.surfaceVariant
+      backgroundColor: theme.colors.surfaceVariant,
+      height: 200
     },
 
     cardContent: {
-      padding: theme.spacing.medium,
-      backgroundColor: theme.colors.surface
+      padding: 20,
+      backgroundColor: theme.colors.surface,
+      flex: 1
     },
 
     contentContainer: {
-      gap: theme.spacing.small
+      gap: 12
     },
 
     headerContainer: {
@@ -56,12 +60,13 @@ export const createStyles = (theme: Theme) =>
     },
 
     titleText: {
-      fontSize: theme.typography.fontSize.xlarge,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontSize: 19,
+      fontWeight: '800',
       color: theme.colors.text,
       flex: 1,
-      lineHeight: theme.typography.lineHeight.xlarge,
-      letterSpacing: -0.5
+      lineHeight: 26,
+      letterSpacing: -0.3,
+      marginBottom: 4
     },
 
     metaRow: {
@@ -80,11 +85,12 @@ export const createStyles = (theme: Theme) =>
     },
 
     descriptionText: {
-      fontSize: theme.typography.fontSize.medium,
-      lineHeight: theme.typography.lineHeight.medium,
-      fontWeight: theme.typography.fontWeight.regular,
+      fontSize: 15,
+      lineHeight: 22,
+      fontWeight: '400',
       color: theme.colors.textSecondary,
-      marginBottom: theme.spacing.small
+      marginBottom: 8,
+      letterSpacing: 0.1
     },
 
     rejectedReasonContainer: {
@@ -118,15 +124,16 @@ export const createStyles = (theme: Theme) =>
     },
 
     statusBadge: {
-      paddingHorizontal: theme.spacing.small,
-      paddingVertical: theme.spacing.tiny,
-      borderRadius: theme.borderRadius.small,
-      borderWidth: theme.borderWidths.hairline,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      borderWidth: 1.5,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.tiny,
+      gap: 6,
       alignSelf: 'flex-start',
-      minHeight: 24
+      minHeight: 28,
+      backgroundColor: theme.colors.surface
     },
 
     statusBadgeIcon: {
@@ -134,10 +141,10 @@ export const createStyles = (theme: Theme) =>
     },
 
     statusBadgeText: {
-      fontSize: theme.typography.fontSize.small - 1,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontSize: 12,
+      fontWeight: '700',
       textTransform: 'uppercase',
-      letterSpacing: 0.5
+      letterSpacing: 0.4
     },
 
     statusRowsContainer: {
@@ -149,13 +156,14 @@ export const createStyles = (theme: Theme) =>
     statusContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: theme.spacing.small,
-      paddingVertical: theme.spacing.tiny,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
       backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: theme.borderRadius.small,
-      borderWidth: theme.borderWidths.hairline,
+      borderRadius: 14,
+      borderWidth: 1,
       borderColor: theme.colors.border,
-      gap: theme.spacing.tiny
+      gap: 6,
+      alignSelf: 'flex-start'
     },
 
     statusIconContainer: {
@@ -182,26 +190,27 @@ export const createStyles = (theme: Theme) =>
 
     actionButton: {
       flex: 1,
-      paddingVertical: theme.spacing.medium,
-      borderRadius: theme.borderRadius.medium,
+      paddingVertical: 14,
+      borderRadius: 14,
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: theme.spacing.small,
-      minHeight: 44,
-      ...createShadow(3, theme, 0.08)
+      gap: 8,
+      minHeight: 48,
+      elevation: 4,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8
     },
 
     rejectButton: {
       backgroundColor: theme.colors.error,
-      borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.error
+      shadowColor: theme.colors.error
     },
 
     approveButton: {
-      backgroundColor: theme.colors.success,
-      borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.success
+      backgroundColor: theme.colors.forest,
+      shadowColor: theme.colors.forest
     },
 
     disabledButton: {
@@ -214,9 +223,9 @@ export const createStyles = (theme: Theme) =>
 
     buttonText: {
       color: theme.colors.textOnPrimary,
-      fontWeight: theme.typography.fontWeight.bold,
-      fontSize: theme.typography.fontSize.medium,
-      letterSpacing: 0.5
+      fontWeight: '700',
+      fontSize: 16,
+      letterSpacing: 0.3
     },
 
     processingOverlay: {
@@ -232,10 +241,10 @@ export const createStyles = (theme: Theme) =>
       alignItems: 'center',
       padding: theme.spacing.large,
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.medium,
+      borderRadius: 20,
       gap: theme.spacing.medium,
-      minWidth: 140,
-      ...createShadow(8, theme, 0.2)
+      minWidth: 150,
+      ...createForestShadow(6, theme)
     },
 
     processingText: {

@@ -23,10 +23,12 @@ import { useNavigationActions } from '../../navigation/navigation-provider';
 import { AnimalModelResponse } from '@/domain/models/animal.models';
 import { createStyles } from './animal-form-screen.styles';
 import { useRoute } from '@react-navigation/native';
-import { CatalogAnimalCard } from '../catalog/catalog-animals-screen';
+import { AnimalCardVariant } from '../../components/animal/animal-card-variants.component';
+import { ViewLayout } from '@/services/storage/catalog-view-preferences.service';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRequestPermissions } from '../../hooks/use-request-permissions.hook';
 import CustomModal from '@/presentation/components/ui/custom-modal.component';
+import { emitEvent, AppEvents } from '@/shared/utils/event-emitter';
 
 const VERTEBRATE_CLASSES = [
   'Mamíferos',
@@ -299,11 +301,24 @@ const FormSection = React.memo<{
   </View>
 ));
 
+const LAYOUT_OPTIONS: Array<{
+  value: ViewLayout;
+  label: string;
+  icon: string;
+}> = [
+  { value: 'card', label: 'Tarjeta', icon: 'card' },
+  { value: 'list', label: 'Lista', icon: 'list' },
+  { value: 'grid', label: 'Cuadrícula', icon: 'grid' },
+  { value: 'timeline', label: 'Línea', icon: 'time' }
+];
+
 const AnimalPreview = React.memo<{
   animal: Partial<AnimalModelResponse>;
   theme: Theme;
   styles: ReturnType<typeof createStyles>;
 }>(({ animal, theme, styles }) => {
+  const [selectedLayout, setSelectedLayout] = useState<ViewLayout>('card');
+
   const previewAnimal: AnimalModelResponse = {
     catalogId: animal.catalogId || 0,
     commonNoun: animal.commonNoun || 'Nuevo Animal',
@@ -337,13 +352,44 @@ const AnimalPreview = React.memo<{
 
   return (
     <View style={styles.previewContainer}>
-      <Text style={styles.previewTitle}>Vista Previa</Text>
-      <CatalogAnimalCard
+      <View style={styles.previewHeader}>
+        <Text style={styles.previewTitle}>Vista Previa</Text>
+        <View style={styles.layoutSelector}>
+          {LAYOUT_OPTIONS.map(option => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.layoutButton,
+                selectedLayout === option.value && styles.layoutButtonActive
+              ]}
+              onPress={() => setSelectedLayout(option.value)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={option.icon as never}
+                size={18}
+                color={
+                  selectedLayout === option.value
+                    ? theme.colors.textOnPrimary
+                    : theme.colors.textSecondary
+                }
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+      <AnimalCardVariant
         animal={previewAnimal}
         onPress={() => {}}
-        theme={theme}
-        index={0}
-        viewMode="grid"
+        layout={selectedLayout}
+        density="comfortable"
+        showImages={true}
+        highlightStatus={false}
+        showCategory={true}
+        showSpecies={true}
+        showHabitat={true}
+        showDescription={true}
+        reducedMotion={false}
       />
     </View>
   );
@@ -572,12 +618,17 @@ const AnimalFormScreen = () => {
   const handleSave = useCallback(async () => {
     const result = await actions.saveAnimal();
     if (!result?.error) {
-      navigation.goBack();
+      emitEvent(AppEvents.ANIMAL_UPDATED);
+      showModal('success', 'Éxito', 'Animal guardado correctamente');
+      setTimeout(() => {
+        navigation.goBack();
+      }, 1500);
     } else {
       showModal(
         'error',
         'Error',
-        'No se pudo guardar el animal. Por favor, intenta nuevamente.'
+        result?.message ||
+          'No se pudo guardar el animal. Por favor, intenta nuevamente.'
       );
     }
   }, [actions, navigation, showModal]);

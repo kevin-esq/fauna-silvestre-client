@@ -373,6 +373,21 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
       color: colors.textOnPrimary,
       fontSize: typography.fontSize.medium,
       fontWeight: typography.fontWeight.medium
+    },
+    iconWrapper: {
+      width: '100%',
+      height: '100%',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: borderRadius.medium,
+      backgroundColor: 'transparent'
+    },
+    fileMetaDivider: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.textSecondary,
+      opacity: 0.3
     }
   });
 };

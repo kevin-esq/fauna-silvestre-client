@@ -1,4 +1,10 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useState,
+  useEffect,
+  useRef
+} from 'react';
 import {
   View,
   Text,
@@ -7,311 +13,54 @@ import {
   RefreshControl,
   ActivityIndicator,
   SafeAreaView,
-  ListRenderItem,
-  ScrollView,
-  Animated
+  StatusBar
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCatalogManagement } from '../../hooks/use-catalog-management.hook';
-import { useTheme, Theme } from '../../contexts/theme.context';
+import { useTheme } from '../../contexts/theme.context';
+import { useCatalogViewPreferences } from '../../contexts/catalog-view-preferences.context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { AnimalModelResponse } from '@/domain/models/animal.models';
-import { SkeletonLoader } from '../../components/ui/skeleton-loader.component';
-import AnimalCard from '../../components/animal/animal-card.component';
-import CatalogFilters from '../../components/animal/catalog-filters.component';
 import SearchBar from '../../components/ui/search-bar.component';
-import { createStyles } from './catalog-management-screen.styles';
+import { CatalogViewSelector } from '../../components/ui/catalog-view-selector.component';
+import { AnimalCardWithActions } from '../../components/animal/animal-card-with-actions.component';
+import { addEventListener, AppEvents } from '@/shared/utils/event-emitter';
 
-const FILTER_CONSTANTS = {
-  DEFAULT_CATEGORY: 'Todas',
-  DEFAULT_SORT: 'name',
-  PAGINATION_THRESHOLD: 0.1
-} as const;
-
-interface CleanHeaderProps {
-  onToggleFilters: () => void;
-  filtersVisible: boolean;
-  activeFiltersCount: number;
-  styles: ReturnType<typeof createStyles>;
-  insets: ReturnType<typeof useSafeAreaInsets>;
-}
-
-interface QuickFiltersBarProps {
-  searchQuery: string;
-  selectedCategory: string;
-  selectedSort: string;
-  onClearSearch: () => void;
-  onClearCategory: () => void;
-  onClearSort: () => void;
-  onClearAll: () => void;
-  styles: ReturnType<typeof createStyles>;
-  theme: Theme;
-}
-
-interface EmptyStateProps {
-  searchQuery: string;
-  selectedCategory: string;
-  selectedSort: string;
-  theme: Theme;
-  styles: ReturnType<typeof createStyles>;
-}
-
-interface LoadingFooterProps {
-  isLoadingMore: boolean;
-  hasNextPage: boolean;
-  error: string | null;
-  onRetry: () => void;
-  theme: Theme;
-  styles: ReturnType<typeof createStyles>;
-}
-
-const hasActiveFilters = (
-  searchQuery: string,
-  selectedCategory: string,
-  selectedSort: string
-): boolean => {
-  return (
-    searchQuery.length > 0 ||
-    selectedCategory !== FILTER_CONSTANTS.DEFAULT_CATEGORY ||
-    selectedSort !== FILTER_CONSTANTS.DEFAULT_SORT
-  );
-};
-
-const getActiveFiltersCount = (
-  searchQuery: string,
-  selectedCategory: string,
-  selectedSort: string
-): number => {
-  let count = 0;
-  if (searchQuery.length > 0) count++;
-  if (selectedCategory !== FILTER_CONSTANTS.DEFAULT_CATEGORY) count++;
-  if (selectedSort !== FILTER_CONSTANTS.DEFAULT_SORT) count++;
-  return count;
-};
-
-const truncateText = (text: string, maxLength: number): string => {
-  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
-};
-
-const CleanHeader = React.memo<CleanHeaderProps>(
-  ({ onToggleFilters, filtersVisible, activeFiltersCount, styles, insets }) => (
-    <Animated.View
-      style={[styles.cleanHeader, { paddingTop: insets.top + 12 }]}
-    >
-      <TouchableOpacity
-        style={styles.collapseHeaderButton}
-        onPress={onToggleFilters}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.collapseHeaderIcon}>
-          {filtersVisible ? '▲' : '▼'}
-        </Text>
-        <Text style={styles.collapseHeaderText}>
-          {filtersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}
-        </Text>
-        {activeFiltersCount > 0 && (
-          <View style={styles.headerBadge}>
-            <Text style={styles.headerBadgeText}>{activeFiltersCount}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    </Animated.View>
-  )
-);
-
-const EmptyState = React.memo<EmptyStateProps>(
-  ({ searchQuery, selectedCategory, selectedSort, theme, styles }) => {
-    const hasFilters = hasActiveFilters(
-      searchQuery,
-      selectedCategory,
-      selectedSort
-    );
-
-    return (
-      <View style={styles.emptyContainer}>
-        <View style={styles.emptyIcon}>
-          <Ionicons
-            name={hasFilters ? 'search' : 'paw-outline'}
-            size={60}
-            color={theme.colors.forest}
-          />
-        </View>
-        <Text style={styles.emptyTitle}>
-          {hasFilters ? 'Sin resultados' : 'Catálogo vacío'}
-        </Text>
-        <Text style={styles.emptySubtitle}>
-          {hasFilters
-            ? 'Prueba ajustando los filtros de búsqueda'
-            : 'Agrega tu primer animal al catálogo usando el botón flotante'}
-        </Text>
-      </View>
-    );
-  }
-);
-
-const LoadingFooter = React.memo<LoadingFooterProps>(
-  ({ isLoadingMore, hasNextPage, error, onRetry, theme, styles }) => {
-    if (error) {
-      return (
-        <View style={styles.footerError}>
-          <View style={styles.errorIconContainer}>
-            <Ionicons
-              name="alert-circle"
-              size={32}
-              color={theme.colors.error}
-            />
-          </View>
-          <Text style={styles.footerErrorText}>Error al cargar</Text>
-          <TouchableOpacity onPress={onRetry} style={styles.footerRetryButton}>
-            <Text style={styles.footerRetryText}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    if (isLoadingMore) {
-      return (
-        <View style={styles.footerLoading}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-          <Text style={styles.footerLoadingText}>Cargando más...</Text>
-        </View>
-      );
-    }
-
-    if (!hasNextPage) {
-      return (
-        <View style={styles.footerEnd}>
-          <View style={styles.footerEndDivider} />
-          <Text style={styles.footerEndText}>Fin del catálogo</Text>
-          <View style={styles.footerEndDivider} />
-        </View>
-      );
-    }
-
-    return null;
-  }
-);
-
-const QuickFiltersBar = React.memo<QuickFiltersBarProps>(
-  ({
-    searchQuery,
-    selectedCategory,
-    selectedSort,
-    onClearSearch,
-    onClearCategory,
-    onClearSort,
-    onClearAll,
-    styles,
-    theme
-  }) => {
-    const filtersActive = hasActiveFilters(
-      searchQuery,
-      selectedCategory,
-      selectedSort
-    );
-
-    if (!filtersActive) return null;
-
-    const SORT_OPTIONS = [
-      { id: 'name', label: 'Nombre' },
-      { id: 'specie', label: 'Especie' },
-      { id: 'class', label: 'Clase' },
-      { id: 'date', label: 'Fecha' }
-    ];
-
-    const getSortLabel = (sortId: string) => {
-      return SORT_OPTIONS.find(opt => opt.id === sortId)?.label || sortId;
-    };
-
-    return (
-      <View style={styles.quickFiltersBar}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.quickFiltersScroll}
-        >
-          <View style={styles.quickFiltersContent}>
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                style={styles.quickFilterChip}
-                onPress={onClearSearch}
-              >
-                <Ionicons
-                  name="search"
-                  size={14}
-                  color={theme.colors.primary}
-                />
-                <Text style={styles.quickFilterChipText}>
-                  {truncateText(searchQuery, 15)}
-                </Text>
-                <Ionicons name="close" size={14} color={theme.colors.primary} />
-              </TouchableOpacity>
-            )}
-
-            {selectedCategory !== FILTER_CONSTANTS.DEFAULT_CATEGORY && (
-              <TouchableOpacity
-                style={styles.quickFilterChip}
-                onPress={onClearCategory}
-              >
-                <Ionicons name="paw" size={14} color={theme.colors.primary} />
-                <Text style={styles.quickFilterChipText}>
-                  {selectedCategory}
-                </Text>
-                <Ionicons name="close" size={14} color={theme.colors.primary} />
-              </TouchableOpacity>
-            )}
-
-            {selectedSort !== FILTER_CONSTANTS.DEFAULT_SORT && (
-              <TouchableOpacity
-                style={styles.quickFilterChip}
-                onPress={onClearSort}
-              >
-                <Ionicons
-                  name="swap-vertical"
-                  size={14}
-                  color={theme.colors.secondary}
-                />
-                <Text style={styles.quickFilterChipText}>
-                  {getSortLabel(selectedSort)}
-                </Text>
-                <Ionicons
-                  name="close"
-                  size={14}
-                  color={theme.colors.secondary}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-        </ScrollView>
-
-        <TouchableOpacity style={styles.clearAllButton} onPress={onClearAll}>
-          <Ionicons name="close-circle" size={18} color={theme.colors.error} />
-        </TouchableOpacity>
-      </View>
-    );
-  }
-);
-
-const useCatalogScreen = () => {
-  const themeContext = useTheme();
-  const theme = themeContext.theme;
+const CatalogManagementScreen: React.FC = () => {
+  const { theme, colors, spacing, typography, borderRadius } = useTheme();
   const navigation = useNavigationActions();
-  const insets = useSafeAreaInsets();
   const { state, actions, filteredAnimals, isLoading } = useCatalogManagement();
-  const [filtersVisible, setFiltersVisible] = useState(false);
+  const viewPrefs = useCatalogViewPreferences();
+  const flatListRef = useRef<FlatList>(null);
 
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const [searchInput, setSearchInput] = useState('');
 
-  const activeFiltersCount = useMemo(
-    () =>
-      getActiveFiltersCount(
-        state.searchQuery,
-        state.selectedCategory,
-        state.selectedSort
-      ),
-    [state.searchQuery, state.selectedCategory, state.selectedSort]
-  );
+  useEffect(() => {
+    const updateSubscription = addEventListener(
+      AppEvents.ANIMAL_UPDATED,
+      () => {
+        console.log(
+          '🔄 Animal actualizado, recargando catálogo de administración...'
+        );
+        actions.refreshAnimals();
+      }
+    );
+
+    const deleteSubscription = addEventListener(
+      AppEvents.ANIMAL_DELETED,
+      () => {
+        console.log(
+          '🔄 Animal eliminado, recargando catálogo de administración...'
+        );
+        actions.refreshAnimals();
+      }
+    );
+
+    return () => {
+      updateSubscription.remove();
+      deleteSubscription.remove();
+    };
+  }, [actions]);
 
   const handleAddAnimal = useCallback(() => {
     navigation.navigateToAnimalForm();
@@ -331,16 +80,12 @@ const useCatalogScreen = () => {
     [navigation]
   );
 
-  const handleViewDetails = useCallback(
-    (animal: AnimalModelResponse) => {
-      navigation.navigate('AnimalDetails', { animal });
+  const handleDeleteAnimal = useCallback(
+    async (catalogId: string) => {
+      await actions.deleteAnimal(catalogId);
     },
-    [navigation]
+    [actions]
   );
-
-  const handleToggleFilters = useCallback(() => {
-    setFiltersVisible(prev => !prev);
-  }, []);
 
   const handleEndReached = useCallback(() => {
     if (!state.isLoadingMore && state.hasNextPage) {
@@ -348,148 +93,280 @@ const useCatalogScreen = () => {
     }
   }, [state.isLoadingMore, state.hasNextPage, actions]);
 
-  const clearActions = useMemo(
-    () => ({
-      clearSearch: () => actions.searchAnimals(''),
-      clearCategory: () =>
-        actions.filterByCategory(FILTER_CONSTANTS.DEFAULT_CATEGORY),
-      clearSort: () => actions.sortAnimals(FILTER_CONSTANTS.DEFAULT_SORT),
-      clearAll: () => {
-        actions.searchAnimals('');
-        actions.filterByCategory(FILTER_CONSTANTS.DEFAULT_CATEGORY);
-        actions.sortAnimals(FILTER_CONSTANTS.DEFAULT_SORT);
+  const processedAnimals = useMemo(() => {
+    let filtered = [...filteredAnimals];
+
+    if (searchInput.trim()) {
+      const query = searchInput.toLowerCase();
+      filtered = filtered.filter(
+        animal =>
+          animal.commonNoun.toLowerCase().includes(query) ||
+          animal.specie.toLowerCase().includes(query) ||
+          animal.category.toLowerCase().includes(query)
+      );
+    }
+
+    filtered.sort((a, b) => {
+      switch (viewPrefs.sortBy) {
+        case 'name-asc':
+        case 'species-asc':
+          return a.commonNoun.localeCompare(b.commonNoun, 'es', {
+            sensitivity: 'base'
+          });
+        case 'name-desc':
+        case 'species-desc':
+          return b.commonNoun.localeCompare(a.commonNoun, 'es', {
+            sensitivity: 'base'
+          });
+        case 'habitat-asc':
+          return (a.habitat || '').localeCompare(b.habitat || '', 'es', {
+            sensitivity: 'base'
+          });
+        case 'habitat-desc':
+          return (b.habitat || '').localeCompare(a.habitat || '', 'es', {
+            sensitivity: 'base'
+          });
+        default:
+          return 0;
       }
-    }),
-    [actions]
-  );
+    });
 
-  return {
-    theme,
-    themeContext,
-    styles,
-    state,
-    actions,
-    filteredAnimals,
-    isLoading,
-    filtersVisible,
-    setFiltersVisible,
-    activeFiltersCount,
-    handleAddAnimal,
-    handleEditAnimal,
-    handleEditImage,
-    handleViewDetails,
-    handleToggleFilters,
-    handleEndReached,
-    clearActions,
-    insets
-  };
-};
-
-const CatalogManagementScreen: React.FC = () => {
-  const {
-    theme,
-    themeContext,
-    styles,
-    state,
-    actions,
-    filteredAnimals,
-    isLoading,
-    filtersVisible,
-    activeFiltersCount,
-    handleAddAnimal,
-    handleEditAnimal,
-    handleEditImage,
-    handleViewDetails,
-    handleToggleFilters,
-    handleEndReached,
-    clearActions,
-    insets
-  } = useCatalogScreen();
+    return filtered;
+  }, [filteredAnimals, searchInput, viewPrefs.sortBy]);
 
   const keyExtractor = useCallback(
     (item: AnimalModelResponse) => `animal-${item.catalogId}`,
     []
   );
 
-  const renderAnimalCard: ListRenderItem<AnimalModelResponse> = useCallback(
-    ({ item }) => (
-      <AnimalCard
-        animal={item}
-        onEdit={handleEditAnimal}
-        onDelete={actions.deleteAnimal}
-        onImageEdit={handleEditImage}
-        onViewDetails={handleViewDetails}
-        showImageEditButton={true}
-      />
-    ),
-    [handleEditAnimal, actions.deleteAnimal, handleEditImage, handleViewDetails]
-  );
+  const renderAnimalItem = useCallback(
+    ({ item }: { item: AnimalModelResponse }) => {
+      const handlePress = () => {
+        navigation.navigate('AnimalDetails', { animal: item });
+      };
 
-  const renderFooter = useCallback(
-    () => (
-      <LoadingFooter
-        isLoadingMore={state.isLoadingMore}
-        hasNextPage={state.hasNextPage}
-        error={state.error}
-        onRetry={actions.loadMoreAnimals}
-        theme={theme}
-        styles={styles}
-      />
-    ),
+      return (
+        <AnimalCardWithActions
+          animal={item}
+          onPress={handlePress}
+          actions={{
+            onEdit: handleEditAnimal,
+            onDelete: handleDeleteAnimal,
+            onImageEdit: handleEditImage
+          }}
+          layout={viewPrefs.layout}
+          density={viewPrefs.density}
+          showImages={viewPrefs.showImages}
+          highlightStatus={viewPrefs.highlightStatus}
+          showCategory={viewPrefs.showCategory}
+          showSpecies={viewPrefs.showSpecies}
+          showHabitat={viewPrefs.showHabitat}
+          showDescription={viewPrefs.showDescription}
+          reducedMotion={viewPrefs.reducedMotion}
+        />
+      );
+    },
     [
-      state.isLoadingMore,
-      state.hasNextPage,
-      state.error,
-      actions.loadMoreAnimals,
-      theme,
-      styles
+      handleEditAnimal,
+      handleDeleteAnimal,
+      handleEditImage,
+      viewPrefs,
+      navigation
     ]
   );
 
-  const renderEmptyComponent = useCallback(
-    () => (
-      <EmptyState
-        searchQuery={state.searchQuery}
-        selectedCategory={state.selectedCategory}
-        selectedSort={state.selectedSort}
-        theme={theme}
-        styles={styles}
-      />
-    ),
-    [state, theme, styles]
-  );
+  const renderFooter = () => {
+    if (state.error) {
+      return (
+        <View style={styles.footerError}>
+          <Ionicons name="alert-circle" size={32} color={colors.error} />
+          <Text style={styles.footerErrorText}>Error al cargar</Text>
+          <TouchableOpacity
+            onPress={actions.loadMoreAnimals}
+            style={styles.footerRetryButton}
+          >
+            <Text style={styles.footerRetryText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
 
-  const refreshControl = useMemo(
-    () => (
-      <RefreshControl
-        refreshing={state.isRefreshing}
-        onRefresh={actions.refreshAnimals}
-        colors={[theme.colors.primary]}
-        tintColor={theme.colors.primary}
-      />
-    ),
-    [state.isRefreshing, actions.refreshAnimals, theme.colors.primary]
+    if (state.isLoadingMore) {
+      return (
+        <View style={styles.footerLoading}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={styles.footerLoadingText}>Cargando más...</Text>
+        </View>
+      );
+    }
+
+    if (!state.hasNextPage && processedAnimals.length > 0) {
+      return (
+        <View style={styles.footerEnd}>
+          <View style={styles.footerEndDivider} />
+          <Text style={styles.footerEndText}>Fin del catálogo</Text>
+          <View style={styles.footerEndDivider} />
+        </View>
+      );
+    }
+
+    return null;
+  };
+
+  const renderEmptyState = () => {
+    const hasSearch = searchInput.trim().length > 0;
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons
+          name={hasSearch ? 'search-outline' : 'paw-outline'}
+          size={64}
+          color={colors.textSecondary}
+          style={styles.emptyIcon}
+        />
+        <Text style={styles.emptyTitle}>
+          {hasSearch ? 'Sin resultados' : 'Catálogo vacío'}
+        </Text>
+        <Text style={styles.emptySubtitle}>
+          {hasSearch
+            ? 'No encontramos animales con ese criterio'
+            : 'Agrega tu primer animal usando el botón flotante'}
+        </Text>
+      </View>
+    );
+  };
+
+  const styles = useMemo(
+    () => ({
+      container: {
+        flex: 1,
+        backgroundColor: colors.background
+      },
+      header: {
+        backgroundColor: colors.surface,
+        paddingHorizontal: spacing.medium,
+        paddingTop: spacing.small,
+        paddingBottom: spacing.small,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.divider
+      },
+      searchRow: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        gap: spacing.small
+      },
+      list: {
+        paddingTop: spacing.small,
+        paddingBottom: spacing.xlarge
+      },
+      emptyContainer: {
+        alignItems: 'center' as const,
+        paddingHorizontal: spacing.large,
+        paddingVertical: spacing.xlarge * 2
+      },
+      emptyIcon: {
+        marginBottom: spacing.large
+      },
+      emptyTitle: {
+        fontSize: typography.fontSize.large,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.text,
+        marginBottom: spacing.small,
+        textAlign: 'center' as const
+      },
+      emptySubtitle: {
+        fontSize: typography.fontSize.medium,
+        color: colors.textSecondary,
+        textAlign: 'center' as const
+      },
+      floatingAddButton: {
+        position: 'absolute' as const,
+        right: spacing.large,
+        bottom: spacing.large + 20,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: colors.forest,
+        justifyContent: 'center' as const,
+        alignItems: 'center' as const,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 12,
+        borderWidth: 3,
+        borderColor: colors.leaf + '40'
+      },
+      footerError: {
+        alignItems: 'center' as const,
+        paddingVertical: spacing.large
+      },
+      footerErrorText: {
+        color: colors.error,
+        fontSize: typography.fontSize.medium,
+        marginVertical: spacing.small
+      },
+      footerRetryButton: {
+        paddingHorizontal: spacing.medium,
+        paddingVertical: spacing.small,
+        backgroundColor: colors.error,
+        borderRadius: borderRadius.medium
+      },
+      footerRetryText: {
+        color: colors.textOnPrimary,
+        fontSize: typography.fontSize.medium,
+        fontWeight: typography.fontWeight.medium
+      },
+      footerLoading: {
+        alignItems: 'center' as const,
+        paddingVertical: spacing.large,
+        flexDirection: 'row' as const,
+        justifyContent: 'center' as const,
+        gap: spacing.small
+      },
+      footerLoadingText: {
+        color: colors.textSecondary,
+        fontSize: typography.fontSize.small
+      },
+      footerEnd: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        paddingVertical: spacing.large,
+        paddingHorizontal: spacing.medium
+      },
+      footerEndDivider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: colors.divider
+      },
+      footerEndText: {
+        color: colors.textSecondary,
+        fontSize: typography.fontSize.small,
+        fontWeight: typography.fontWeight.medium
+      }
+    }),
+    [colors, spacing, typography, borderRadius]
   );
 
   if (isLoading && filteredAnimals.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
-        <CleanHeader
-          onToggleFilters={handleToggleFilters}
-          filtersVisible={filtersVisible}
-          activeFiltersCount={activeFiltersCount}
-          styles={styles}
-          insets={insets}
-        />
-        <View style={styles.content}>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <SkeletonLoader
-              key={`skeleton-${index}`}
-              width="100%"
-              height={120}
-              style={styles.skeletonCard}
-            />
-          ))}
+        <StatusBar backgroundColor={colors.surface} barStyle="dark-content" />
+        <View
+          style={[
+            styles.container,
+            { justifyContent: 'center', alignItems: 'center' }
+          ]}
+        >
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text
+            style={{
+              marginTop: spacing.medium,
+              color: colors.textSecondary
+            }}
+          >
+            Cargando catálogo...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -497,81 +374,46 @@ const CatalogManagementScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {filtersVisible && (
-        <CleanHeader
-          onToggleFilters={handleToggleFilters}
-          filtersVisible={filtersVisible}
-          activeFiltersCount={activeFiltersCount}
-          styles={styles}
-          insets={insets}
-        />
-      )}
+      <StatusBar backgroundColor={colors.surface} barStyle="dark-content" />
 
-      {!filtersVisible && (
-        <TouchableOpacity
-          style={[styles.floatingFilterButton, { top: insets.top + 12 }]}
-          onPress={handleToggleFilters}
-          activeOpacity={0.9}
-        >
-          <Ionicons
-            name="funnel"
-            size={20}
-            color={theme.colors.textOnPrimary}
-          />
-          <Text style={styles.floatingButtonText}>Filtros</Text>
-          {activeFiltersCount > 0 && (
-            <View style={styles.floatingButtonBadge}>
-              <Text style={styles.floatingButtonBadgeText}>
-                {activeFiltersCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      )}
+      <View style={styles.header}>
+        <View style={styles.searchRow}>
+          <View style={{ flex: 1 }}>
+            <SearchBar
+              value={searchInput}
+              onChangeText={setSearchInput}
+              onClear={() => setSearchInput('')}
+              placeholder="Buscar animales..."
+              theme={theme}
+            />
+          </View>
+          <View style={{ marginLeft: 8 }}>
+            <CatalogViewSelector minimal />
+          </View>
+        </View>
+      </View>
 
       <FlatList
-        data={filteredAnimals}
+        ref={flatListRef}
+        data={processedAnimals}
         keyExtractor={keyExtractor}
-        renderItem={renderAnimalCard}
-        contentContainerStyle={styles.listContainer}
+        renderItem={renderAnimalItem}
+        numColumns={viewPrefs.layout === 'grid' ? 2 : 1}
+        key={`catalog-mgmt-${viewPrefs.layout}`}
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         onEndReached={handleEndReached}
-        onEndReachedThreshold={FILTER_CONSTANTS.PAGINATION_THRESHOLD}
-        refreshControl={refreshControl}
-        ListHeaderComponent={
-          filtersVisible ? (
-            <View>
-              <SearchBar
-                value={state.inputValue}
-                onChangeText={actions.searchAnimals}
-                onClear={clearActions.clearSearch}
-                placeholder="Buscar animales..."
-                theme={theme}
-              />
-
-              <CatalogFilters
-                animals={filteredAnimals}
-                onFilterChange={() => {}}
-                theme={themeContext}
-                isVisible={filtersVisible}
-              />
-
-              <QuickFiltersBar
-                searchQuery={state.searchQuery}
-                selectedCategory={state.selectedCategory}
-                selectedSort={state.selectedSort}
-                onClearSearch={clearActions.clearSearch}
-                onClearCategory={clearActions.clearCategory}
-                onClearSort={clearActions.clearSort}
-                onClearAll={clearActions.clearAll}
-                styles={styles}
-                theme={theme}
-              />
-            </View>
-          ) : null
+        onEndReachedThreshold={0.1}
+        refreshControl={
+          <RefreshControl
+            refreshing={state.isRefreshing}
+            onRefresh={actions.refreshAnimals}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
         }
         ListFooterComponent={renderFooter}
-        ListEmptyComponent={renderEmptyComponent}
+        ListEmptyComponent={renderEmptyState()}
         removeClippedSubviews={true}
         maxToRenderPerBatch={10}
         windowSize={10}
@@ -579,20 +421,16 @@ const CatalogManagementScreen: React.FC = () => {
       />
 
       <TouchableOpacity
-        style={[styles.floatingAddButton, { bottom: insets.bottom + 20 }]}
+        style={styles.floatingAddButton}
         onPress={handleAddAnimal}
-        activeOpacity={0.9}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="Agregar nuevo animal"
       >
-        <Ionicons name="add" size={28} color={theme.colors.textOnPrimary} />
+        <Ionicons name="add-circle" size={32} color={colors.textOnPrimary} />
       </TouchableOpacity>
     </SafeAreaView>
   );
 };
-
-CleanHeader.displayName = 'CleanHeader';
-EmptyState.displayName = 'EmptyState';
-LoadingFooter.displayName = 'LoadingFooter';
-QuickFiltersBar.displayName = 'QuickFiltersBar';
-CatalogManagementScreen.displayName = 'CatalogManagementScreen';
 
 export default CatalogManagementScreen;

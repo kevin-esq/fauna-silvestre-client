@@ -221,7 +221,6 @@ const StatusBadge = React.memo<StatusBadgeProps>(({ statusData }) => {
       style={[
         styles.statusBadge,
         {
-          backgroundColor: `${badgeColor}15`,
           borderColor: badgeColor
         }
       ]}
@@ -243,10 +242,11 @@ interface ReviewButtonsProps {
   actions: { onApprove: () => void; onReject: (reason?: string) => void };
   isLoading?: boolean;
   disabled?: boolean;
+  reducedMotion?: boolean;
 }
 
 const ReviewButtons = React.memo<ReviewButtonsProps>(
-  ({ actions, isLoading = false, disabled = false }) => {
+  ({ actions, isLoading = false, disabled = false, reducedMotion = false }) => {
     const { theme, colors, typography, iconSizes } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -258,22 +258,28 @@ const ReviewButtons = React.memo<ReviewButtonsProps>(
     const rejectScale = useRef(new Animated.Value(1)).current;
     const approveScale = useRef(new Animated.Value(1)).current;
 
-    const animateButton = useCallback((scale: Animated.Value) => {
-      Animated.sequence([
-        Animated.spring(scale, {
-          toValue: 0.95,
-          useNativeDriver: true,
-          speed: 50,
-          bounciness: 0
-        }),
-        Animated.spring(scale, {
-          toValue: 1,
-          useNativeDriver: true,
-          speed: 20,
-          bounciness: 8
-        })
-      ]).start();
-    }, []);
+    const animateButton = useCallback(
+      (scale: Animated.Value) => {
+        if (reducedMotion) {
+          return;
+        }
+        Animated.sequence([
+          Animated.spring(scale, {
+            toValue: 0.95,
+            useNativeDriver: true,
+            speed: 50,
+            bounciness: 0
+          }),
+          Animated.spring(scale, {
+            toValue: 1,
+            useNativeDriver: true,
+            speed: 20,
+            bounciness: 8
+          })
+        ]).start();
+      },
+      [reducedMotion]
+    );
 
     const handleRejectPress = useCallback(() => {
       if (!disabled && !isLoading) {
@@ -295,7 +301,6 @@ const ReviewButtons = React.memo<ReviewButtonsProps>(
         await actions.onApprove();
         setApproveModalVisible(false);
       } catch {
-        // Error manejado por el contexto
       } finally {
         setIsProcessing(false);
       }
@@ -310,7 +315,6 @@ const ReviewButtons = React.memo<ReviewButtonsProps>(
         setRejectModalVisible(false);
         setRejectionReason('');
       } catch {
-        // Error manejado por el contexto
       } finally {
         setIsProcessing(false);
       }
@@ -517,43 +521,54 @@ const ReviewButtons = React.memo<ReviewButtonsProps>(
   }
 );
 
-const ProcessingOverlay = React.memo(() => {
-  const { theme, colors } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+interface ProcessingOverlayProps {
+  reducedMotion?: boolean;
+}
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+const ProcessingOverlay = React.memo<ProcessingOverlayProps>(
+  ({ reducedMotion = false }) => {
+    const { theme, colors } = useTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
 
-  React.useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 7
-      })
-    ]).start();
-  }, [fadeAnim, scaleAnim]);
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
-  return (
-    <Animated.View style={[styles.processingOverlay, { opacity: fadeAnim }]}>
-      <Animated.View
-        style={[
-          styles.processingContent,
-          { transform: [{ scale: scaleAnim }] }
-        ]}
-      >
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.processingText}>Procesando...</Text>
+    React.useEffect(() => {
+      if (reducedMotion) {
+        fadeAnim.setValue(1);
+        scaleAnim.setValue(1);
+      } else {
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true
+          }),
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 7
+          })
+        ]).start();
+      }
+    }, [fadeAnim, scaleAnim, reducedMotion]);
+
+    return (
+      <Animated.View style={[styles.processingOverlay, { opacity: fadeAnim }]}>
+        <Animated.View
+          style={[
+            styles.processingContent,
+            { transform: [{ scale: scaleAnim }] }
+          ]}
+        >
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.processingText}>Procesando...</Text>
+        </Animated.View>
       </Animated.View>
-    </Animated.View>
-  );
-});
+    );
+  }
+);
 
 interface PublicationCardProps {
   publication: PublicationModelResponse;
@@ -562,6 +577,7 @@ interface PublicationCardProps {
   reviewActions?: { onApprove: () => void; onReject: () => void };
   viewMode?: 'card' | 'presentation';
   isProcessing?: boolean;
+  reducedMotion?: boolean;
 }
 
 const PublicationCard = React.memo<PublicationCardProps>(
@@ -571,7 +587,8 @@ const PublicationCard = React.memo<PublicationCardProps>(
     onPress,
     reviewActions,
     viewMode = 'card',
-    isProcessing = false
+    isProcessing = false,
+    reducedMotion = false
   }) => {
     const { theme, colors } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
@@ -580,7 +597,7 @@ const PublicationCard = React.memo<PublicationCardProps>(
     const opacityAnim = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = useCallback(() => {
-      if (!isProcessing && onPress) {
+      if (!isProcessing && onPress && !reducedMotion) {
         Animated.spring(scaleAnim, {
           toValue: 0.98,
           useNativeDriver: true,
@@ -588,10 +605,10 @@ const PublicationCard = React.memo<PublicationCardProps>(
           bounciness: 0
         }).start();
       }
-    }, [isProcessing, onPress, scaleAnim]);
+    }, [isProcessing, onPress, scaleAnim, reducedMotion]);
 
     const handlePressOut = useCallback(() => {
-      if (!isProcessing && onPress) {
+      if (!isProcessing && onPress && !reducedMotion) {
         Animated.spring(scaleAnim, {
           toValue: 1,
           useNativeDriver: true,
@@ -599,7 +616,7 @@ const PublicationCard = React.memo<PublicationCardProps>(
           bounciness: 8
         }).start();
       }
-    }, [isProcessing, onPress, scaleAnim]);
+    }, [isProcessing, onPress, scaleAnim, reducedMotion]);
 
     const handlePress = useCallback(() => {
       if (!isProcessing && onPress) {
@@ -608,12 +625,16 @@ const PublicationCard = React.memo<PublicationCardProps>(
     }, [isProcessing, onPress]);
 
     React.useEffect(() => {
-      Animated.timing(opacityAnim, {
-        toValue: isProcessing ? 0.6 : 1,
-        duration: 200,
-        useNativeDriver: true
-      }).start();
-    }, [isProcessing, opacityAnim]);
+      if (reducedMotion) {
+        opacityAnim.setValue(isProcessing ? 0.6 : 1);
+      } else {
+        Animated.timing(opacityAnim, {
+          toValue: isProcessing ? 0.6 : 1,
+          duration: 200,
+          useNativeDriver: true
+        }).start();
+      }
+    }, [isProcessing, opacityAnim, reducedMotion]);
 
     const cardStyle = useMemo(
       () => [
@@ -661,11 +682,12 @@ const PublicationCard = React.memo<PublicationCardProps>(
                 actions={reviewActions}
                 isLoading={isProcessing}
                 disabled={isProcessing}
+                reducedMotion={reducedMotion}
               />
             )}
           </View>
 
-          {isProcessing && <ProcessingOverlay />}
+          {isProcessing && <ProcessingOverlay reducedMotion={reducedMotion} />}
         </CardWrapper>
       </Animated.View>
     );

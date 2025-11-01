@@ -59,7 +59,13 @@ export function useLocationInfo(): UseLocationInfoResult {
       const result = await reverseGeocode(loc.latitude, loc.longitude);
       setInfo(result);
     } catch (err) {
-      console.error('Error al obtener ubicación:', err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (
+        !errorMessage.includes('cancelled') &&
+        !errorMessage.includes('Permisos')
+      ) {
+        console.error('Error al obtener ubicación:', err);
+      }
       setInfo({
         city: 'Ubicación no disponible',
         state: 'Ubicación no disponible',

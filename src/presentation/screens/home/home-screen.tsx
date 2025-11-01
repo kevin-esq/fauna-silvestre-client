@@ -17,7 +17,8 @@ import { useNavigationActions } from '../../navigation/navigation-provider';
 import { useLocationInfo } from '../../hooks/use-location-info';
 import { useHomeData } from '../../hooks/use-home-data.hook';
 
-import { CatalogAnimalCard } from '../catalog/catalog-animals-screen';
+import { AnimalCardVariant } from '../../components/animal/animal-card-variants.component';
+import { useCatalogViewPreferences } from '../../contexts/catalog-view-preferences.context';
 import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
 import CustomModal from '../../components/ui/custom-modal.component';
 import { OfflineBanner } from '../../components/ui/offline-banner.component';
@@ -472,6 +473,7 @@ const HomeScreen: React.FC = React.memo(() => {
   const { user, signOut } = useAuth();
   const { push, navigateAndReset } = useNavigationActions();
   const { drafts } = useDraftContext();
+  const viewPrefs = useCatalogViewPreferences();
   const styles = createStyles(theme);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -522,23 +524,22 @@ const HomeScreen: React.FC = React.memo(() => {
   );
 
   const renderAnimalItem = useCallback(
-    ({ item, index }: { item: AnimalModelResponse; index: number }) => (
-      <View
-        style={[
-          styles.animalCardWrapper,
-          index % 2 === 0 ? styles.animalCardLeft : styles.animalCardRight
-        ]}
-      >
-        <CatalogAnimalCard
-          animal={item}
-          onPress={() => handleAnimalPress(item)}
-          theme={theme}
-          index={index}
-          viewMode="grid"
-        />
-      </View>
+    ({ item }: { item: AnimalModelResponse }) => (
+      <AnimalCardVariant
+        animal={item}
+        onPress={() => handleAnimalPress(item)}
+        layout={viewPrefs.layout}
+        density={viewPrefs.density}
+        showImages={viewPrefs.showImages}
+        highlightStatus={viewPrefs.highlightStatus}
+        showCategory={viewPrefs.showCategory}
+        showSpecies={viewPrefs.showSpecies}
+        showHabitat={viewPrefs.showHabitat}
+        showDescription={viewPrefs.showDescription}
+        reducedMotion={viewPrefs.reducedMotion}
+      />
     ),
-    [handleAnimalPress, theme, styles]
+    [handleAnimalPress, viewPrefs]
   );
 
   const keyExtractor = useCallback(
@@ -620,11 +621,14 @@ const HomeScreen: React.FC = React.memo(() => {
               data={animalsToShow}
               keyExtractor={keyExtractor}
               renderItem={renderAnimalItem}
-              numColumns={2}
+              numColumns={viewPrefs.layout === 'grid' ? 2 : 1}
+              key={`home-${viewPrefs.layout}`}
               scrollEnabled={false}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.animalsContainer}
-              columnWrapperStyle={styles.animalsRow}
+              columnWrapperStyle={
+                viewPrefs.layout === 'grid' ? styles.animalsRow : undefined
+              }
               initialNumToRender={6}
               maxToRenderPerBatch={4}
               windowSize={8}

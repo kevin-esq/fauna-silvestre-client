@@ -24,6 +24,7 @@ import { PermissionMessage } from '../../components/camera/permission-message.co
 import { Loading } from '../../components/camera/loading.component';
 import { CameraView } from '../../components/camera/camera-view.component';
 import CustomImagePickerScreen from './custom-image-picker-screen';
+import CustomModal from '../../components/ui/custom-modal.component';
 
 interface ScreenWrapperProps {
   children: React.ReactNode;
@@ -159,12 +160,18 @@ export const CameraGalleryScreen: React.FC = () => {
     isShowingFreeze
   );
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     activeThumbnail,
     handleCapture,
     handleThumbnailPress,
     handleConfirm
-  } = useCameraActions(cameraHook, freezeHook);
+  } = useCameraActions({
+    cameraHook,
+    freezeHook,
+    onError: message => setErrorMessage(message)
+  });
 
   const handleCaptureWithZoomReset = useCallback(async () => {
     await handleCapture();
@@ -418,6 +425,19 @@ export const CameraGalleryScreen: React.FC = () => {
           />
         </ScreenWrapper>
       </Modal>
+
+      <CustomModal
+        isVisible={!!errorMessage}
+        onClose={() => setErrorMessage(null)}
+        title="Error"
+        description={errorMessage || ''}
+        buttons={[
+          {
+            label: 'OK',
+            onPress: () => setErrorMessage(null)
+          }
+        ]}
+      />
     </ScreenWrapper>
   );
 

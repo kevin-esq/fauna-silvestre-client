@@ -14,6 +14,9 @@ import { CatalogProvider } from '../presentation/contexts/catalog.context';
 import { DraftProvider } from '../presentation/contexts/draft.context';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { APIStatusProvider } from '../presentation/contexts/api-status.context';
+import { PublicationViewPreferencesProvider } from '../presentation/contexts/publication-view-preferences.context';
+import { CatalogViewPreferencesProvider } from '../presentation/contexts/catalog-view-preferences.context';
+import { UserViewPreferencesProvider } from '../presentation/contexts/user-view-preferences.context';
 
 export default function App() {
   return (
@@ -23,17 +26,23 @@ export default function App() {
           <AuthProvider>
             <NavigationProvider>
               <ThemeProvider>
-                <LoadingProvider>
-                  <CatalogProvider>
-                    <DraftProvider>
-                      <PublicationProvider>
-                        <NotificationProvider>
-                          <AppNavigator />
-                        </NotificationProvider>
-                      </PublicationProvider>
-                    </DraftProvider>
-                  </CatalogProvider>
-                </LoadingProvider>
+                <PublicationViewPreferencesProvider>
+                  <CatalogViewPreferencesProvider>
+                    <UserViewPreferencesProvider>
+                      <LoadingProvider>
+                        <CatalogProvider>
+                          <DraftProvider>
+                            <PublicationProvider>
+                              <NotificationProvider>
+                                <AppNavigator />
+                              </NotificationProvider>
+                            </PublicationProvider>
+                          </DraftProvider>
+                        </CatalogProvider>
+                      </LoadingProvider>
+                    </UserViewPreferencesProvider>
+                  </CatalogViewPreferencesProvider>
+                </PublicationViewPreferencesProvider>
               </ThemeProvider>
             </NavigationProvider>
           </AuthProvider>

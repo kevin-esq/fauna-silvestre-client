@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -15,8 +15,11 @@ import { AnimalModelResponse } from '@/domain/models/animal.models';
 import { createStyles } from './image-editor-screen.styles';
 import { useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CatalogAnimalCard } from '../catalog/catalog-animals-screen';
+import { AnimalCardVariant } from '../../components/animal/animal-card-variants.component';
+import { ViewLayout } from '@/services/storage/catalog-view-preferences.service';
 import { useImageEditor } from '../../hooks/use-image-editor.hook';
+import { emitEvent, AppEvents } from '@/shared/utils/event-emitter';
+import CustomModal from '../../components/ui/custom-modal.component';
 
 const EditorHeader = React.memo<{
   animalName: string;
@@ -65,6 +68,71 @@ const EditorHeader = React.memo<{
   </View>
 ));
 
+const LAYOUT_OPTIONS: Array<{
+  value: ViewLayout;
+  label: string;
+  icon: string;
+}> = [
+  { value: 'card', label: 'Tarjeta', icon: 'card' },
+  { value: 'list', label: 'Lista', icon: 'list' },
+  { value: 'grid', label: 'Cuadrícula', icon: 'grid' },
+  { value: 'timeline', label: 'Línea', icon: 'time' }
+];
+
+const ImagePreviewSection = React.memo<{
+  animal: AnimalModelResponse;
+  theme: Theme;
+  styles: ReturnType<typeof createStyles>;
+}>(({ animal, theme, styles }) => {
+  const [selectedLayout, setSelectedLayout] = useState<ViewLayout>('card');
+
+  return (
+    <View>
+      <View style={styles.previewHeader}>
+        <Text style={styles.sectionTitle}>Vista Previa</Text>
+        <View style={styles.layoutSelector}>
+          {LAYOUT_OPTIONS.map(option => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.layoutButton,
+                selectedLayout === option.value && styles.layoutButtonActive
+              ]}
+              onPress={() => setSelectedLayout(option.value)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={option.icon as never}
+                size={18}
+                color={
+                  selectedLayout === option.value
+                    ? theme.colors.textOnPrimary
+                    : theme.colors.textSecondary
+                }
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+      <View style={styles.animalCardContainer}>
+        <AnimalCardVariant
+          animal={animal}
+          onPress={() => {}}
+          layout={selectedLayout}
+          density="comfortable"
+          showImages={true}
+          highlightStatus={false}
+          showCategory={true}
+          showSpecies={true}
+          showHabitat={true}
+          showDescription={true}
+          reducedMotion={false}
+        />
+      </View>
+    </View>
+  );
+});
+
 const ImageEditSection = React.memo<{
   animal: AnimalModelResponse;
   currentImage: string;
@@ -97,17 +165,11 @@ const ImageEditSection = React.memo<{
 
     return (
       <View style={styles.imageEditContainer}>
-        <Text style={styles.sectionTitle}>Imagen Actual</Text>
-
-        <View style={styles.animalCardContainer}>
-          <CatalogAnimalCard
-            animal={animalWithCurrentImage}
-            onPress={() => {}}
-            theme={theme}
-            index={0}
-            viewMode="grid"
-          />
-        </View>
+        <ImagePreviewSection
+          animal={animalWithCurrentImage}
+          theme={theme}
+          styles={styles}
+        />
 
         <View style={styles.imageControlsContainer}>
           {currentImage ? (
@@ -224,6 +286,25 @@ const ImageEditorScreen = () => {
 
   const styles = useMemo(() => createStyles(theme, insets), [theme, insets]);
 
+  const [modalState, setModalState] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({ visible: false, title: '', message: '' });
+
+  const showModal = (
+    title: string,
+    message: string,
+    onConfirm?: () => void
+  ) => {
+    setModalState({ visible: true, title, message, onConfirm });
+  };
+
+  const closeModal = () => {
+    setModalState({ visible: false, title: '', message: '' });
+  };
+
   const {
     currentImage,
     isSaving,
@@ -236,10 +317,20 @@ const ImageEditorScreen = () => {
   } = useImageEditor({
     animal: animal!,
     onImageUpdated: () => {
+      emitEvent(AppEvents.ANIMAL_UPDATED);
       navigation.goBack();
     },
     onError: error => {
-      console.error('Image Editor Error:', error);
+      showModal('Error', error);
+    },
+    onSuccess: message => {
+      showModal('Éxito', message);
+    },
+    onInfo: message => {
+      showModal('Info', message);
+    },
+    onConfirm: (message, callback) => {
+      showModal('Confirmación', message, callback);
     },
     onRefresh: () => {
       navigation.setParams({ refresh: true });
@@ -298,6 +389,31 @@ const ImageEditorScreen = () => {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      <CustomModal
+        isVisible={modalState.visible}
+        onClose={closeModal}
+        title={modalState.title}
+        description={modalState.message}
+        buttons={
+          modalState.onConfirm
+            ? [
+                {
+                  label: 'Cancelar',
+                  onPress: closeModal,
+                  variant: 'outline' as const
+                },
+                {
+                  label: 'Confirmar',
+                  onPress: () => {
+                    modalState.onConfirm?.();
+                    closeModal();
+                  }
+                }
+              ]
+            : [{ label: 'OK', onPress: closeModal }]
+        }
+      />
     </SafeAreaView>
   );
 };

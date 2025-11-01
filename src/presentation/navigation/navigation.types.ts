@@ -35,7 +35,7 @@ export type RootStackParamList = {
 
   HomeTabs: undefined;
   OfflineHome: undefined;
-  DownloadedFiles: undefined;
+  DownloadedFiles: { justDownloadedId?: string };
   Drafts: undefined;
   DraftEditor: { draftId: string };
   UserProfile: undefined;
@@ -60,6 +60,7 @@ export type RootStackParamList = {
   UserList: undefined;
   UserDetails: {
     user: UserData;
+    isBlocked?: boolean;
   };
   UserCreate: undefined;
   UserEdit: {

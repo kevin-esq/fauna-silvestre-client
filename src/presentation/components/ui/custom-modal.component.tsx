@@ -358,14 +358,18 @@ const CustomModal = React.memo<CustomModalProps>(
         return (
           <ScrollView
             style={styles.bodyScrollable}
-            contentContainerStyle={{ paddingBottom: spacing.large }}
+            contentContainerStyle={{
+              paddingBottom: spacing.large,
+              flexGrow: 0
+            }}
             showsVerticalScrollIndicator={true}
             bounces={true}
             persistentScrollbar={true}
-            removeClippedSubviews={true}
+            removeClippedSubviews={false}
             scrollEventThrottle={16}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
+            nestedScrollEnabled={true}
           >
             {renderBodyContent()}
           </ScrollView>

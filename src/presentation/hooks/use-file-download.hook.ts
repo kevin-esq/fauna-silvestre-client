@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { Alert } from 'react-native';
 import { LocalFileService } from '../../services/storage/local-file.service';
 import { catalogService } from '../../services/catalog/catalog.service';
 import { RootStackParamList } from '../navigation/navigation.types';
@@ -8,6 +7,7 @@ interface DownloadState {
   isDownloading: boolean;
   progress: number;
   error: string | null;
+  successMessage: string | null;
   currentStep: 'idle' | 'fetching' | 'converting' | 'saving' | 'complete';
 }
 
@@ -23,6 +23,7 @@ export const useFileDownload = (
     isDownloading: false,
     progress: 0,
     error: null,
+    successMessage: null,
     currentStep: 'idle'
   });
 
@@ -68,10 +69,10 @@ export const useFileDownload = (
 
   const handleDownloadSheet = useCallback(async () => {
     if (!catalogId || !animalName) {
-      Alert.alert(
-        'Error',
-        'No se puede descargar: información del animal incompleta'
-      );
+      setDownloadState(prev => ({
+        ...prev,
+        error: 'No se puede descargar: información del animal incompleta'
+      }));
       return;
     }
 
@@ -80,6 +81,7 @@ export const useFileDownload = (
         isDownloading: true,
         progress: 0,
         error: null,
+        successMessage: null,
         currentStep: 'fetching'
       });
 
@@ -110,35 +112,18 @@ export const useFileDownload = (
       );
       updateProgress(95, 'saving');
 
-      setDownloadState({
+      setDownloadState(prev => ({
+        ...prev,
         isDownloading: false,
-        progress: 100,
-        error: null,
-        currentStep: 'complete'
-      });
+        currentStep: 'complete',
+        successMessage: `La ficha de ${animalName} se ha guardado correctamente en tu biblioteca personal.\n\n📁 Puedes verla en "Fichas Descargadas"`
+      }));
 
-      Alert.alert(
-        '✅ Descarga completada',
-        `La ficha de ${animalName} se ha guardado correctamente en tu biblioteca personal.\n\n📁 Puedes verla en "Fichas Descargadas"`,
-        [
-          {
-            text: 'OK',
-            style: 'default'
-          },
-          {
-            text: 'Ver biblioteca',
-            onPress: () => {
-              if (navigate) {
-                navigate('DownloadedFiles');
-              } else {
-                console.log(
-                  '📱 Navigation not available, user can access via tab'
-                );
-              }
-            }
-          }
-        ]
-      );
+      if (navigate) {
+        navigate('DownloadedFiles', { justDownloadedId: downloadedFile.id });
+      } else {
+        console.log('📱 Navigation not available, user can access via tab');
+      }
 
       console.log(
         `✅ Successfully downloaded and saved: ${downloadedFile.fileName}`
@@ -158,18 +143,13 @@ export const useFileDownload = (
           ? error.message
           : 'Error desconocido al descargar';
 
-      setDownloadState({
+      setDownloadState(prev => ({
+        ...prev,
         isDownloading: false,
+        error: `No se pudo descargar la ficha de ${animalName}: ${errorMessage}`,
         progress: 0,
-        error: errorMessage,
         currentStep: 'idle'
-      });
-
-      Alert.alert(
-        '❌ Error de descarga',
-        `No se pudo descargar la ficha de ${animalName}: ${errorMessage}`,
-        [{ text: 'OK' }]
-      );
+      }));
 
       console.error('❌ Error downloading animal sheet:', error);
       throw error;
@@ -181,6 +161,7 @@ export const useFileDownload = (
       isDownloading: false,
       progress: 0,
       error: null,
+      successMessage: null,
       currentStep: 'idle'
     });
   }, []);

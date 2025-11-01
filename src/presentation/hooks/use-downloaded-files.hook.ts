@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import {
   LocalFileService,
   DownloadedFile
@@ -11,6 +11,8 @@ interface DownloadedFilesState {
   files: DownloadedFile[];
   isLoading: boolean;
   error: string | null;
+  successMessage: string | null;
+  infoMessage: string | null;
   storageInfo: {
     totalFiles: number;
     totalSize: number;
@@ -106,6 +108,8 @@ export const useDownloadedFiles = () => {
     files: [],
     isLoading: false,
     error: null,
+    successMessage: null,
+    infoMessage: null,
     storageInfo: {
       totalFiles: 0,
       totalSize: 0,
@@ -204,15 +208,9 @@ export const useDownloadedFiles = () => {
 
         setState(prev => ({
           ...prev,
-          error: `Error al descargar la ficha: ${errorMessage}`,
+          error: `No se pudo descargar la ficha de ${animalName}: ${errorMessage}`,
           isLoading: false
         }));
-
-        Alert.alert(
-          'Error de descarga',
-          `No se pudo descargar la ficha de ${animalName}: ${errorMessage}`,
-          [{ text: 'OK' }]
-        );
 
         return null;
       }
@@ -238,15 +236,9 @@ export const useDownloadedFiles = () => {
 
       setState(prev => ({
         ...prev,
-        error: `Error al abrir la ficha: ${errorMessage}`,
+        error: `No se pudo abrir la ficha ${file.animalName}: ${errorMessage}`,
         isLoading: false
       }));
-
-      Alert.alert(
-        'Error al abrir',
-        `No se pudo abrir la ficha ${file.animalName}: ${errorMessage}`,
-        [{ text: 'OK' }]
-      );
     } finally {
       setState(prev => ({ ...prev, isLoading: false }));
     }
@@ -275,11 +267,10 @@ export const useDownloadedFiles = () => {
 
         console.log(`✅ Successfully deleted file: ${fileToDelete.fileName}`);
 
-        Alert.alert(
-          '✅ Ficha eliminada',
-          `La ficha "${fileToDelete.animalName}" ha sido eliminada correctamente.`,
-          [{ text: 'OK' }]
-        );
+        setState(prev => ({
+          ...prev,
+          successMessage: `La ficha "${fileToDelete.animalName}" ha sido eliminada correctamente.`
+        }));
       } catch (error) {
         console.error('❌ Error deleting file:', error);
         const errorMessage =
@@ -287,15 +278,9 @@ export const useDownloadedFiles = () => {
 
         setState(prev => ({
           ...prev,
-          error: `Error al eliminar la ficha: ${errorMessage}`,
+          error: `No se pudo eliminar la ficha: ${errorMessage}`,
           isLoading: false
         }));
-
-        Alert.alert(
-          'Error al eliminar',
-          `No se pudo eliminar la ficha: ${errorMessage}`,
-          [{ text: 'OK' }]
-        );
       }
     },
     [state.files, loadDownloadedFiles]
@@ -304,7 +289,10 @@ export const useDownloadedFiles = () => {
   const deleteAllFiles = useCallback(async () => {
     try {
       if (state.files.length === 0) {
-        Alert.alert('Info', 'No hay fichas para eliminar.');
+        setState(prev => ({
+          ...prev,
+          infoMessage: 'No hay fichas para eliminar.'
+        }));
         return;
       }
 
@@ -337,17 +325,15 @@ export const useDownloadedFiles = () => {
       );
 
       if (errorCount === 0) {
-        Alert.alert(
-          '✅ Todas las fichas eliminadas',
-          `Se han eliminado correctamente ${successCount} fichas.`,
-          [{ text: 'OK' }]
-        );
+        setState(prev => ({
+          ...prev,
+          successMessage: `Se han eliminado correctamente ${successCount} fichas.`
+        }));
       } else {
-        Alert.alert(
-          '⚠️ Eliminación parcial',
-          `Se eliminaron ${successCount} fichas, pero ${errorCount} no se pudieron eliminar.`,
-          [{ text: 'OK' }]
-        );
+        setState(prev => ({
+          ...prev,
+          successMessage: `Se eliminaron ${successCount} fichas, pero ${errorCount} no se pudieron eliminar.`
+        }));
       }
     } catch (error) {
       console.error('❌ Error deleting all files:', error);
@@ -356,15 +342,9 @@ export const useDownloadedFiles = () => {
 
       setState(prev => ({
         ...prev,
-        error: `Error al eliminar todas las fichas: ${errorMessage}`,
+        error: `No se pudieron eliminar todas las fichas: ${errorMessage}`,
         isLoading: false
       }));
-
-      Alert.alert(
-        'Error al eliminar',
-        `No se pudieron eliminar todas las fichas: ${errorMessage}`,
-        [{ text: 'OK' }]
-      );
     }
   }, [state.files, loadDownloadedFiles]);
 
@@ -420,6 +400,8 @@ export const useDownloadedFiles = () => {
     files: state.files,
     isLoading: state.isLoading,
     error: state.error,
+    successMessage: state.successMessage,
+    infoMessage: state.infoMessage,
     storageInfo: state.storageInfo,
 
     downloadAnimalSheet,
