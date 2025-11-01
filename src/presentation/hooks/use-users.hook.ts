@@ -18,14 +18,17 @@ interface UseUsersState {
 }
 
 interface UseUsersReturn extends UseUsersState {
-  loadUsers: (page?: number, size?: number) => Promise<void>;
+  loadUsers: (page?: number, size?: number, active?: boolean) => Promise<void>;
   refreshUsers: () => Promise<void>;
   deactivateUser: (userId: number) => Promise<void>;
+  setActiveFilter: (active: boolean) => void;
+  activeFilter: boolean;
 }
 
 export const useUsers = (
   initialPage: number = 1,
-  initialSize: number = 4
+  initialSize: number = 4,
+  initialActive: boolean = true
 ): UseUsersReturn => {
   const [state, setState] = useState<UseUsersState>({
     users: [],
@@ -34,15 +37,22 @@ export const useUsers = (
     error: null,
     pagination: null
   });
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
+  const [activeFilter, setActiveFilter] = useState(initialActive);
 
   const loadUsers = useCallback(
-    async (page: number = initialPage, size: number = initialSize) => {
+    async (
+      page: number = initialPage,
+      size: number = initialSize,
+      active: boolean = activeFilter
+    ) => {
       try {
         setState(prev => ({ ...prev, isLoading: true, error: null }));
 
         const response: UsersResponse = await userService.getAllUsers({
           page,
-          size
+          size,
+          active
         });
 
         setState(prev => ({
@@ -52,16 +62,17 @@ export const useUsers = (
           isLoading: false,
           error: null
         }));
-      } catch (error) {
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Error al cargar usuarios';
         setState(prev => ({
           ...prev,
           isLoading: false,
-          error:
-            error instanceof Error ? error.message : 'Error al cargar usuarios'
+          error: errorMessage
         }));
       }
     },
-    [initialPage, initialSize]
+    [initialPage, initialSize, activeFilter]
   );
 
   const refreshUsers = useCallback(async () => {
@@ -70,7 +81,8 @@ export const useUsers = (
 
       const response: UsersResponse = await userService.getAllUsers({
         page: state.pagination?.page || initialPage,
-        size: state.pagination?.size || initialSize
+        size: state.pagination?.size || initialSize,
+        active: activeFilter
       });
 
       setState(prev => ({
@@ -80,15 +92,16 @@ export const useUsers = (
         isRefreshing: false,
         error: null
       }));
-    } catch (error) {
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Error al refrescar usuarios';
       setState(prev => ({
         ...prev,
         isRefreshing: false,
-        error:
-          error instanceof Error ? error.message : 'Error al refrescar usuarios'
+        error: errorMessage
       }));
     }
-  }, [state.pagination, initialPage, initialSize]);
+  }, [state.pagination, initialPage, initialSize, activeFilter]);
 
   const deactivateUser = useCallback(
     async (userId: number) => {
@@ -103,29 +116,34 @@ export const useUsers = (
         );
 
         setState(prev => ({ ...prev, isLoading: false, error: null }));
-      } catch (error) {
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Error al desactivar usuario';
         setState(prev => ({
           ...prev,
           isLoading: false,
-          error:
-            error instanceof Error
-              ? error.message
-              : 'Error al desactivar usuario'
+          error: errorMessage
         }));
-        throw error;
+        throw err;
       }
     },
     [loadUsers, state.pagination, initialPage, initialSize]
   );
 
   useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+    if (!hasAttemptedLoad) {
+      setHasAttemptedLoad(true);
+      void loadUsers();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     ...state,
     loadUsers,
     refreshUsers,
-    deactivateUser
+    deactivateUser,
+    setActiveFilter,
+    activeFilter
   };
 };

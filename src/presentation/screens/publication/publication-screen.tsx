@@ -16,18 +16,15 @@ import {
   NativeScrollEvent,
   Animated
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../contexts/theme.context';
 import { usePublications } from '../../contexts/publication.context';
-import PublicationCard, {
-  ITEM_HEIGHT
-} from '../../components/publication/publication-card.component';
+import { usePublicationViewPreferences } from '../../contexts/publication-view-preferences.context';
+import { ITEM_HEIGHT } from '../../components/publication/publication-card.component';
+import { PublicationCardVariant } from '../../components/publication/publication-card-variants.component';
+import { PublicationViewSelector } from '../../components/publication/publication-view-selector.component';
 import PublicationSkeleton from '../../components/ui/publication-skeleton.component';
 import SearchBar from '../../components/ui/search-bar.component';
-import PublicationFilters, {
-  FilterOptions
-} from '../../components/publication/publication-filters.component';
 
 import { PublicationModelResponse } from '../../../domain/models/publication.models';
 import { PublicationStatus } from '../../../services/publication/publication.service';
@@ -282,8 +279,7 @@ const useScrollOptimization = (
   selectedStatus: PublicationStatus,
   canLoadMore: boolean,
   isLoadingMore: boolean,
-  onLoadMore: () => void,
-  onHeaderVisibilityChange?: (visible: boolean) => void
+  loadMore: () => void
 ) => {
   const lastScrollY = useRef(0);
   const scrollDirectionRef = useRef<'up' | 'down'>('down');
@@ -301,9 +297,6 @@ const useScrollOptimization = (
         const newDirection = scrollDelta > 0 ? 'down' : 'up';
         if (newDirection !== scrollDirectionRef.current) {
           scrollDirectionRef.current = newDirection;
-          if (newDirection === 'down' && currentY > 50) {
-            onHeaderVisibilityChange?.(false);
-          }
         }
       }
 
@@ -320,7 +313,7 @@ const useScrollOptimization = (
       if (isNearEnd && canTriggerLoadMore) {
         loadMoreTriggeredRef.current = true;
         lastLoadMoreTimeRef.current = Date.now();
-        onLoadMore();
+        loadMore();
 
         setTimeout(() => {
           loadMoreTriggeredRef.current = false;
@@ -329,7 +322,7 @@ const useScrollOptimization = (
 
       lastScrollY.current = currentY;
     },
-    [canLoadMore, isLoadingMore, onLoadMore, onHeaderVisibilityChange]
+    [canLoadMore, isLoadingMore, loadMore]
   );
 
   useEffect(() => {
@@ -340,176 +333,10 @@ const useScrollOptimization = (
   return { handleScroll };
 };
 
-const StatusTabs: React.FC<{
-  selectedStatus: PublicationStatus;
-  onStatusChange: (status: PublicationStatus) => void;
-  statusStats: {
-    total: number;
-    loaded: number;
-    isLoading: boolean;
-    hasError: boolean;
-    hasTemporaryError: boolean;
-    isCircuitBreakerOpen: boolean;
-  };
-}> = React.memo(({ selectedStatus, onStatusChange, statusStats }) => {
-  const { user } = useAuth();
-  const { theme } = useTheme();
-  const styles = useMemo(() => createPublicationScreenStyles(theme), [theme]);
-
-  const animatedValues = useRef<
-    Map<
-      string,
-      {
-        scale: Animated.Value;
-        opacity: Animated.Value;
-      }
-    >
-  >(new Map());
-
-  const statusOptions = useMemo(
-    () => [
-      {
-        label: 'Pendientes',
-        value: PublicationStatus.PENDING,
-        color: theme.colors.warning,
-        gradient: [theme.colors.warning, theme.colors.secondaryDark]
-      },
-      {
-        label: 'Aceptadas',
-        value: PublicationStatus.ACCEPTED,
-        color: theme.colors.success,
-        gradient: [theme.colors.success, theme.colors.primaryDark]
-      },
-      {
-        label: 'Rechazadas',
-        value: PublicationStatus.REJECTED,
-        color: theme.colors.error,
-        gradient: [theme.colors.error, '#C62828']
-      }
-    ],
-    [theme]
-  );
-
-  const filteredOptions = useMemo(
-    () =>
-      user?.role === 'Admin'
-        ? statusOptions.filter(
-            option => option.value !== PublicationStatus.PENDING
-          )
-        : statusOptions,
-    [user?.role, statusOptions]
-  );
-
-  const getAnimatedValue = useCallback(
-    (key: string) => {
-      if (!animatedValues.current.has(key)) {
-        animatedValues.current.set(key, {
-          scale: new Animated.Value(selectedStatus === key ? 1 : 0.95),
-          opacity: new Animated.Value(selectedStatus === key ? 1 : 0.7)
-        });
-      }
-      return animatedValues.current.get(key)!;
-    },
-    [selectedStatus]
-  );
-
-  useEffect(() => {
-    filteredOptions.forEach(option => {
-      const anim = getAnimatedValue(option.value);
-      Animated.parallel([
-        Animated.spring(anim.scale, {
-          toValue: selectedStatus === option.value ? 1 : 0.95,
-          ...CONFIG.ANIMATION.SPRING_CONFIG,
-          useNativeDriver: true
-        }),
-        Animated.timing(anim.opacity, {
-          toValue: selectedStatus === option.value ? 1 : 0.7,
-          duration: CONFIG.ANIMATION.DURATION,
-          useNativeDriver: true
-        })
-      ]).start();
-    });
-  }, [selectedStatus, filteredOptions, getAnimatedValue]);
-
-  return (
-    <View style={styles.tabsContainer}>
-      {filteredOptions.map(option => {
-        const isSelected = selectedStatus === option.value;
-        const showStats =
-          isSelected && (statusStats.total > 0 || statusStats.hasError);
-        const animValue = getAnimatedValue(option.value);
-
-        return (
-          <Animated.View
-            key={option.value}
-            style={[
-              styles.tabWrapper,
-              {
-                transform: [{ scale: animValue.scale }],
-                opacity: animValue.opacity
-              }
-            ]}
-          >
-            <TouchableOpacity
-              onPress={() => onStatusChange(option.value)}
-              style={[
-                styles.tab,
-                isSelected && [
-                  styles.tabActive,
-                  { backgroundColor: option.color }
-                ],
-                statusStats.hasError && isSelected && styles.tabError
-              ]}
-              disabled={statusStats.isLoading}
-              activeOpacity={0.8}
-            >
-              <View style={styles.tabContent}>
-                <Text
-                  style={[styles.tabLabel, isSelected && styles.tabLabelActive]}
-                >
-                  {option.label}
-                </Text>
-                {showStats && (
-                  <View
-                    style={[
-                      styles.tabBadge,
-                      isSelected && styles.tabBadgeActive
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.tabBadgeText,
-                        isSelected && styles.tabBadgeTextActive
-                      ]}
-                    >
-                      {statusStats.hasError
-                        ? '!'
-                        : `${statusStats.loaded}/${statusStats.total}`}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              {statusStats.isLoading && isSelected && (
-                <View style={styles.tabLoadingIndicator}>
-                  <ActivityIndicator
-                    size="small"
-                    color={isSelected ? '#FFFFFF' : option.color}
-                  />
-                </View>
-              )}
-            </TouchableOpacity>
-          </Animated.View>
-        );
-      })}
-    </View>
-  );
-});
-
 const PublicationScreen: React.FC = () => {
   const { user } = useAuth();
   const themeContext = useTheme();
   const theme = themeContext.theme;
-  const insets = useSafeAreaInsets();
   const { navigate } = useNavigationActions();
   const styles = useMemo(() => createPublicationScreenStyles(theme), [theme]);
 
@@ -522,54 +349,81 @@ const PublicationScreen: React.FC = () => {
   const publicationData = usePublicationData(selectedStatus);
   const search = useSearch(publicationData.publications);
   const operations = usePublicationOperations(selectedStatus);
-
-  const [filteredAndSorted, setFilteredAndSorted] = useState<
-    PublicationModelResponse[]
-  >([]);
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
-    sortBy: 'date-desc',
-    filterByState: 'all'
-  });
+  const viewPrefs = usePublicationViewPreferences();
 
   const finalPublications = useMemo(() => {
+    let filtered = publicationData.publications;
+
     if (search.searchQuery.trim()) {
-      return search.filteredPublications;
+      filtered = search.filteredPublications;
     }
 
-    if (filteredAndSorted.length > 0) {
-      return filteredAndSorted;
+    if (viewPrefs.filterByAnimalState !== 'all') {
+      filtered = filtered.filter(
+        pub => pub.animalState === viewPrefs.filterByAnimalState
+      );
     }
 
-    return publicationData.filteredPublications;
+    const sorted = [...filtered];
+    switch (viewPrefs.sortBy) {
+      case 'date-desc':
+        sorted.sort(
+          (a, b) =>
+            new Date(b.createdDate || 0).getTime() -
+            new Date(a.createdDate || 0).getTime()
+        );
+        break;
+      case 'date-asc':
+        sorted.sort(
+          (a, b) =>
+            new Date(a.createdDate || 0).getTime() -
+            new Date(b.createdDate || 0).getTime()
+        );
+        break;
+      case 'accepted-desc':
+        sorted.sort(
+          (a, b) =>
+            new Date(b.acceptedDate || 0).getTime() -
+            new Date(a.acceptedDate || 0).getTime()
+        );
+        break;
+      case 'accepted-asc':
+        sorted.sort(
+          (a, b) =>
+            new Date(a.acceptedDate || 0).getTime() -
+            new Date(b.acceptedDate || 0).getTime()
+        );
+        break;
+      case 'species-asc':
+        sorted.sort((a, b) =>
+          (a.commonNoun || '').localeCompare(b.commonNoun || '')
+        );
+        break;
+      case 'species-desc':
+        sorted.sort((a, b) =>
+          (b.commonNoun || '').localeCompare(a.commonNoun || '')
+        );
+        break;
+      case 'location-asc':
+        sorted.sort((a, b) =>
+          (a.location || '').localeCompare(b.location || '')
+        );
+        break;
+      case 'location-desc':
+        sorted.sort((a, b) =>
+          (b.location || '').localeCompare(a.location || '')
+        );
+        break;
+    }
+
+    return sorted;
   }, [
     search.filteredPublications,
-    filteredAndSorted,
     search.searchQuery,
-    publicationData.filteredPublications
+    publicationData.publications,
+    viewPrefs.filterByAnimalState,
+    viewPrefs.sortBy
   ]);
-
-  const handleFilterChange = useCallback(
-    (filtered: PublicationModelResponse[], options: FilterOptions) => {
-      setFilteredAndSorted(filtered);
-      setFilterOptions(options);
-    },
-    []
-  );
-
-  const [isHeaderVisible, setIsHeaderVisible] = useState(false);
-  const headerTranslateY = useRef(new Animated.Value(-300)).current;
-
-  const handleHeaderVisibilityChange = useCallback(
-    (visible: boolean) => {
-      setIsHeaderVisible(visible);
-      Animated.timing(headerTranslateY, {
-        toValue: visible ? 0 : -300,
-        duration: 300,
-        useNativeDriver: true
-      }).start();
-    },
-    [headerTranslateY]
-  );
 
   const errorState = useErrorState(
     publicationData.publications,
@@ -581,8 +435,7 @@ const PublicationScreen: React.FC = () => {
     selectedStatus,
     publicationData.canLoadMore,
     publicationData.isLoadingMore,
-    operations.handleLoadMore,
-    handleHeaderVisibilityChange
+    operations.handleLoadMore
   );
 
   const listRef = useRef<FlatList<PublicationModelResponse>>(null);
@@ -632,11 +485,6 @@ const PublicationScreen: React.FC = () => {
       contentAnim.setValue(0);
       setSelectedStatus(status);
       search.clearSearch();
-      setFilteredAndSorted([]);
-      setFilterOptions({
-        sortBy: 'date-desc',
-        filterByState: 'all'
-      });
       listRef.current?.scrollToOffset({ offset: 0, animated: false });
 
       Animated.timing(contentAnim, {
@@ -649,20 +497,36 @@ const PublicationScreen: React.FC = () => {
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: PublicationModelResponse }) => (
-      <PublicationCard
-        publication={item}
-        status={selectedStatus}
-        viewMode="card"
-        onPress={() =>
-          navigate('PublicationDetails', {
-            publication: item,
-            status: selectedStatus
-          })
-        }
-      />
-    ),
-    [selectedStatus, navigate]
+    ({ item }: { item: PublicationModelResponse }) => {
+      const publication = {
+        ...item,
+        status: selectedStatus,
+        createdDate: item.createdDate
+      };
+
+      return (
+        <PublicationCardVariant
+          publication={publication}
+          onPress={() =>
+            navigate('PublicationDetails', {
+              publication: item,
+              status: selectedStatus
+            })
+          }
+          layout={viewPrefs.layout}
+          density={viewPrefs.density}
+          showImages={viewPrefs.showImages}
+          highlightStatus={viewPrefs.highlightStatus}
+          showCreatedDate={viewPrefs.showCreatedDate}
+          showAcceptedDate={viewPrefs.showAcceptedDate}
+          showAnimalState={viewPrefs.showAnimalState}
+          showLocation={viewPrefs.showLocation}
+          showRejectReason={viewPrefs.showRejectReason}
+          reducedMotion={viewPrefs.reducedMotion}
+        />
+      );
+    },
+    [selectedStatus, navigate, viewPrefs]
   );
 
   const renderFooter = useCallback(() => {
@@ -742,9 +606,7 @@ const PublicationScreen: React.FC = () => {
               Por favor espera mientras establecemos la conexión
             </Text>
           </View>
-        ) : search.searchQuery.trim() ||
-          filterOptions.filterByState !== 'all' ||
-          filterOptions.sortBy !== 'date-desc' ? (
+        ) : search.searchQuery.trim() ? (
           <View style={styles.emptyStateContent}>
             <View style={styles.emptyStateIconContainer}>
               <Text style={styles.emptyStateIcon}>🔍</Text>
@@ -783,7 +645,6 @@ const PublicationScreen: React.FC = () => {
       errorState.showDelayedError,
       publicationData.isLoading,
       search.searchQuery,
-      filterOptions,
       theme,
       styles
     ]
@@ -838,101 +699,109 @@ const PublicationScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Animated.View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + 12,
-            transform: [{ translateY: headerTranslateY }],
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1000
-          }
-        ]}
-        pointerEvents="box-none"
-      >
-        <TouchableOpacity
-          style={styles.collapseHeaderButton}
-          onPress={() => handleHeaderVisibilityChange(false)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.collapseHeaderIcon}>▲</Text>
-          <Text style={styles.collapseHeaderText}>Ocultar</Text>
-        </TouchableOpacity>
-
-        {errorState.showDelayedError && (
-          <Animated.View
-            style={[
-              styles.connectionBanner,
-              {
-                opacity: bannerAnim,
-                transform: [
-                  {
-                    translateY: bannerAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [-50, 0]
-                    })
-                  }
-                ]
-              }
-            ]}
-          >
-            <View style={styles.connectionBannerContent}>
-              <ActivityIndicator size="small" color="#fff" />
-              <Text style={styles.connectionBannerText}>
-                Reconectando con el servidor...
-              </Text>
+      <View style={styles.header}>
+        <View style={styles.compactHeader}>
+          <View style={styles.searchRow}>
+            <View style={{ flex: 1 }}>
+              <SearchBar
+                value={search.inputValue}
+                onChangeText={search.handleSearchChange}
+                onClear={search.clearSearch}
+                placeholder="Buscar..."
+                theme={theme}
+              />
             </View>
-          </Animated.View>
-        )}
+            <View style={{ marginLeft: 8 }}>
+              <PublicationViewSelector
+                minimal
+                currentStatus={
+                  selectedStatus.toLowerCase() as
+                    | 'pending'
+                    | 'accepted'
+                    | 'rejected'
+                }
+              />
+            </View>
+          </View>
 
-        <SearchBar
-          value={search.inputValue}
-          onChangeText={search.handleSearchChange}
-          onClear={search.clearSearch}
-          placeholder="Buscar publicaciones..."
-          theme={theme}
-        />
+          <View style={styles.statusPills}>
+            {user?.role !== 'Admin' && (
+              <TouchableOpacity
+                style={[
+                  styles.pill,
+                  selectedStatus === PublicationStatus.PENDING &&
+                    styles.pillActive
+                ]}
+                onPress={() => handleStatusChange(PublicationStatus.PENDING)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.pillText,
+                    selectedStatus === PublicationStatus.PENDING &&
+                      styles.pillTextActive
+                  ]}
+                >
+                  Pendientes
+                </Text>
+                {publicationData.totalCount > 0 &&
+                  selectedStatus === PublicationStatus.PENDING && (
+                    <View style={styles.pillBadge}>
+                      <Text style={styles.pillBadgeText}>
+                        {publicationData.totalCount}
+                      </Text>
+                    </View>
+                  )}
+              </TouchableOpacity>
+            )}
 
-        <PublicationFilters
-          publications={search.filteredPublications}
-          onFilterChange={handleFilterChange}
-          theme={themeContext}
-          isVisible={isHeaderVisible}
-        />
+            <TouchableOpacity
+              style={[
+                styles.pill,
+                selectedStatus === PublicationStatus.ACCEPTED &&
+                  styles.pillActive
+              ]}
+              onPress={() => handleStatusChange(PublicationStatus.ACCEPTED)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.pillText,
+                  selectedStatus === PublicationStatus.ACCEPTED &&
+                    styles.pillTextActive
+                ]}
+              >
+                Aceptadas
+              </Text>
+            </TouchableOpacity>
 
-        <StatusTabs
-          selectedStatus={selectedStatus}
-          onStatusChange={handleStatusChange}
-          statusStats={{
-            total: publicationData.totalCount,
-            loaded: publicationData.publications.length,
-            isLoading: publicationData.isLoading,
-            hasError: errorState.isPersistentError,
-            hasTemporaryError: errorState.showDelayedError,
-            isCircuitBreakerOpen: errorState.isCircuitBreakerOpen
-          }}
-        />
-      </Animated.View>
-
-      {!isHeaderVisible && (
-        <TouchableOpacity
-          style={[styles.floatingHeaderButton, { top: insets.top + 12 }]}
-          onPress={() => handleHeaderVisibilityChange(true)}
-          activeOpacity={0.9}
-        >
-          <Text style={styles.floatingHeaderButtonIcon}>▼</Text>
-          <Text style={styles.floatingHeaderButtonText}>Mostrar filtros</Text>
-        </TouchableOpacity>
-      )}
+            <TouchableOpacity
+              style={[
+                styles.pill,
+                selectedStatus === PublicationStatus.REJECTED &&
+                  styles.pillActive
+              ]}
+              onPress={() => handleStatusChange(PublicationStatus.REJECTED)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.pillText,
+                  selectedStatus === PublicationStatus.REJECTED &&
+                    styles.pillTextActive
+                ]}
+              >
+                Rechazadas
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
 
       <Animated.View
         style={[
           styles.contentContainer,
           {
-            paddingTop: insets.top + 12,
             opacity: contentAnim,
             transform: [
               {
@@ -945,24 +814,18 @@ const PublicationScreen: React.FC = () => {
           }
         ]}
       >
-        <View style={styles.titleContainer}>
-          <Text style={styles.titleMain} accessibilityRole="header">
-            Publicaciones
-          </Text>
-          <Text style={styles.titleStatus}>
-            {selectedStatus.toLowerCase() === 'pending'
-              ? 'Pendientes de revisión'
-              : selectedStatus.toLowerCase() === 'accepted'
-                ? 'Aceptadas'
-                : 'Rechazadas'}
-            {'  👉'}
-          </Text>
-        </View>
         <FlatList
           ref={listRef}
           data={finalPublications}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
+          key={viewPrefs.layout}
+          numColumns={viewPrefs.layout === 'grid' ? 2 : 1}
+          columnWrapperStyle={
+            viewPrefs.layout === 'grid'
+              ? { justifyContent: 'space-between', paddingHorizontal: 16 }
+              : undefined
+          }
           getItemLayout={getItemLayout}
           {...flatListOptimizations}
           contentContainerStyle={[

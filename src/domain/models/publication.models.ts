@@ -51,4 +51,8 @@ export interface PublicationsModel {
   img: string;
   location: string;
   status: PublicationStatus;
+  createdDate?: string;
+  acceptedDate?: string;
+  userName?: string;
+  rejectedReason?: string;
 }

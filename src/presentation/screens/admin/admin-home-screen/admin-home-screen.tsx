@@ -130,7 +130,7 @@ const AdminHeader = React.memo<{
                   <SkeletonLoader width={30} height={18} borderRadius={4} />
                 ) : (
                   <Text style={styles.statValue}>
-                    {publicationCounts.users}
+                    {publicationCounts.totalUsers}
                   </Text>
                 )}
               </View>

@@ -239,10 +239,87 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
       backgroundColor: colors.error
     },
 
+    unblockRequestButton: {
+      backgroundColor: colors.water
+    },
+
     actionButtonText: {
       fontSize: typography.fontSize.medium,
       fontWeight: typography.fontWeight.medium,
       color: colors.textOnPrimary,
+      lineHeight: typography.lineHeight.medium
+    },
+
+    supportMethodsContainer: {
+      marginTop: spacing.small,
+      gap: spacing.medium
+    },
+
+    confirmInput: {
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.medium,
+      padding: spacing.medium,
+      fontSize: typography.fontSize.large,
+      color: colors.text,
+      textAlign: 'center',
+      fontWeight: typography.fontWeight.bold,
+      letterSpacing: 2
+    },
+
+    supportMethodButton: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: borderRadius.large,
+      padding: spacing.large,
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 4,
+      minHeight: 120
+    },
+
+    supportMethodIconContainer: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: spacing.small
+    },
+
+    supportMethodLabel: {
+      fontSize: typography.fontSize.xlarge,
+      fontWeight: typography.fontWeight.bold,
+      color: '#FFFFFF',
+      marginTop: spacing.tiny,
+      marginBottom: 4,
+      lineHeight: typography.lineHeight.xlarge,
+      textAlign: 'center'
+    },
+
+    supportMethodValue: {
+      fontSize: typography.fontSize.medium,
+      color: '#FFFFFF',
+      opacity: 0.9,
+      lineHeight: typography.lineHeight.medium,
+      textAlign: 'center'
+    },
+
+    cancelButton: {
+      marginTop: spacing.large,
+      paddingVertical: spacing.medium,
+      paddingHorizontal: spacing.large,
+      borderRadius: borderRadius.medium,
+      backgroundColor: colors.surfaceVariant,
+      alignItems: 'center'
+    },
+
+    cancelButtonText: {
+      fontSize: typography.fontSize.medium,
+      fontWeight: typography.fontWeight.medium,
+      color: colors.text,
       lineHeight: typography.lineHeight.medium
     }
   });

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import { catalogService } from '../../services/catalog/catalog.service';
 import {
   AnimalModelResponse,
@@ -208,11 +207,10 @@ export const useAnimalForm = (
       const isFormValid = validateForm();
 
       if (!isFormValid) {
-        Alert.alert(
-          'Error de validación',
-          'Por favor, corrige los errores en el formulario'
-        );
-        return null;
+        return {
+          error: true,
+          message: 'Por favor, corrige los errores en el formulario'
+        };
       }
 
       const currentEditingAnimal: AnimalModelResponse | null = editingAnimal;
@@ -230,18 +228,7 @@ export const useAnimalForm = (
             ));
 
         if (!response.error) {
-          Alert.alert(
-            'Éxito',
-            currentEditingAnimal
-              ? 'Animal actualizado correctamente'
-              : 'Animal creado correctamente'
-          );
           resetForm();
-        } else {
-          Alert.alert(
-            'Error',
-            response.message || 'Error al guardar el animal'
-          );
         }
 
         return response;
@@ -250,8 +237,7 @@ export const useAnimalForm = (
           error instanceof Error
             ? error.message
             : 'Error inesperado al guardar el animal';
-        Alert.alert('Error', errorMessage);
-        return null;
+        return { error: true, message: errorMessage };
       } finally {
         setState(prev => ({ ...prev, isSaving: false }));
       }

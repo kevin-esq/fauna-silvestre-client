@@ -22,3 +22,8 @@ export interface UsersResponse {
   users: UserData[];
   pagination: UserPaginationResponse;
 }
+
+export interface UserCountsResponse {
+  users: number;
+  records: number;
+}

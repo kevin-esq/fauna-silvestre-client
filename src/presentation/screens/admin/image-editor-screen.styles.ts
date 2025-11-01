@@ -122,6 +122,30 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) =>
       borderBottomWidth: 2,
       borderBottomColor: theme.colors.primaryLight
     },
+    previewHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.md
+    },
+    layoutSelector: {
+      flexDirection: 'row',
+      gap: SPACING.xs,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: BORDER_RADIUS.md,
+      padding: SPACING.xs
+    },
+    layoutButton: {
+      width: 36,
+      height: 36,
+      borderRadius: BORDER_RADIUS.sm,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'transparent'
+    },
+    layoutButtonActive: {
+      backgroundColor: theme.colors.primary
+    },
 
     imageEditContainer: {
       backgroundColor: theme.colors.surface,

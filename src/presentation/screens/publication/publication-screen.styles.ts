@@ -1,31 +1,6 @@
 import { StyleSheet, Platform } from 'react-native';
 import { Theme } from '../../contexts/theme.context';
 
-const SPACING = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 20,
-  xl: 24,
-  xxl: 32
-};
-
-const BORDER_RADIUS = {
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16
-};
-
-const FONT_SIZE = {
-  xs: 11,
-  sm: 12,
-  md: 14,
-  lg: 16,
-  xl: 18,
-  xxl: 20
-};
-
 export const createPublicationScreenStyles = (theme: Theme) =>
   StyleSheet.create({
     container: {
@@ -35,8 +10,8 @@ export const createPublicationScreenStyles = (theme: Theme) =>
 
     header: {
       backgroundColor: theme.colors.surface,
-      paddingHorizontal: SPACING.md,
-      paddingBottom: SPACING.md,
+      paddingHorizontal: theme.spacing.medium,
+      paddingBottom: theme.spacing.medium,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
       ...Platform.select({
@@ -52,63 +27,125 @@ export const createPublicationScreenStyles = (theme: Theme) =>
       })
     },
 
+    compactHeader: {
+      paddingHorizontal: theme.spacing.small,
+      paddingTop: theme.spacing.tiny,
+      paddingBottom: theme.spacing.tiny
+    },
+
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: theme.spacing.tiny
+    },
+
+    statusPills: {
+      flexDirection: 'row',
+      gap: theme.spacing.tiny,
+      paddingTop: theme.spacing.tiny
+    },
+
+    pill: {
+      paddingHorizontal: theme.spacing.medium,
+      paddingVertical: theme.spacing.tiny + 2,
+      borderRadius: theme.borderRadius.large,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderWidth: 1,
+      borderColor: 'transparent',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.tiny
+    },
+
+    pillActive: {
+      backgroundColor: theme.colors.primary + '15',
+      borderColor: theme.colors.primary
+    },
+
+    pillText: {
+      fontSize: theme.typography.fontSize.small,
+      fontWeight: '500',
+      color: theme.colors.textSecondary
+    },
+
+    pillTextActive: {
+      color: theme.colors.primary,
+      fontWeight: '600'
+    },
+
+    pillBadge: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: 10,
+      paddingHorizontal: theme.spacing.tiny,
+      paddingVertical: 2,
+      minWidth: 20,
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+
+    pillBadgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: '#FFFFFF'
+    },
+
     collapseHeaderButton: {
       alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.surfaceVariant,
-      paddingVertical: SPACING.xs,
-      paddingHorizontal: SPACING.md,
-      borderRadius: BORDER_RADIUS.lg,
-      marginBottom: SPACING.sm,
-      gap: SPACING.xs,
+      paddingVertical: theme.spacing.tiny,
+      paddingHorizontal: theme.spacing.medium,
+      borderRadius: theme.borderRadius.large,
+      marginBottom: theme.spacing.small,
+      gap: theme.spacing.tiny,
       borderWidth: 1,
       borderColor: theme.colors.border
     },
 
     collapseHeaderIcon: {
-      fontSize: FONT_SIZE.xs,
+      fontSize: 11,
       color: theme.colors.textSecondary,
       fontWeight: '700'
     },
 
     collapseHeaderText: {
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       color: theme.colors.textSecondary,
       fontWeight: '500'
     },
 
     connectionBanner: {
       backgroundColor: theme.colors.warning,
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.md,
-      marginBottom: SPACING.sm,
-      borderRadius: BORDER_RADIUS.md
+      paddingVertical: theme.spacing.small,
+      paddingHorizontal: theme.spacing.medium,
+      marginBottom: theme.spacing.small,
+      borderRadius: theme.borderRadius.medium
     },
 
     connectionBannerContent: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: SPACING.sm
+      gap: theme.spacing.small
     },
 
     connectionBannerText: {
       color: '#FFFFFF',
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       fontWeight: '600'
     },
 
     searchContainer: {
-      marginBottom: SPACING.md
+      marginBottom: theme.spacing.medium
     },
 
     searchInputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: BORDER_RADIUS.md,
-      paddingHorizontal: SPACING.md,
+      borderRadius: theme.borderRadius.medium,
+      paddingHorizontal: theme.spacing.medium,
       borderWidth: 1,
       borderColor: theme.colors.border
     },
@@ -130,20 +167,20 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     searchIcon: {
-      marginRight: SPACING.sm,
+      marginRight: theme.spacing.small,
       color: theme.colors.textSecondary
     },
 
     searchInput: {
       flex: 1,
-      paddingVertical: SPACING.md,
-      fontSize: FONT_SIZE.md,
+      paddingVertical: theme.spacing.medium,
+      fontSize: theme.typography.fontSize.medium,
       color: theme.colors.text
     },
 
     clearButton: {
-      padding: SPACING.xs,
-      marginLeft: SPACING.xs
+      padding: theme.spacing.tiny,
+      marginLeft: theme.spacing.tiny
     },
 
     clearIcon: {
@@ -154,12 +191,12 @@ export const createPublicationScreenStyles = (theme: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginTop: SPACING.sm,
-      paddingHorizontal: SPACING.xs
+      marginTop: theme.spacing.small,
+      paddingHorizontal: theme.spacing.tiny
     },
 
     searchResultsText: {
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       color: theme.colors.textSecondary
     },
 
@@ -169,20 +206,20 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     clearSearchButton: {
-      paddingVertical: SPACING.xs,
-      paddingHorizontal: SPACING.md,
-      borderRadius: BORDER_RADIUS.sm,
+      paddingVertical: theme.spacing.tiny,
+      paddingHorizontal: theme.spacing.medium,
+      borderRadius: theme.borderRadius.small,
       backgroundColor: theme.colors.surfaceVariant
     },
 
     clearSearchText: {
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       color: theme.colors.primary,
       fontWeight: '500'
     },
 
     filterContainer: {
-      marginBottom: SPACING.md,
+      marginBottom: theme.spacing.medium,
       overflow: 'hidden'
     },
 
@@ -190,40 +227,40 @@ export const createPublicationScreenStyles = (theme: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.xs
+      paddingVertical: theme.spacing.small,
+      paddingHorizontal: theme.spacing.tiny
     },
 
     filterHeaderLeft: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: SPACING.sm
+      gap: theme.spacing.small
     },
 
     filterToggleButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: SPACING.xs,
-      paddingVertical: SPACING.xs,
-      paddingHorizontal: SPACING.sm,
-      borderRadius: BORDER_RADIUS.sm,
+      gap: theme.spacing.tiny,
+      paddingVertical: theme.spacing.tiny,
+      paddingHorizontal: theme.spacing.small,
+      borderRadius: theme.borderRadius.small,
       backgroundColor: theme.colors.surfaceVariant
     },
 
     filterToggleText: {
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       color: theme.colors.text,
       fontWeight: '500'
     },
 
     filterIcon: {
-      fontSize: FONT_SIZE.md
+      fontSize: theme.typography.fontSize.medium
     },
 
     activeFiltersCount: {
       backgroundColor: theme.colors.primary,
       borderRadius: 10,
-      paddingHorizontal: SPACING.xs,
+      paddingHorizontal: theme.spacing.tiny,
       paddingVertical: 2,
       minWidth: 20,
       alignItems: 'center',
@@ -231,32 +268,32 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     activeFiltersCountText: {
-      fontSize: FONT_SIZE.xs,
+      fontSize: 11,
       color: '#FFFFFF',
       fontWeight: '700'
     },
 
     clearFiltersButton: {
-      paddingVertical: SPACING.xs,
-      paddingHorizontal: SPACING.sm,
-      borderRadius: BORDER_RADIUS.sm
+      paddingVertical: theme.spacing.tiny,
+      paddingHorizontal: theme.spacing.small,
+      borderRadius: theme.borderRadius.small
     },
 
     clearFiltersText: {
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       color: theme.colors.error,
       fontWeight: '500'
     },
 
     filterContent: {
       backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: BORDER_RADIUS.md,
-      padding: SPACING.md,
-      marginTop: SPACING.sm
+      borderRadius: theme.borderRadius.medium,
+      padding: theme.spacing.medium,
+      marginTop: theme.spacing.small
     },
 
     filterSection: {
-      marginBottom: SPACING.md
+      marginBottom: theme.spacing.medium
     },
 
     filterSectionLast: {
@@ -264,24 +301,24 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     filterSectionTitle: {
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       fontWeight: '600',
       color: theme.colors.text,
-      marginBottom: SPACING.sm,
+      marginBottom: theme.spacing.small,
       textTransform: 'uppercase',
       letterSpacing: 0.5
     },
 
     filterOptions: {
-      gap: SPACING.sm
+      gap: theme.spacing.small
     },
 
     filterOption: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.md,
-      borderRadius: BORDER_RADIUS.md,
+      paddingVertical: theme.spacing.small,
+      paddingHorizontal: theme.spacing.medium,
+      borderRadius: theme.borderRadius.medium,
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.border
@@ -305,7 +342,7 @@ export const createPublicationScreenStyles = (theme: Theme) =>
 
     filterOptionText: {
       flex: 1,
-      fontSize: FONT_SIZE.md,
+      fontSize: theme.typography.fontSize.medium,
       color: theme.colors.text,
       fontWeight: '500'
     },
@@ -316,8 +353,8 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     filterOptionIcon: {
-      fontSize: FONT_SIZE.lg,
-      marginRight: SPACING.sm
+      fontSize: theme.typography.fontSize.large,
+      marginRight: theme.spacing.small
     },
 
     filterCheckbox: {
@@ -328,7 +365,7 @@ export const createPublicationScreenStyles = (theme: Theme) =>
       borderColor: theme.colors.border,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: SPACING.sm
+      marginRight: theme.spacing.small
     },
 
     filterCheckboxSelected: {
@@ -338,22 +375,22 @@ export const createPublicationScreenStyles = (theme: Theme) =>
 
     filterCheckmark: {
       color: '#FFFFFF',
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       fontWeight: '700'
     },
 
     sortOptions: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: SPACING.sm
+      gap: theme.spacing.small
     },
 
     sortOption: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.md,
-      borderRadius: BORDER_RADIUS.lg,
+      paddingVertical: theme.spacing.small,
+      paddingHorizontal: theme.spacing.medium,
+      borderRadius: theme.borderRadius.large,
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.border
@@ -365,7 +402,7 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     sortOptionText: {
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       color: theme.colors.text,
       fontWeight: '500'
     },
@@ -377,14 +414,14 @@ export const createPublicationScreenStyles = (theme: Theme) =>
 
     floatingHeaderButton: {
       position: 'absolute',
-      right: SPACING.md,
+      right: theme.spacing.medium,
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.colors.primary,
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.md,
-      borderRadius: BORDER_RADIUS.lg,
-      gap: SPACING.xs,
+      paddingVertical: theme.spacing.small,
+      paddingHorizontal: theme.spacing.medium,
+      borderRadius: theme.borderRadius.large,
+      gap: theme.spacing.tiny,
       zIndex: 999,
       ...Platform.select({
         ios: {
@@ -401,19 +438,19 @@ export const createPublicationScreenStyles = (theme: Theme) =>
 
     floatingHeaderButtonIcon: {
       color: '#FFFFFF',
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       fontWeight: '700'
     },
 
     floatingHeaderButtonText: {
       color: '#FFFFFF',
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       fontWeight: '600'
     },
 
     tabsContainer: {
       flexDirection: 'row',
-      gap: SPACING.sm
+      gap: theme.spacing.small
     },
 
     tabWrapper: {
@@ -421,9 +458,9 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     tab: {
-      paddingVertical: SPACING.md,
-      paddingHorizontal: SPACING.sm,
-      borderRadius: BORDER_RADIUS.md,
+      paddingVertical: theme.spacing.medium,
+      paddingHorizontal: theme.spacing.small,
+      borderRadius: theme.borderRadius.medium,
       backgroundColor: theme.colors.surfaceVariant,
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -454,11 +491,11 @@ export const createPublicationScreenStyles = (theme: Theme) =>
 
     tabContent: {
       alignItems: 'center',
-      gap: SPACING.xs
+      gap: theme.spacing.tiny
     },
 
     tabLabel: {
-      fontSize: FONT_SIZE.md,
+      fontSize: theme.typography.fontSize.medium,
       fontWeight: '600',
       color: theme.colors.textSecondary,
       textAlign: 'center'
@@ -471,9 +508,9 @@ export const createPublicationScreenStyles = (theme: Theme) =>
 
     tabBadge: {
       backgroundColor: theme.colors.surface,
-      paddingHorizontal: SPACING.sm,
-      paddingVertical: SPACING.xs,
-      borderRadius: BORDER_RADIUS.lg,
+      paddingHorizontal: theme.spacing.small,
+      paddingVertical: theme.spacing.tiny,
+      borderRadius: theme.borderRadius.large,
       minWidth: 40
     },
 
@@ -482,7 +519,7 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     tabBadgeText: {
-      fontSize: FONT_SIZE.xs,
+      fontSize: 11,
       fontWeight: '600',
       color: theme.colors.text,
       textAlign: 'center'
@@ -494,8 +531,8 @@ export const createPublicationScreenStyles = (theme: Theme) =>
 
     tabLoadingIndicator: {
       position: 'absolute',
-      top: SPACING.xs,
-      right: SPACING.xs
+      top: theme.spacing.tiny,
+      right: theme.spacing.tiny
     },
 
     contentContainer: {
@@ -503,8 +540,8 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     listContent: {
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.md
+      paddingVertical: theme.spacing.small,
+      paddingHorizontal: theme.spacing.medium
     },
 
     listContentEmpty: {
@@ -515,8 +552,8 @@ export const createPublicationScreenStyles = (theme: Theme) =>
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: SPACING.xl,
-      paddingVertical: SPACING.xxl
+      paddingHorizontal: theme.spacing.xlarge,
+      paddingVertical: theme.spacing.xxlarge
     },
 
     emptyStateContent: {
@@ -531,7 +568,7 @@ export const createPublicationScreenStyles = (theme: Theme) =>
       backgroundColor: theme.colors.surfaceVariant,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: SPACING.lg
+      marginBottom: theme.spacing.large
     },
 
     emptyStateIcon: {
@@ -539,59 +576,59 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     emptyStateTitle: {
-      fontSize: FONT_SIZE.xl,
+      fontSize: 18,
       fontWeight: '700',
       color: theme.colors.text,
       textAlign: 'center',
-      marginBottom: SPACING.sm
+      marginBottom: theme.spacing.small
     },
 
     emptyStateDescription: {
-      fontSize: FONT_SIZE.md,
+      fontSize: theme.typography.fontSize.medium,
       color: theme.colors.textSecondary,
       textAlign: 'center',
       lineHeight: 20
     },
 
     skeletonContainer: {
-      paddingHorizontal: SPACING.md,
-      paddingVertical: SPACING.sm
+      paddingHorizontal: theme.spacing.medium,
+      paddingVertical: theme.spacing.small
     },
 
     skeletonItem: {
-      marginBottom: SPACING.md
+      marginBottom: theme.spacing.medium
     },
 
     listFooter: {
-      paddingVertical: SPACING.lg,
-      paddingHorizontal: SPACING.md
+      paddingVertical: theme.spacing.large,
+      paddingHorizontal: theme.spacing.medium
     },
 
     footerLoadingContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: SPACING.md,
-      paddingVertical: SPACING.md
+      gap: theme.spacing.medium,
+      paddingVertical: theme.spacing.medium
     },
 
     footerLoadingText: {
-      fontSize: FONT_SIZE.md,
+      fontSize: theme.typography.fontSize.medium,
       color: theme.colors.textSecondary
     },
 
     footerErrorContainer: {
       alignItems: 'center',
-      paddingVertical: SPACING.md,
-      paddingHorizontal: SPACING.lg,
+      paddingVertical: theme.spacing.medium,
+      paddingHorizontal: theme.spacing.large,
       backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: BORDER_RADIUS.md,
+      borderRadius: theme.borderRadius.medium,
       borderWidth: 1,
       borderColor: theme.colors.error
     },
 
     errorIconContainer: {
-      marginBottom: SPACING.sm
+      marginBottom: theme.spacing.small
     },
 
     errorIcon: {
@@ -599,18 +636,18 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     footerErrorText: {
-      fontSize: FONT_SIZE.md,
+      fontSize: theme.typography.fontSize.medium,
       color: theme.colors.error,
       textAlign: 'center',
-      marginBottom: SPACING.md,
+      marginBottom: theme.spacing.medium,
       lineHeight: 20
     },
 
     retryButton: {
       backgroundColor: theme.colors.primary,
-      paddingVertical: SPACING.md,
-      paddingHorizontal: SPACING.xl,
-      borderRadius: BORDER_RADIUS.md,
+      paddingVertical: theme.spacing.medium,
+      paddingHorizontal: theme.spacing.xlarge,
+      borderRadius: theme.borderRadius.medium,
       minWidth: 120,
       ...Platform.select({
         ios: {
@@ -627,7 +664,7 @@ export const createPublicationScreenStyles = (theme: Theme) =>
 
     retryButtonText: {
       color: theme.colors.textOnPrimary,
-      fontSize: FONT_SIZE.md,
+      fontSize: theme.typography.fontSize.medium,
       fontWeight: '600',
       textAlign: 'center'
     },
@@ -636,8 +673,8 @@ export const createPublicationScreenStyles = (theme: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: SPACING.md,
-      paddingVertical: SPACING.lg
+      gap: theme.spacing.medium,
+      paddingVertical: theme.spacing.large
     },
 
     endDivider: {
@@ -647,34 +684,34 @@ export const createPublicationScreenStyles = (theme: Theme) =>
     },
 
     footerEndText: {
-      fontSize: FONT_SIZE.sm,
+      fontSize: theme.typography.fontSize.small,
       color: theme.colors.textSecondary,
       fontWeight: '500'
     },
     titleContainer: {
-      marginBottom: SPACING.md,
-      marginStart: SPACING.xxl,
-      paddingEnd: SPACING.lg
+      marginBottom: theme.spacing.medium,
+      marginStart: theme.spacing.xxlarge,
+      paddingEnd: theme.spacing.large
     },
 
     title: {
-      fontSize: FONT_SIZE.xxl,
+      fontSize: theme.typography.fontSize.xlarge,
       fontWeight: '700',
       color: theme.colors.primary,
-      lineHeight: FONT_SIZE.xxl * 1.3,
+      lineHeight: theme.typography.fontSize.xlarge * 1.3,
       letterSpacing: -0.5
     },
 
     titleMain: {
-      fontSize: FONT_SIZE.xxl,
+      fontSize: theme.typography.fontSize.xlarge,
       fontWeight: '700',
       color: theme.colors.primary
     },
 
     titleStatus: {
-      fontSize: FONT_SIZE.lg,
+      fontSize: theme.typography.fontSize.large,
       fontWeight: '600',
       color: theme.colors.textSecondary,
-      marginTop: SPACING.xs
+      marginTop: theme.spacing.tiny
     }
   });

@@ -1,13 +1,17 @@
 import User from '@/domain/entities/user.entity';
 import { UserRepository } from '../../data/repositories/user.repository';
 import { IUserRepository } from '../../domain/interfaces/user.repository.interface';
-import { UsersResponse } from '../../domain/models/user.models';
+import {
+  UsersResponse,
+  UserCountsResponse
+} from '../../domain/models/user.models';
 import { ApiService } from '../http/api.service';
 import { ConsoleLogger } from '../logging/console-logger';
 
 export interface UserPaginationOptions {
   page: number;
   size: number;
+  active?: boolean;
 }
 
 export class UserService {
@@ -36,18 +40,21 @@ export class UserService {
 
   async getAllUsers(options: UserPaginationOptions): Promise<UsersResponse> {
     try {
-      this.logger.debug('Obteniendo usuarios', options);
+      const active = options.active ?? true;
+      this.logger.debug('Obteniendo usuarios', { ...options, active });
       const response = await this.repository.getAllUsers(
         options.page,
-        options.size
+        options.size,
+        active
       );
       this.logger.info('Usuarios obtenidos exitosamente', {
         total: response.pagination.total,
-        page: response.pagination.page
+        page: response.pagination.page,
+        active
       });
       return response;
     } catch (error) {
-      this.logger.error('Error al obtener usuarios', error as Error);
+      this.logger.debug('Error al obtener usuarios', error as Error);
       throw new Error('No se pudieron obtener los usuarios');
     }
   }
@@ -60,6 +67,18 @@ export class UserService {
     } catch (error) {
       this.logger.error('Error al desactivar usuario', error as Error);
       throw new Error('No se pudo desactivar el usuario');
+    }
+  }
+
+  async getCounts(): Promise<UserCountsResponse> {
+    try {
+      this.logger.debug('Obteniendo conteos de usuarios y publicaciones');
+      const response = await this.repository.getCounts();
+      this.logger.info('Conteos obtenidos exitosamente', response);
+      return response;
+    } catch (error) {
+      this.logger.error('Error al obtener conteos', error as Error);
+      throw new Error('No se pudieron obtener los conteos');
     }
   }
 }

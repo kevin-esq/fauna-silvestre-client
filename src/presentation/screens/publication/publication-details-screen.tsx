@@ -7,11 +7,22 @@ import {
   Dimensions,
   Pressable,
   ActivityIndicator,
-  TextInput
+  TextInput,
+  Linking,
+  useWindowDimensions,
+  RefreshControl
 } from 'react-native';
+import Svg, {
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Stop,
+  Rect
+} from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { Theme, themeVariables, useTheme } from '../../contexts/theme.context';
 import LocationMap from '../../components/ui/location-map.component';
 import { createStyles } from './publication-details-screen.styles';
@@ -23,6 +34,7 @@ import type {
 import { useRoute } from '@react-navigation/native';
 import PublicationImage from '@/presentation/components/publication/publication-image.component';
 import CustomModal from '@/presentation/components/ui/custom-modal.component';
+import Share from 'react-native-share';
 import Modal from 'react-native-modal';
 import {
   useBackHandler,
@@ -32,6 +44,12 @@ import ImageZoom from 'react-native-image-pan-zoom';
 import { Image } from 'moti';
 import { usePublications } from '../../contexts/publication.context';
 import { PublicationStatus as PubStatus } from '@/services/publication/publication.service';
+import {
+  SUPPORT_CONTACT_METHODS,
+  ContactMethod,
+  createDeletePublicationMessage
+} from '@/shared/constants/support.constants';
+import RNFS from 'react-native-fs';
 
 const { width, height } = Dimensions.get('window');
 
@@ -76,6 +94,8 @@ interface InfoSectionProps {
   onEdit?: () => void;
   theme: Theme;
   styles: ReturnType<typeof createStyles>;
+  iconColor?: string;
+  iconLibrary?: 'ionicons' | 'material' | 'fontawesome';
 }
 
 const formatDate = (dateString?: string): string => {
@@ -91,29 +111,53 @@ const formatDate = (dateString?: string): string => {
 };
 
 const InfoSection = React.memo<InfoSectionProps>(
-  ({ title, icon, content, showEdit = false, onEdit, theme, styles }) => (
-    <View style={styles.infoSection}>
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleContainer}>
-          <View
-            style={[
-              styles.iconContainer,
-              { backgroundColor: theme.colors.primary + '20' }
-            ]}
-          >
-            <Ionicons name={icon} size={20} color={theme.colors.primary} />
+  ({
+    title,
+    icon,
+    content,
+    showEdit = false,
+    onEdit,
+    theme,
+    styles,
+    iconColor,
+    iconLibrary = 'ionicons'
+  }) => {
+    const IconComponent =
+      iconLibrary === 'material'
+        ? MaterialCommunityIcons
+        : iconLibrary === 'fontawesome'
+          ? FontAwesome5
+          : Ionicons;
+
+    const color = iconColor || theme.colors.primary;
+
+    return (
+      <View style={styles.infoSection}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleContainer}>
+            <View
+              style={[styles.iconContainer, { backgroundColor: color + '15' }]}
+            >
+              <IconComponent name={icon} size={20} color={color} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>{title}</Text>
+            </View>
           </View>
-          <Text style={styles.sectionTitle}>{title}</Text>
+          {showEdit && onEdit && (
+            <TouchableOpacity onPress={onEdit} style={styles.editButton}>
+              <MaterialIcons
+                name="edit"
+                size={20}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+          )}
         </View>
-        {showEdit && onEdit && (
-          <TouchableOpacity onPress={onEdit} style={styles.editButton}>
-            <MaterialIcons name="edit" size={20} color={theme.colors.primary} />
-          </TouchableOpacity>
-        )}
+        <Text style={styles.sectionContent}>{content}</Text>
       </View>
-      <Text style={styles.sectionContent}>{content}</Text>
-    </View>
-  )
+    );
+  }
 );
 
 interface ReasonWithTagProps {
@@ -122,12 +166,10 @@ interface ReasonWithTagProps {
 }
 
 const ReasonWithTag = React.memo<ReasonWithTagProps>(({ reason, theme }) => {
-  // Detectar qué tipo de etiqueta tiene
   const hasReasonTag = reason.startsWith(REASON_TAG);
   const hasStatusTag = reason.startsWith(STATUS_CHANGE_TAG);
 
   if (!hasReasonTag && !hasStatusTag) {
-    // Sin etiqueta, mostrar normal
     return (
       <Text
         style={{
@@ -143,7 +185,6 @@ const ReasonWithTag = React.memo<ReasonWithTagProps>(({ reason, theme }) => {
     );
   }
 
-  // Separar etiqueta y motivo
   const tag = hasReasonTag ? REASON_TAG : STATUS_CHANGE_TAG;
   const cleanReason = reason.substring(tag.length).trim();
   const tagLabel = hasReasonTag ? 'Motivo modificado' : 'Estado modificado';
@@ -205,9 +246,10 @@ export default function PublicationDetailsScreen() {
   };
 
   const themeContext = useTheme();
-  const { theme } = themeContext;
+  const { theme, spacing } = themeContext;
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
 
   const { acceptPublication, rejectPublication } = usePublications();
 
@@ -222,6 +264,13 @@ export default function PublicationDetailsScreen() {
   const isAdmin = user?.role === 'Admin';
 
   const [isImageExpanded, setIsImageExpanded] = useState(false);
+  const [isDownloadingImage, setIsDownloadingImage] = useState(false);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+  const [imageModalMessage, setImageModalMessage] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  }>({ visible: false, title: '', message: '' });
   const [editModalVisible, setEditModalVisible] = useState<EditModalType>(null);
   const [actionModalVisible, setActionModalVisible] =
     useState<ActionModalType>(null);
@@ -230,15 +279,31 @@ export default function PublicationDetailsScreen() {
   const [statusChangeReason, setStatusChangeReason] = useState('');
   const [selectedStatus, setSelectedStatus] =
     useState<PublicationStatus>(status);
-  const [selectedAnimalState, setSelectedAnimalState] = useState<
-    'ALIVE' | 'DEAD' | string
-  >(publication.animalState || 'ALIVE');
+  // COMENTADO - No implementado
+  // const [selectedAnimalState, setSelectedAnimalState] = useState<
+  //   'ALIVE' | 'DEAD' | string
+  // >(publication.animalState || 'ALIVE');
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [operationError, setOperationError] = useState<string | null>(null);
   const [editedReason, setEditedReason] = useState(
     publication.rejectedReason || ''
   );
+  const [showDeleteSupportModal, setShowDeleteSupportModal] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const inputWidth = useMemo(() => {
+    return screenWidth - spacing.medium * 5;
+  }, [screenWidth, spacing.medium]);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  }, []);
 
   const hasAnyModalOpen = useMemo(
     () =>
@@ -256,9 +321,9 @@ export default function PublicationDetailsScreen() {
     setRejectionReason('');
     setStatusChangeReason('');
     setOperationError(null);
+    setShowDeleteSupportModal(false);
   }, []);
 
-  // Helper para remover la etiqueta del motivo
   const removeReasonTag = useCallback((reason: string): string => {
     if (reason.startsWith(REASON_TAG)) {
       return reason.substring(REASON_TAG.length).trim();
@@ -269,7 +334,6 @@ export default function PublicationDetailsScreen() {
     return reason;
   }, []);
 
-  // Helper para agregar la etiqueta al motivo
   const addReasonTag = useCallback((reason: string): string => {
     const cleanReason = reason.trim();
     if (!cleanReason) return '';
@@ -277,14 +341,115 @@ export default function PublicationDetailsScreen() {
     return `${REASON_TAG} ${cleanReason}`;
   }, []);
 
-  const toggleImageExpand = useCallback(
-    () => setIsImageExpanded(prev => !prev),
-    []
-  );
+  const toggleImageExpand = useCallback(() => {
+    setIsImageExpanded(prev => !prev);
+  }, []);
+
+  const handleShareImage = useCallback(async () => {
+    if (!publication.img) {
+      setImageModalMessage({
+        visible: true,
+        title: 'Error',
+        message: 'No hay imagen disponible para compartir'
+      });
+      return;
+    }
+
+    setIsDownloadingImage(true);
+    let filePath;
+    try {
+      const fileName = `image_${Date.now()}.jpg`;
+      filePath = `${RNFS.CachesDirectoryPath}/${fileName}`;
+
+      const downloadResult = await RNFS.downloadFile({
+        fromUrl: publication.img,
+        toFile: filePath
+      }).promise;
+
+      if (downloadResult.statusCode !== 200) {
+        throw new Error(
+          `Error al descargar la imagen: Código ${downloadResult.statusCode}`
+        );
+      }
+
+      await Share.open({
+        title: `Compartir ${publication.commonNoun}`,
+        url: `file://${filePath}`,
+        type: 'image/jpeg',
+        failOnCancel: false
+      });
+    } catch (error) {
+      console.error('Error compartiendo imagen:', error);
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (!errorMessage.includes('User did not share')) {
+        setImageModalMessage({
+          visible: true,
+          title: 'Error',
+          message: `No se pudo compartir la imagen. Detalle: ${errorMessage}`
+        });
+      }
+    } finally {
+      if (filePath) {
+        try {
+          await RNFS.unlink(filePath);
+        } catch (unlinkError) {
+          console.error('Error al eliminar el archivo temporal:', unlinkError);
+        }
+      }
+      setIsDownloadingImage(false);
+    }
+  }, [publication]);
+
+  const handleSaveImage = useCallback(async () => {
+    if (!publication.img) {
+      setImageModalMessage({
+        visible: true,
+        title: 'Error',
+        message: 'No hay imagen disponible para descargar'
+      });
+      return;
+    }
+
+    setIsSavingImage(true);
+    try {
+      const timestamp = Date.now();
+      const animalName = publication.commonNoun.replace(/\s+/g, '_');
+      const fileName = `FaunaSilvestre_${animalName}_${timestamp}.jpg`;
+      const filePath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
+
+      const downloadResult = await RNFS.downloadFile({
+        fromUrl: publication.img,
+        toFile: filePath
+      }).promise;
+
+      if (downloadResult.statusCode !== 200) {
+        throw new Error(
+          `Error al descargar la imagen: Código ${downloadResult.statusCode}`
+        );
+      }
+
+      setImageModalMessage({
+        visible: true,
+        title: '✅ Imagen descargada',
+        message: `La imagen de ${publication.commonNoun} se guardó en Descargas.\n\n📁 ${fileName}`
+      });
+
+      console.log('✅ Imagen guardada en:', filePath);
+    } catch (error) {
+      console.error('Error guardando imagen:', error);
+      const errorMessage = error instanceof Error ? error.message : '';
+      setImageModalMessage({
+        visible: true,
+        title: 'Error',
+        message: `No se pudo descargar la imagen. Detalle: ${errorMessage}`
+      });
+    } finally {
+      setIsSavingImage(false);
+    }
+  }, [publication]);
 
   const openEditModal = useCallback(
     (type: EditModalType, currentValue: string) => {
-      // Si es el motivo de rechazo, remover la etiqueta para edición
       const valueToEdit =
         type === 'reason' ? removeReasonTag(currentValue) : currentValue;
       setEditValue(valueToEdit);
@@ -320,7 +485,6 @@ export default function PublicationDetailsScreen() {
   });
 
   const handleSaveEdit = useCallback(async () => {
-    // Si se está editando el motivo de rechazo, actualizar en el backend
     if (editModalVisible === 'reason' && editValue.trim()) {
       const reasonWithTag = addReasonTag(editValue);
 
@@ -328,10 +492,9 @@ export default function PublicationDetailsScreen() {
         setIsProcessing(true);
         setOperationError(null);
 
-        // Usar rejectPublication para actualizar el motivo sin cambiar el estado
         await rejectPublication(
           publication.recordId.toString(),
-          PubStatus.REJECTED, // Mantiene el estado actual (rechazada)
+          PubStatus.REJECTED,
           reasonWithTag
         );
 
@@ -490,6 +653,43 @@ export default function PublicationDetailsScreen() {
     openActionModal('changeStatus');
   }, [selectedStatus, status, closeEditModal, openActionModal]);
 
+  const handleRequestDelete = useCallback(() => {
+    setShowDeleteSupportModal(true);
+  }, []);
+
+  const handleCloseDeleteSupportModal = useCallback(() => {
+    setShowDeleteSupportModal(false);
+  }, []);
+
+  const handleContactSupportForDelete = useCallback(
+    async (method: ContactMethod) => {
+      setShowDeleteSupportModal(false);
+
+      const customMessage = createDeletePublicationMessage(
+        {
+          recordId: publication.recordId,
+          commonNoun: publication.commonNoun,
+          userName: publication.userName,
+          createdDate: publication.createdDate,
+          status: statusConfig.label
+        },
+        isAdmin,
+        deleteReason.trim() || undefined
+      );
+
+      const url = method.url(method.value, customMessage);
+
+      try {
+        await Linking.openURL(url);
+
+        setDeleteReason('');
+      } catch {
+        setShowDeleteSupportModal(false);
+      }
+    },
+    [publication, statusConfig.label, isAdmin, deleteReason]
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -509,6 +709,29 @@ export default function PublicationDetailsScreen() {
           </Text>
         </View>
 
+        <TouchableOpacity
+          onPress={handleRequestDelete}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: theme.colors.surfaceVariant,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: 8
+          }}
+          activeOpacity={0.7}
+          disabled={isProcessing}
+          accessibilityRole="button"
+          accessibilityLabel="Más opciones"
+        >
+          <Ionicons
+            name="ellipsis-vertical"
+            size={20}
+            color={theme.colors.textSecondary}
+          />
+        </TouchableOpacity>
+
         <View style={styles.headerStatusBadge}>
           <Ionicons
             name={statusConfig.icon}
@@ -523,164 +746,181 @@ export default function PublicationDetailsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         scrollEnabled={!isProcessing}
-      >
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: statusConfig.bgColor }
-          ]}
-        >
-          <Ionicons
-            name={statusConfig.icon}
-            size={22}
-            color={statusConfig.color}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
           />
-          <Text style={[styles.statusText, { color: statusConfig.color }]}>
-            {statusConfig.label}
-          </Text>
-        </View>
-
+        }
+      >
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={toggleImageExpand}
-          style={styles.imageCard}
+          style={styles.heroImageContainer}
           disabled={!publication.img || isProcessing}
         >
-          <PublicationImage
-            uri={publication.img}
-            commonNoun={publication.commonNoun}
-            viewMode="presentation"
-            style={styles.image}
-          />
-          {publication.img && (
-            <View style={styles.expandButton}>
-              <MaterialIcons name="fullscreen" size={24} color="white" />
+          <View style={styles.imageCard}>
+            <PublicationImage
+              uri={publication.img}
+              commonNoun={publication.commonNoun}
+              viewMode="presentation"
+              style={styles.image}
+            />
+          </View>
+
+          <View style={styles.heroGradientOverlay}>
+            <Svg height="100%" width="100%" style={{ position: 'absolute' }}>
+              <Defs>
+                <SvgLinearGradient
+                  id="heroGradient"
+                  x1="0"
+                  y1="1"
+                  x2="0"
+                  y2="0"
+                >
+                  <Stop offset="0" stopColor="#000000" stopOpacity="0.85" />
+                  <Stop offset="0.4" stopColor="#000000" stopOpacity="0.6" />
+                  <Stop offset="0.7" stopColor="#000000" stopOpacity="0.3" />
+                  <Stop offset="1" stopColor="#000000" stopOpacity="0" />
+                </SvgLinearGradient>
+              </Defs>
+              <Rect
+                x="0"
+                y="0"
+                width="100%"
+                height="100%"
+                fill="url(#heroGradient)"
+              />
+            </Svg>
+          </View>
+
+          <View style={styles.heroContentOverlay}>
+            <View style={styles.statusBadge}>
+              <Ionicons
+                name={statusConfig.icon}
+                size={20}
+                color={statusConfig.color}
+              />
+              <Text style={[styles.statusText, { color: statusConfig.color }]}>
+                {statusConfig.label}
+              </Text>
             </View>
+
+            <View style={styles.heroTitleContainer}>
+              <Text style={styles.heroTitle} numberOfLines={2}>
+                {publication.commonNoun}
+              </Text>
+              {publication.userName && (
+                <Text style={styles.heroSubtitle}>
+                  Publicado por @{publication.userName}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          {publication.img && (
+            <TouchableOpacity
+              style={styles.expandButton}
+              onPress={toggleImageExpand}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons
+                name="fullscreen"
+                size={24}
+                color={theme.colors.forest}
+              />
+            </TouchableOpacity>
           )}
         </TouchableOpacity>
 
-        <InfoSection
-          title="Descripción"
-          icon="document-text"
-          content={publication.description || 'Sin descripción disponible'}
-          showEdit={isAdmin && !isProcessing}
-          onEdit={() =>
-            openEditModal('description', publication.description || '')
-          }
-          theme={theme}
-          styles={styles}
-        />
-
-        <InfoSection
-          title="Nombre Común"
-          icon="pricetag"
-          content={publication.commonNoun || 'No especificado'}
-          showEdit={isAdmin && !isProcessing}
-          onEdit={() =>
-            openEditModal('commonNoun', publication.commonNoun || '')
-          }
-          theme={theme}
-          styles={styles}
-        />
-
-        <View style={styles.infoSection}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <View
-                style={[
-                  styles.iconContainer,
-                  {
-                    backgroundColor:
-                      publication.animalState === 'ALIVE'
-                        ? theme.colors.success + '20'
-                        : theme.colors.error + '20'
-                  }
-                ]}
-              >
-                <MaterialIcons
-                  name={
-                    publication.animalState === 'ALIVE' ? 'pets' : 'healing'
-                  }
-                  size={20}
-                  color={
-                    publication.animalState === 'ALIVE'
-                      ? theme.colors.success
-                      : theme.colors.error
-                  }
-                />
-              </View>
-              <Text style={styles.sectionTitle}>Estado del Animal</Text>
-            </View>
-            {isAdmin && !isProcessing && (
-              <TouchableOpacity
-                onPress={() => {
-                  setSelectedAnimalState(publication.animalState || 'ALIVE');
-                  setEditModalVisible('animalState');
-                }}
-                style={styles.editButton}
-              >
-                <MaterialIcons
-                  name="edit"
-                  size={20}
-                  color={theme.colors.primary}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-          <View
-            style={[
-              styles.stateBadge,
-              {
-                backgroundColor:
-                  publication.animalState === 'ALIVE'
-                    ? theme.colors.success + '15'
-                    : theme.colors.error + '15',
-                borderColor:
-                  publication.animalState === 'ALIVE'
-                    ? theme.colors.success
-                    : theme.colors.error
-              }
-            ]}
-          >
-            <Text
-              style={[
-                styles.stateBadgeText,
-                {
-                  color:
-                    publication.animalState === 'ALIVE'
-                      ? theme.colors.success
-                      : theme.colors.error
-                }
-              ]}
+        {publication.img && (
+          <View style={styles.imageActionsRow}>
+            <TouchableOpacity
+              style={[styles.imageActionButton, styles.downloadImageButton]}
+              onPress={handleSaveImage}
+              disabled={isSavingImage}
+              activeOpacity={0.8}
             >
-              {publication.animalState === 'ALIVE' ? 'Vivo' : 'Muerto'}
-            </Text>
+              {isSavingImage ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Ionicons name="download-outline" size={20} color="white" />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.imageActionButton, styles.shareImageButton]}
+              onPress={handleShareImage}
+              disabled={isDownloadingImage}
+              activeOpacity={0.8}
+            >
+              {isDownloadingImage ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Ionicons name="share-social" size={20} color="white" />
+              )}
+            </TouchableOpacity>
           </View>
-        </View>
+        )}
 
-        {isAdmin && !isPending && (
+        <View style={styles.contentSection}>
+          {/* BOTÓN DE EDICIÓN COMENTADO TEMPORALMENTE - No implementado
+              showEdit={isAdmin && !isProcessing}
+              onEdit={() => openEditModal('description', publication.description || '')}
+          */}
+          <InfoSection
+            title="Descripción"
+            icon="document-text"
+            content={publication.description || 'Sin descripción disponible'}
+            theme={theme}
+            styles={styles}
+            iconColor="#3B82F6"
+          />
+
+          <InfoSection
+            title="Ubicación del Avistamiento"
+            icon="location"
+            content={publication.location || 'Ubicación no especificada'}
+            theme={theme}
+            styles={styles}
+            iconColor="#EF4444"
+          />
+
           <View style={styles.infoSection}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
                 <View
                   style={[
                     styles.iconContainer,
-                    { backgroundColor: statusConfig.color + '20' }
+                    {
+                      backgroundColor:
+                        publication.animalState === 'ALIVE'
+                          ? theme.colors.success + '20'
+                          : theme.colors.error + '20'
+                    }
                   ]}
                 >
-                  <Ionicons
-                    name={statusConfig.icon}
+                  <MaterialIcons
+                    name={
+                      publication.animalState === 'ALIVE' ? 'pets' : 'healing'
+                    }
                     size={20}
-                    color={statusConfig.color}
+                    color={
+                      publication.animalState === 'ALIVE'
+                        ? theme.colors.success
+                        : theme.colors.error
+                    }
                   />
                 </View>
-                <Text style={styles.sectionTitle}>Estado de Publicación</Text>
+                <Text style={styles.sectionTitle}>Estado del Animal</Text>
               </View>
-              {!isProcessing && (
+              {/* BOTÓN DE EDICIÓN COMENTADO - No implementado
+              {isAdmin && !isProcessing && (
                 <TouchableOpacity
                   onPress={() => {
-                    setSelectedStatus(status);
-                    setEditModalVisible('status');
+                    setSelectedAnimalState(publication.animalState || 'ALIVE');
+                    setEditModalVisible('animalState');
                   }}
                   style={styles.editButton}
                 >
@@ -691,181 +931,258 @@ export default function PublicationDetailsScreen() {
                   />
                 </TouchableOpacity>
               )}
+              */}
             </View>
             <View
               style={[
                 styles.stateBadge,
                 {
-                  backgroundColor: statusConfig.bgColor,
-                  borderColor: statusConfig.color
+                  backgroundColor: theme.colors.surface,
+                  borderColor:
+                    publication.animalState === 'ALIVE'
+                      ? theme.colors.success
+                      : theme.colors.error
                 }
               ]}
             >
               <Text
-                style={[styles.stateBadgeText, { color: statusConfig.color }]}
+                style={[
+                  styles.stateBadgeText,
+                  {
+                    color:
+                      publication.animalState === 'ALIVE'
+                        ? theme.colors.success
+                        : theme.colors.error
+                  }
+                ]}
               >
-                {statusConfig.label}
+                {publication.animalState === 'ALIVE' ? 'Vivo' : 'Muerto'}
               </Text>
             </View>
           </View>
-        )}
 
-        <InfoSection
-          title="Fecha de Creación"
-          icon="calendar"
-          content={formatDate(publication.createdDate)}
-          theme={theme}
-          styles={styles}
-        />
+          {isAdmin && !isPending && (
+            <View style={styles.infoSection}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleContainer}>
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      { backgroundColor: statusConfig.color + '20' }
+                    ]}
+                  >
+                    <Ionicons
+                      name={statusConfig.icon}
+                      size={20}
+                      color={statusConfig.color}
+                    />
+                  </View>
+                  <Text style={styles.sectionTitle}>Estado de Publicación</Text>
+                </View>
+                {!isProcessing && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedStatus(status);
+                      setEditModalVisible('status');
+                    }}
+                    style={styles.editButton}
+                  >
+                    <MaterialIcons
+                      name="edit"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View
+                style={[
+                  styles.stateBadge,
+                  {
+                    backgroundColor: statusConfig.bgColor,
+                    borderColor: statusConfig.color
+                  }
+                ]}
+              >
+                <Text
+                  style={[styles.stateBadgeText, { color: statusConfig.color }]}
+                >
+                  {statusConfig.label}
+                </Text>
+              </View>
+            </View>
+          )}
 
-        {publication.acceptedDate && (
           <InfoSection
-            title="Fecha de Aceptación"
-            icon="checkmark-circle"
-            content={formatDate(publication.acceptedDate)}
+            title="Fecha de Creación"
+            icon="calendar"
+            content={formatDate(publication.createdDate)}
             theme={theme}
             styles={styles}
+            iconColor="#F59E0B"
           />
-        )}
 
-        {isAdmin && publication.userName && (
-          <InfoSection
-            title="Usuario"
-            icon="person"
-            content={publication.userName}
-            theme={theme}
-            styles={styles}
-          />
-        )}
+          {publication.acceptedDate && (
+            <InfoSection
+              title="Fecha de Aceptación"
+              icon="checkmark-circle"
+              content={formatDate(publication.acceptedDate)}
+              theme={theme}
+              styles={styles}
+              iconColor="#10B981"
+            />
+          )}
 
-        {status === 'rejected' && publication.rejectedReason && (
-          <View style={styles.infoSection}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
+          {isAdmin && publication.userName && (
+            <InfoSection
+              title="Usuario"
+              icon="person"
+              content={'@' + publication.userName}
+              theme={theme}
+              styles={styles}
+              iconColor="#8B5CF6"
+            />
+          )}
+
+          {status === 'rejected' && publication.rejectedReason && (
+            <View style={styles.infoSection}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleContainer}>
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      { backgroundColor: STATUS_CONFIG.rejected.color + '20' }
+                    ]}
+                  >
+                    <Ionicons
+                      name="information-circle"
+                      size={20}
+                      color={STATUS_CONFIG.rejected.color}
+                    />
+                  </View>
+                  <Text style={styles.sectionTitle}>Motivo de Rechazo</Text>
+                </View>
+                {isAdmin && !isProcessing && (
+                  <TouchableOpacity
+                    onPress={() =>
+                      openEditModal(
+                        'reason',
+                        editedReason || publication.rejectedReason || ''
+                      )
+                    }
+                    style={styles.editButton}
+                  >
+                    <MaterialIcons
+                      name="edit"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View
+                style={[
+                  styles.rejectedReasonContainer,
+                  {
+                    backgroundColor: STATUS_CONFIG.rejected.bgColor,
+                    borderColor: STATUS_CONFIG.rejected.color
+                  }
+                ]}
+              >
+                <ReasonWithTag
+                  reason={editedReason || publication.rejectedReason || ''}
+                  theme={theme}
+                />
+              </View>
+            </View>
+          )}
+
+          {isAdmin && publication.location && (
+            <InfoSection
+              title="Coordenadas"
+              icon="location"
+              content={publication.location}
+              theme={theme}
+              styles={styles}
+              iconColor="#EF4444"
+            />
+          )}
+
+          {publication.location ? (
+            <View style={styles.infoSection}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleContainer}>
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      { backgroundColor: theme.colors.primary + '20' }
+                    ]}
+                  >
+                    <Ionicons
+                      name="map"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <Text style={styles.sectionTitle}>Ubicación en Mapa</Text>
+                </View>
+              </View>
+              <View style={styles.mapContainer}>
+                <LocationMap
+                  location={publication.location}
+                  showCoordinates={true}
+                  showControls={true}
+                  markerTitle="Ubicación Reportada"
+                  markerDescription="Esta es la ubicación donde se reportó al animal."
+                />
+              </View>
+            </View>
+          ) : (
+            <InfoSection
+              title="Ubicación"
+              icon="map"
+              content="Ubicación no disponible"
+              theme={theme}
+              styles={styles}
+              iconColor="#EF4444"
+            />
+          )}
+
+          {status === 'rejected' && reason && !publication.rejectedReason && (
+            <View style={styles.rejectionSection}>
+              <View style={styles.rejectionHeader}>
                 <View
                   style={[
                     styles.iconContainer,
-                    { backgroundColor: STATUS_CONFIG.rejected.color + '20' }
+                    { backgroundColor: theme.colors.error + '20' }
                   ]}
                 >
                   <Ionicons
-                    name="information-circle"
+                    name="warning"
                     size={20}
-                    color={STATUS_CONFIG.rejected.color}
+                    color={theme.colors.error}
                   />
                 </View>
-                <Text style={styles.sectionTitle}>Motivo de Rechazo</Text>
+                <Text style={styles.rejectionTitle}>Motivo de Rechazo</Text>
+                {isAdmin && !isProcessing && (
+                  <TouchableOpacity
+                    onPress={() =>
+                      openEditModal('reason', editedReason || reason)
+                    }
+                    style={styles.editButton}
+                  >
+                    <MaterialIcons
+                      name="edit"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
+                  </TouchableOpacity>
+                )}
               </View>
-              {isAdmin && !isProcessing && (
-                <TouchableOpacity
-                  onPress={() =>
-                    openEditModal(
-                      'reason',
-                      editedReason || publication.rejectedReason || ''
-                    )
-                  }
-                  style={styles.editButton}
-                >
-                  <MaterialIcons
-                    name="edit"
-                    size={20}
-                    color={theme.colors.primary}
-                  />
-                </TouchableOpacity>
-              )}
+              <ReasonWithTag reason={editedReason || reason} theme={theme} />
             </View>
-            <View
-              style={[
-                styles.rejectedReasonContainer,
-                {
-                  backgroundColor: STATUS_CONFIG.rejected.bgColor,
-                  borderColor: STATUS_CONFIG.rejected.color
-                }
-              ]}
-            >
-              <ReasonWithTag
-                reason={editedReason || publication.rejectedReason || ''}
-                theme={theme}
-              />
-            </View>
-          </View>
-        )}
-
-        {isAdmin && publication.location && (
-          <InfoSection
-            title="Coordenadas"
-            icon="location"
-            content={publication.location}
-            theme={theme}
-            styles={styles}
-          />
-        )}
-
-        {publication.location ? (
-          <View style={styles.infoSection}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: theme.colors.primary + '20' }
-                  ]}
-                >
-                  <Ionicons name="map" size={20} color={theme.colors.primary} />
-                </View>
-                <Text style={styles.sectionTitle}>Ubicación en Mapa</Text>
-              </View>
-            </View>
-            <View style={styles.mapContainer}>
-              <LocationMap
-                location={publication.location}
-                showCoordinates={true}
-                showControls={true}
-                markerTitle="Ubicación Reportada"
-                markerDescription="Esta es la ubicación donde se reportó al animal."
-              />
-            </View>
-          </View>
-        ) : (
-          <InfoSection
-            title="Ubicación"
-            icon="map"
-            content="Ubicación no disponible"
-            theme={theme}
-            styles={styles}
-          />
-        )}
-
-        {status === 'rejected' && reason && !publication.rejectedReason && (
-          <View style={styles.rejectionSection}>
-            <View style={styles.rejectionHeader}>
-              <View
-                style={[
-                  styles.iconContainer,
-                  { backgroundColor: theme.colors.error + '20' }
-                ]}
-              >
-                <Ionicons name="warning" size={20} color={theme.colors.error} />
-              </View>
-              <Text style={styles.rejectionTitle}>Motivo de Rechazo</Text>
-              {isAdmin && !isProcessing && (
-                <TouchableOpacity
-                  onPress={() =>
-                    openEditModal('reason', editedReason || reason)
-                  }
-                  style={styles.editButton}
-                >
-                  <MaterialIcons
-                    name="edit"
-                    size={20}
-                    color={theme.colors.primary}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
-            <ReasonWithTag reason={editedReason || reason} theme={theme} />
-          </View>
-        )}
+          )}
+        </View>
       </ScrollView>
 
       {isAdmin && isPending && (
@@ -904,6 +1221,7 @@ export default function PublicationDetailsScreen() {
         </View>
       )}
 
+      {/* MODAL COMENTADO - No implementado
       <CustomModal
         isVisible={editModalVisible === 'description'}
         onClose={closeEditModal}
@@ -937,7 +1255,9 @@ export default function PublicationDetailsScreen() {
         maxWidth={width - 40}
         size="full"
       />
+      */}
 
+      {/* MODAL COMENTADO - No implementado
       <CustomModal
         isVisible={editModalVisible === 'commonNoun'}
         onClose={closeEditModal}
@@ -967,7 +1287,9 @@ export default function PublicationDetailsScreen() {
         maxWidth={width - 40}
         size="full"
       />
+      */}
 
+      {/* MODAL COMENTADO - No implementado
       <CustomModal
         isVisible={editModalVisible === 'animalState'}
         onClose={closeEditModal}
@@ -1086,6 +1408,7 @@ export default function PublicationDetailsScreen() {
           </Pressable>
         </View>
       </CustomModal>
+      */}
 
       <CustomModal
         isVisible={editModalVisible === 'status'}
@@ -1575,6 +1898,185 @@ export default function PublicationDetailsScreen() {
         )}
       </CustomModal>
 
+      <CustomModal
+        isVisible={showDeleteSupportModal}
+        onClose={handleCloseDeleteSupportModal}
+        title={isAdmin ? 'Solicitar Eliminación' : 'Ayuda con Publicación'}
+        description={
+          isAdmin
+            ? 'Contacta a soporte para solicitar la eliminación de esta publicación'
+            : 'Explica tu situación y selecciona cómo contactar a soporte'
+        }
+        type="default"
+        size="medium"
+        centered
+        scrollable
+        showFooter={false}
+      >
+        <View style={{ gap: 16, width: '100%', flexShrink: 0 }}>
+          <View style={{ gap: 8, width: '100%', flexShrink: 0 }}>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '600',
+                color: theme.colors.text
+              }}
+            >
+              {isAdmin ? 'Motivo (opcional):' : 'Motivo de la solicitud:'}
+            </Text>
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                borderRadius: 8,
+                backgroundColor: theme.colors.background,
+                height: 100,
+                width: inputWidth
+              }}
+            >
+              <TextInput
+                style={{
+                  padding: 12,
+                  fontSize: 15,
+                  color: theme.colors.text,
+                  height: 100,
+                  width: inputWidth - 24,
+                  textAlignVertical: 'top'
+                }}
+                placeholder={
+                  isAdmin
+                    ? 'Ej: Contenido inapropiado, duplicado, etc.'
+                    : 'Explica por qué deseas eliminar esta publicación...'
+                }
+                placeholderTextColor={theme.colors.placeholder}
+                value={deleteReason}
+                onChangeText={setDeleteReason}
+                multiline={true}
+                numberOfLines={4}
+                maxLength={300}
+              />
+            </View>
+            <Text
+              style={{
+                fontSize: 12,
+                color: theme.colors.textSecondary,
+                textAlign: 'right'
+              }}
+            >
+              {deleteReason.length}/300
+            </Text>
+          </View>
+
+          <View style={{ gap: 12 }}>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '600',
+                color: theme.colors.text
+              }}
+            >
+              Selecciona método de contacto:
+            </Text>
+            {SUPPORT_CONTACT_METHODS.map(method => {
+              const IconComponent =
+                method.iconLibrary === 'material'
+                  ? MaterialCommunityIcons
+                  : method.iconLibrary === 'fontawesome5'
+                    ? FontAwesome5
+                    : Ionicons;
+
+              return (
+                <TouchableOpacity
+                  key={method.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 16,
+                    padding: 16,
+                    borderRadius: 12,
+                    backgroundColor: method.color,
+                    shadowColor: method.color,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 4,
+                    elevation: 4
+                  }}
+                  onPress={() => handleContactSupportForDelete(method)}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Contactar por ${method.label}`}
+                >
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 24,
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      justifyContent: 'center',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <IconComponent
+                      name={method.icon}
+                      size={28}
+                      color="#FFFFFF"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        fontWeight: '600',
+                        color: '#FFFFFF',
+                        marginBottom: 4
+                      }}
+                    >
+                      {method.label}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        color: 'rgba(255, 255, 255, 0.9)'
+                      }}
+                    >
+                      {method.value}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={24}
+                    color="rgba(255, 255, 255, 0.8)"
+                  />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={{
+            marginTop: 16,
+            paddingVertical: 12,
+            paddingHorizontal: 24,
+            borderRadius: 8,
+            backgroundColor: theme.colors.surfaceVariant,
+            alignItems: 'center'
+          }}
+          onPress={handleCloseDeleteSupportModal}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={{
+              fontSize: 15,
+              fontWeight: '600',
+              color: theme.colors.text
+            }}
+          >
+            Cancelar
+          </Text>
+        </TouchableOpacity>
+      </CustomModal>
+
       <Modal
         isVisible={isImageExpanded}
         onBackdropPress={toggleImageExpand}
@@ -1628,6 +2130,28 @@ export default function PublicationDetailsScreen() {
           </TouchableOpacity>
         </View>
       </Modal>
+
+      <CustomModal
+        isVisible={imageModalMessage.visible}
+        onClose={() =>
+          setImageModalMessage({ visible: false, title: '', message: '' })
+        }
+        title={imageModalMessage.title}
+        type="alert"
+        maxWidth={width - 40}
+        size="small"
+      >
+        <Text
+          style={{
+            fontSize: 15,
+            color: theme.colors.text,
+            textAlign: 'center',
+            lineHeight: 22
+          }}
+        >
+          {imageModalMessage.message}
+        </Text>
+      </CustomModal>
     </View>
   );
 }

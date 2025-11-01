@@ -18,7 +18,6 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
     },
 
     header: {
-      marginBottom: spacing.large,
       paddingHorizontal: spacing.medium,
       paddingTop: spacing.medium
     },
@@ -26,7 +25,7 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
     headerTop: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      marginBottom: spacing.medium,
+      marginBottom: spacing.small,
       justifyContent: 'space-between'
     },
 
@@ -303,28 +302,38 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
 
     filterContainer: {
       flexDirection: 'row',
-      gap: spacing.small,
-      marginTop: spacing.medium,
-      paddingHorizontal: spacing.small
+      justifyContent: 'center',
+      marginTop: spacing.tiny,
+      paddingHorizontal: spacing.medium
     },
 
     filterTab: {
-      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: spacing.small,
-      paddingHorizontal: spacing.medium,
+      paddingHorizontal: spacing.large,
       borderRadius: borderRadius.medium,
       backgroundColor: colors.surfaceVariant,
-      gap: spacing.tiny,
+      gap: spacing.small,
       borderWidth: 1,
-      borderColor: colors.border
+      borderColor: colors.border,
+      minWidth: '60%'
     },
 
     filterTabActive: {
       backgroundColor: colors.forest,
       borderColor: colors.forest
+    },
+
+    filterTabActiveGreen: {
+      backgroundColor: colors.forest,
+      borderColor: colors.forest
+    },
+
+    filterTabActiveRed: {
+      backgroundColor: colors.error,
+      borderColor: colors.error
     },
 
     filterTabText: {
@@ -360,6 +369,19 @@ export const createStyles = (theme: Theme, insets?: EdgeInsets) => {
 
     filterBadgeTextActive: {
       color: colors.textOnPrimary
+    },
+
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.small,
+      marginTop: 0,
+      marginBottom: -spacing.small
+    },
+
+    searchBarWrapper: {
+      flex: 1,
+      marginRight: -spacing.medium
     }
   });
 };

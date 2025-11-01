@@ -115,22 +115,26 @@ export const CatalogProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [state, dispatch] = useReducer(catalogReducer, initialState);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const stateRef = useRef(state);
+
+  stateRef.current = state;
 
   const fetchCatalog = useCallback(async () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
+    const currentState = stateRef.current;
     const now = Date.now();
-    const timeSinceLastFetch = state.lastFetchTime
-      ? now - state.lastFetchTime
+    const timeSinceLastFetch = currentState.lastFetchTime
+      ? now - currentState.lastFetchTime
       : Infinity;
 
-    if (state.failureCount >= 3 && timeSinceLastFetch < 60000) {
+    if (currentState.failureCount >= 3 && timeSinceLastFetch < 60000) {
       console.log('[CatalogContext] Circuit breaker active, skipping fetch');
       return;
     }
-    if (state.isLoading) {
+    if (currentState.isLoading) {
       console.log(
         '[CatalogContext] Already loading, skipping duplicate request'
       );
@@ -176,7 +180,7 @@ export const CatalogProvider: React.FC<{ children: ReactNode }> = ({
       dispatch({ type: 'FETCH_ALL_END' });
       abortControllerRef.current = null;
     }
-  }, [state.lastFetchTime, state.failureCount, state.isLoading]);
+  }, []);
 
   const fetchCatalogLocations = useCallback(async (catalogId: string) => {
     try {

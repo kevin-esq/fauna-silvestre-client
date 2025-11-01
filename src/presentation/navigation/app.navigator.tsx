@@ -14,6 +14,7 @@ import {
   useTheme
 } from '../contexts/theme.context';
 import { useApiStatus } from '../contexts/api-status.context';
+import { CatalogViewPreferencesProvider } from '../contexts/catalog-view-preferences.context';
 import TopTabsNavigationBar from '../components/ui/top-tabs-navigation-bar.component';
 
 import LoginScreen from '../screens/auth/login-screen';
@@ -39,7 +40,14 @@ import { createRootStack } from './create-root-stack';
 import { adminTabs, userTabs } from './tabs-config';
 import { offlineTabs } from './offline-tabs-config';
 import { useNetworkStatus } from '../hooks/use-network-status.hook';
+
 export type ValidRole = 'Admin' | 'User';
+
+const CatalogAnimalsScreenWithProvider = () => (
+  <CatalogViewPreferencesProvider>
+    <CatalogAnimalsScreen />
+  </CatalogViewPreferencesProvider>
+);
 
 interface TabConfig {
   name: keyof RootStackParamList;
@@ -191,7 +199,9 @@ TabsComponent.displayName = 'TabsComponent';
 export const AdminTabs = React.memo(() => {
   const { theme } = useTheme();
   return (
-    <TabsComponent screens={adminTabs} theme={theme} testID="admin-tabs" />
+    <CatalogViewPreferencesProvider>
+      <TabsComponent screens={adminTabs} theme={theme} testID="admin-tabs" />
+    </CatalogViewPreferencesProvider>
   );
 });
 
@@ -199,7 +209,11 @@ AdminTabs.displayName = 'AdminTabs';
 
 export const UserTabs = React.memo(() => {
   const { theme } = useTheme();
-  return <TabsComponent screens={userTabs} theme={theme} testID="user-tabs" />;
+  return (
+    <CatalogViewPreferencesProvider>
+      <TabsComponent screens={userTabs} theme={theme} testID="user-tabs" />
+    </CatalogViewPreferencesProvider>
+  );
 });
 
 UserTabs.displayName = 'UserTabs';
@@ -241,7 +255,7 @@ const createStackConfigurations = () => {
     { name: 'PublicationForm', component: PublicationFormScreen },
     { name: 'PublicationDetails', component: PublicationDetailsScreen },
     { name: 'AnimalDetails', component: AnimalDetailsScreen },
-    { name: 'Catalog', component: CatalogAnimalsScreen },
+    { name: 'Catalog', component: CatalogAnimalsScreenWithProvider },
     { name: 'DownloadedFiles', component: DownloadedFilesScreen },
     { name: 'Drafts', component: DraftsScreen },
     { name: 'DraftEditor', component: DraftEditorScreen }

@@ -102,9 +102,7 @@ export class AuthService implements IAuthService {
 
       try {
         await this.tokenService.clearTokens();
-      } catch {
-        // Silently fail token cleanup
-      }
+      } catch {}
 
       throw AuthErrorMapper.map(error);
     }
@@ -241,7 +239,11 @@ export class AuthService implements IAuthService {
 
       return tokens.accessToken;
     } catch {
-      this.logger.error('[AuthService] Token refresh failed');
+      this.logger.error(
+        '[AuthService] Token refresh failed - signing out user'
+      );
+      await this.handleUserSignedOut();
+      authEventEmitter.emit(AuthEvents.USER_SIGNED_OUT);
       throw new AuthError('La sesión ha expirado. Inicia sesión nuevamente.');
     }
   }
@@ -505,7 +507,10 @@ export class AuthService implements IAuthService {
 
       return await this.tokenService.getUserFromToken(accessToken);
     } catch {
-      this.logger.warn('[AuthService] Token validation failed');
+      this.logger.warn(
+        '[AuthService] Token validation failed - clearing session'
+      );
+      await this.handleUserSignedOut();
       return null;
     }
   }

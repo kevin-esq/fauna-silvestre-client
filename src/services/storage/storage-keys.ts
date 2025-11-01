@@ -4,3 +4,5 @@ export const ACCESS_TOKEN_KEY = 'auth_refresh_token';
 export const USER_KEY = 'auth_user';
 export const SESSION_KEY = 'auth_session';
 export const THEME_KEY = 'theme';
+export const PUBLICATION_VIEW_PREFERENCES_KEY = 'publication_view_preferences';
+export const CATALOG_VIEW_PREFERENCES_KEY = 'catalog_view_preferences';

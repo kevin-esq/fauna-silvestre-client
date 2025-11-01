@@ -19,29 +19,34 @@ export const createStyles = (
     },
 
     header: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 20,
-      paddingTop: insets.top + 16,
-      paddingBottom: 16,
-      backgroundColor: vars['--surface'],
-      borderBottomWidth: 1,
-      borderBottomColor: vars['--border'],
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 3
+      paddingHorizontal: 16,
+      paddingTop: insets.top + 12,
+      paddingBottom: 12,
+      backgroundColor: 'rgba(255, 255, 255, 0.97)',
+      zIndex: 100,
+      elevation: 8,
+      shadowColor: vars['--forest'],
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12
     },
 
     backButton: {
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: vars['--surface-variant'],
+      backgroundColor: 'rgba(0, 122, 51, 0.1)',
       justifyContent: 'center',
-      alignItems: 'center'
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(0, 122, 51, 0.2)'
     },
 
     headerTitleContainer: {
@@ -62,7 +67,10 @@ export const createStyles = (
       height: 40,
       borderRadius: 20,
       justifyContent: 'center',
-      alignItems: 'center'
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 122, 51, 0.1)',
+      borderWidth: 1,
+      borderColor: 'rgba(0, 122, 51, 0.2)'
     },
 
     scrollView: {
@@ -70,75 +78,168 @@ export const createStyles = (
     },
 
     scrollContent: {
-      padding: 20,
+      paddingTop: 0,
       paddingBottom: insets.bottom + 24
+    },
+
+    heroImageContainer: {
+      position: 'relative',
+      height: 400,
+      marginBottom: 20
+    },
+
+    heroGradientOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: '75%',
+      zIndex: 1
+    },
+
+    heroContentOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 20,
+      paddingBottom: 24,
+      zIndex: 2,
+      gap: 12
     },
 
     statusBadge: {
       flexDirection: 'row',
+      alignSelf: 'flex-start',
       alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 14,
-      paddingHorizontal: 24,
-      borderRadius: 16,
-      marginBottom: 24,
-      gap: 12,
-      elevation: 2,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 24,
+      gap: 8,
+      backgroundColor: 'rgba(255, 255, 255, 0.97)',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.3)',
+      elevation: 4,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4
+      shadowOpacity: 0.15,
+      shadowRadius: 8
     },
 
     statusText: {
-      fontSize: 17,
+      fontSize: 15,
       fontWeight: '700',
-      letterSpacing: 0.5
+      letterSpacing: 0.3
+    },
+
+    heroTitleContainer: {
+      gap: 8
+    },
+
+    heroTitle: {
+      fontSize: 32,
+      fontWeight: '800',
+      color: '#FFFFFF',
+      letterSpacing: -0.5,
+      lineHeight: 38,
+      textShadowColor: 'rgba(0, 0, 0, 0.8)',
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 12
+    },
+
+    heroSubtitle: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: 'rgba(255, 255, 255, 0.98)',
+      letterSpacing: 0.2,
+      textShadowColor: 'rgba(0, 0, 0, 0.7)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 8
     },
 
     imageCard: {
-      borderRadius: 20,
-      overflow: 'hidden',
-      backgroundColor: vars['--surface-variant'],
-      marginBottom: 24,
-      position: 'relative',
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.12,
-      shadowRadius: 8
+      width: '100%',
+      height: '100%'
     },
 
     image: {
       width: '100%',
-      height: 280
+      height: '100%'
+    },
+
+    imageActionsRow: {
+      position: 'absolute',
+      top: insets.top + 72,
+      right: 16,
+      flexDirection: 'row',
+      gap: 12,
+      zIndex: 99
+    },
+
+    imageActionButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.15)',
+      elevation: 6,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6
     },
 
     expandButton: {
       position: 'absolute',
-      bottom: 16,
-      right: 16,
+      bottom: 24,
+      right: 24,
       width: 48,
       height: 48,
       borderRadius: 24,
-      backgroundColor: 'rgba(0,0,0,0.7)',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
       justifyContent: 'center',
       alignItems: 'center',
-      elevation: 4
+      zIndex: 2,
+      elevation: 4,
+      shadowColor: vars['--forest'],
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8
+    },
+
+    shareImageButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22
+    },
+
+    downloadImageButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22
+    },
+
+    contentSection: {
+      paddingHorizontal: 20
     },
 
     infoSection: {
       backgroundColor: vars['--surface'],
-      borderRadius: 16,
-      padding: 20,
+      borderRadius: 20,
+      padding: 24,
       marginBottom: 16,
       borderWidth: 1,
       borderColor: vars['--border'],
-      elevation: 1,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2
+      borderLeftWidth: 5,
+      borderLeftColor: vars['--forest'],
+      elevation: 2,
+      shadowColor: vars['--forest'],
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12
     },
 
     sectionHeader: {
@@ -156,18 +257,19 @@ export const createStyles = (
     },
 
     iconContainer: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
+      width: 48,
+      height: 48,
+      borderRadius: 14,
       justifyContent: 'center',
       alignItems: 'center'
     },
 
     sectionTitle: {
-      fontSize: 17,
+      fontSize: 18,
       fontWeight: '700',
       color: vars['--text'],
-      flex: 1
+      flex: 1,
+      letterSpacing: -0.2
     },
 
     editButton: {
@@ -180,42 +282,59 @@ export const createStyles = (
     },
 
     sectionContent: {
-      fontSize: 15,
+      fontSize: 16,
       color: vars['--text-secondary'],
-      lineHeight: 24,
-      paddingLeft: 52
+      lineHeight: 26,
+      paddingLeft: 60,
+      letterSpacing: 0.1
     },
 
     stateBadge: {
       alignSelf: 'flex-start',
-      paddingVertical: 10,
-      paddingHorizontal: 18,
-      borderRadius: 20,
-      borderWidth: 1.5,
-      marginLeft: 52
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 24,
+      borderWidth: 2,
+      marginLeft: 60,
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.08,
+      shadowRadius: 3
     },
 
     stateBadgeText: {
-      fontSize: 15,
+      fontSize: 16,
       fontWeight: '700',
-      letterSpacing: 0.5
+      letterSpacing: 0.3
     },
 
     mapContainer: {
-      borderRadius: 12,
+      borderRadius: 16,
       overflow: 'hidden',
-      height: 220,
-      marginTop: 8
+      height: 240,
+      marginTop: 12,
+      elevation: 3,
+      shadowColor: vars['--forest'],
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 8
     },
 
     rejectionSection: {
-      backgroundColor: vars['--error'] + '10',
-      borderRadius: 16,
-      padding: 20,
+      backgroundColor: vars['--error'] + '08',
+      borderRadius: 20,
+      padding: 24,
       borderLeftWidth: 5,
       borderLeftColor: vars['--error'],
       marginBottom: 16,
-      elevation: 1
+      borderWidth: 1,
+      borderColor: vars['--error'] + '20',
+      elevation: 2,
+      shadowColor: vars['--error'],
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8
     },
 
     rejectionHeader: {
@@ -226,10 +345,11 @@ export const createStyles = (
     },
 
     rejectionTitle: {
-      fontSize: 17,
+      fontSize: 18,
       fontWeight: '700',
       color: vars['--error'],
-      flex: 1
+      flex: 1,
+      letterSpacing: -0.2
     },
 
     rejectionText: {
@@ -258,15 +378,14 @@ export const createStyles = (
       flexDirection: 'row',
       padding: 20,
       paddingBottom: insets.bottom + 20,
-      backgroundColor: vars['--surface'],
-      borderTopWidth: 1,
-      borderTopColor: vars['--border'],
+      backgroundColor: 'rgba(255, 255, 255, 0.98)',
+      borderTopWidth: 0,
       gap: 12,
-      elevation: 8,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 6
+      elevation: 12,
+      shadowColor: vars['--forest'],
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 16
     },
 
     rejectButton: {
@@ -276,13 +395,13 @@ export const createStyles = (
       justifyContent: 'center',
       gap: 10,
       backgroundColor: '#EF5350',
-      paddingVertical: 16,
-      borderRadius: 14,
-      elevation: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4
+      paddingVertical: 18,
+      borderRadius: 16,
+      elevation: 4,
+      shadowColor: '#EF5350',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12
     },
 
     approveButton: {
@@ -291,21 +410,53 @@ export const createStyles = (
       alignItems: 'center',
       justifyContent: 'center',
       gap: 10,
-      backgroundColor: '#66BB6A',
-      paddingVertical: 16,
-      borderRadius: 14,
-      elevation: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4
+      backgroundColor: vars['--forest'],
+      paddingVertical: 18,
+      borderRadius: 16,
+      elevation: 4,
+      shadowColor: vars['--forest'],
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12
     },
 
     actionButtonText: {
       color: '#FFFFFF',
       fontSize: 17,
       fontWeight: '700',
-      letterSpacing: 0.5
+      letterSpacing: 0.3
+    },
+
+    downloadButtonContainer: {
+      backgroundColor: vars['--surface'],
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: vars['--border'],
+      borderLeftWidth: 4,
+      borderLeftColor: vars['--forest'],
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2
+    },
+
+    downloadButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      backgroundColor: vars['--forest'],
+      paddingHorizontal: 28,
+      paddingVertical: 14,
+      borderRadius: 16,
+      elevation: 4,
+      shadowColor: vars['--forest'],
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 12
     },
 
     imageModalCloseButton: {

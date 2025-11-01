@@ -17,18 +17,15 @@ import {
   NativeScrollEvent
 } from 'react-native';
 import { useTheme } from '../../contexts/theme.context';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicationModelResponse } from '../../../domain/models/publication.models';
 import { usePublications } from '../../contexts/publication.context';
+import { usePublicationViewPreferences } from '../../contexts/publication-view-preferences.context';
 
-import PublicationCard, {
-  ITEM_HEIGHT
-} from '../../components/publication/publication-card.component';
+import { ITEM_HEIGHT } from '../../components/publication/publication-card.component';
+import { PublicationCardWithActions } from '../../components/publication/publication-card-with-actions.component';
+import { PublicationViewSelector } from '../../components/publication/publication-view-selector.component';
 import PublicationSkeleton from '../../components/ui/publication-skeleton.component';
 import SearchBar from '../../components/ui/search-bar.component';
-import PublicationFilters, {
-  FilterOptions
-} from '../../components/publication/publication-filters.component';
 import { createReviewStyles } from './review-publications-screen.styles';
 import { PublicationStatus } from '@/services/publication/publication.service';
 import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
@@ -335,25 +332,14 @@ const ReviewPublicationsScreen: React.FC = () => {
   const ThemeContext = useTheme();
   const { theme } = ThemeContext;
   const styles = useMemo(() => createReviewStyles(theme), [theme]);
-  const insets = useSafeAreaInsets();
   const { navigate } = useNavigationActions();
 
-  const { getStatusData, getTotalCount } = usePublications();
+  const { getStatusData } = usePublications();
   const publicationLoader = usePublicationLoader();
   const operations = usePublicationOperations();
 
-  const [isHeaderVisible, setIsHeaderVisible] = useState(false);
-  const [filteredAndSorted, setFilteredAndSorted] = useState<
-    PublicationModelResponse[]
-  >([]);
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
-    sortBy: 'date-desc',
-    filterByState: 'all'
-  });
-
   const listRef = useRef<FlatList<PublicationModelResponse>>(null);
   const contentAnim = useRef(new Animated.Value(0)).current;
-  const headerTranslateY = useRef(new Animated.Value(-300)).current;
 
   const pendingData = getStatusData(PublicationStatus.PENDING);
   const publications = pendingData.publications;
@@ -363,7 +349,6 @@ const ReviewPublicationsScreen: React.FC = () => {
   const isRefreshing = pendingData.isRefreshing;
   const isEmpty = pendingData.isEmpty;
   const error = pendingData.error;
-  const totalCount = getTotalCount(PublicationStatus.PENDING);
 
   const search = useSearch(publications);
 
@@ -372,43 +357,13 @@ const ReviewPublicationsScreen: React.FC = () => {
       return search.filteredPublications;
     }
 
-    if (filteredAndSorted.length > 0) {
-      return filteredAndSorted;
-    }
-
     return filteredPublications;
-  }, [
-    search.filteredPublications,
-    filteredAndSorted,
-    search.searchQuery,
-    filteredPublications
-  ]);
-
-  const handleFilterChange = useCallback(
-    (filtered: PublicationModelResponse[], options: FilterOptions) => {
-      setFilteredAndSorted(filtered);
-      setFilterOptions(options);
-    },
-    []
-  );
-
-  const handleHeaderVisibilityChange = useCallback(
-    (visible: boolean) => {
-      setIsHeaderVisible(visible);
-      Animated.timing(headerTranslateY, {
-        toValue: visible ? 0 : -300,
-        duration: 300,
-        useNativeDriver: true
-      }).start();
-    },
-    [headerTranslateY]
-  );
+  }, [search.filteredPublications, search.searchQuery, filteredPublications]);
 
   const { handleScroll } = useScrollOptimization(
     operations.canLoadMore,
     isLoadingMore,
-    operations.handleLoadMore,
-    handleHeaderVisibilityChange
+    operations.handleLoadMore
   );
 
   useEffect(() => {
@@ -453,21 +408,39 @@ const ReviewPublicationsScreen: React.FC = () => {
     publicationLoader.loadData(true);
   }, [publicationLoader]);
 
+  const viewPrefs = usePublicationViewPreferences();
+
   const renderPublicationItem = useCallback(
-    ({ item }: { item: PublicationModelResponse }) => (
-      <PublicationCard
-        publication={item}
-        status={PublicationStatus.PENDING}
-        reviewActions={{
-          onApprove: () => operations.handleApprove(item.recordId.toString()),
-          onReject: (reason?: string) =>
-            operations.handleReject(item.recordId.toString(), reason)
-        }}
-        onPress={() => handlePress(item)}
-        viewMode="presentation"
-      />
-    ),
-    [operations, handlePress]
+    ({ item }: { item: PublicationModelResponse }) => {
+      const publication = {
+        ...item,
+        status: PublicationStatus.PENDING,
+        createdDate: item.createdDate
+      };
+
+      return (
+        <PublicationCardWithActions
+          publication={publication}
+          onPress={() => handlePress(item)}
+          reviewActions={{
+            onApprove: () => operations.handleApprove(item.recordId.toString()),
+            onReject: (reason?: string) =>
+              operations.handleReject(item.recordId.toString(), reason)
+          }}
+          layout={viewPrefs.layout}
+          density={viewPrefs.density}
+          showImages={viewPrefs.showImages}
+          highlightStatus={viewPrefs.highlightStatus}
+          showCreatedDate={viewPrefs.showCreatedDate}
+          showAcceptedDate={viewPrefs.showAcceptedDate}
+          showAnimalState={viewPrefs.showAnimalState}
+          showLocation={viewPrefs.showLocation}
+          showRejectReason={viewPrefs.showRejectReason}
+          reducedMotion={viewPrefs.reducedMotion}
+        />
+      );
+    },
+    [operations, handlePress, viewPrefs]
   );
 
   const renderSkeletons = useCallback(
@@ -554,29 +527,22 @@ const ReviewPublicationsScreen: React.FC = () => {
         <View style={styles.emptyStateContent}>
           <View style={styles.emptyStateIconContainer}>
             <Text style={styles.emptyStateIcon}>
-              {search.searchQuery.trim() ||
-              filterOptions.filterByState !== 'all'
-                ? '🔍'
-                : isEmpty
-                  ? '✅'
-                  : '📭'}
+              {search.searchQuery.trim() ? '🔍' : isEmpty ? '✅' : '📊'}
             </Text>
           </View>
           <Text style={styles.emptyStateTitle}>
-            {search.searchQuery.trim() || filterOptions.filterByState !== 'all'
+            {search.searchQuery.trim()
               ? 'No se encontraron resultados'
               : isEmpty
                 ? '¡Todo revisado!'
-                : 'No hay publicaciones'}
+                : 'No hay datos disponibles'}
           </Text>
           <Text style={styles.emptyStateDescription}>
             {search.searchQuery.trim()
               ? `No hay publicaciones pendientes que coincidan con "${search.searchQuery}"`
-              : filterOptions.filterByState !== 'all'
-                ? 'No hay publicaciones con los filtros seleccionados'
-                : isEmpty
-                  ? 'No hay publicaciones pendientes por revisar en este momento'
-                  : 'Las publicaciones pendientes aparecerán aquí'}
+              : isEmpty
+                ? 'No hay publicaciones pendientes por revisar en este momento'
+                : 'Los datos se cargarán pronto'}
           </Text>
         </View>
       </View>
@@ -586,29 +552,9 @@ const ReviewPublicationsScreen: React.FC = () => {
     publications.length,
     isEmpty,
     search.searchQuery,
-    filterOptions,
     styles,
     renderSkeletons
   ]);
-
-  const renderStats = useCallback(() => {
-    return (
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{totalCount}</Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{publications.length}</Text>
-          <Text style={styles.statLabel}>Cargadas</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{finalPublications.length}</Text>
-          <Text style={styles.statLabel}>Mostradas</Text>
-        </View>
-      </View>
-    );
-  }, [totalCount, publications.length, finalPublications.length, styles]);
 
   const keyExtractor = useCallback((item: PublicationModelResponse) => {
     return `review-pub-${item.recordId}`;
@@ -641,67 +587,29 @@ const ReviewPublicationsScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Animated.View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + 12,
-            transform: [{ translateY: headerTranslateY }],
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1000
-          }
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.collapseHeaderButton}
-          onPress={() => handleHeaderVisibilityChange(false)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.collapseHeaderIcon}>▲</Text>
-          <Text style={styles.collapseHeaderText}>Ocultar</Text>
-        </TouchableOpacity>
-
-        <View style={styles.searchContainer}>
-          <SearchBar
-            value={search.inputValue}
-            onChangeText={search.handleSearchChange}
-            placeholder="Buscar publicaciones..."
-            theme={theme}
-            onClear={search.clearSearch}
-          />
-        </View>
-
-        <PublicationFilters
-          publications={search.filteredPublications}
-          onFilterChange={handleFilterChange}
-          theme={ThemeContext}
-          isVisible={isHeaderVisible}
-        />
-
-        {renderStats()}
-      </Animated.View>
-
-      {!isHeaderVisible && (
-        <TouchableOpacity
-          style={[styles.floatingHeaderButton, { top: insets.top + 12 }]}
-          onPress={() => handleHeaderVisibilityChange(true)}
-          activeOpacity={0.9}
-        >
-          <View style={styles.floatingHeaderButtonInner}>
-            <Text style={styles.floatingHeaderButtonIcon}>▼</Text>
-            <Text style={styles.floatingHeaderButtonText}>Mostrar filtros</Text>
+      <View style={styles.header}>
+        <View style={styles.compactHeader}>
+          <View style={styles.searchRow}>
+            <View style={{ flex: 1 }}>
+              <SearchBar
+                value={search.inputValue}
+                onChangeText={search.handleSearchChange}
+                onClear={search.clearSearch}
+                placeholder="Buscar..."
+                theme={theme}
+              />
+            </View>
+            <View style={{ marginLeft: 8 }}>
+              <PublicationViewSelector minimal currentStatus="pending" />
+            </View>
           </View>
-        </TouchableOpacity>
-      )}
+        </View>
+      </View>
 
       <Animated.View
         style={[
           styles.contentContainer,
           {
-            paddingTop: insets.top + 12,
             opacity: contentAnim,
             transform: [
               {
@@ -718,6 +626,13 @@ const ReviewPublicationsScreen: React.FC = () => {
           ref={listRef}
           data={finalPublications}
           keyExtractor={keyExtractor}
+          key={viewPrefs.layout}
+          numColumns={viewPrefs.layout === 'grid' ? 2 : 1}
+          columnWrapperStyle={
+            viewPrefs.layout === 'grid'
+              ? { justifyContent: 'space-between', paddingHorizontal: 16 }
+              : undefined
+          }
           renderItem={renderPublicationItem}
           getItemLayout={getItemLayout}
           {...flatListOptimizations}

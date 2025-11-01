@@ -1,32 +1,34 @@
 import { StyleSheet } from 'react-native';
 import { Theme } from '../../contexts/theme.context';
 
-const createShadow = (elevation: number, theme: Theme, opacity = 0.08) => ({
-  shadowColor: theme.colors.shadow,
+const createForestShadow = (elevation: number, theme: Theme) => ({
+  shadowColor: theme.colors.forest,
   shadowOffset: {
     width: 0,
-    height: Math.max(1, elevation / 2)
+    height: elevation
   },
-  shadowOpacity: Math.min(0.3, opacity + elevation * 0.01),
-  shadowRadius: Math.max(3, elevation * 1.2),
-  elevation: elevation + 1
+  shadowOpacity: 0.15,
+  shadowRadius: elevation * 2,
+  elevation: elevation
 });
 
 export const createStyles = (theme: Theme) =>
   StyleSheet.create({
     card: {
       backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.large,
+      borderRadius: 20,
       overflow: 'hidden',
-      marginBottom: theme.spacing.medium,
-      marginHorizontal: theme.spacing.small,
-      borderWidth: theme.borderWidths.hairline,
+      marginBottom: theme.spacing.medium + 4,
+      marginHorizontal: theme.spacing.medium,
+      borderWidth: 1,
       borderColor: theme.colors.border,
-      ...createShadow(4, theme, 0.06)
+      borderLeftWidth: 5,
+      borderLeftColor: theme.colors.forest,
+      ...createForestShadow(3, theme)
     },
 
     imageContainer: {
-      height: 200,
+      height: 180,
       position: 'relative',
       backgroundColor: theme.colors.surfaceVariant,
       overflow: 'hidden'
@@ -84,28 +86,28 @@ export const createStyles = (theme: Theme) =>
 
     categoryBadge: {
       position: 'absolute',
-      top: theme.spacing.medium,
-      right: theme.spacing.medium,
-      backgroundColor: theme.colors.primary,
-      paddingHorizontal: theme.spacing.medium,
-      paddingVertical: theme.spacing.small,
-      borderRadius: theme.borderRadius.medium,
-      borderWidth: theme.borderWidths.hairline,
-      borderColor: 'rgba(255, 255, 255, 0.3)',
-      ...createShadow(3, theme, 0.15)
+      top: 16,
+      right: 16,
+      backgroundColor: 'rgba(255, 255, 255, 0.97)',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 18,
+      borderWidth: 1.5,
+      borderColor: theme.colors.leaf,
+      ...createForestShadow(3, theme)
     },
 
     categoryBadgeText: {
-      color: theme.colors.textOnPrimary,
-      fontSize: theme.typography.fontSize.small,
-      fontWeight: theme.typography.fontWeight.bold,
+      color: theme.colors.leaf,
+      fontSize: 13,
+      fontWeight: '700',
       textTransform: 'uppercase',
-      letterSpacing: 0.8
+      letterSpacing: 0.5
     },
 
     content: {
-      padding: theme.spacing.medium,
-      gap: theme.spacing.small
+      padding: 20,
+      gap: 12
     },
 
     header: {
@@ -122,29 +124,32 @@ export const createStyles = (theme: Theme) =>
     },
 
     title: {
-      fontSize: theme.typography.fontSize.xlarge,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontSize: 19,
+      fontWeight: '800',
       color: theme.colors.text,
-      letterSpacing: -0.5,
-      lineHeight: theme.typography.lineHeight.xlarge
+      letterSpacing: -0.3,
+      lineHeight: 26
     },
 
     specieContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.tiny,
-      paddingHorizontal: theme.spacing.small,
-      paddingVertical: 2,
-      backgroundColor: theme.colors.surfaceVariant,
-      borderRadius: theme.borderRadius.small,
+      gap: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      backgroundColor: theme.colors.earth + '08',
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.earth + '20',
       alignSelf: 'flex-start'
     },
 
     specie: {
-      fontSize: theme.typography.fontSize.small,
+      fontSize: 13,
       fontStyle: 'italic',
-      color: theme.colors.forest,
-      fontWeight: theme.typography.fontWeight.medium
+      color: theme.colors.earth,
+      fontWeight: '600',
+      letterSpacing: 0.1
     },
 
     actionsContainer: {
@@ -153,38 +158,34 @@ export const createStyles = (theme: Theme) =>
     },
 
     actionButton: {
-      width: 51,
-      height: 51,
-      borderRadius: theme.borderRadius.xlarge,
+      width: 44,
+      height: 44,
+      borderRadius: 12,
       justifyContent: 'center',
       alignItems: 'center',
-      overflow: 'hidden',
-      ...createShadow(2, theme, 0.08)
+      ...createForestShadow(2, theme)
     },
 
     editButton: {
-      backgroundColor: theme.colors.water,
-      borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.border
+      backgroundColor: theme.colors.water
     },
 
     imageButton: {
       backgroundColor: theme.colors.surface,
       borderWidth: 2,
-      borderColor: theme.colors.primary
+      borderColor: theme.colors.forest
     },
 
     deleteButton: {
-      backgroundColor: theme.colors.error,
-      borderWidth: theme.borderWidths.hairline,
-      borderColor: theme.colors.border
+      backgroundColor: theme.colors.error
     },
 
     description: {
-      fontSize: theme.typography.fontSize.medium,
+      fontSize: 15,
       color: theme.colors.textSecondary,
-      lineHeight: theme.typography.lineHeight.medium,
-      fontWeight: theme.typography.fontWeight.regular
+      lineHeight: 22,
+      fontWeight: '400',
+      letterSpacing: 0.1
     },
 
     metadataRow: {
@@ -243,18 +244,18 @@ export const createStyles = (theme: Theme) =>
     infoChip: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.tiny,
-      paddingHorizontal: theme.spacing.small,
-      paddingVertical: theme.spacing.tiny,
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.small,
-      borderWidth: theme.borderWidths.hairline,
-      ...createShadow(1, theme, 0.04)
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border
     },
 
     infoChipText: {
-      fontSize: theme.typography.fontSize.small,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontSize: 13,
+      fontWeight: '600',
       letterSpacing: 0.2
     }
   });

@@ -71,7 +71,7 @@ export const SupportFooter: React.FC<SupportFooterProps> = ({
   return (
     <>
       <View style={styles.container}>
-        {showContextualHelp && (
+        {showContextualHelp ? (
           <TouchableOpacity
             style={styles.contextualHelp}
             onPress={handleContactSupport}
@@ -80,14 +80,17 @@ export const SupportFooter: React.FC<SupportFooterProps> = ({
             <Text style={styles.contextualText}>{contextMessage}</Text>
             <Text style={styles.contactLink}>Contactar a soporte</Text>
           </TouchableOpacity>
+        ) : (
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>¿Necesitas ayuda?</Text>
+            <TouchableOpacity
+              onPress={handleContactSupport}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.supportLink}>Contactar Soporte</Text>
+            </TouchableOpacity>
+          </View>
         )}
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>¿Necesitas ayuda?</Text>
-          <TouchableOpacity onPress={handleContactSupport} activeOpacity={0.7}>
-            <Text style={styles.supportLink}>Contactar Soporte</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       <CustomModal

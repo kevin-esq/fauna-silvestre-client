@@ -6,49 +6,51 @@ export const createAnimalDetailsStyles = (
   insets: { top: number; bottom: number; left: number; right: number }
 ) =>
   StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: theme.colors.background
-    },
-
     container: {
       flex: 1,
       backgroundColor: theme.colors.background
     },
 
     header: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: theme.spacing.medium,
-      paddingVertical: theme.spacing.small,
-      backgroundColor: theme.colors.surface,
-      borderBottomWidth: theme.borderWidth.hairline,
-      borderBottomColor: theme.colors.border,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3
+      paddingHorizontal: 16,
+      paddingTop: insets.top + 12,
+      paddingBottom: 12,
+      backgroundColor: 'rgba(255, 255, 255, 0.97)',
+      zIndex: 100,
+      elevation: 8,
+      shadowColor: theme.colors.forest,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12
     },
 
     backButton: {
       width: 40,
       height: 40,
-      borderRadius: theme.borderRadius.medium,
-      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: 20,
+      backgroundColor: 'rgba(0, 122, 51, 0.1)',
       justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(0, 122, 51, 0.2)'
+    },
+
+    headerTitleContainer: {
+      flex: 1,
+      marginHorizontal: 16,
       alignItems: 'center'
     },
 
-    headerCenter: {
-      flex: 1,
-      paddingHorizontal: theme.spacing.medium
-    },
-
     headerTitle: {
-      fontSize: theme.typography.fontSize.large,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontSize: 18,
+      fontWeight: '700',
       color: theme.colors.text,
       textAlign: 'center'
     },
@@ -56,299 +58,318 @@ export const createAnimalDetailsStyles = (
     headerActionButton: {
       width: 40,
       height: 40,
-      borderRadius: theme.borderRadius.medium,
-      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: 20,
+      backgroundColor: 'rgba(0, 122, 51, 0.1)',
       justifyContent: 'center',
-      alignItems: 'center'
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(0, 122, 51, 0.2)'
     },
 
-    headerActionButtonActive: {
-      backgroundColor: '#FEE2E2'
+    headerBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 122, 51, 0.1)',
+      borderWidth: 1,
+      borderColor: 'rgba(0, 122, 51, 0.2)'
+    },
+
+    scrollView: {
+      flex: 1
+    },
+
+    scrollContent: {
+      paddingTop: 0,
+      paddingBottom: insets.bottom + 24
+    },
+
+    heroImageContainer: {
+      position: 'relative',
+      height: 400,
+      marginBottom: 20
+    },
+
+    heroGradientOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: '75%',
+      zIndex: 1
+    },
+
+    heroContentOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 20,
+      paddingBottom: 24,
+      zIndex: 2,
+      gap: 12
     },
 
     imageCard: {
-      margin: theme.spacing.medium,
-      borderRadius: theme.borderRadius.large,
-      overflow: 'hidden',
-      backgroundColor: theme.colors.surface,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 5
+      width: '100%',
+      height: '100%'
     },
 
     cardImage: {
       width: '100%',
-      height: 300,
-      resizeMode: 'cover'
+      height: '100%'
     },
 
     imageTopAligned: {
       resizeMode: 'cover'
     },
 
-    imageOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0, 0, 0, 0.3)'
-    },
-
-    imageContent: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      padding: theme.spacing.large
-    },
-
     categoryBadge: {
-      position: 'absolute',
-      top: theme.spacing.medium,
-      right: theme.spacing.medium,
-      backgroundColor: theme.colors.primary,
-      paddingHorizontal: theme.spacing.medium,
-      paddingVertical: theme.spacing.small,
-      borderRadius: theme.borderRadius.large,
+      flexDirection: 'row',
+      alignSelf: 'flex-start',
+      alignItems: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 24,
+      gap: 8,
+      backgroundColor: 'rgba(255, 255, 255, 0.97)',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.3)',
+      elevation: 4,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 3
+      shadowOpacity: 0.15,
+      shadowRadius: 8
     },
 
     categoryText: {
-      fontSize: theme.typography.fontSize.small,
-      fontWeight: theme.typography.fontWeight.bold,
-      color: theme.colors.textOnPrimary,
-      textTransform: 'uppercase',
-      letterSpacing: 0.5
+      fontSize: 15,
+      fontWeight: '700',
+      color: theme.colors.leaf,
+      letterSpacing: 0.3
     },
 
-    imageTitleContainer: {
-      gap: theme.spacing.tiny
+    heroTitleContainer: {
+      gap: 8
     },
 
-    imageCommonName: {
-      fontSize: 28,
-      fontWeight: theme.typography.fontWeight.bold,
+    heroTitle: {
+      fontSize: 32,
+      fontWeight: '800',
       color: '#FFFFFF',
-      textShadowColor: 'rgba(0, 0, 0, 0.75)',
+      letterSpacing: -0.5,
+      lineHeight: 38,
+      textShadowColor: 'rgba(0, 0, 0, 0.8)',
       textShadowOffset: { width: 0, height: 2 },
-      textShadowRadius: 4
+      textShadowRadius: 12
     },
 
-    imageScientificName: {
-      fontSize: theme.typography.fontSize.medium,
-      fontWeight: theme.typography.fontWeight.regular,
-      color: '#F0F0F0',
+    heroSubtitle: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: 'rgba(255, 255, 255, 0.98)',
+      letterSpacing: 0.2,
       fontStyle: 'italic',
-      textShadowColor: 'rgba(0, 0, 0, 0.75)',
+      textShadowColor: 'rgba(0, 0, 0, 0.7)',
       textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 3
+      textShadowRadius: 8
     },
 
-    imageZoomIndicator: {
+    imageActionsRow: {
       position: 'absolute',
-      top: theme.spacing.medium,
-      left: theme.spacing.medium,
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      justifyContent: 'center',
-      alignItems: 'center'
-    },
-
-    contentCard: {
-      marginHorizontal: theme.spacing.medium,
-      marginBottom: theme.spacing.medium,
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.large,
-      padding: theme.spacing.large,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 6,
-      elevation: 3
-    },
-
-    section: {
-      marginBottom: theme.spacing.large
-    },
-
-    sectionTitle: {
-      fontSize: theme.typography.fontSize.large,
-      fontWeight: theme.typography.fontWeight.bold,
-      color: theme.colors.primary,
-      marginBottom: theme.spacing.medium
-    },
-
-    description: {
-      fontSize: theme.typography.fontSize.medium,
-      lineHeight: theme.typography.lineHeight.large,
-      color: theme.colors.text,
-      textAlign: 'justify'
-    },
-
-    infoGrid: {
-      gap: theme.spacing.medium
-    },
-
-    infoRow: {
+      top: insets.top + 72,
+      right: 16,
       flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: theme.spacing.medium,
-      backgroundColor: theme.colors.surfaceVariant,
-      padding: theme.spacing.medium,
-      borderRadius: theme.borderRadius.medium
+      gap: 12,
+      zIndex: 99
     },
 
-    iconContainer: {
-      width: 40,
-      height: 40,
-      borderRadius: theme.borderRadius.medium,
+    imageActionButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
       justifyContent: 'center',
-      alignItems: 'center'
-    },
-
-    infoContent: {
-      flex: 1,
-      gap: theme.spacing.tiny
-    },
-
-    infoLabel: {
-      fontSize: theme.typography.fontSize.small,
-      fontWeight: theme.typography.fontWeight.medium,
-      color: theme.colors.textSecondary,
-      textTransform: 'uppercase',
-      letterSpacing: 0.5
-    },
-
-    infoValue: {
-      fontSize: theme.typography.fontSize.medium,
-      fontWeight: theme.typography.fontWeight.regular,
-      color: theme.colors.text,
-      lineHeight: theme.typography.lineHeight.medium
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.15)',
+      elevation: 6,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6
     },
 
     expandButton: {
+      position: 'absolute',
+      bottom: 24,
+      right: 24,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 2,
+      elevation: 4,
+      shadowColor: theme.colors.forest,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8
+    },
+
+    shareImageButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22
+    },
+
+    downloadImageButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22
+    },
+
+    contentSection: {
+      paddingHorizontal: 20
+    },
+
+    infoSection: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 20,
+      padding: 24,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderLeftWidth: 5,
+      borderLeftColor: theme.colors.forest,
+      elevation: 2,
+      shadowColor: theme.colors.forest,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12
+    },
+
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 14
+    },
+
+    sectionTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      flex: 1
+    },
+
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.colors.text,
+      flex: 1,
+      letterSpacing: -0.2
+    },
+
+    sectionContent: {
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      lineHeight: 26,
+      paddingLeft: 60,
+      letterSpacing: 0.1
+    },
+
+    iconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 14,
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+
+    expandButtonContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: theme.spacing.small,
-      paddingVertical: theme.spacing.medium,
-      borderTopWidth: theme.borderWidth.hairline,
-      borderTopColor: theme.colors.border,
-      marginTop: theme.spacing.small
+      gap: 8,
+      paddingVertical: 16,
+      backgroundColor: theme.colors.surface,
+      borderRadius: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border
     },
 
     expandButtonText: {
-      fontSize: theme.typography.fontSize.medium,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontSize: 15,
+      fontWeight: '600',
       color: theme.colors.primary
     },
 
+    actionButtonsContainer: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 20,
+      padding: 24,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderLeftWidth: 5,
+      borderLeftColor: theme.colors.forest,
+      elevation: 2,
+      shadowColor: theme.colors.forest,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12
+    },
+
     downloadButton: {
-      backgroundColor: theme.colors.primary,
-      borderRadius: theme.borderRadius.medium,
-      marginTop: theme.spacing.medium,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 6,
-      elevation: 4,
-      overflow: 'hidden'
-    },
-
-    downloadButtonDisabled: {
-      opacity: 0.9
-    },
-
-    downloadButtonContent: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: theme.spacing.small,
-      paddingVertical: theme.spacing.medium,
-      paddingHorizontal: theme.spacing.large
+      gap: 10,
+      backgroundColor: theme.colors.forest,
+      paddingHorizontal: 28,
+      paddingVertical: 14,
+      borderRadius: 16,
+      elevation: 4,
+      shadowColor: theme.colors.forest,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 12
     },
 
-    downloadTextContainer: {
-      flexDirection: 'column',
-      alignItems: 'flex-start'
-    },
-
-    downloadButtonText: {
-      fontSize: theme.typography.fontSize.medium,
-      fontWeight: theme.typography.fontWeight.bold,
-      color: theme.colors.textOnPrimary
+    actionButtonText: {
+      color: theme.colors.textOnPrimary,
+      fontSize: 15,
+      fontWeight: '600',
+      lineHeight: 22
     },
 
     downloadProgressText: {
-      fontSize: theme.typography.fontSize.small,
-      fontWeight: theme.typography.fontWeight.medium,
-      color: theme.colors.textOnPrimary,
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#FFFFFF',
       opacity: 0.9
     },
 
-    progressBarContainer: {
-      height: 4,
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      width: '100%'
-    },
-
-    progressBar: {
-      height: '100%',
-      borderRadius: 2
-    },
-
-    mapSection: {
-      marginHorizontal: theme.spacing.medium,
-      marginBottom: theme.spacing.medium,
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.large,
-      overflow: 'hidden',
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 6,
-      elevation: 3
-    },
-
-    mapHeader: {
-      padding: theme.spacing.large,
-      borderBottomWidth: theme.borderWidth.hairline,
-      borderBottomColor: theme.colors.border
-    },
-
-    mapTitleContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.medium
-    },
-
-    mapTitleTextContainer: {
-      flex: 1,
-      gap: theme.spacing.tiny
-    },
-
-    mapTitle: {
-      fontSize: theme.typography.fontSize.large,
-      fontWeight: theme.typography.fontWeight.bold,
-      color: theme.colors.text
-    },
-
     mapSubtitle: {
-      fontSize: theme.typography.fontSize.small,
-      color: theme.colors.textSecondary
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      marginTop: 4
     },
 
     mapContainer: {
-      backgroundColor: theme.colors.surfaceVariant
-    },
-
-    mapWrapper: {
-      marginBottom: 0
+      borderRadius: 16,
+      overflow: 'hidden',
+      marginTop: 12,
+      elevation: 3,
+      shadowColor: theme.colors.forest,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 8
     },
 
     mapLoadingContainer: {

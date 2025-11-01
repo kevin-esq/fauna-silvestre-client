@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { usePublications } from '../contexts/publication.context';
 import { useCatalog } from '../contexts/catalog.context';
 import {
   AnimalModelResponse,
   CommonNounResponse
 } from '@/domain/models/animal.models';
+import { userService } from '@/services/user/user.service';
 
 interface HomeDataState {
   totalUsers: number;
@@ -33,7 +33,6 @@ interface HomeDataReturn {
 }
 
 export const useHomeData = (): HomeDataReturn => {
-  const { state: publicationState, loadCounts } = usePublications();
   const {
     catalog,
     isLoading: isCatalogLoading,
@@ -42,6 +41,7 @@ export const useHomeData = (): HomeDataReturn => {
   } = useCatalog();
 
   const hasLoaded = useRef(false);
+  const [isLoadingCounts, setIsLoadingCounts] = useState(false);
 
   const [state, setState] = useState<HomeDataState>({
     totalUsers: 0,
@@ -89,6 +89,25 @@ export const useHomeData = (): HomeDataReturn => {
   const animalsToShow = useMemo(() => {
     return state.showAllAnimals ? filteredAnimals : filteredAnimals.slice(0, 4);
   }, [filteredAnimals, state.showAllAnimals]);
+
+  const loadCounts = useCallback(async () => {
+    if (isLoadingCounts) return; // Evitar llamadas duplicadas
+
+    try {
+      setIsLoadingCounts(true);
+      const counts = await userService.getCounts();
+      setState(prev => ({
+        ...prev,
+        totalPublications: counts.records,
+        totalUsers: counts.users
+      }));
+    } catch (error) {
+      console.error('Error loading counts:', error);
+    } finally {
+      setIsLoadingCounts(false);
+    }
+  }, [isLoadingCounts]);
+
   useEffect(() => {
     if (!hasLoaded.current) {
       loadCounts();
@@ -96,17 +115,6 @@ export const useHomeData = (): HomeDataReturn => {
       hasLoaded.current = true;
     }
   }, [loadCounts, fetchCatalog]);
-
-  useEffect(() => {
-    const totalPubs = publicationState.counts.data?.records || 0;
-    const totalUsers = publicationState.counts.data?.users || 0;
-
-    setState(prev => ({
-      ...prev,
-      totalPublications: totalPubs,
-      totalUsers
-    }));
-  }, [publicationState.counts.data]);
 
   const actions: HomeDataActions = {
     setSelectedCategory: useCallback((category: CommonNounResponse | null) => {
@@ -137,7 +145,7 @@ export const useHomeData = (): HomeDataReturn => {
     categories,
     filteredAnimals,
     animalsToShow,
-    isLoading: isCatalogLoading || publicationState.counts.isLoading,
+    isLoading: isCatalogLoading || isLoadingCounts,
     error
   };
 };

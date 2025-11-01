@@ -17,7 +17,7 @@ import {
 interface PublicationImageProps {
   uri?: string;
   commonNoun: string;
-  viewMode: 'card' | 'presentation';
+  viewMode: 'card' | 'presentation' | 'list';
   style?: ViewStyle;
 }
 
@@ -63,10 +63,13 @@ const PublicationImage = React.memo(
 
         <Image
           source={{ uri }}
-          style={StyleSheet.absoluteFill}
+          style={[
+            StyleSheet.absoluteFill,
+            viewMode === 'list' && { resizeMode: 'contain' }
+          ]}
           onLoad={handleImageLoad}
           onError={handleImageError}
-          resizeMode="cover"
+          resizeMode={viewMode === 'list' ? 'contain' : 'cover'}
         />
       </View>
     );
@@ -76,31 +79,34 @@ PublicationImage.displayName = 'PublicationImage';
 
 const getImageStyles = (
   vars: ThemeVariablesType,
-  viewMode: 'card' | 'presentation'
+  viewMode: 'card' | 'presentation' | 'list'
 ) =>
   StyleSheet.create({
     image: {
       width: '100%',
-      height: viewMode === 'card' ? 180 : 300,
+      minHeight: viewMode === 'card' ? 180 : 300,
+      flex: 1,
       backgroundColor: vars['--surface-variant']
     },
     placeholder: {
       width: '100%',
-      height: viewMode === 'card' ? 180 : 300,
+      minHeight: viewMode === 'card' ? 180 : 300,
+      flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: vars['--surface-variant']
     },
     placeholderText: {
-      marginTop: 8,
-      fontSize: 14,
-      color: '#999',
-      textAlign: 'center'
+      marginTop: vars['--spacing-small'],
+      fontSize: vars['--font-size-medium'],
+      color: vars['--text-secondary'],
+      textAlign: 'center',
+      opacity: 0.7
     },
     loadingOverlay: {
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      backgroundColor: vars['--overlay'],
       zIndex: 1
     }
   });

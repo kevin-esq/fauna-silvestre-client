@@ -250,7 +250,7 @@ export class PublicationService {
 
       return counts;
     } catch (error) {
-      this.logger.error('Error al obtener conteos', error as Error);
+      this.logger.debug('Error al obtener conteos', error as Error);
       throw new Error('No se pudieron obtener los conteos');
     }
   }
