@@ -30,6 +30,7 @@
 **Problema**: No aprovecha ValidationService ni ErrorHandlingService
 
 **Actual**:
+
 ```typescript
 const logger = new ConsoleLogger('info');
 
@@ -39,6 +40,7 @@ logger.info(`Draft created: ${draft.id}`);
 ```
 
 **Mejor**:
+
 ```typescript
 import { errorHandlingService } from '@/services/error-handling';
 import { ValidationService } from '@/services/validation';
@@ -55,6 +57,7 @@ import { ValidationService } from '@/services/validation';
 **Problema**: Mismo patrón try/catch en 8 métodos
 
 **Actual**:
+
 ```typescript
 const createDraft = useCallback(async (...) => {
   setIsLoading(true);
@@ -73,6 +76,7 @@ const createDraft = useCallback(async (...) => {
 ```
 
 **Patrón se repite en**:
+
 - createDraft (líneas 73-115)
 - updateDraft (líneas 117-136)
 - deleteDraft (líneas 138-157)
@@ -91,6 +95,7 @@ const createDraft = useCallback(async (...) => {
 **Problema**: Logs internos en español, deberían estar en inglés
 
 **Actual**:
+
 ```typescript
 const errorMessage = 'Error al crear borrador';
 const errorMessage = 'Error al actualizar borrador';
@@ -103,6 +108,7 @@ const errorMessage = 'Error al limpiar borradores';
 ```
 
 **Mejor**:
+
 ```typescript
 const errorMessage = 'Error creating draft';
 const errorMessage = 'Error updating draft';
@@ -123,6 +129,7 @@ const errorMessage = 'Error clearing drafts';
 **Problema**: El value del context no está memoizado
 
 **Actual**:
+
 ```typescript
 const value: DraftContextType = {
   drafts,
@@ -146,12 +153,16 @@ return (
 ```
 
 **Mejor**:
+
 ```typescript
-const value = useMemo(() => ({
-  drafts,
-  isLoading,
-  // ...
-}), [drafts, isLoading, /* deps */]);
+const value = useMemo(
+  () => ({
+    drafts,
+    isLoading
+    // ...
+  }),
+  [drafts, isLoading /* deps */]
+);
 ```
 
 ---
@@ -165,6 +176,7 @@ const value = useMemo(() => ({
 **Actual**: Todo en `draft.context.tsx`
 
 **Mejor**:
+
 ```
 src/presentation/contexts/draft/
 ├── index.tsx              (Provider y hook)
@@ -208,16 +220,16 @@ const logger = new ConsoleLogger('info');
 
 ## 📊 Comparación con Otros Contexts
 
-| Aspecto | PublicationContext | AuthContext | DraftContext | Estado DraftContext |
-|---------|-------------------|-------------|--------------|---------------------|
-| **LOC Original** | 1,140 | 319 | 314 | 🟢 Bueno |
-| **Utility Classes** | 5 → 0 | 0 | 0 | ✅ Bueno |
-| **Modularización** | 7 archivos | 4 archivos | 1 archivo | 🟡 Podría mejorar |
-| **ValidationService** | ✅ Integrado | ✅ Integrado | ❌ No | 🔴 Falta |
-| **ErrorHandlingService** | ✅ Integrado | ❌ No | ❌ No | 🔴 Falta |
-| **useMemo** | ✅ Sí | ✅ Sí | ❌ No | 🔴 Falta |
-| **Try/catch repetidos** | 0 | 7 | 8 | 🔴 Alto |
-| **Mensajes en inglés** | ✅ Sí | ✅ Sí | ❌ No | 🔴 Falta |
+| Aspecto                  | PublicationContext | AuthContext  | DraftContext | Estado DraftContext |
+| ------------------------ | ------------------ | ------------ | ------------ | ------------------- |
+| **LOC Original**         | 1,140              | 319          | 314          | 🟢 Bueno            |
+| **Utility Classes**      | 5 → 0              | 0            | 0            | ✅ Bueno            |
+| **Modularización**       | 7 archivos         | 4 archivos   | 1 archivo    | 🟡 Podría mejorar   |
+| **ValidationService**    | ✅ Integrado       | ✅ Integrado | ❌ No        | 🔴 Falta            |
+| **ErrorHandlingService** | ✅ Integrado       | ❌ No        | ❌ No        | 🔴 Falta            |
+| **useMemo**              | ✅ Sí              | ✅ Sí        | ❌ No        | 🔴 Falta            |
+| **Try/catch repetidos**  | 0                  | 7            | 8            | 🔴 Alto             |
+| **Mensajes en inglés**   | ✅ Sí              | ✅ Sí        | ❌ No        | 🔴 Falta            |
 
 ---
 
@@ -269,36 +281,40 @@ const logger = new ConsoleLogger('info');
 
 ### Reducción Esperada
 
-| Item | Antes | Después | Mejora |
-|------|-------|---------|--------|
-| **Líneas en context** | 314 | ~200 | **-36%** |
-| **Try/catch blocks** | 8 | 0 | **-100%** |
-| **Mensajes en español** | 8 | 0 | **-100%** |
-| **useMemo** | 0 | 1 | **+Performance** |
-| **Archivos** | 1 | 3-4 | **Modular** |
-| **Servicios integrados** | 2 | 4 | **+2** |
+| Item                     | Antes | Después | Mejora           |
+| ------------------------ | ----- | ------- | ---------------- |
+| **Líneas en context**    | 314   | ~200    | **-36%**         |
+| **Try/catch blocks**     | 8     | 0       | **-100%**        |
+| **Mensajes en español**  | 8     | 0       | **-100%**        |
+| **useMemo**              | 0     | 1       | **+Performance** |
+| **Archivos**             | 1     | 3-4     | **Modular**      |
+| **Servicios integrados** | 2     | 4       | **+2**           |
 
 ---
 
 ## ✅ Beneficios Esperados
 
 ### Reusabilidad
+
 - ✅ **ErrorHandlingService** para manejo consistente
 - ✅ **ValidationService** para validaciones
 - ✅ **Código modular** reutilizable
 
 ### Mantenibilidad
+
 - ✅ **-36% líneas** en context principal
 - ✅ **Sin try/catch repetitivo**
 - ✅ **Mensajes consistentes** en inglés
 - ✅ **Más fácil de testear**
 
 ### Consistencia
+
 - ✅ **Mismos patrones** que PublicationContext y AuthContext
 - ✅ **Servicios compartidos** en toda la app
 - ✅ **Logs en inglés** como resto de la app
 
 ### Performance
+
 - ✅ **useMemo** evita re-renders
 - ✅ **Dependencias optimizadas**
 - ✅ **Mejor gestión de estado**
@@ -313,6 +329,7 @@ const logger = new ConsoleLogger('info');
 **Tiempo Estimado**: 1.5-2 horas
 
 **Razón**: DraftContext está funcional pero necesita modernización para:
+
 1. Consistencia con nuevos patrones
 2. Reducción de código boilerplate
 3. Mejor manejo de errores
@@ -338,6 +355,7 @@ const logger = new ConsoleLogger('info');
 **Veredicto Final**: 🟡 **MODERNIZACIÓN NECESARIA**
 
 El DraftContext está bien estructurado funcionalmente pero necesita modernización para:
+
 - Integrar servicios centralizados (ErrorHandlingService, ValidationService)
 - Eliminar código boilerplate repetitivo (8 try/catch bloques)
 - Internacionalizar logs internos (inglés)
@@ -345,6 +363,7 @@ El DraftContext está bien estructurado funcionalmente pero necesita modernizaci
 - Consistencia con otros contexts refactorizados
 
 **NO es crítico** pero las mejoras aportarán:
+
 - Mejor consistencia con el resto de la app
 - Código más limpio y mantenible
 - Manejo de errores centralizado

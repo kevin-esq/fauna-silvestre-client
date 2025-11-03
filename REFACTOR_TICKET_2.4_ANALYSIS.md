@@ -7,6 +7,7 @@
 **Problema**: Cada servicio maneja errores de forma similar pero sin centralización
 
 **Veredicto**: Necesitamos un **ErrorHandlingService centralizado** para:
+
 - Evitar duplicación de código
 - Estandarizar manejo de errores
 - Mejorar logging y debugging
@@ -129,7 +130,7 @@ catch (error) {
 // AuthService
 this.logger.error('[AuthService] Sign in failed');
 
-// CatalogService  
+// CatalogService
 this.logger.error('Error al crear catálogo', error as Error, { specie });
 
 // Preferences
@@ -238,7 +239,7 @@ const DEFAULT_RETRY_OPTIONS: RetryOptions = {
 export class ErrorHandlingService {
   // Basic error handling
   handle(error: unknown, context: ErrorContext, logger?: ILogger): never;
-  
+
   // Error handling with default value
   handleWithDefault<T>(
     error: unknown,
@@ -246,7 +247,7 @@ export class ErrorHandlingService {
     context: ErrorContext,
     logger?: ILogger
   ): T;
-  
+
   // Error handling with retry
   async handleWithRetry<T>(
     operation: () => Promise<T>,
@@ -254,13 +255,13 @@ export class ErrorHandlingService {
     options?: Partial<RetryOptions>,
     logger?: ILogger
   ): Promise<T>;
-  
+
   // Categorize error
   categorize(error: unknown): ErrorCategory;
-  
+
   // Check if retryable
   isRetryable(error: unknown): boolean;
-  
+
   // Format error message
   formatErrorMessage(error: unknown, context: ErrorContext): string;
 }
@@ -275,7 +276,7 @@ export class ErrorHandlingService {
 ```typescript
 async getCatalogById(catalogId: string): Promise<AnimalModelResponse> {
   this.validateId(catalogId, 'getCatalogById');
-  
+
   try {
     this.logger.debug('Obteniendo catálogo por ID', { catalogId });
     return await this.catalogRepository.getCatalogById(catalogId);
@@ -293,7 +294,7 @@ async getCatalogById(catalogId: string): Promise<AnimalModelResponse> {
 ```typescript
 async getCatalogById(catalogId: string): Promise<AnimalModelResponse> {
   this.validateId(catalogId, 'getCatalogById');
-  
+
   return this.errorHandler.handleWithRetry(
     () => this.catalogRepository.getCatalogById(catalogId),
     { operation: 'getCatalogById', params: { catalogId } },
@@ -338,10 +339,10 @@ async getPreferences(): Promise<Preferences> {
 
 ### 1. **DRY Principle**
 
-| Métrica | Antes | Después | Mejora |
-|---------|-------|---------|--------|
-| **Código duplicado** | 30+ try/catch similares | 0 duplicados | ✅ -100% |
-| **Líneas por método** | 10-15 (con try/catch) | 3-5 (delegado) | ✅ -60% |
+| Métrica               | Antes                   | Después        | Mejora   |
+| --------------------- | ----------------------- | -------------- | -------- |
+| **Código duplicado**  | 30+ try/catch similares | 0 duplicados   | ✅ -100% |
+| **Líneas por método** | 10-15 (con try/catch)   | 3-5 (delegado) | ✅ -60%  |
 
 ---
 
@@ -404,7 +405,7 @@ errorHandler.handle(error, context); // Internamente:
 ### Fase 2: Integrar en Servicios Existentes
 
 5. ✅ Actualizar CatalogService
-6. ✅ Actualizar PublicationService  
+6. ✅ Actualizar PublicationService
 7. ✅ Actualizar servicios de Storage
 8. ⚠️ AuthService y TokenService (ya tienen custom handling, evaluar)
 
@@ -457,13 +458,13 @@ src/services/error-handling/
 
 ## 🎯 Métricas de Éxito
 
-| Métrica | Objetivo |
-|---------|----------|
-| **Código duplicado reducido** | -80% |
-| **Líneas de código en servicios** | -40% (en error handling) |
-| **Consistencia de logs** | 100% |
-| **Test coverage** | >90% para ErrorHandlingService |
-| **Servicios migrados** | 100% (gradual) |
+| Métrica                           | Objetivo                       |
+| --------------------------------- | ------------------------------ |
+| **Código duplicado reducido**     | -80%                           |
+| **Líneas de código en servicios** | -40% (en error handling)       |
+| **Consistencia de logs**          | 100%                           |
+| **Test coverage**                 | >90% para ErrorHandlingService |
+| **Servicios migrados**            | 100% (gradual)                 |
 
 ---
 
@@ -472,12 +473,14 @@ src/services/error-handling/
 **Veredicto**: ✅ **IMPLEMENTAR ErrorHandlingService**
 
 **Razones**:
+
 1. 🔴 **Duplicación masiva** (30+ try/catch similares)
 2. 🟡 **Inconsistencia** en logging y error handling
 3. 🟡 **No hay retry logic** centralizada
 4. 🟡 **Testing difícil** sin abstracción
 
 **Beneficios**:
+
 - ✅ DRY principle aplicado
 - ✅ Consistency en toda la app
 - ✅ Testability mejorada

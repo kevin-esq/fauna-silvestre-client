@@ -85,10 +85,7 @@ export class PublicationService {
   constructor(apiService: ApiService, errorHandler?: ErrorHandlingService) {
     this.logger = new ConsoleLogger();
     this.errorHandler = errorHandler || new ErrorHandlingService();
-    this.repository = new PublicationRepository(
-      apiService.client,
-      this.logger
-    );
+    this.repository = new PublicationRepository(apiService.client, this.logger);
   }
 
   setOnCacheInvalidate(callback?: () => void) {
@@ -157,7 +154,10 @@ export class PublicationService {
 
     return this.errorHandler.handleWithRetry(
       () => methodToCall(page, size),
-      { operation: 'getPublicationsByStatus', params: { status, page, size, forAdmin } },
+      {
+        operation: 'getPublicationsByStatus',
+        params: { status, page, size, forAdmin }
+      },
       { maxAttempts: 2 },
       this.logger
     );
@@ -250,12 +250,20 @@ export class PublicationService {
   ): Promise<{ success: string[]; failed: string[] }> {
     const results = { success: [] as string[], failed: [] as string[] };
 
-    const actionHandler = action === 'accept'
-      ? (id: string) => this.acceptPublication(id)
-      : (id: string) => this.rejectPublication(id);
+    const actionHandler =
+      action === 'accept'
+        ? (id: string) => this.acceptPublication(id)
+        : (id: string) => this.rejectPublication(id);
 
-    for (let i = 0; i < publicationIds.length; i += PublicationService.DEFAULT_BATCH_SIZE) {
-      const batch = publicationIds.slice(i, i + PublicationService.DEFAULT_BATCH_SIZE);
+    for (
+      let i = 0;
+      i < publicationIds.length;
+      i += PublicationService.DEFAULT_BATCH_SIZE
+    ) {
+      const batch = publicationIds.slice(
+        i,
+        i + PublicationService.DEFAULT_BATCH_SIZE
+      );
 
       const promises = batch.map(async id => {
         try {

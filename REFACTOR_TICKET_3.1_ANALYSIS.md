@@ -19,6 +19,7 @@
 **Problema**: Un solo archivo de context con 1,140 líneas
 
 **Comparación**:
+
 - Archivo típico de context: 100-300 líneas
 - Este archivo: **1,140 líneas (3-11x más grande)**
 
@@ -42,6 +43,7 @@ class ReducerHandlers { ... }
 **Problema**: 5 utility classes que NO pertenecen en un context
 
 **Solución**: Mover a archivos separados:
+
 - `src/utils/publication-filters.ts`
 - `src/utils/circuit-breaker.ts` (o eliminar si usamos ErrorHandlingService)
 - `src/utils/validation.ts`
@@ -91,8 +93,8 @@ type PublicationActionType =
   | 'OPERATION_FAILURE'
   | 'RESET_STATUS'
   | 'RESET_ALL'
-  | 'CIRCUIT_BREAKER_OPEN'      // ❌ Eliminar
-  | 'CIRCUIT_BREAKER_RESET'     // ❌ Eliminar
+  | 'CIRCUIT_BREAKER_OPEN' // ❌ Eliminar
+  | 'CIRCUIT_BREAKER_RESET' // ❌ Eliminar
   | 'UPDATE_PUBLICATION_STATUS'
   | 'FETCH_COUNTS_START'
   | 'FETCH_COUNTS_SUCCESS'
@@ -115,7 +117,7 @@ interface State {
   readonly [PublicationStatus.PENDING]: PublicationState;
   readonly [PublicationStatus.ACCEPTED]: PublicationState;
   readonly [PublicationStatus.REJECTED]: PublicationState;
-  readonly circuitBreaker: CircuitBreakerState;  // ❌ Eliminar
+  readonly circuitBreaker: CircuitBreakerState; // ❌ Eliminar
   readonly counts: CountsState;
 }
 ```
@@ -178,13 +180,13 @@ const reducer = (state: State, action: Action): State => {
 const CONFIG = {
   DEFAULT_PAGE_SIZE: 10,
   INITIAL_PAGE: 1,
-  REQUEST_TIMEOUT: 30000,      // Ya no se usa con ErrorHandlingService
+  REQUEST_TIMEOUT: 30000, // Ya no se usa con ErrorHandlingService
   PREFETCH_THRESHOLD: 0.7,
   CIRCUIT_BREAKER_THRESHOLD: 5, // ❌ Eliminar
   CIRCUIT_BREAKER_TIMEOUT: 10000, // ❌ Eliminar
   DEBOUNCE_DELAY: 300,
-  RETRY_ATTEMPTS: 2,           // ❌ Usar ErrorHandlingService
-  RETRY_DELAY: 1000            // ❌ Usar ErrorHandlingService
+  RETRY_ATTEMPTS: 2, // ❌ Usar ErrorHandlingService
+  RETRY_DELAY: 1000 // ❌ Usar ErrorHandlingService
 } as const;
 ```
 
@@ -198,15 +200,15 @@ const CONFIG = {
 
 ### Métricas
 
-| Métrica | Valor | Estado |
-|---------|-------|--------|
-| **Líneas totales** | 1,140 | 🔴 Crítico |
-| **Utility classes** | 5 | 🔴 Alto |
-| **Action types** | 15+ | 🔴 Alto |
-| **Reducer cases** | 15 | 🔴 Alto |
-| **Reducer LOC** | 165 | 🔴 Alto |
-| **Interface definitions** | 20+ | 🔴 Alto |
-| **Responsabilidades** | 8+ | 🔴 Crítico |
+| Métrica                   | Valor | Estado     |
+| ------------------------- | ----- | ---------- |
+| **Líneas totales**        | 1,140 | 🔴 Crítico |
+| **Utility classes**       | 5     | 🔴 Alto    |
+| **Action types**          | 15+   | 🔴 Alto    |
+| **Reducer cases**         | 15    | 🔴 Alto    |
+| **Reducer LOC**           | 165   | 🔴 Alto    |
+| **Interface definitions** | 20+   | 🔴 Alto    |
+| **Responsabilidades**     | 8+    | 🔴 Crítico |
 
 ---
 
@@ -285,30 +287,33 @@ const CONFIG = {
 
 ### Reducción Esperada
 
-| Item | Antes | Después | Reducción |
-|------|-------|---------|-----------|
-| **Líneas en context** | 1,140 | ~400 | -65% |
-| **Utility classes** | 5 en context | 0 en context | -100% |
-| **Action types** | 15 | 8 | -47% |
-| **Reducer LOC** | 165 | ~80 | -52% |
-| **Archivos** | 1 gigante | 8-10 modulares | Mejor |
+| Item                  | Antes        | Después        | Reducción |
+| --------------------- | ------------ | -------------- | --------- |
+| **Líneas en context** | 1,140        | ~400           | -65%      |
+| **Utility classes**   | 5 en context | 0 en context   | -100%     |
+| **Action types**      | 15           | 8              | -47%      |
+| **Reducer LOC**       | 165          | ~80            | -52%      |
+| **Archivos**          | 1 gigante    | 8-10 modulares | Mejor     |
 
 ---
 
 ## ✅ Beneficios Esperados
 
 ### Mantenibilidad
+
 - ✅ Archivo principal < 400 líneas
 - ✅ Responsabilidades separadas
 - ✅ Utilidades reutilizables
 - ✅ Estructura clara y modular
 
 ### Performance
+
 - ✅ Sin circuit breaker overhead
 - ✅ ErrorHandlingService optimizado
 - ✅ Menos re-renders innecesarios
 
 ### Developer Experience
+
 - ✅ Fácil de entender
 - ✅ Fácil de testear
 - ✅ Fácil de extender
@@ -321,6 +326,7 @@ const CONFIG = {
 **Veredicto Final**: 🔴 **REFACTORING CRÍTICO NECESARIO**
 
 El PublicationContext es un ejemplo de **context anti-pattern**:
+
 - 1,140 líneas en un solo archivo
 - Múltiples responsabilidades mezcladas
 - Código duplicado con services

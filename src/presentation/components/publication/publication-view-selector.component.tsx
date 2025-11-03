@@ -413,7 +413,9 @@ export const PublicationViewSelector: React.FC<
                       label={opt.label}
                       icon={opt.icon}
                       isActive={preferences.filterByAnimalState === opt.value}
-                      onPress={() => preferences.setFilterByAnimalState(opt.value)}
+                      onPress={() =>
+                        preferences.setFilterByAnimalState(opt.value)
+                      }
                     />
                   ))}
                 </View>
@@ -435,9 +437,17 @@ export const PublicationViewSelector: React.FC<
                 />
                 <ModalToggle
                   label="Fecha de creación"
-                  value={preferences.layout === 'timeline' ? true : preferences.showCreatedDate}
+                  value={
+                    preferences.layout === 'timeline'
+                      ? true
+                      : preferences.showCreatedDate
+                  }
                   onToggle={preferences.toggleCreatedDate}
-                  disabled={preferences.layout === 'list' || preferences.layout === 'grid' || preferences.layout === 'timeline'}
+                  disabled={
+                    preferences.layout === 'list' ||
+                    preferences.layout === 'grid' ||
+                    preferences.layout === 'timeline'
+                  }
                 />
                 <ModalToggle
                   label="Fecha de aceptación"

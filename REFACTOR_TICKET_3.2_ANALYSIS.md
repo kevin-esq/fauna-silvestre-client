@@ -30,6 +30,7 @@
 **Problema**: No aprovecha ValidationService ni ErrorHandlingService
 
 **Actual**:
+
 ```typescript
 const getErrorMessage = useCallback((error: unknown): string => {
   const authError = AuthErrorMapper.map(error);
@@ -46,6 +47,7 @@ const isValidUserData = (
 ```
 
 **Mejor**:
+
 ```typescript
 // Usar ErrorHandlingService para manejo centralizado
 // Usar ValidationService para validaciones
@@ -60,16 +62,16 @@ const isValidUserData = (
 **Problema**: Operaciones de storage repetidas en 3 lugares
 
 **Actual**:
+
 ```typescript
 // initializeAuth
-const [storedUser, storedAccessToken, storedRefreshToken] =
-  await Promise.all([
-    storage.getValueFor(USER_KEY),
-    storage.getValueFor(ACCESS_TOKEN_KEY),
-    storage.getValueFor(REFRESH_TOKEN_KEY)
-  ]);
+const [storedUser, storedAccessToken, storedRefreshToken] = await Promise.all([
+  storage.getValueFor(USER_KEY),
+  storage.getValueFor(ACCESS_TOKEN_KEY),
+  storage.getValueFor(REFRESH_TOKEN_KEY)
+]);
 
-// handleSignOutEvent  
+// handleSignOutEvent
 await Promise.all([
   storage.deleteValueFor(USER_KEY),
   storage.deleteValueFor(ACCESS_TOKEN_KEY),
@@ -81,6 +83,7 @@ const storedUser = await storage.getValueFor(USER_KEY);
 ```
 
 **Mejor**: Extraer a utility functions
+
 ```typescript
 // src/presentation/contexts/auth/storage-utils.ts
 export const loadAuthDataFromStorage = async () => { ... }
@@ -96,26 +99,31 @@ export const clearAuthDataFromStorage = async () => { ... }
 **Problema**: Mismo patrón try/catch en todos los métodos
 
 **Actual**:
+
 ```typescript
-const signIn = useCallback(async (credentials, rememberMe) => {
-  setIsLoading(true);
-  setError(null);
-  try {
-    setStatus('AUTHENTICATING');
-    const userEntity = await authService.signIn(credentials, rememberMe);
-    setAuthenticatedUser(userEntity);
-  } catch (error) {
-    const errorMessage = getErrorMessage(error);
-    setError(errorMessage);
-    setStatus('UNAUTHENTICATED');
-    throw error;
-  } finally {
-    setIsLoading(false);
-  }
-}, [setStatus, setAuthenticatedUser, getErrorMessage]);
+const signIn = useCallback(
+  async (credentials, rememberMe) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      setStatus('AUTHENTICATING');
+      const userEntity = await authService.signIn(credentials, rememberMe);
+      setAuthenticatedUser(userEntity);
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      setError(errorMessage);
+      setStatus('UNAUTHENTICATED');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  },
+  [setStatus, setAuthenticatedUser, getErrorMessage]
+);
 ```
 
 **Patrón se repite en**:
+
 - signOut (líneas 168-180)
 - registerUser (líneas 182-197)
 - sendResetPasswordEmail (líneas 199-214)
@@ -136,6 +144,7 @@ const signIn = useCallback(async (credentials, rememberMe) => {
 **Actual**: Todo en `auth.context.tsx`
 
 **Mejor**:
+
 ```
 src/presentation/contexts/auth/
 ├── index.tsx              (Provider y hook principal)
@@ -170,15 +179,15 @@ const isValidUserData = (user, accessToken, refreshToken) => { ... };
 
 ## 📊 Comparación con PublicationContext
 
-| Aspecto | PublicationContext (Antes) | AuthContext | Mejora Necesaria |
-|---------|---------------------------|-------------|------------------|
-| **LOC** | 1,140 | 319 | ✅ Ya es bueno |
-| **Utility Classes** | 5 en context | 0 | ✅ Ya es bueno |
-| **Modularización** | 1 archivo | 1 archivo | 🟡 Podría mejorar |
-| **Servicios Centralizados** | No usaba | Usa AuthService | 🟡 Falta integrar nuevos |
-| **Validations** | Locales | Locales | 🟡 Usar ValidationService |
-| **Error Handling** | Try/catch manual | Try/catch manual | 🟡 Usar ErrorHandlingService |
-| **Storage** | N/A | Operaciones duplicadas | 🟡 Extraer a utils |
+| Aspecto                     | PublicationContext (Antes) | AuthContext            | Mejora Necesaria             |
+| --------------------------- | -------------------------- | ---------------------- | ---------------------------- |
+| **LOC**                     | 1,140                      | 319                    | ✅ Ya es bueno               |
+| **Utility Classes**         | 5 en context               | 0                      | ✅ Ya es bueno               |
+| **Modularización**          | 1 archivo                  | 1 archivo              | 🟡 Podría mejorar            |
+| **Servicios Centralizados** | No usaba                   | Usa AuthService        | 🟡 Falta integrar nuevos     |
+| **Validations**             | Locales                    | Locales                | 🟡 Usar ValidationService    |
+| **Error Handling**          | Try/catch manual           | Try/catch manual       | 🟡 Usar ErrorHandlingService |
+| **Storage**                 | N/A                        | Operaciones duplicadas | 🟡 Extraer a utils           |
 
 ---
 
@@ -190,7 +199,7 @@ const isValidUserData = (user, accessToken, refreshToken) => { ... };
    - Mover `isValidUserData` a ValidationService
    - Reutilizar en otros lugares de la app
 
-2. ✅ **Usar ErrorHandlingService** 
+2. ✅ **Usar ErrorHandlingService**
    - Reemplazar try/catch manual con ErrorHandlingService
    - Categorización automática de errores
    - Logging centralizado
@@ -224,29 +233,32 @@ const isValidUserData = (user, accessToken, refreshToken) => { ... };
 
 ### Reducción Esperada
 
-| Item | Antes | Después | Mejora |
-|------|-------|---------|--------|
-| **Líneas en context** | 319 | ~180 | **-44%** |
-| **Try/catch blocks** | 7 | 0 | **-100%** |
-| **Storage operations** | Duplicadas | Centralizadas | **DRY** |
-| **Archivos** | 1 | 4 | **Modular** |
-| **Servicios integrados** | 3 | 5 | **+2** |
+| Item                     | Antes      | Después       | Mejora      |
+| ------------------------ | ---------- | ------------- | ----------- |
+| **Líneas en context**    | 319        | ~180          | **-44%**    |
+| **Try/catch blocks**     | 7          | 0             | **-100%**   |
+| **Storage operations**   | Duplicadas | Centralizadas | **DRY**     |
+| **Archivos**             | 1          | 4             | **Modular** |
+| **Servicios integrados** | 3          | 5             | **+2**      |
 
 ---
 
 ## ✅ Beneficios Esperados
 
 ### Reusabilidad
+
 - ✅ **ValidationService.validateAuthData()** disponible para otros contextos
 - ✅ **Storage utils** reutilizables en toda la app
 - ✅ **Error handling** consistente con resto de la app
 
 ### Mantenibilidad
+
 - ✅ **Menos código** en context principal
 - ✅ **Lógica separada** en módulos específicos
 - ✅ **Más fácil de testear**
 
 ### Consistencia
+
 - ✅ **Mismos patrones** que PublicationContext
 - ✅ **Servicios compartidos** en toda la app
 - ✅ **Estructura modular** consistente
@@ -261,6 +273,7 @@ const isValidUserData = (user, accessToken, refreshToken) => { ... };
 **Tiempo Estimado**: 1-2 horas
 
 **Razón**: AuthContext ya está bien estructurado, las optimizaciones son principalmente para:
+
 1. Consistencia con nuevos patrones
 2. Reusabilidad de código
 3. Mejor mantenibilidad a largo plazo
@@ -285,12 +298,14 @@ const isValidUserData = (user, accessToken, refreshToken) => { ... };
 **Veredicto Final**: 🟢 **OPTIMIZACIÓN BENEFICIOSA**
 
 El AuthContext está bien estructurado pero puede beneficiarse de:
+
 - Integración con servicios centralizados nuevos
 - Extracción de utilidades duplicadas
 - Modularización para consistencia
 - Reducción de código boilerplate
 
 **NO es crítico** como lo era PublicationContext, pero las mejoras aportarán:
+
 - Mejor consistencia
 - Código más reutilizable
 - Mantenibilidad a largo plazo

@@ -68,10 +68,10 @@ export interface BaseCardProps {
 
 /**
  * Generic Base Card component following clean architecture principles
- * 
+ *
  * Provides consistent card layout with header, content, and footer slots.
  * Handles shadows, borders, and touch interactions in a reusable way.
- * 
+ *
  * @example
  * <BaseCard
  *   header={<Image source={...} />}
@@ -106,17 +106,18 @@ export const BaseCard: React.FC<BaseCardProps> = React.memo(
         borderLeftWidth: leftBorderColor ? 4 : 1,
         borderLeftColor: leftBorderColor || colors.border,
         overflow: 'hidden',
-        ...(!noShadow && Platform.select({
-          ios: {
-            shadowColor: colors.shadow,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8
-          },
-          android: {
-            elevation: 4
-          }
-        }))
+        ...(!noShadow &&
+          Platform.select({
+            ios: {
+              shadowColor: colors.shadow,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8
+            },
+            android: {
+              elevation: 4
+            }
+          }))
       },
       headerContainer: {
         overflow: 'hidden'
@@ -140,10 +141,7 @@ export const BaseCard: React.FC<BaseCardProps> = React.memo(
       : { testID };
 
     return (
-      <CardContainer
-        {...containerProps}
-        style={[cardStyles.container, style]}
-      >
+      <CardContainer {...containerProps} style={[cardStyles.container, style]}>
         {header && (
           <View style={[cardStyles.headerContainer, headerStyle]}>
             {header}

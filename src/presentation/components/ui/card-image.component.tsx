@@ -1,5 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { Image, View, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  Image,
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '@/presentation/contexts/theme.context';
 
@@ -32,10 +38,10 @@ export interface CardImageProps {
 
 /**
  * Reusable card image component with loading states
- * 
+ *
  * Handles image loading, errors, and optional touch interaction.
  * Provides consistent image UI across all card types.
- * 
+ *
  * @example
  * <CardImage
  *   uri={imageUri}
@@ -97,13 +103,19 @@ export const CardImage: React.FC<CardImageProps> = React.memo(
 
         {loading && showLoading && !error && (
           <View style={styles.loadingContainer}>
-            {placeholder || <ActivityIndicator size="large" color={colors.primary} />}
+            {placeholder || (
+              <ActivityIndicator size="large" color={colors.primary} />
+            )}
           </View>
         )}
 
         {error && (
           <View style={styles.errorContainer}>
-            <Ionicons name="image-outline" size={48} color={colors.textSecondary} />
+            <Ionicons
+              name="image-outline"
+              size={48}
+              color={colors.textSecondary}
+            />
           </View>
         )}
       </>

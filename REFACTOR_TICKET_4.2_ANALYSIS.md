@@ -15,10 +15,12 @@
 ### 1. **Debounce Pattern** ⭐⭐⭐
 
 **Ubicaciones**:
+
 - `catalog-animals-screen.tsx` - useSearchDebounce (implementación local)
 - `use-catalog-management.hook.ts` - setTimeout con ref para búsqueda
 
 **Patrón Actual en catalog-animals-screen**:
+
 ```typescript
 const useSearchDebounce = (
   value: string,
@@ -58,6 +60,7 @@ const useSearchDebounce = (
 ### 2. **Timeout Pattern** ⭐⭐⭐
 
 **Ubicaciones** (15+ instancias):
+
 - `use-animal-image-picker.hook.ts` - Timeout para callbacks
 - `use-file-download.hook.ts` - Timeout para cambio de estado
 - `code-input.component.tsx` - Múltiples timeouts
@@ -73,6 +76,7 @@ const useSearchDebounce = (
 - `animal-form-screen.tsx` - Timeout para navegación
 
 **Patrón Actual**:
+
 ```typescript
 const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -99,10 +103,12 @@ timeoutRef.current = setTimeout(() => {
 ### 3. **Interval Pattern** ⭐⭐
 
 **Ubicaciones**:
+
 - `use-current-time.hook.ts` - setInterval para reloj
 - `code-input.component.tsx` - setInterval para clipboard
 
 **Patrón Actual**:
+
 ```typescript
 useEffect(() => {
   const interval = setInterval(() => {
@@ -121,11 +127,13 @@ useEffect(() => {
 ### 4. **Previous Value Pattern** ⭐⭐
 
 **Uso Potencial**:
+
 - Comparar valores anteriores en useEffect
 - Detectar cambios de estado
 - Optimizaciones de renderizado
 
 **Patrón Común**:
+
 ```typescript
 const prevValueRef = useRef(value);
 
@@ -146,10 +154,12 @@ if (prevValueRef.current !== value) {
 ### 5. **Update Effect Pattern** ⭐⭐
 
 **Uso Potencial**:
+
 - useEffect que no debe correr en mount
 - Solo ejecutar en actualizaciones
 
 **Patrón Común**:
+
 ```typescript
 const isFirstRender = useRef(true);
 
@@ -173,12 +183,14 @@ useEffect(() => {
 **Propósito**: Debounce de valores con delay configurable
 
 **Casos de Uso**:
+
 - Búsquedas en tiempo real
 - Auto-save de formularios
 - Validaciones con delay
 - Filtros dinámicos
 
 **API Propuesta**:
+
 ```typescript
 const debouncedValue = useDebounce(value, delay);
 ```
@@ -192,12 +204,14 @@ const debouncedValue = useDebounce(value, delay);
 **Propósito**: setTimeout con cleanup automático
 
 **Casos de Uso**:
+
 - Navegación con delay
 - Animaciones
 - Auto-hide de mensajes
 - Retry logic
 
 **API Propuesta**:
+
 ```typescript
 const { start, clear, isActive } = useTimeout(callback, delay);
 ```
@@ -211,12 +225,14 @@ const { start, clear, isActive } = useTimeout(callback, delay);
 **Propósito**: setInterval con cleanup automático
 
 **Casos de Uso**:
+
 - Relojes
 - Polling de datos
 - Animaciones continuas
 - Auto-refresh
 
 **API Propuesta**:
+
 ```typescript
 const { start, stop, isRunning } = useInterval(callback, delay);
 ```
@@ -230,11 +246,13 @@ const { start, stop, isRunning } = useInterval(callback, delay);
 **Propósito**: Obtener valor anterior de un estado/prop
 
 **Casos de Uso**:
+
 - Comparar valores anteriores
 - Detectar cambios específicos
 - Optimizaciones
 
 **API Propuesta**:
+
 ```typescript
 const previousValue = usePrevious(value);
 ```
@@ -248,11 +266,13 @@ const previousValue = usePrevious(value);
 **Propósito**: useEffect que solo corre en updates, no en mount
 
 **Casos de Uso**:
+
 - Efectos solo en cambios
 - Evitar ejecución inicial
 - Lógica condicional
 
 **API Propuesta**:
+
 ```typescript
 useUpdateEffect(() => {
   // solo en updates
@@ -265,14 +285,14 @@ useUpdateEffect(() => {
 
 ## 📊 Estimaciones de Impacto
 
-| Hook | Instancias | Líneas Ahorradas | Archivos Afectados |
-|------|-----------|------------------|-------------------|
-| **useDebounce** | 2+ | ~30 | 2-3 |
-| **useTimeout** | 15+ | ~150 | 10-12 |
-| **useInterval** | 2+ | ~15 | 2 |
-| **usePrevious** | Futuro | ~10/uso | N/A |
-| **useUpdateEffect** | Futuro | ~8/uso | N/A |
-| **Total** | 19+ | **~205+** | **14-17** |
+| Hook                | Instancias | Líneas Ahorradas | Archivos Afectados |
+| ------------------- | ---------- | ---------------- | ------------------ |
+| **useDebounce**     | 2+         | ~30              | 2-3                |
+| **useTimeout**      | 15+        | ~150             | 10-12              |
+| **useInterval**     | 2+         | ~15              | 2                  |
+| **usePrevious**     | Futuro     | ~10/uso          | N/A                |
+| **useUpdateEffect** | Futuro     | ~8/uso           | N/A                |
+| **Total**           | 19+        | **~205+**        | **14-17**          |
 
 ---
 
@@ -326,21 +346,25 @@ useUpdateEffect(() => {
 ## ✅ Beneficios Esperados
 
 ### Reusabilidad
+
 - ✅ **5 hooks de utilidad** reutilizables app-wide
 - ✅ **Eliminan 200+ líneas** de código duplicado
 - ✅ **API consistente** en toda la app
 
 ### Calidad
+
 - ✅ **Cleanup automático** previene memory leaks
 - ✅ **TypeScript completo** con tipos genéricos
 - ✅ **Documentación** con ejemplos
 
 ### Mantenibilidad
+
 - ✅ **Código centralizado** más fácil de mantener
 - ✅ **Bugs en un solo lugar**
 - ✅ **Más fácil de testear**
 
 ### Performance
+
 - ✅ **Optimizaciones** en un solo lugar
 - ✅ **Previene memory leaks** con cleanup automático
 - ✅ **Debounce** reduce renders innecesarios
@@ -355,6 +379,7 @@ useUpdateEffect(() => {
 **Tiempo Estimado**: 2-3 horas
 
 **Razón**: Crear hooks de utilidad:
+
 1. Elimina 200+ líneas de código duplicado
 2. Previene memory leaks con cleanup automático
 3. Mejora consistencia en toda la app
@@ -383,6 +408,7 @@ useUpdateEffect(() => {
 **Veredicto Final**: 🟡 **ALTA PRIORIDAD - GRAN IMPACTO**
 
 Se identificaron **19+ instancias** de código duplicado que pueden consolidarse en **5 hooks de utilidad** genéricos:
+
 - useDebounce (2+ instancias)
 - useTimeout (15+ instancias)
 - useInterval (2+ instancias)
@@ -390,6 +416,7 @@ Se identificaron **19+ instancias** de código duplicado que pueden consolidarse
 - useUpdateEffect (uso futuro)
 
 **Beneficios**:
+
 - Eliminación de ~205 líneas de código repetitivo
 - Prevención de memory leaks con cleanup automático
 - Mejor consistencia y reusabilidad

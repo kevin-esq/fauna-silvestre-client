@@ -32,10 +32,10 @@ export interface CardBadgeProps {
 
 /**
  * Reusable card badge component
- * 
+ *
  * Used for status indicators, tags, and labels in cards.
  * Supports filled and outlined variants with optional icons.
- * 
+ *
  * @example
  * <CardBadge
  *   label="Borrador"

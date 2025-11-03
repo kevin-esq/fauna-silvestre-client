@@ -147,12 +147,12 @@ async processBulkPublications(
 ```typescript
 async processBulkPublications(...): Promise<...> {
   // ... procesamiento
-  
+
   if (results.success.length > 0) {
     this.invalidateCountsCache();
     this.onCacheInvalidate?.();
   }
-  
+
   return results;
 }
 ```
@@ -387,15 +387,15 @@ this.logger.debug('Cache de conteos invalidado'); // debug
 
 ## 📊 Métricas de Calidad
 
-| Métrica                             | Valor | Estado            |
-| ----------------------------------- | ----- | ----------------- |
-| **Complejidad Ciclomática**         | Baja  | ✅ Excelente      |
-| **Separación de Responsabilidades** | Alta  | ✅ Buena          |
-| **Cohesión**                        | Alta  | ✅ Excelente      |
-| **Code Smells**                     | 5     | 🟡 Moderado       |
-| **Duplicación de Código**           | Baja  | ✅ Buena          |
-| **Manejo de Errores**               | Media | 🟡 Inconsistente  |
-| **Testabilidad**                    | Alta  | ✅ Buena          |
+| Métrica                             | Valor | Estado             |
+| ----------------------------------- | ----- | ------------------ |
+| **Complejidad Ciclomática**         | Baja  | ✅ Excelente       |
+| **Separación de Responsabilidades** | Alta  | ✅ Buena           |
+| **Cohesión**                        | Alta  | ✅ Excelente       |
+| **Code Smells**                     | 5     | 🟡 Moderado        |
+| **Duplicación de Código**           | Baja  | ✅ Buena           |
+| **Manejo de Errores**               | Media | 🟡 Inconsistente   |
+| **Testabilidad**                    | Alta  | ✅ Buena           |
 | **Documentación**                   | Baja  | 🔴 Necesita mejora |
 
 ---

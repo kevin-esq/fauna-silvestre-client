@@ -1,5 +1,12 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, StyleProp, ViewStyle, TextStyle } from 'react-native';
+import {
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  StyleProp,
+  ViewStyle,
+  TextStyle
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/presentation/contexts/theme.context';
@@ -53,10 +60,10 @@ export interface ModalOptionButtonProps {
 
 /**
  * Reusable option button for modals
- * 
+ *
  * Provides consistent styling for selectable options in bottom sheet modals.
  * Used across catalog, publication, and user view selectors.
- * 
+ *
  * @example
  * <ModalOptionButton
  *   value="list"
@@ -100,7 +107,9 @@ export const ModalOptionButton: React.FC<ModalOptionButtonProps> = React.memo(
       },
       text: {
         fontSize: typography.fontSize.small,
-        fontWeight: isActive ? typography.fontWeight.bold : typography.fontWeight.medium,
+        fontWeight: isActive
+          ? typography.fontWeight.bold
+          : typography.fontWeight.medium,
         color: isActive ? colors.primary : colors.text,
         flex: 1
       }

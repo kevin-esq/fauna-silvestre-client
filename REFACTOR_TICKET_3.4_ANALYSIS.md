@@ -31,6 +31,7 @@
 **Problema**: Mensajes de error en español, deberían estar en inglés
 
 **Actual**:
+
 ```typescript
 const errorMessage =
   error instanceof Error
@@ -44,16 +45,13 @@ const errorMessage =
 ```
 
 **Mejor**:
+
 ```typescript
 const errorMessage =
-  error instanceof Error
-    ? error.message
-    : 'Connection error loading catalog';
+  error instanceof Error ? error.message : 'Connection error loading catalog';
 
 const errorMessage =
-  error instanceof Error
-    ? error.message
-    : 'Connection error loading animal';
+  error instanceof Error ? error.message : 'Connection error loading animal';
 ```
 
 ---
@@ -65,6 +63,7 @@ const errorMessage =
 **Problema**: Circuit breaker implementado localmente cuando tenemos ErrorHandlingService
 
 **Actual**:
+
 ```typescript
 interface State {
   // ...
@@ -72,7 +71,7 @@ interface State {
 }
 
 // En initialState
-failureCount: 0
+failureCount: 0;
 
 // En fetchCatalog
 if (currentState.failureCount >= 3 && timeSinceLastFetch < 60000) {
@@ -81,7 +80,8 @@ if (currentState.failureCount >= 3 && timeSinceLastFetch < 60000) {
 }
 ```
 
-**Consideración**: 
+**Consideración**:
+
 - ErrorHandlingService tiene retry logic pero NO circuit breaker
 - Este circuit breaker es útil para prevenir llamadas repetidas
 - **Podría mantenerse** o migrar la lógica a ErrorHandlingService
@@ -95,6 +95,7 @@ if (currentState.failureCount >= 3 && timeSinceLastFetch < 60000) {
 **Problema**: Uso de console.log/console.error directo en lugar de logger
 
 **Actual**:
+
 ```typescript
 console.log('[CatalogContext] Circuit breaker active, skipping fetch');
 console.log('[CatalogContext] Already loading, skipping duplicate request');
@@ -114,6 +115,7 @@ console.error('[CatalogContext] Error fetching catalog by id:', errorMessage);
 **Problema**: No valida parámetros con ValidationService
 
 **Actual**:
+
 ```typescript
 const fetchCatalogLocations = useCallback(async (catalogId: string) => {
   try {
@@ -144,6 +146,7 @@ const fetchCatalogById = useCallback(async (catalogId: string) => {
 **Actual**: Todo en `catalog.context.tsx`
 
 **Mejor**:
+
 ```
 src/presentation/contexts/catalog/
 ├── index.tsx              (Provider y hook)
@@ -169,15 +172,15 @@ console.log('✅ Datos de ubicaciones recibidos:', data);
 
 ## 📊 Comparación con Otros Contexts
 
-| Aspecto | PublicationContext | AuthContext | DraftContext | CatalogContext | Estado |
-|---------|-------------------|-------------|--------------|----------------|---------|
-| **LOC** | 673 | 276 | 310 | 239 | 🟢 Pequeño |
-| **useReducer** | ✅ | ❌ | ❌ | ✅ | ✅ |
-| **useMemo** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Mensajes inglés** | ✅ | ✅ | ✅ | ❌ | 🔴 |
-| **ValidationService** | ✅ | ✅ | ✅ | ❌ | 🔴 |
-| **Modularización** | 7 archivos | 4 archivos | 2 archivos | 1 archivo | 🟡 |
-| **Logger consistente** | ✅ | ✅ | ✅ | ❌ | 🔴 |
+| Aspecto                | PublicationContext | AuthContext | DraftContext | CatalogContext | Estado     |
+| ---------------------- | ------------------ | ----------- | ------------ | -------------- | ---------- |
+| **LOC**                | 673                | 276         | 310          | 239            | 🟢 Pequeño |
+| **useReducer**         | ✅                 | ❌          | ❌           | ✅             | ✅         |
+| **useMemo**            | ✅                 | ✅          | ✅           | ✅             | ✅         |
+| **Mensajes inglés**    | ✅                 | ✅          | ✅           | ❌             | 🔴         |
+| **ValidationService**  | ✅                 | ✅          | ✅           | ❌             | 🔴         |
+| **Modularización**     | 7 archivos         | 4 archivos  | 2 archivos   | 1 archivo      | 🟡         |
+| **Logger consistente** | ✅                 | ✅          | ✅           | ❌             | 🔴         |
 
 ---
 
@@ -228,34 +231,38 @@ console.log('✅ Datos de ubicaciones recibidos:', data);
 
 ### Reducción Esperada
 
-| Item | Antes | Después | Mejora |
-|------|-------|---------|--------|
-| **Líneas en context principal** | 239 | ~150 | **-37%** |
-| **Mensajes en español** | 2 | 0 | **-100%** |
-| **Console directo** | 5 | 0 | **-100%** |
-| **ValidationService calls** | 0 | 2 | **+Consistency** |
-| **Archivos** | 1 | 4 | **Modular** |
+| Item                            | Antes | Después | Mejora           |
+| ------------------------------- | ----- | ------- | ---------------- |
+| **Líneas en context principal** | 239   | ~150    | **-37%**         |
+| **Mensajes en español**         | 2     | 0       | **-100%**        |
+| **Console directo**             | 5     | 0       | **-100%**        |
+| **ValidationService calls**     | 0     | 2       | **+Consistency** |
+| **Archivos**                    | 1     | 4       | **Modular**      |
 
 ---
 
 ## ✅ Beneficios Esperados
 
 ### Reusabilidad
+
 - ✅ **ValidationService** para validaciones
 - ✅ **Types module** compartible
 - ✅ **Reducer** separado y testeable
 
 ### Mantenibilidad
+
 - ✅ **-37% líneas** en context principal
 - ✅ **Código modular** más fácil de entender
 - ✅ **Logger consistente**
 
 ### Consistencia
+
 - ✅ **Mensajes en inglés** como resto de la app
 - ✅ **Mismos patrones** que otros contexts
 - ✅ **ValidationService** en toda la app
 
 ### Calidad
+
 - ✅ **Logs profesionales** sin emojis
 - ✅ **Validaciones consistentes**
 - ✅ **Estructura clara**
@@ -270,6 +277,7 @@ console.log('✅ Datos de ubicaciones recibidos:', data);
 **Tiempo Estimado**: 1-1.5 horas
 
 **Razón**: CatalogContext ya está bien estructurado, las optimizaciones son principalmente para:
+
 1. Consistencia con otros contexts
 2. Internacionalización de logs
 3. Modularización para mantenibilidad
@@ -295,6 +303,7 @@ console.log('✅ Datos de ubicaciones recibidos:', data);
 **Veredicto Final**: 🟢 **BIEN ESTRUCTURADO - MODERNIZACIÓN PARA CONSISTENCIA**
 
 El CatalogContext está **muy bien implementado** con:
+
 - useReducer para manejo de estado complejo ✅
 - useMemo para performance ✅
 - AbortController para cancelación ✅
@@ -302,12 +311,14 @@ El CatalogContext está **muy bien implementado** con:
 - Tamaño manejable (239 líneas) ✅
 
 **Necesita modernización menor** para:
+
 - Internacionalizar logs (inglés)
 - Integrar ValidationService
 - Modularizar para consistencia
 - Logger profesional sin emojis
 
 **NO es crítico** pero las mejoras aportarán:
+
 - Mejor consistencia con el resto de la app
 - Código más profesional
 - Estructura modular clara

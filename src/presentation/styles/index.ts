@@ -1,9 +1,9 @@
 /**
  * Style utilities for consistent styling across the app
- * 
+ *
  * Usage:
  * import { shadowMedium, flex, spacing } from '@/presentation/styles';
- * 
+ *
  * const styles = StyleSheet.create({
  *   container: {
  *     ...flex.centerRow,

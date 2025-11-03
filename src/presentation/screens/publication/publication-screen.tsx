@@ -132,8 +132,7 @@ const useSearch = (publications: PublicationModelResponse[]) => {
 };
 
 const usePublicationData = (selectedStatus: PublicationStatus) => {
-  const {  getStatusData, getTotalCount, canLoadMore } =
-    usePublications();
+  const { getStatusData, getTotalCount, canLoadMore } = usePublications();
 
   return useMemo(() => {
     const statusData = getStatusData(selectedStatus);
@@ -197,12 +196,8 @@ const useErrorState = (
 };
 
 const usePublicationOperations = (selectedStatus: PublicationStatus) => {
-  const {
-    loadStatus,
-    loadMoreStatus,
-    refreshStatus,
-    resetStatus
-  } = usePublications();
+  const { loadStatus, loadMoreStatus, refreshStatus, resetStatus } =
+    usePublications();
 
   const operationsInProgress = useRef<Set<string>>(new Set());
 

@@ -10,7 +10,11 @@ import { useToggle } from './use-toggle.hook';
  * const { isModalOpen, openModal, closeModal } = useModalState();
  */
 export const useModalState = () => {
-  const { value: isModalOpen, setTrue: openModal, setFalse: closeModal } = useToggle();
+  const {
+    value: isModalOpen,
+    setTrue: openModal,
+    setFalse: closeModal
+  } = useToggle();
 
   return {
     isModalOpen,

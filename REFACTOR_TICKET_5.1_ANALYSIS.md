@@ -15,6 +15,7 @@
 ### Componentes por Categoría (53 total):
 
 #### 1. **Animal Components** (5 componentes)
+
 - animal-card-variants.component.tsx
 - animal-card-with-actions.component.tsx
 - animal-card.component.tsx
@@ -22,6 +23,7 @@
 - catalog-filters.component.tsx
 
 #### 2. **Auth Components** (7 componentes)
+
 - auth-container.component.tsx
 - auth-text-input.component.tsx
 - code-input.component.tsx
@@ -32,6 +34,7 @@
 - support-footer.component.tsx
 
 #### 3. **Camera Components** (10 componentes)
+
 - camera-restricted-overlay.component.tsx
 - camera-view.component.tsx
 - capture-button.component.tsx
@@ -44,6 +47,7 @@
 - zoom-controls.component.tsx
 
 #### 4. **Publication Components** (7 componentes)
+
 - publication-card-variants.component.tsx
 - publication-card-with-actions.component.tsx
 - publication-card.component.tsx
@@ -52,6 +56,7 @@
 - status-tabs.component.tsx
 
 #### 5. **UI Components** (20 componentes)
+
 - animated-pressable.component.tsx
 - catalog-view-selector.component.tsx
 - custom-button.component.tsx
@@ -74,6 +79,7 @@
 - user-view-selector.component.tsx
 
 #### 6. **Other Components** (4 componentes)
+
 - common/loading-modal.component.tsx
 - draft/draft-card.component.tsx
 - notification/notification-card.component.tsx
@@ -86,6 +92,7 @@
 ### 1. **Card Pattern Duplication** ⭐⭐⭐
 
 **Componentes Similares**:
+
 - animal-card.component.tsx
 - publication-card.component.tsx
 - draft-card.component.tsx
@@ -93,6 +100,7 @@
 - user-card.component.tsx
 
 **Patrón Común**:
+
 ```typescript
 - Contenedor con estilos
 - Header con imagen/avatar
@@ -109,12 +117,14 @@
 ### 2. **Skeleton Loader Duplication** ⭐⭐⭐
 
 **Componentes Existentes**:
+
 - skeleton-loader.component.tsx (genérico)
 - image-skeleton.component.tsx
 - notification-skeleton.component.tsx
 - publication-skeleton.component.tsx
 
 **Análisis**:
+
 - ✅ Ya existe `skeleton-loader` genérico
 - ✅ Componentes especializados usan el genérico
 - ✅ Patrón bien implementado
@@ -126,11 +136,13 @@
 ### 3. **View Selector Duplication** ⭐⭐
 
 **Componentes Duplicados**:
+
 - catalog-view-selector.component.tsx
 - publication-view-selector.component.tsx
 - user-view-selector.component.tsx
 
 **Patrón Común**:
+
 ```typescript
 - Botones para cambiar vista (list/grid)
 - Íconos de vista
@@ -145,12 +157,14 @@
 ### 4. **Card Variants Pattern** ⭐⭐
 
 **Componentes con Variantes**:
+
 - animal-card-variants.component.tsx
 - animal-card-with-actions.component.tsx
 - publication-card-variants.component.tsx
 - publication-card-with-actions.component.tsx
 
 **Análisis**:
+
 - Cada entidad tiene múltiples variantes
 - Lógica similar de renderizado condicional
 - Acciones específicas por contexto
@@ -162,11 +176,13 @@
 ### 5. **Input Components** ⭐
 
 **Componentes Existentes**:
+
 - auth-text-input.component.tsx
 - custom-text-input.component.tsx
 - code-input.component.tsx
 
 **Análisis**:
+
 - auth-text-input: Específico para auth
 - custom-text-input: Genérico
 - code-input: Específico para códigos
@@ -178,6 +194,7 @@
 ### 6. **Button Components** ⭐
 
 **Componentes Existentes**:
+
 - custom-button.component.tsx (genérico)
 - social-button.component.tsx (específico auth)
 - floating-action-button.component.tsx (FAB)
@@ -185,6 +202,7 @@
 - gallery-button.component.tsx (específico cámara)
 
 **Análisis**:
+
 - ✅ Buena separación entre genérico y específicos
 - ✅ custom-button cubre casos generales
 - ✅ Botones específicos para contextos únicos
@@ -200,11 +218,13 @@
 #### 1. **Consolidar View Selectors** ⭐⭐⭐
 
 **Archivos Afectados**: 3
+
 - catalog-view-selector.component.tsx
 - publication-view-selector.component.tsx
 - user-view-selector.component.tsx
 
 **Propuesta**: Crear `GenericViewSelector` con props:
+
 ```typescript
 interface GenericViewSelectorProps {
   currentView: 'list' | 'grid';
@@ -222,6 +242,7 @@ interface GenericViewSelectorProps {
 #### 2. **Extraer BaseCard Component** ⭐⭐
 
 **Archivos Afectados**: 5
+
 - animal-card.component.tsx
 - publication-card.component.tsx
 - draft-card.component.tsx
@@ -229,6 +250,7 @@ interface GenericViewSelectorProps {
 - user-card.component.tsx
 
 **Propuesta**: Crear `BaseCard` con slots:
+
 ```typescript
 interface BaseCardProps {
   header?: React.ReactNode;
@@ -248,6 +270,7 @@ interface BaseCardProps {
 #### 3. **Refactorizar Card Variants Logic** ⭐⭐
 
 **Archivos Afectados**: 4
+
 - animal-card-variants.component.tsx
 - animal-card-with-actions.component.tsx
 - publication-card-variants.component.tsx
@@ -324,12 +347,12 @@ interface BaseCardProps {
 
 ## 📊 Estimaciones Totales
 
-| Fase | Archivos | Líneas Ahorradas | Tiempo | Prioridad |
-|------|----------|------------------|--------|-----------|
-| **Fase 1** | 3 | ~150 | 1h | Alta |
-| **Fase 2** | 5 | ~100 | 2h | Media |
-| **Fase 3** | 4 | ~80 | 1.5h | Baja |
-| **Total** | 12 | **~330** | **4.5h** | - |
+| Fase       | Archivos | Líneas Ahorradas | Tiempo   | Prioridad |
+| ---------- | -------- | ---------------- | -------- | --------- |
+| **Fase 1** | 3        | ~150             | 1h       | Alta      |
+| **Fase 2** | 5        | ~100             | 2h       | Media     |
+| **Fase 3** | 4        | ~80              | 1.5h     | Baja      |
+| **Total**  | 12       | **~330**         | **4.5h** | -         |
 
 ---
 
@@ -338,11 +361,13 @@ interface BaseCardProps {
 **Estado**: 🟡 **OPORTUNIDADES IDENTIFICADAS**
 
 **Recomendación**:
+
 1. ✅ **Implementar Fase 1** (View Selectors) - Alto impacto
 2. ⚠️ **Evaluar Fase 2** (Base Card) - Mejora consistencia
 3. ⏸️ **Posponer Fase 3** (Card Variants) - Bajo beneficio inmediato
 
 **Beneficios**:
+
 - Eliminar ~330 líneas de código duplicado
 - Mejorar consistencia en UI
 - Facilitar mantenimiento

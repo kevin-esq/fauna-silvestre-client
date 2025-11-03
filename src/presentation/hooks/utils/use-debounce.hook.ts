@@ -22,7 +22,7 @@ import { useState, useEffect } from 'react';
  * const debouncedEmail = useDebounce(email, 500);
  * // Auto-save after 500ms of no typing
  */
-export const useDebounce = <T,>(value: T, delay: number = 500): T => {
+export const useDebounce = <T>(value: T, delay: number = 500): T => {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
   useEffect(() => {

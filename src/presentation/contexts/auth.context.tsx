@@ -62,15 +62,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     []
   );
 
-
   useEffect(() => {
     const initializeAuth = async (): Promise<void> => {
       try {
         setStatus('BOOTING');
 
-        const { user, accessToken, refreshToken } = await loadAuthDataFromStorage();
+        const { user, accessToken, refreshToken } =
+          await loadAuthDataFromStorage();
 
-        if (ValidationService.validateAuthData(user, accessToken, refreshToken)) {
+        if (
+          ValidationService.validateAuthData(user, accessToken, refreshToken)
+        ) {
           authService.hydrate();
           setAuthenticatedUser(user!);
         } else {

@@ -70,15 +70,13 @@ export const shadowLarge = (
 /**
  * Custom shadow with specific configuration
  */
-export const shadowCustom = (
-  config: {
-    offset?: { width: number; height: number };
-    opacity?: number;
-    radius?: number;
-    elevation?: number;
-    color?: string;
-  }
-): Partial<ViewStyle> => ({
+export const shadowCustom = (config: {
+  offset?: { width: number; height: number };
+  opacity?: number;
+  radius?: number;
+  elevation?: number;
+  color?: string;
+}): Partial<ViewStyle> => ({
   ...Platform.select({
     ios: {
       shadowColor: config.color || '#000',

@@ -26,7 +26,7 @@
 ```typescript
 class CatalogService {
   constructor(private catalogRepository: ICatalogRepository) {}
-  
+
   async getAllCatalogs(...): Promise<CatalogModelResponse> {
     return this.catalogRepository.getAllCatalogs(...);
   }
@@ -58,6 +58,7 @@ async getAllCatalogs(page: number, size: number, signal?: AbortSignal) {
 ```
 
 **Problemas**:
+
 - No valida si `catalogId` es vacío o null
 - No valida si `page` y `size` son válidos
 - No valida parámetros de requests (CreateAnimalRequest, UpdateAnimalRequest)
@@ -77,6 +78,7 @@ async deleteCatalog(id: string): Promise<DeleteAnimalResponse> {
 ```
 
 **Problemas**:
+
 - Sin try/catch en ningún método
 - Errores del repository se propagan sin contexto
 - Sin logging de errores
@@ -117,6 +119,7 @@ export const catalogService = new CatalogService(catalogRepository);
 ```
 
 **Problemas**:
+
 1. No es singleton - se puede crear múltiples instancias
 2. Logger instanciado sin reutilización
 3. Difícil de testear (instancias hardcodeadas)
@@ -174,6 +177,7 @@ async getCatalogByCommonName(commonName: string): Promise<Animal> {
 **Pregunta**: ¿Realmente necesitamos esta capa si no agrega valor?
 
 **Opciones**:
+
 1. **Mantener** y agregar validaciones + logging + error handling
 2. **Eliminar** y usar repository directamente
 
@@ -219,16 +223,16 @@ async getCatalogByCommonName(commonName: string): Promise<Animal> {
 
 ## 📊 Métricas de Calidad
 
-| Métrica                             | Valor | Estado               |
-| ----------------------------------- | ----- | -------------------- |
-| **Líneas de Código**                | 77    | ✅ Pequeño           |
-| **Validaciones**                    | 0     | 🔴 Ninguna           |
-| **Error Handling**                  | 0%    | 🔴 Inexistente       |
-| **Logging**                         | 0     | 🔴 Sin logs          |
-| **Separación de Responsabilidades** | Alta  | ✅ Buena             |
+| Métrica                             | Valor | Estado                |
+| ----------------------------------- | ----- | --------------------- |
+| **Líneas de Código**                | 77    | ✅ Pequeño            |
+| **Validaciones**                    | 0     | 🔴 Ninguna            |
+| **Error Handling**                  | 0%    | 🔴 Inexistente        |
+| **Logging**                         | 0     | 🔴 Sin logs           |
+| **Separación de Responsabilidades** | Alta  | ✅ Buena              |
 | **Testabilidad**                    | Baja  | 🔴 Difícil (hardcode) |
-| **Singleton Pattern**               | No    | 🟡 Falta             |
-| **Code Duplication**                | Baja  | ✅ Buena             |
+| **Singleton Pattern**               | No    | 🟡 Falta              |
+| **Code Duplication**                | Baja  | ✅ Buena              |
 
 ---
 
@@ -258,6 +262,7 @@ El CatalogService es un **thin wrapper sin valor agregado** actualmente. Tiene b
 **Recomendación**: **Opción 1** - Mejorar el servicio
 
 **Razones**:
+
 - La capa de servicio permite agregar validaciones sin tocar repository
 - Permite logging centralizado
 - Permite error handling consistente
@@ -276,7 +281,7 @@ El CatalogService es un **thin wrapper sin valor agregado** actualmente. Tiene b
 ```typescript
 class CatalogService {
   constructor(private catalogRepository: ICatalogRepository) {}
-  
+
   async getCatalogById(catalogId: string): Promise<AnimalModelResponse> {
     return this.catalogRepository.getCatalogById(catalogId);
   }
@@ -292,30 +297,32 @@ export class CatalogService {
   private static readonly MIN_PAGE_NUMBER = 1;
   private static readonly MAX_PAGE_SIZE = 100;
   private static readonly MIN_PAGE_SIZE = 1;
-  
+
   constructor(
     private readonly catalogRepository: ICatalogRepository,
     private readonly logger: ConsoleLogger
   ) {}
-  
+
   async getCatalogById(catalogId: string): Promise<AnimalModelResponse> {
     this.validateId(catalogId, 'getCatalogById');
-    
+
     try {
       this.logger.debug('Obteniendo catálogo por ID', { catalogId });
       return await this.catalogRepository.getCatalogById(catalogId);
     } catch (error) {
-      this.logger.error('Error al obtener catálogo', error as Error, { catalogId });
+      this.logger.error('Error al obtener catálogo', error as Error, {
+        catalogId
+      });
       throw error;
     }
   }
-  
+
   private validateId(id: string, context: string): void {
     if (!id?.trim()) {
       throw new Error(`ID es requerido para ${context}`);
     }
   }
-  
+
   private validatePaginationParams(page: number, size: number): void {
     if (!Number.isInteger(page) || page < CatalogService.MIN_PAGE_NUMBER) {
       throw new Error('Número de página inválido');
@@ -332,7 +339,7 @@ export class CatalogService {
 
 export class CatalogServiceFactory {
   private static instance: CatalogService;
-  
+
   static getInstance(): CatalogService {
     if (!this.instance) {
       const logger = new ConsoleLogger('debug');
@@ -344,7 +351,7 @@ export class CatalogServiceFactory {
     }
     return this.instance;
   }
-  
+
   static resetInstance(): void {
     // @ts-expect-error - Allow reset for testing
     this.instance = undefined;
@@ -355,6 +362,7 @@ export const catalogService = CatalogServiceFactory.getInstance();
 ```
 
 **Mejoras**:
+
 - ✅ Validaciones en todos los métodos
 - ✅ Error handling con logging
 - ✅ Logger compartido

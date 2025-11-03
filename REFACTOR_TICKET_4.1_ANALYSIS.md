@@ -14,16 +14,16 @@
 
 ### Total por Categoría
 
-| Categoría | Cantidad | Hooks |
-|-----------|----------|-------|
-| **Common** | 7 | use-modal-state, use-network-status, use-load-data, etc. |
-| **Auth** | 3 | use-login-form, use-register-form, use-forgot-password |
-| **Camera** | 5 | use-camera, use-camera-freeze, use-gallery, etc. |
-| **Forms** | 2 | use-animal-form, use-image-editor |
-| **Media** | 4 | use-file-download, use-recent-images, etc. |
-| **Publication** | 2 | use-drafts, use-home-data |
-| **Admin** | 2 | use-admin-data, use-catalog-management |
-| **Others** | 3 | use-users, use-notifications, use-permissions |
+| Categoría       | Cantidad | Hooks                                                    |
+| --------------- | -------- | -------------------------------------------------------- |
+| **Common**      | 7        | use-modal-state, use-network-status, use-load-data, etc. |
+| **Auth**        | 3        | use-login-form, use-register-form, use-forgot-password   |
+| **Camera**      | 5        | use-camera, use-camera-freeze, use-gallery, etc.         |
+| **Forms**       | 2        | use-animal-form, use-image-editor                        |
+| **Media**       | 4        | use-file-download, use-recent-images, etc.               |
+| **Publication** | 2        | use-drafts, use-home-data                                |
+| **Admin**       | 2        | use-admin-data, use-catalog-management                   |
+| **Others**      | 3        | use-users, use-notifications, use-permissions            |
 
 ---
 
@@ -32,6 +32,7 @@
 ### 1. **Boolean Toggle Pattern** ⭐⭐⭐
 
 **Ubicaciones** (15+ instancias):
+
 - `use-modal-state.hook.ts` - isModalOpen
 - `use-login-form.hook.ts` - rememberMe
 - `use-register-form.hook.ts` - successModal
@@ -44,6 +45,7 @@
 - `use-request-permissions.hook.ts` - hasPermissions, isRequesting
 
 **Patrón Actual**:
+
 ```typescript
 const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -57,6 +59,7 @@ const closeModal = useCallback(() => {
 ```
 
 **Hook Consolidado Propuesto**:
+
 ```typescript
 // useToggle.ts
 export const useToggle = (initialValue = false) => {
@@ -83,6 +86,7 @@ export const useToggle = (initialValue = false) => {
 ### 2. **Loading + Error State Pattern** ⭐⭐⭐
 
 **Ubicaciones** (10+ instancias):
+
 - `use-drafts.hook.ts` - isLoading, error
 - `use-common-nouns.ts` - isLoading, error
 - `use-recent-images.hook.ts` - isLoading, error
@@ -90,6 +94,7 @@ export const useToggle = (initialValue = false) => {
 - `use-home-data.hook.ts` - isLoadingCounts
 
 **Patrón Actual**:
+
 ```typescript
 const [isLoading, setIsLoading] = useState(false);
 const [error, setError] = useState<string | null>(null);
@@ -107,9 +112,10 @@ try {
 ```
 
 **Hook Consolidado Propuesto**:
+
 ```typescript
 // useAsyncState.ts
-export const useAsyncState = <T,>() => {
+export const useAsyncState = <T>() => {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -154,11 +160,13 @@ export const useAsyncState = <T,>() => {
 ### 3. **Ref Pattern for Mounted State**
 
 **Ubicaciones** (5+ instancias):
+
 - `use-recent-images.hook.ts` - isMountedRef
 - `use-admin-data.hook.ts` - hasLoadedCounts
 - `use-home-data.hook.ts` - hasLoaded
 
 **Patrón Actual**:
+
 ```typescript
 const isMountedRef = useRef(true);
 
@@ -170,6 +178,7 @@ useEffect(() => {
 ```
 
 **Hook Consolidado Propuesto**:
+
 ```typescript
 // useIsMounted.ts
 export const useIsMounted = () => {
@@ -194,24 +203,28 @@ export const useIsMounted = () => {
 ### Nuevos Hooks Genéricos Propuestos
 
 #### 1. **useToggle** ⭐⭐⭐
+
 - **Reemplaza**: 15+ instancias de boolean state
 - **Ubicación**: `src/presentation/hooks/common/use-toggle.hook.ts`
 - **Ahorro**: ~50 líneas
 - **Prioridad**: Alta
 
 #### 2. **useAsyncState** ⭐⭐⭐
+
 - **Reemplaza**: 10+ instancias de loading + error
 - **Ubicación**: `src/presentation/hooks/common/use-async-state.hook.ts`
 - **Ahorro**: ~100 líneas
 - **Prioridad**: Alta
 
 #### 3. **useIsMounted** ⭐⭐
+
 - **Reemplaza**: 5+ instancias de mounted ref
 - **Ubicación**: `src/presentation/hooks/common/use-is-mounted.hook.ts`
 - **Ahorro**: ~30 líneas
 - **Prioridad**: Media
 
 #### 4. **usePrevious** ⭐
+
 - **Para**: Comparar valores previos
 - **Ubicación**: `src/presentation/hooks/common/use-previous.hook.ts`
 - **Ahorro**: ~20 líneas
@@ -270,33 +283,37 @@ export const useIsMounted = () => {
 
 ## 📊 Estimaciones de Reducción
 
-| Hook Genérico | Reemplaza | Líneas Ahorradas | Archivos Actualizados |
-|---------------|-----------|------------------|----------------------|
-| **useToggle** | 15+ instancias | ~50 líneas | 8-10 archivos |
-| **useAsyncState** | 10+ instancias | ~100 líneas | 6-8 archivos |
-| **useIsMounted** | 5+ instancias | ~30 líneas | 3-5 archivos |
-| **Total** | 30+ instancias | **~180 líneas** | **17-23 archivos** |
+| Hook Genérico     | Reemplaza      | Líneas Ahorradas | Archivos Actualizados |
+| ----------------- | -------------- | ---------------- | --------------------- |
+| **useToggle**     | 15+ instancias | ~50 líneas       | 8-10 archivos         |
+| **useAsyncState** | 10+ instancias | ~100 líneas      | 6-8 archivos          |
+| **useIsMounted**  | 5+ instancias  | ~30 líneas       | 3-5 archivos          |
+| **Total**         | 30+ instancias | **~180 líneas**  | **17-23 archivos**    |
 
 ---
 
 ## ✅ Beneficios Esperados
 
 ### Reusabilidad
+
 - ✅ **Hooks genéricos** reutilizables en toda la app
 - ✅ **Menos código duplicado**
 - ✅ **Más fácil de mantener**
 
 ### Consistencia
+
 - ✅ **Mismo patrón** para boolean toggles
 - ✅ **Mismo patrón** para async operations
 - ✅ **Mismo patrón** para mounted state
 
 ### Calidad
+
 - ✅ **Mejor testeable**
 - ✅ **Menos bugs** por duplicación
 - ✅ **Código más limpio**
 
 ### Mantenibilidad
+
 - ✅ **Cambios en un solo lugar**
 - ✅ **Documentación centralizada**
 - ✅ **Más fácil de entender**
@@ -311,6 +328,7 @@ export const useIsMounted = () => {
 **Tiempo Estimado**: 2-3 horas
 
 **Razón**: Consolidar hooks duplicados:
+
 1. Reduce significativamente código boilerplate
 2. Mejora consistencia en toda la app
 3. Facilita mantenimiento futuro
@@ -337,11 +355,13 @@ export const useIsMounted = () => {
 **Veredicto Final**: 🟡 **CONSOLIDACIÓN ALTAMENTE BENEFICIOSA**
 
 Se identificaron **30+ instancias** de código duplicado que pueden consolidarse en **3 hooks genéricos** principales:
+
 - useToggle (15+ instancias)
 - useAsyncState (10+ instancias)
 - useIsMounted (5+ instancias)
 
 **Beneficios**:
+
 - Reducción de ~180 líneas de código repetitivo
 - Mejor reusabilidad y consistencia
 - Más fácil de mantener y testear

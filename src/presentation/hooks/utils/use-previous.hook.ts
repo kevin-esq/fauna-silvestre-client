@@ -25,7 +25,7 @@ import { useRef, useEffect } from 'react';
  *   loadUserData(user.id);
  * }
  */
-export const usePrevious = <T,>(value: T): T | undefined => {
+export const usePrevious = <T>(value: T): T | undefined => {
   const ref = useRef<T | undefined>(undefined);
 
   useEffect(() => {

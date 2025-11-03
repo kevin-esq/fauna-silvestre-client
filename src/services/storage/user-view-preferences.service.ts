@@ -55,46 +55,52 @@ export const UserViewPreferencesService = {
   async savePreferences(
     preferences: Partial<UserViewPreferences>
   ): Promise<void> {
-    await errorHandlingService.handleWithRetry(
-      async () => {
-        const current = await this.getPreferences();
-        const updated = { ...current, ...preferences };
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      },
-      { operation: 'saveUserViewPreferences' },
-      { maxAttempts: 1 }
-    ).catch(() => {});
+    await errorHandlingService
+      .handleWithRetry(
+        async () => {
+          const current = await this.getPreferences();
+          const updated = { ...current, ...preferences };
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        },
+        { operation: 'saveUserViewPreferences' },
+        { maxAttempts: 1 }
+      )
+      .catch(() => {});
   },
 
   async resetPreferences(): Promise<void> {
-    await errorHandlingService.handleWithRetry(
-      async () => {
-        await AsyncStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(DEFAULT_PREFERENCES)
-        );
-      },
-      { operation: 'resetUserViewPreferences' },
-      { maxAttempts: 1 }
-    ).catch(() => {});
+    await errorHandlingService
+      .handleWithRetry(
+        async () => {
+          await AsyncStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(DEFAULT_PREFERENCES)
+          );
+        },
+        { operation: 'resetUserViewPreferences' },
+        { maxAttempts: 1 }
+      )
+      .catch(() => {});
   },
 
   async clearFilters(): Promise<void> {
-    await errorHandlingService.handleWithRetry(
-      async () => {
-        const current = await this.getPreferences();
-        const cleared: UserViewPreferences = {
-          ...current,
-          showEmail: true,
-          showLocation: true,
-          showUserName: true,
-          showInitials: true,
-          highlightStatus: false
-        };
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cleared));
-      },
-      { operation: 'clearUserViewFilters' },
-      { maxAttempts: 1 }
-    ).catch(() => {});
+    await errorHandlingService
+      .handleWithRetry(
+        async () => {
+          const current = await this.getPreferences();
+          const cleared: UserViewPreferences = {
+            ...current,
+            showEmail: true,
+            showLocation: true,
+            showUserName: true,
+            showInitials: true,
+            highlightStatus: false
+          };
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cleared));
+        },
+        { operation: 'clearUserViewFilters' },
+        { maxAttempts: 1 }
+      )
+      .catch(() => {});
   }
 };

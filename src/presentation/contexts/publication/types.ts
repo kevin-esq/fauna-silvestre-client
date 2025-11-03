@@ -62,7 +62,8 @@ export interface BaseAction<T extends PublicationActionType> {
   readonly type: T;
 }
 
-export interface FetchStatusStartAction extends BaseAction<'FETCH_STATUS_START'> {
+export interface FetchStatusStartAction
+  extends BaseAction<'FETCH_STATUS_START'> {
   readonly status: PublicationStatus;
 }
 
@@ -99,7 +100,8 @@ export interface FilterPublicationsAction
   readonly searchQuery: string;
 }
 
-export interface OperationFailureAction extends BaseAction<'OPERATION_FAILURE'> {
+export interface OperationFailureAction
+  extends BaseAction<'OPERATION_FAILURE'> {
   readonly payload: string;
   readonly status?: PublicationStatus;
 }

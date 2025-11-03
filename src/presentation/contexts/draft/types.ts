@@ -1,7 +1,4 @@
-import {
-  DraftPublication,
-  AnimalState
-} from '@/domain/models/draft.models';
+import { DraftPublication, AnimalState } from '@/domain/models/draft.models';
 import { CommonNounResponse } from '@/domain/models/animal.models';
 
 export interface DraftContextType {

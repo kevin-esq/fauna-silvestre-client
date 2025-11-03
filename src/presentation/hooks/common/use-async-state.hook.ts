@@ -29,7 +29,7 @@ export interface UseAsyncStateReturn<T> {
  *   console.error(asyncState.error);
  * }
  */
-export const useAsyncState = <T,>(): UseAsyncStateReturn<T> => {
+export const useAsyncState = <T>(): UseAsyncStateReturn<T> => {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
