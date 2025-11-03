@@ -1,6 +1,6 @@
 import { AxiosInstance } from 'axios';
 import { BaseRepository } from './base.repository';
-import { ILogger } from '../../shared/types/ILogger';
+import { ILogger } from '../../services/logging/ILogger';
 import { IPublicationRepository } from '../../domain/interfaces/publication.repository.interface';
 import {
   CountsResponse,

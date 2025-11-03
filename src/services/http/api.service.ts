@@ -5,9 +5,9 @@ import axios, {
   InternalAxiosRequestConfig
 } from 'axios';
 import axiosRetry from 'axios-retry';
-import { ILogger } from '../../shared/types/ILogger';
+import { ILogger } from '../../services/logging/ILogger';
 import { ConsoleLogger } from '../logging/console-logger';
-import { ApiError, NetworkError } from '../../shared/types/custom-errors';
+import { ApiError, NetworkError } from '../../shared/errors/custom-errors';
 import { extra } from '../../../app.json';
 import { getSecureStorageService } from '../storage/secure-storage.service';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../storage/storage-keys';

@@ -1,8 +1,8 @@
 import { AxiosInstance, AxiosResponse } from 'axios';
 import { IAuthService } from './interfaces/auth-service.interface';
 import { ITokenService } from './interfaces/token-service.interface';
-import { ILogger } from '../../shared/types/ILogger';
-import { AuthError } from '../../shared/types/custom-errors';
+import { ILogger } from '../../services/logging/ILogger';
+import { AuthError } from '../../shared/errors/custom-errors';
 import User from '../../domain/entities/user.entity';
 import {
   Credentials,

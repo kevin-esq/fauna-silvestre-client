@@ -1,6 +1,6 @@
 import { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { HttpError, NetworkError } from '../../shared/types/errors';
-import { ILogger } from '../../shared/types/ILogger';
+import { ILogger } from '../../services/logging/ILogger';
 
 export abstract class BaseRepository {
   protected readonly api: AxiosInstance;

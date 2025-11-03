@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CommonNounResponse } from '../../../domain/models/animal.models';
-import { catalogService } from '../../services/catalog/catalog.service';
+import { catalogService } from '../../../services/catalog/catalog.service';
 
 interface UseCommonNounsReturn {
   commonNouns: CommonNounResponse[];

@@ -1,5 +1,5 @@
 import { ConsoleLogger } from '../logging/console-logger';
-import { StorageError } from '../../shared/types/custom-errors';
+import { StorageError } from '../../shared/errors/custom-errors';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { ILogger } from '../logging/ILogger';
 import {

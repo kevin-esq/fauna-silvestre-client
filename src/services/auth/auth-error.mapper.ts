@@ -1,5 +1,5 @@
 import { AxiosError } from 'axios';
-import { AuthError } from '../../shared/types/custom-errors';
+import { AuthError } from '../../shared/errors/custom-errors';
 import { BaseResponse } from '../../domain/models/auth.models';
 import {
   ERROR_TRANSLATIONS,

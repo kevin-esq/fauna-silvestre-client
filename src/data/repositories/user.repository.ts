@@ -4,7 +4,7 @@ import { IUserRepository } from '../../domain/interfaces/user.repository.interfa
 import User from '../../domain/entities/user.entity';
 import { UserMapper } from '../mappers/UserMapper';
 import { UserModel } from '../models/UserModel';
-import { ILogger } from '../../shared/types/ILogger';
+import { ILogger } from '../../services/logging/ILogger';
 import { UsersResponse, UserCountsResponse } from '@/domain/models/user.models';
 
 export class UserRepository extends BaseRepository implements IUserRepository {

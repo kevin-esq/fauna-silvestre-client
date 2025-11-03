@@ -1,4 +1,4 @@
-import { ILogger, LogLevel } from '../../shared/types/ILogger';
+import { ILogger, LogLevel } from '../../services/logging/ILogger';
 
 export class ConsoleLogger implements ILogger {
   private readonly minLevelIndex: number;
