@@ -71,7 +71,6 @@ const AnimalDropdown = forwardRef<DropdownRef, Props>(
     }));
 
     useEffect(() => {
-      console.log('AnimalDropdown - options changed:', options.length);
       const newItems = options.map(o => {
         if (o.catalogId === -1) {
           return {
@@ -85,12 +84,10 @@ const AnimalDropdown = forwardRef<DropdownRef, Props>(
         };
       });
       setItems(newItems);
-      console.log('AnimalDropdown - setItems:', newItems.slice(0, 2));
 
       if (!selectedValue && options.length > 0) {
         const unknownOption = options.find(o => o.catalogId === -1);
         if (unknownOption) {
-          console.log('AnimalDropdown - Auto-selecting Desconocido');
           setValue('-1');
           onValueChange(unknownOption);
         }
@@ -126,7 +123,6 @@ const AnimalDropdown = forwardRef<DropdownRef, Props>(
 
         const selected =
           options.find(o => o.catalogId.toString() === newValue) || null;
-        console.log('AnimalDropdown - Enviando a parent:', selected);
         onValueChange(selected);
       },
       [value, options, onValueChange]

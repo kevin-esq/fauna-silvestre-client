@@ -134,8 +134,6 @@ export const useRequestPermissions = () => {
         status => status === RESULTS.GRANTED
       );
 
-      console.log('🔥 Actualizando estado - All Granted:', allGranted);
-      console.log('🔥 Status Map:', statusMap);
 
       setPermissionStatus(statusMap);
       setHasPermissions(allGranted);
@@ -148,7 +146,6 @@ export const useRequestPermissions = () => {
   const checkPermissions = useCallback(
     async (types: PermissionType[]) => {
       if (isCheckingRef.current) {
-        console.log('⏹️ Check ya en progreso, ignorando llamada...');
         return {
           allGranted: hasPermissions,
           missingPermissions: [],
@@ -158,7 +155,6 @@ export const useRequestPermissions = () => {
 
       const now = Date.now();
       if (now - lastCheckTimeRef.current < 500) {
-        console.log('⏱️ Throttle: esperando antes de siguiente check...');
         return {
           allGranted: hasPermissions,
           missingPermissions: [],
@@ -170,7 +166,6 @@ export const useRequestPermissions = () => {
         isCheckingRef.current = true;
         lastCheckTimeRef.current = now;
 
-        console.log('🛠️ Iniciando checkPermissions para:', types);
 
         const statusMap: Record<string, PermissionStatus> = {};
         const permissionsMap = getPermissionsByType(types);
@@ -251,9 +246,6 @@ export const useRequestPermissions = () => {
           }
         }
 
-        console.log('🎯 CheckPermissions - Status Map:', statusMap);
-        console.log('❌ Permisos faltantes:', missing);
-        console.log('🚫 Permisos bloqueados:', blocked);
 
         const uniqueMissing = Array.from(new Set(missing));
         const uniqueBlocked = Array.from(new Set(blocked));
@@ -269,7 +261,6 @@ export const useRequestPermissions = () => {
             console.log(
               '🔄 Limpiando permisos bloqueados que ahora están concedidos'
             );
-            console.log('🔄 Antes:', prev, 'Después:', stillBlocked);
             return stillBlocked;
           }
 
@@ -285,7 +276,6 @@ export const useRequestPermissions = () => {
 
         const allGranted = updatePermissionsState(statusMap);
 
-        console.log('✅ Estados actualizados correctamente');
         return {
           allGranted,
           missingPermissions: uniqueMissing,
@@ -308,13 +298,11 @@ export const useRequestPermissions = () => {
   const requestAlertPermissions = useCallback(
     async (types: PermissionType[]) => {
       if (isRequesting) {
-        console.log('⏹️ Request ya en progreso, ignorando...');
         return false;
       }
 
       try {
         setIsRequesting(true);
-        console.log('🔄 Iniciando requestAlertPermissions para:', types);
 
         const statusMap: Record<string, PermissionStatus> = {};
         const permissionsMap = getPermissionsByType(types);
@@ -328,7 +316,6 @@ export const useRequestPermissions = () => {
               currentStatus === RESULTS.BLOCKED ||
               currentStatus === RESULTS.UNAVAILABLE
             ) {
-              console.log(`⚠️ ${key} YA ESTABA BLOQUEADO antes de solicitar`);
               if (key === 'location' && !alreadyBlocked.includes('location')) {
                 alreadyBlocked.push('location');
               } else if (
@@ -352,16 +339,13 @@ export const useRequestPermissions = () => {
             mappedStatus === RESULTS.BLOCKED ||
             mappedStatus === RESULTS.UNAVAILABLE
           ) {
-            console.log(`⚠️ camera YA ESTABA BLOQUEADA antes de solicitar`);
             alreadyBlocked.push('camera');
           }
         }
 
         if (alreadyBlocked.length > 0) {
-          console.log('🚫 Permisos ya bloqueados detectados:', alreadyBlocked);
           setBlockedPermissions(prev => {
             const updated = Array.from(new Set([...prev, ...alreadyBlocked]));
-            console.log('🔄 Actualizando blockedPermissions a:', updated);
             return updated;
           });
           return false;
@@ -370,7 +354,6 @@ export const useRequestPermissions = () => {
         if (types.includes('camera')) {
           const cameraStatus = await Camera.requestCameraPermission();
           statusMap['camera'] = mapCameraPermissionToStandard(cameraStatus);
-          console.log('📷 Permiso de cámara:', statusMap['camera']);
 
           if (
             statusMap['camera'] === RESULTS.BLOCKED ||
@@ -385,21 +368,16 @@ export const useRequestPermissions = () => {
           .filter(([_, perm]) => perm !== null)
           .map(async ([key, perm]) => {
             if (perm) {
-              console.log(`📝 Solicitando permiso: ${key}`);
-              console.log(`📝 Permiso string: ${perm}`);
 
               const beforeStatus = await check(perm);
-              console.log(`⏪ Estado ANTES de solicitar ${key}:`, beforeStatus);
 
               const result = await request(perm);
               statusMap[key] = result;
-              console.log(`✅ Resultado DESPUÉS de solicitar ${key}:`, result);
 
               if (
                 result === RESULTS.BLOCKED ||
                 result === RESULTS.UNAVAILABLE
               ) {
-                console.log(`🚫 ${key} fue BLOQUEADO o NO DISPONIBLE`);
                 if (key === 'location' && !newBlocked.includes('location')) {
                   newBlocked.push('location');
                 } else if (
@@ -416,7 +394,6 @@ export const useRequestPermissions = () => {
                   `❌ ${key} fue DENEGADO (aún se puede volver a solicitar)`
                 );
               } else if (result === RESULTS.GRANTED) {
-                console.log(`✅ ${key} fue CONCEDIDO`);
               }
             }
           });
@@ -427,12 +404,10 @@ export const useRequestPermissions = () => {
           '🎯 RequestAlertPermissions - Status Map completo:',
           statusMap
         );
-        console.log('🚫 Permisos bloqueados detectados:', newBlocked);
 
         if (newBlocked.length > 0) {
           setBlockedPermissions(prev => {
             const updated = Array.from(new Set([...prev, ...newBlocked]));
-            console.log('🔄 Actualizando blockedPermissions a:', updated);
             return updated;
           });
         }
@@ -440,7 +415,6 @@ export const useRequestPermissions = () => {
         const allRequestedGranted = types.every(type => {
           if (type === 'camera') {
             const granted = statusMap['camera'] === RESULTS.GRANTED;
-            console.log(`🔍 Camera granted: ${granted}`);
             return granted;
           }
           if (type === 'gallery') {
@@ -449,18 +423,15 @@ export const useRequestPermissions = () => {
               statusMap['readImages'] === RESULTS.GRANTED ||
               statusMap['readStorage'] === RESULTS.GRANTED ||
               statusMap['photoLibrary'] === RESULTS.GRANTED;
-            console.log(`🔍 Gallery granted: ${granted}`);
             return granted;
           }
           if (type === 'location') {
             const granted = statusMap['location'] === RESULTS.GRANTED;
-            console.log(`🔍 Location granted: ${granted}`);
             return granted;
           }
           return true;
         });
 
-        console.log('🎉 Todos los permisos concedidos:', allRequestedGranted);
 
         return allRequestedGranted;
       } catch (err) {
@@ -474,12 +445,10 @@ export const useRequestPermissions = () => {
   );
 
   const requestAllFilesPermission = useCallback(() => {
-    console.log('📁 Abriendo configuración de Todos los archivos...');
     openAllFilesSettings();
   }, []);
 
   const openAppSettings = useCallback(() => {
-    console.log('⚙️ Abriendo configuración de la aplicación...');
     openSettings().catch(() => {
       console.error('❌ No se pudo abrir la configuración');
     });
@@ -491,7 +460,6 @@ export const useRequestPermissions = () => {
         appStateRef.current.match(/inactive|background/) &&
         nextAppState === 'active'
       ) {
-        console.log('📱 App volvió a primer plano, verificando permisos...');
         await checkPermissions(['camera', 'gallery', 'location', 'allFiles']);
       }
 

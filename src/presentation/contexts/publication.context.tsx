@@ -349,7 +349,6 @@ export const PublicationProvider: React.FC<{
 
   useEffect(() => {
     if (user && !initialLoadRef.current) {
-      console.log('[PublicationContext] User changed, loading initial data');
       initialLoadRef.current = true;
 
       dispatch({ type: 'RESET_ALL' });

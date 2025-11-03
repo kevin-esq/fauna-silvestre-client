@@ -95,7 +95,6 @@ export class OfflineQueueService {
       const queue = await this.getQueue();
 
       if (queue.length === 0) {
-        logger.info('Queue is empty');
         return;
       }
 
