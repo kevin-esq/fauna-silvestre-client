@@ -9,36 +9,17 @@ import React, {
 import { authService } from '@/services/auth/auth.factory';
 import { authEventEmitter, AuthEvents } from '@/services/auth/auth.events';
 import { AuthErrorMapper } from '@/services/auth/auth-error.mapper';
+import { ValidationService } from '@/services/validation';
 import User from '@/domain/entities/user.entity';
 import { Credentials, UserData } from '@/domain/models/auth.models';
 import { useApiStatus } from '@/presentation/contexts/api-status.context';
-import { getSecureStorageService } from '@/services/storage/secure-storage.service';
-import {
-  USER_KEY,
-  ACCESS_TOKEN_KEY,
-  REFRESH_TOKEN_KEY
-} from '@/services/storage/storage-keys';
 import { AUTH_CONTEXT_ERRORS } from '@/shared/constants/error-messages';
-
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  initializing: boolean;
-  error: string | null;
-  signIn: (credentials: Credentials, rememberMe?: boolean) => Promise<void>;
-  signOut: () => Promise<void>;
-  registerUser: (userData: UserData) => Promise<void>;
-  sendResetPasswordEmail: (email: string) => Promise<boolean>;
-  verifyResetCode: (email: string, code: string) => Promise<string>;
-  resetPassword: (
-    token: string,
-    email: string,
-    password: string
-  ) => Promise<void>;
-  loadUserData: () => Promise<void>;
-  clearError: () => void;
-}
+import type { AuthContextType } from './auth/types';
+import {
+  loadAuthDataFromStorage,
+  clearAuthDataFromStorage,
+  loadUserFromStorage
+} from './auth/storage-utils';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -81,34 +62,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     []
   );
 
-  const isValidUserData = (
-    user: User,
-    accessToken: string | null,
-    refreshToken: string | null
-  ): boolean => {
-    return !!(user && user.role && accessToken && refreshToken);
-  };
 
   useEffect(() => {
     const initializeAuth = async (): Promise<void> => {
       try {
-        const storage = await getSecureStorageService();
-        const [storedUser, storedAccessToken, storedRefreshToken] =
-          await Promise.all([
-            storage.getValueFor(USER_KEY),
-            storage.getValueFor(ACCESS_TOKEN_KEY),
-            storage.getValueFor(REFRESH_TOKEN_KEY)
-          ]);
-
         setStatus('BOOTING');
 
-        const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+        const { user, accessToken, refreshToken } = await loadAuthDataFromStorage();
 
-        if (
-          isValidUserData(parsedUser, storedAccessToken, storedRefreshToken)
-        ) {
+        if (ValidationService.validateAuthData(user, accessToken, refreshToken)) {
           authService.hydrate();
-          setAuthenticatedUser(parsedUser);
+          setAuthenticatedUser(user!);
         } else {
           setStatus('UNAUTHENTICATED');
         }
@@ -121,17 +85,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     initializeAuth();
-  }, [setStatus, resetAuthState, setAuthenticatedUser]);
+  }, [setStatus, setAuthenticatedUser]);
 
   useEffect(() => {
     const handleSignOutEvent = async (): Promise<void> => {
       try {
-        const storage = await getSecureStorageService();
-        await Promise.all([
-          storage.deleteValueFor(USER_KEY),
-          storage.deleteValueFor(ACCESS_TOKEN_KEY),
-          storage.deleteValueFor(REFRESH_TOKEN_KEY)
-        ]);
+        await clearAuthDataFromStorage();
       } catch (error) {
         console.error('Error clearing storage during sign out:', error);
       }
@@ -251,13 +210,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
 
     try {
-      const storage = await getSecureStorageService();
       await authService.loadUserData();
-      const storedUser = await storage.getValueFor(USER_KEY);
+      const user = await loadUserFromStorage();
 
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setAuthenticatedUser(parsedUser);
+      if (user) {
+        setAuthenticatedUser(user);
       }
     } catch (error) {
       const errorMessage = getErrorMessage(error);

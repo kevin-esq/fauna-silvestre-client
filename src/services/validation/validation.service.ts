@@ -57,4 +57,15 @@ export class ValidationService {
       throw new Error(`${fieldName} is required for ${context}`);
     }
   }
+
+  /**
+   * Validate auth data (user, tokens)
+   */
+  static validateAuthData(
+    user: User | null,
+    accessToken: string | null,
+    refreshToken: string | null
+  ): boolean {
+    return !!(user && user.role && accessToken && refreshToken);
+  }
 }
