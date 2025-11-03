@@ -132,12 +132,11 @@ const useSearch = (publications: PublicationModelResponse[]) => {
 };
 
 const usePublicationData = (selectedStatus: PublicationStatus) => {
-  const { state, getStatusData, getTotalCount, canLoadMore } =
+  const {  getStatusData, getTotalCount, canLoadMore } =
     usePublications();
 
   return useMemo(() => {
     const statusData = getStatusData(selectedStatus);
-    const circuitBreaker = state.circuitBreaker;
 
     return {
       statusData,
@@ -151,27 +150,21 @@ const usePublicationData = (selectedStatus: PublicationStatus) => {
       isRefreshing: statusData.isRefreshing,
       isEmpty: statusData.isEmpty,
       error: statusData.error,
-      circuitBreaker,
       lastUpdated: statusData.lastUpdated
     };
-  }, [selectedStatus, state, getStatusData, getTotalCount, canLoadMore]);
+  }, [selectedStatus, getStatusData, getTotalCount, canLoadMore]);
 };
 
 const useErrorState = (
   publications: PublicationModelResponse[],
-  circuitBreaker: {
-    failureCount: number;
-    isOpen: boolean;
-    lastFailureTime: number | null;
-  },
   error?: string
 ) => {
   const [hasHadSuccessfulLoad, setHasHadSuccessfulLoad] = useState(false);
   const [showDelayedError, setShowDelayedError] = useState(false);
 
   const isPersistentError = useMemo(
-    () => Boolean(error && circuitBreaker.failureCount >= 3),
-    [error, circuitBreaker.failureCount]
+    () => Boolean(error && publications.length === 0),
+    [error, publications.length]
   );
 
   const hasTemporaryError = useMemo(
@@ -199,8 +192,7 @@ const useErrorState = (
   return {
     isPersistentError,
     hasTemporaryError,
-    showDelayedError,
-    isCircuitBreakerOpen: circuitBreaker.isOpen || false
+    showDelayedError
   };
 };
 
@@ -209,8 +201,7 @@ const usePublicationOperations = (selectedStatus: PublicationStatus) => {
     loadStatus,
     loadMoreStatus,
     refreshStatus,
-    resetStatus,
-    resetCircuitBreaker
+    resetStatus
   } = usePublications();
 
   const operationsInProgress = useRef<Set<string>>(new Set());
@@ -255,9 +246,8 @@ const usePublicationOperations = (selectedStatus: PublicationStatus) => {
 
   const handleForceRetry = useCallback(async () => {
     resetStatus(selectedStatus);
-    resetCircuitBreaker();
     await handleInitialLoad(true);
-  }, [handleInitialLoad, resetStatus, resetCircuitBreaker, selectedStatus]);
+  }, [handleInitialLoad, resetStatus, selectedStatus]);
 
   useEffect(() => {
     const operations = operationsInProgress.current;
@@ -427,7 +417,6 @@ const PublicationScreen: React.FC = () => {
 
   const errorState = useErrorState(
     publicationData.publications,
-    publicationData.circuitBreaker,
     publicationData.error
   );
 

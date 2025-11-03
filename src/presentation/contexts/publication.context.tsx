@@ -23,13 +23,8 @@ import User from '@/domain/entities/user.entity';
 const CONFIG = {
   DEFAULT_PAGE_SIZE: 10,
   INITIAL_PAGE: 1,
-  REQUEST_TIMEOUT: 30000,
   PREFETCH_THRESHOLD: 0.7,
-  CIRCUIT_BREAKER_THRESHOLD: 5,
-  CIRCUIT_BREAKER_TIMEOUT: 10000,
-  DEBOUNCE_DELAY: 300,
-  RETRY_ATTEMPTS: 2,
-  RETRY_DELAY: 1000
+  DEBOUNCE_DELAY: 300
 } as const;
 
 interface PaginationState {
@@ -54,11 +49,6 @@ interface PublicationState {
   readonly error?: string;
 }
 
-interface CircuitBreakerState {
-  readonly failureCount: number;
-  readonly lastFailureTime: number | null;
-  readonly isOpen: boolean;
-}
 
 interface CountsState {
   readonly data: CountsResponse | null;
@@ -71,7 +61,6 @@ interface State {
   readonly [PublicationStatus.PENDING]: PublicationState;
   readonly [PublicationStatus.ACCEPTED]: PublicationState;
   readonly [PublicationStatus.REJECTED]: PublicationState;
-  readonly circuitBreaker: CircuitBreakerState;
   readonly counts: CountsState;
 }
 
@@ -86,8 +75,6 @@ type PublicationActionType =
   | 'OPERATION_FAILURE'
   | 'RESET_STATUS'
   | 'RESET_ALL'
-  | 'CIRCUIT_BREAKER_OPEN'
-  | 'CIRCUIT_BREAKER_RESET'
   | 'UPDATE_PUBLICATION_STATUS'
   | 'FETCH_COUNTS_START'
   | 'FETCH_COUNTS_SUCCESS'
@@ -167,8 +154,6 @@ type Action =
   | OperationFailureAction
   | ResetStatusAction
   | BaseAction<'RESET_ALL'>
-  | BaseAction<'CIRCUIT_BREAKER_OPEN'>
-  | BaseAction<'CIRCUIT_BREAKER_RESET'>
   | UpdatePublicationStatusAction
   | BaseAction<'FETCH_COUNTS_START'>
   | FetchCountsSuccessAction
@@ -204,22 +189,6 @@ class PublicationFilters {
   }
 }
 
-class CircuitBreakerUtils {
-  public static isOpen(circuitBreaker: CircuitBreakerState): boolean {
-    if (!circuitBreaker.isOpen) return false;
-
-    if (circuitBreaker.lastFailureTime) {
-      const timeSinceLastFailure = Date.now() - circuitBreaker.lastFailureTime;
-      return timeSinceLastFailure < CONFIG.CIRCUIT_BREAKER_TIMEOUT;
-    }
-
-    return false;
-  }
-
-  public static shouldOpen(failureCount: number): boolean {
-    return failureCount >= CONFIG.CIRCUIT_BREAKER_THRESHOLD;
-  }
-}
 
 class ValidationUtils {
   public static validatePaginationParams(page: number, size: number): void {
@@ -271,20 +240,11 @@ class StateCreators {
     };
   }
 
-  public static createInitialCircuitBreakerState(): CircuitBreakerState {
-    return {
-      failureCount: 0,
-      lastFailureTime: null,
-      isOpen: false
-    };
-  }
-
   public static createInitialState(): State {
     return {
       [PublicationStatus.PENDING]: this.createInitialPublicationState(),
       [PublicationStatus.ACCEPTED]: this.createInitialPublicationState(),
       [PublicationStatus.REJECTED]: this.createInitialPublicationState(),
-      circuitBreaker: this.createInitialCircuitBreakerState(),
       counts: this.createInitialCountsState()
     };
   }
@@ -335,8 +295,7 @@ class ReducerHandlers {
         currentSearchQuery: searchQuery,
         lastUpdated: Date.now(),
         error: undefined
-      },
-      circuitBreaker: StateCreators.createInitialCircuitBreakerState()
+      }
     };
   }
 
@@ -376,32 +335,20 @@ class ReducerHandlers {
   ): State {
     const { payload: errorMessage, status } = action;
 
-    const newFailureCount = state.circuitBreaker.failureCount + 1;
-    const newCircuitBreaker: CircuitBreakerState = {
-      failureCount: newFailureCount,
-      lastFailureTime: Date.now(),
-      isOpen: CircuitBreakerUtils.shouldOpen(newFailureCount)
-    };
-
     if (status) {
-      const currentState = state[status];
       return {
         ...state,
         [status]: {
-          ...currentState,
+          ...state[status],
           isLoading: false,
           isLoadingMore: false,
           isRefreshing: false,
           error: errorMessage
-        },
-        circuitBreaker: newCircuitBreaker
+        }
       };
     }
 
-    return {
-      ...state,
-      circuitBreaker: newCircuitBreaker
-    };
+    return state;
   }
 
   public static handleUpdatePublicationStatus(
@@ -544,22 +491,6 @@ const publicationReducer = (state: State, action: Action): State => {
     case 'RESET_ALL':
       return StateCreators.createInitialState();
 
-    case 'CIRCUIT_BREAKER_OPEN':
-      return {
-        ...state,
-        circuitBreaker: {
-          ...state.circuitBreaker,
-          isOpen: true,
-          lastFailureTime: Date.now()
-        }
-      };
-
-    case 'CIRCUIT_BREAKER_RESET':
-      return {
-        ...state,
-        circuitBreaker: StateCreators.createInitialCircuitBreakerState()
-      };
-
     case 'UPDATE_PUBLICATION_STATUS':
       return ReducerHandlers.handleUpdatePublicationStatus(state, action);
 
@@ -645,7 +576,6 @@ interface PublicationContextType {
   readonly canLoadMore: (status: PublicationStatus) => boolean;
   readonly getStatusData: (status: PublicationStatus) => PublicationState;
   readonly getTotalCount: (status: PublicationStatus) => number;
-  readonly resetCircuitBreaker: () => void;
 }
 
 const PublicationContext = createContext<PublicationContextType | undefined>(
@@ -677,15 +607,8 @@ export const PublicationProvider: React.FC<{
     return abortControllerRef.current;
   }, []);
 
-  const checkCircuitBreaker = useCallback(() => {
-    if (CircuitBreakerUtils.isOpen(state.circuitBreaker)) {
-      throw new Error('Circuit breaker is open. Too many failures.');
-    }
-  }, [state.circuitBreaker]);
-
   const loadCounts = useCallback(async (): Promise<void> => {
     try {
-      checkCircuitBreaker();
       dispatch({ type: 'FETCH_COUNTS_START' });
 
       const counts = await publicationService.getCounts();
@@ -695,7 +618,7 @@ export const PublicationProvider: React.FC<{
         error instanceof Error ? error.message : 'Unknown error';
       dispatch({ type: 'FETCH_COUNTS_FAILURE', payload: errorMessage });
     }
-  }, [checkCircuitBreaker]);
+  }, []);
 
   const refreshCounts = useCallback(async (): Promise<void> => {
     dispatch({ type: 'FETCH_COUNTS_START' });
@@ -747,7 +670,6 @@ export const PublicationProvider: React.FC<{
       const { searchQuery = '' } = options;
 
       try {
-        checkCircuitBreaker();
         ValidationUtils.validateUser(user);
 
         const currentState = state[status];
@@ -792,7 +714,7 @@ export const PublicationProvider: React.FC<{
         dispatch({ type: 'OPERATION_FAILURE', payload: errorMessage, status });
       }
     },
-    [state, createAbortController, checkCircuitBreaker, user, loadCounts]
+    [state, createAbortController, user, loadCounts]
   );
 
   useEffect(() => {
@@ -823,7 +745,6 @@ export const PublicationProvider: React.FC<{
   const loadMoreStatus = useCallback(
     async (status: PublicationStatus): Promise<void> => {
       try {
-        checkCircuitBreaker();
         ValidationUtils.validateUser(user);
 
         const currentState = state[status];
@@ -862,13 +783,12 @@ export const PublicationProvider: React.FC<{
         dispatch({ type: 'OPERATION_FAILURE', payload: errorMessage, status });
       }
     },
-    [user, state, checkCircuitBreaker, createAbortController]
+    [user, state, createAbortController]
   );
 
   const refreshStatus = useCallback(
     async (status: PublicationStatus): Promise<void> => {
       try {
-        checkCircuitBreaker();
         ValidationUtils.validateUser(user);
 
         const currentState = state[status];
@@ -904,7 +824,7 @@ export const PublicationProvider: React.FC<{
         dispatch({ type: 'OPERATION_FAILURE', payload: errorMessage, status });
       }
     },
-    [user, checkCircuitBreaker, createAbortController, refreshCounts, state]
+    [user, createAbortController, refreshCounts, state]
   );
 
   const acceptPublication = useCallback(
@@ -913,8 +833,6 @@ export const PublicationProvider: React.FC<{
       currentStatus: PublicationStatus
     ): Promise<void> => {
       try {
-        checkCircuitBreaker();
-
         dispatch({
           type: 'UPDATE_PUBLICATION_STATUS',
           publicationId,
@@ -941,7 +859,7 @@ export const PublicationProvider: React.FC<{
         throw error;
       }
     },
-    [checkCircuitBreaker, refreshCounts, refreshStatus]
+    [refreshCounts, refreshStatus]
   );
 
   const rejectPublication = useCallback(
@@ -951,8 +869,6 @@ export const PublicationProvider: React.FC<{
       reason?: string
     ): Promise<void> => {
       try {
-        checkCircuitBreaker();
-
         dispatch({
           type: 'UPDATE_PUBLICATION_STATUS',
           publicationId,
@@ -979,7 +895,7 @@ export const PublicationProvider: React.FC<{
         throw error;
       }
     },
-    [checkCircuitBreaker, refreshCounts, refreshStatus]
+    [refreshCounts, refreshStatus]
   );
 
   const processBulkPublications = useCallback(
@@ -988,8 +904,6 @@ export const PublicationProvider: React.FC<{
       action: BulkAction
     ): Promise<BulkOperationResult> => {
       try {
-        checkCircuitBreaker();
-
         const result = await publicationService.processBulkPublications(
           publicationIds as string[],
           action
@@ -1006,7 +920,7 @@ export const PublicationProvider: React.FC<{
         throw error;
       }
     },
-    [checkCircuitBreaker, refreshCounts]
+    [refreshCounts]
   );
 
   const filterPublications = useCallback(
@@ -1034,10 +948,6 @@ export const PublicationProvider: React.FC<{
     dispatch({ type: 'RESET_ALL' });
   }, []);
 
-  const resetCircuitBreaker = useCallback((): void => {
-    dispatch({ type: 'CIRCUIT_BREAKER_RESET' });
-  }, []);
-
   const canLoadMore = useCallback(
     (status: PublicationStatus): boolean => {
       const statusState = state[status];
@@ -1048,8 +958,7 @@ export const PublicationProvider: React.FC<{
 
       return (
         statusState.pagination.hasNext &&
-        !statusState.isLoadingMore &&
-        !CircuitBreakerUtils.isOpen(state.circuitBreaker)
+        !statusState.isLoadingMore
       );
     },
     [state]
@@ -1097,8 +1006,7 @@ export const PublicationProvider: React.FC<{
       refreshCounts,
       canLoadMore,
       getStatusData,
-      getTotalCount,
-      resetCircuitBreaker
+      getTotalCount
     }),
     [
       state,
@@ -1116,8 +1024,7 @@ export const PublicationProvider: React.FC<{
       refreshCounts,
       canLoadMore,
       getStatusData,
-      getTotalCount,
-      resetCircuitBreaker
+      getTotalCount
     ]
   );
 
