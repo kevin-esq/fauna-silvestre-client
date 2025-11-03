@@ -8,105 +8,12 @@ import React, {
   useRef
 } from 'react';
 import { catalogService } from '@/services/catalog/catalog.service';
-import {
-  AnimalModelResponse,
-  CatalogModelResponse,
-  LocationResponse,
-  PaginationModelResponse
-} from '@/domain/models/animal.models';
+import { ValidationService } from '@/services/validation';
+import { ConsoleLogger } from '@/services/logging/console-logger';
+import type { CatalogContextType } from './catalog/types';
+import { catalogReducer, initialState } from './catalog/reducer';
 
-interface State {
-  isLoading: boolean;
-  error: string | null;
-  catalog: AnimalModelResponse[];
-  pagination: PaginationModelResponse;
-  catalogLocations: LocationResponse | null;
-  lastFetchTime: number | null;
-  failureCount: number;
-}
-
-type Action =
-  | { type: 'FETCH_ALL_START' }
-  | { type: 'FETCH_ALL_SUCCESS'; payload: CatalogModelResponse }
-  | { type: 'FETCH_ALL_FAILURE'; payload: string }
-  | { type: 'FETCH_ALL_END' }
-  | { type: 'RESET' }
-  | { type: 'FETCH_LOCATIONS_SUCCESS'; payload: LocationResponse }
-  | { type: 'UPDATE_FAILURE_COUNT'; payload: number }
-  | { type: 'UPDATE_LAST_FETCH_TIME'; payload: number }
-  | { type: 'FETCH_CATALOG_BY_ID_START' }
-  | { type: 'FETCH_CATALOG_BY_ID_SUCCESS'; payload: AnimalModelResponse }
-  | { type: 'FETCH_CATALOG_BY_ID_FAILURE'; payload: string };
-
-interface CatalogContextType extends State {
-  fetchCatalog: () => Promise<void>;
-  fetchCatalogLocations: (catalogId: string) => Promise<void>;
-  catalogLocations: LocationResponse | null;
-  reset: () => void;
-  fetchCatalogById: (catalogId: string) => Promise<void>;
-}
-
-const initialState: State = {
-  isLoading: false,
-  error: null,
-  catalog: [],
-  pagination: {
-    page: 0,
-    size: 0,
-    total: 0,
-    totalPages: 0,
-    hasNext: false,
-    hasPrev: false
-  },
-  catalogLocations: null,
-  lastFetchTime: null,
-  failureCount: 0
-};
-
-const catalogReducer = (state: State, action: Action): State => {
-  switch (action.type) {
-    case 'FETCH_ALL_START':
-      return {
-        ...state,
-        isLoading: true,
-        error: null,
-        lastFetchTime: Date.now()
-      };
-    case 'FETCH_ALL_SUCCESS':
-      return {
-        ...state,
-        isLoading: false,
-        catalog: action.payload.catalog,
-        pagination: action.payload.pagination,
-        failureCount: 0
-      };
-    case 'FETCH_ALL_FAILURE':
-      return {
-        ...state,
-        isLoading: false,
-        error: action.payload,
-        failureCount: state.failureCount + 1
-      };
-    case 'FETCH_ALL_END':
-      return { ...state, isLoading: false };
-    case 'RESET':
-      return initialState;
-    case 'FETCH_LOCATIONS_SUCCESS':
-      return { ...state, catalogLocations: action.payload };
-    case 'UPDATE_FAILURE_COUNT':
-      return { ...state, failureCount: action.payload };
-    case 'UPDATE_LAST_FETCH_TIME':
-      return { ...state, lastFetchTime: action.payload };
-    case 'FETCH_CATALOG_BY_ID_START':
-      return { ...state, isLoading: true };
-    case 'FETCH_CATALOG_BY_ID_SUCCESS':
-      return { ...state, isLoading: false, catalog: [action.payload] };
-    case 'FETCH_CATALOG_BY_ID_FAILURE':
-      return { ...state, isLoading: false, error: action.payload };
-    default:
-      return state;
-  }
-};
+const logger = new ConsoleLogger('info');
 
 const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
 
@@ -131,13 +38,11 @@ export const CatalogProvider: React.FC<{ children: ReactNode }> = ({
       : Infinity;
 
     if (currentState.failureCount >= 3 && timeSinceLastFetch < 60000) {
-      console.log('[CatalogContext] Circuit breaker active, skipping fetch');
+      logger.info('Circuit breaker active, skipping fetch');
       return;
     }
     if (currentState.isLoading) {
-      console.log(
-        '[CatalogContext] Already loading, skipping duplicate request'
-      );
+      logger.info('Already loading, skipping duplicate request');
       return;
     }
 
@@ -172,8 +77,8 @@ export const CatalogProvider: React.FC<{ children: ReactNode }> = ({
         const errorMessage =
           error instanceof Error
             ? error.message
-            : 'Error de conexión al cargar el catálogo';
-        console.error('[CatalogContext] Error fetching catalog:', errorMessage);
+            : 'Connection error loading catalog';
+        logger.error('Error fetching catalog', error as Error);
         dispatch({ type: 'FETCH_ALL_FAILURE', payload: errorMessage });
       }
     } finally {
@@ -184,28 +89,29 @@ export const CatalogProvider: React.FC<{ children: ReactNode }> = ({
 
   const fetchCatalogLocations = useCallback(async (catalogId: string) => {
     try {
+      ValidationService.validateId(catalogId, 'fetchCatalogLocations');
+
       const data = await catalogService.getLocations(catalogId);
-      console.log('✅ Datos de ubicaciones recibidos:', data);
+      logger.info('Location data received', { catalogId });
       dispatch({ type: 'FETCH_LOCATIONS_SUCCESS', payload: data });
     } catch (error) {
-      console.error('Error fetching catalog locations:', error);
+      logger.error('Error fetching catalog locations', error as Error);
     }
   }, []);
 
   const fetchCatalogById = useCallback(async (catalogId: string) => {
     dispatch({ type: 'FETCH_CATALOG_BY_ID_START' });
     try {
+      ValidationService.validateId(catalogId, 'fetchCatalogById');
+
       const data = await catalogService.getCatalogById(catalogId);
       dispatch({ type: 'FETCH_CATALOG_BY_ID_SUCCESS', payload: data });
     } catch (error) {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : 'Error de conexión al cargar el animal';
-      console.error(
-        '[CatalogContext] Error fetching catalog by id:',
-        errorMessage
-      );
+          : 'Connection error loading animal';
+      logger.error('Error fetching catalog by id', error as Error);
       dispatch({ type: 'FETCH_CATALOG_BY_ID_FAILURE', payload: errorMessage });
     }
   }, []);
