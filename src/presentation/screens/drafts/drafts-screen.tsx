@@ -18,10 +18,7 @@ import { useSimpleBackHandler } from '@/presentation/hooks/common/use-back-handl
 import { DraftCard } from '@/presentation/components/draft/draft-card.component';
 import { OfflineBanner } from '@/presentation/components/ui/offline-banner.component';
 import { createStyles } from '@/presentation/screens/drafts/drafts-screen.styles';
-import {
-  DraftPublication,
-  DraftStatus
-} from '@/domain/models/draft.models';
+import { DraftPublication, DraftStatus } from '@/domain/models/draft.models';
 import CustomModal from '@/presentation/components/ui/custom-modal.component';
 
 const DraftsScreen: React.FC = () => {

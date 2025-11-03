@@ -118,6 +118,7 @@ src/presentation/screens/admin/
 **Problema**: Inconsistencia - solo admin-home tiene subcarpeta
 
 **Opciones**:
+
 - A) Mover todos a subcarpetas
 - B) Sacar admin-home de subcarpeta (RECOMENDADO para simplicidad)
 
@@ -150,6 +151,7 @@ src/services/
 - `src/domain/interfaces/` vs `src/services/auth/interfaces/`
 
 **Clarificar**:
+
 - `domain/models`: DTOs y modelos de negocio
 - `data/models`: Modelos específicos de la capa de datos
 - `domain/types`: TypeScript types para dominio
@@ -214,6 +216,7 @@ src/presentation/hooks/
 ### Fase 3: Estandarizar Screens
 
 **Opción A**: Todo en archivos planos (RECOMENDADO)
+
 ```
 src/presentation/screens/admin/
 ├── admin-home-screen.tsx
@@ -224,6 +227,7 @@ src/presentation/screens/admin/
 ```
 
 **Opción B**: Todo en subcarpetas
+
 ```
 src/presentation/screens/admin/
 ├── admin-home/
@@ -237,15 +241,18 @@ src/presentation/screens/admin/
 ## 📋 Plan de Ejecución
 
 ### Paso 1: Limpieza (Inmediato) ✅
+
 - Eliminar .swp y .backup files
 - Actualizar .gitignore
 
 ### Paso 2: Reorganizar Hooks (Recomendado)
+
 - Crear subcarpetas por dominio
 - Mover archivos
 - Actualizar imports
 
 ### Paso 3: Estandarizar Screens (Opcional)
+
 - Decidir: subcarpetas vs archivos planos
 - Aplicar consistentemente
 

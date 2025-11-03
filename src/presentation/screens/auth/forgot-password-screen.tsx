@@ -21,7 +21,11 @@ import CustomButton from '@/presentation/components/ui/custom-button.component';
 import CustomModal from '@/presentation/components/ui/custom-modal.component';
 import { SupportFooter } from '@/presentation/components/auth/support-footer.component';
 import { createStyles } from '@/presentation/screens/auth/forgot-password-screen.styles';
-import { useTheme, Theme, themeVariables } from '@/presentation/contexts/theme.context';
+import {
+  useTheme,
+  Theme,
+  themeVariables
+} from '@/presentation/contexts/theme.context';
 import { useAuth } from '@/presentation/contexts/auth.context';
 
 type StepProps = {

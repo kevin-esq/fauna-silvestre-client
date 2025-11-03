@@ -3,6 +3,7 @@
 ## Estado Actual
 
 ### Configuración TypeScript
+
 ```json
 {
   "baseUrl": ".",
@@ -14,22 +15,22 @@
 
 ### Análisis de Imports Actuales
 
-| Tipo | Cantidad | Porcentaje |
-|------|----------|------------|
-| Imports con `@/` (absolutos) | 189 | 27% |
-| Imports con `../` (relativos) | 426 | 62% |
-| Imports con `./` (relativos mismo nivel) | 71 | 10% |
-| **Total** | **686** | **100%** |
+| Tipo                                     | Cantidad | Porcentaje |
+| ---------------------------------------- | -------- | ---------- |
+| Imports con `@/` (absolutos)             | 189      | 27%        |
+| Imports con `../` (relativos)            | 426      | 62%        |
+| Imports con `./` (relativos mismo nivel) | 71       | 10%        |
+| **Total**                                | **686**  | **100%**   |
 
 ### Desglose de @ Imports
 
-| Destino | Cantidad |
-|---------|----------|
-| `@/domain` | 29 |
-| `@/services` | 28 |
-| `@/presentation` | 71 |
-| `@/shared` | 11 |
-| **Total @ imports** | **139** |
+| Destino             | Cantidad |
+| ------------------- | -------- |
+| `@/domain`          | 29       |
+| `@/services`        | 28       |
+| `@/presentation`    | 71       |
+| `@/shared`          | 11       |
+| **Total @ imports** | **139**  |
 
 ---
 
@@ -38,33 +39,37 @@
 ### Regla Principal: **Usar Imports Absolutos (@/) para Todo**
 
 #### Ventajas:
+
 ✅ **Legibilidad**: Siempre sabes de dónde viene el import  
 ✅ **Refactoring seguro**: Mover archivos no rompe imports  
 ✅ **Consistencia**: Todos los imports se ven igual  
 ✅ **Autocompletado**: Mejor soporte en IDEs  
-✅ **Escalabilidad**: Fácil agregar nuevas capas  
+✅ **Escalabilidad**: Fácil agregar nuevas capas
 
 #### Desventajas de Imports Relativos:
+
 ❌ Difícil seguir `../../../components/...`  
 ❌ Se rompen al mover archivos  
-❌ Inconsistencia en el codebase  
+❌ Inconsistencia en el codebase
 
 ---
 
 ## 📋 Plan de Implementación
 
 ### Fase 1: Actualizar Presentation Layer
+
 ```typescript
 // Antes
 import { useTheme } from '../contexts/theme.context';
 import { CustomButton } from '../../components/ui/custom-button.component';
 
-// Después  
+// Después
 import { useTheme } from '@/presentation/contexts/theme.context';
 import { CustomButton } from '@/presentation/components/ui/custom-button.component';
 ```
 
 ### Fase 2: Actualizar Services Layer
+
 ```typescript
 // Antes
 import { ILogger } from '../../services/logging/ILogger';
@@ -74,6 +79,7 @@ import { ILogger } from '@/services/logging/ILogger';
 ```
 
 ### Fase 3: Actualizar Domain Layer
+
 ```typescript
 // Antes
 import { PublicationModel } from '../models/publication.models';
@@ -83,6 +89,7 @@ import { PublicationModel } from '@/domain/models/publication.models';
 ```
 
 ### Fase 4: Actualizar Data Layer
+
 ```typescript
 // Antes
 import { BaseRepository } from './base.repository';

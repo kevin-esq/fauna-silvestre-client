@@ -12,7 +12,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { ThemeVariablesType, useTheme } from '@/presentation/contexts/theme.context';
+import {
+  ThemeVariablesType,
+  useTheme
+} from '@/presentation/contexts/theme.context';
 import { createStyles } from './help-modal.styles';
 import SponsorsFooterComponent from '@/presentation/components/auth/sponsors-footer.component';
 import {

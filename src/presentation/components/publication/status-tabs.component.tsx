@@ -9,7 +9,10 @@ import {
   ViewStyle,
   TextStyle
 } from 'react-native';
-import { ThemeVariablesType, useTheme } from '@/presentation/contexts/theme.context';
+import {
+  ThemeVariablesType,
+  useTheme
+} from '@/presentation/contexts/theme.context';
 import { themeVariables } from '@/presentation/contexts/theme.context';
 import { PublicationStatus } from '@/services/publication/publication.service';
 

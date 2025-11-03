@@ -23,7 +23,11 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import { Theme, themeVariables, useTheme } from '@/presentation/contexts/theme.context';
+import {
+  Theme,
+  themeVariables,
+  useTheme
+} from '@/presentation/contexts/theme.context';
 import LocationMap from '@/presentation/components/ui/location-map.component';
 import { createStyles } from '@/presentation/screens/publication/publication-details-screen.styles';
 import { useAuth } from '@/presentation/contexts/auth.context';

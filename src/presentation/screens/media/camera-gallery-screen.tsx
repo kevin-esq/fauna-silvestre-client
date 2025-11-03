@@ -18,7 +18,10 @@ import {
   useBackHandler,
   useModalBackHandler
 } from '@/presentation/hooks/common/use-back-handler.hook';
-import { themeVariables, useTheme } from '@/presentation/contexts/theme.context';
+import {
+  themeVariables,
+  useTheme
+} from '@/presentation/contexts/theme.context';
 import { createStyles } from '@/presentation/screens/media/camera-gallery-screen.styles';
 import { PermissionMessage } from '@/presentation/components/camera/permission-message.component';
 import { Loading } from '@/presentation/components/camera/loading.component';

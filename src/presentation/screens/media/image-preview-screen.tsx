@@ -17,7 +17,10 @@ import {
 } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createStyles } from '@/presentation/screens/media/image-preview-screen.styles';
-import { useTheme, themeVariables } from '@/presentation/contexts/theme.context';
+import {
+  useTheme,
+  themeVariables
+} from '@/presentation/contexts/theme.context';
 import { RootStackParamList } from '@/presentation/navigation/navigation.types';
 import type { Location } from 'react-native-get-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

@@ -4,7 +4,10 @@ import { View, Text, TouchableOpacity, Switch } from 'react-native';
 import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
 import { useDoubleBackExit } from '@/presentation/hooks/common/use-double-back-exit.hook';
 import { useLoginForm } from '@/presentation/hooks/auth/use-login-form.hook';
-import { useTheme, themeVariables } from '@/presentation/contexts/theme.context';
+import {
+  useTheme,
+  themeVariables
+} from '@/presentation/contexts/theme.context';
 
 import AuthContainer from '@/presentation/components/auth/auth-container.component';
 import AuthTextInput from '@/presentation/components/auth/auth-text-input.component';

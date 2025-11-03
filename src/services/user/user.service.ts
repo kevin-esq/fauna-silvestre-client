@@ -1,10 +1,7 @@
 import User from '@/domain/entities/user.entity';
 import { UserRepository } from '@/data/repositories/user.repository';
 import { IUserRepository } from '@/domain/interfaces/user.repository.interface';
-import {
-  UsersResponse,
-  UserCountsResponse
-} from '@/domain/models/user.models';
+import { UsersResponse, UserCountsResponse } from '@/domain/models/user.models';
 import { ApiService } from '@/services/http/api.service';
 import { ConsoleLogger } from '@/services/logging/console-logger';
 
