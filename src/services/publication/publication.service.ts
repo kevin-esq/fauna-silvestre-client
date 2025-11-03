@@ -8,6 +8,7 @@ import {
 } from '@/domain/models/publication.models';
 import { ApiService } from '@/services/http/api.service';
 import { ConsoleLogger } from '@/services/logging/console-logger';
+import { ErrorHandlingService } from '@/services/error-handling';
 
 export enum PublicationStatus {
   PENDING = 'pending',
@@ -40,6 +41,7 @@ export class PublicationService {
 
   private readonly repository: IPublicationRepository;
   private readonly logger: ConsoleLogger;
+  private readonly errorHandler: ErrorHandlingService;
   private onCacheInvalidate?: () => void;
 
   private countsCache: CacheEntry<CountsResponse> | null = null;
@@ -80,8 +82,9 @@ export class PublicationService {
     ]
   ]);
 
-  constructor(apiService: ApiService) {
+  constructor(apiService: ApiService, errorHandler?: ErrorHandlingService) {
     this.logger = new ConsoleLogger();
+    this.errorHandler = errorHandler || new ErrorHandlingService();
     this.repository = new PublicationRepository(
       apiService.client,
       this.logger
@@ -93,43 +96,41 @@ export class PublicationService {
   }
 
   async createPublication(publication: PublicationData): Promise<void> {
-    try {
-      this.logger.debug('Creando publicación', { publication });
-      await this.repository.createPublication(publication);
+    this.logger.debug('Creando publicación', { publication });
 
-      this.invalidateCountsCache();
+    await this.errorHandler.handleWithRetry(
+      async () => {
+        await this.repository.createPublication(publication);
+        this.invalidateCountsCache();
+      },
+      { operation: 'createPublication' },
+      { maxAttempts: 1 },
+      this.logger
+    );
 
-      this.logger.info('Publicación creada exitosamente');
-    } catch (error) {
-      this.logger.error('Error al crear publicación', error as Error);
-      throw error;
-    }
+    this.logger.info('Publicación creada exitosamente');
   }
 
   async getUserPublications(): Promise<PublicationsModel[]> {
-    try {
-      this.logger.debug('Obteniendo publicaciones del usuario');
-      return await this.repository.getUserPublications();
-    } catch (error) {
-      this.logger.error(
-        'Error al obtener publicaciones del usuario',
-        error as Error
-      );
-      throw error;
-    }
+    this.logger.debug('Obteniendo publicaciones del usuario');
+
+    return this.errorHandler.handleWithRetry(
+      () => this.repository.getUserPublications(),
+      { operation: 'getUserPublications' },
+      { maxAttempts: 2 },
+      this.logger
+    );
   }
 
   async getAllPublications(): Promise<PublicationsModel[]> {
-    try {
-      this.logger.debug('Obteniendo todas las publicaciones');
-      return await this.repository.getAllPublications();
-    } catch (error) {
-      this.logger.error(
-        'Error al obtener todas las publicaciones',
-        error as Error
-      );
-      throw error;
-    }
+    this.logger.debug('Obteniendo todas las publicaciones');
+
+    return this.errorHandler.handleWithRetry(
+      () => this.repository.getAllPublications(),
+      { operation: 'getAllPublications' },
+      { maxAttempts: 2 },
+      this.logger
+    );
   }
 
   async getPublicationsByStatus({
@@ -145,43 +146,34 @@ export class PublicationService {
       throw new Error(`Estado de publicación inválido: ${status}`);
     }
 
-    try {
-      this.logger.debug('Obteniendo publicaciones por estado', {
-        status,
-        page,
-        size,
-        forAdmin
-      });
+    this.logger.debug('Obteniendo publicaciones por estado', {
+      status,
+      page,
+      size,
+      forAdmin
+    });
 
-      const methodToCall = forAdmin ? handler.admin : handler.user;
-      return await methodToCall(page, size);
-    } catch (error) {
-      this.logger.error(
-        'Error al obtener publicaciones por estado',
-        error as Error,
-        {
-          status,
-          page,
-          size,
-          forAdmin
-        }
-      );
-      throw error;
-    }
+    const methodToCall = forAdmin ? handler.admin : handler.user;
+
+    return this.errorHandler.handleWithRetry(
+      () => methodToCall(page, size),
+      { operation: 'getPublicationsByStatus', params: { status, page, size, forAdmin } },
+      { maxAttempts: 2 },
+      this.logger
+    );
   }
 
   async getPublicationById(recordId: string): Promise<PublicationResponse> {
     this.validatePublicationId(recordId, 'getPublicationById');
 
-    try {
-      this.logger.debug('Obteniendo publicación por ID', { recordId });
-      return await this.repository.getPublicationById(recordId);
-    } catch (error) {
-      this.logger.error('Error al obtener publicación por ID', error as Error, {
-        recordId
-      });
-      throw error;
-    }
+    this.logger.debug('Obteniendo publicación por ID', { recordId });
+
+    return this.errorHandler.handleWithRetry(
+      () => this.repository.getPublicationById(recordId),
+      { operation: 'getPublicationById', params: { recordId } },
+      { maxAttempts: 2 },
+      this.logger
+    );
   }
 
   async acceptPublication(publicationId: string): Promise<void> {
@@ -234,21 +226,22 @@ export class PublicationService {
       return this.countsCache!.data;
     }
 
-    try {
-      this.logger.debug('Obteniendo conteos desde repositorio');
-      const counts = await this.repository.getCounts();
+    this.logger.debug('Obteniendo conteos desde repositorio');
 
-      this.countsCache = {
-        data: counts,
-        timestamp: Date.now(),
-        ttl: PublicationService.CACHE_TTL_MS
-      };
+    const counts = await this.errorHandler.handleWithRetry(
+      () => this.repository.getCounts(),
+      { operation: 'getCounts' },
+      { maxAttempts: 2 },
+      this.logger
+    );
 
-      return counts;
-    } catch (error) {
-      this.logger.error('Error al obtener conteos', error as Error);
-      throw error;
-    }
+    this.countsCache = {
+      data: counts,
+      timestamp: Date.now(),
+      ttl: PublicationService.CACHE_TTL_MS
+    };
+
+    return counts;
   }
 
   async processBulkPublications(
