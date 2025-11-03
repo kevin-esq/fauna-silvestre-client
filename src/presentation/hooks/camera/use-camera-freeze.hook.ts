@@ -1,25 +1,26 @@
 import { useState, useCallback } from 'react';
+import { useToggle } from '../common/use-toggle.hook';
 
 export const useCameraFreeze = () => {
   const [freezeUri, setFreezeUri] = useState<string | null>(null);
-  const [isShowingFreeze, setIsShowingFreeze] = useState(false);
+  const { value: isShowingFreeze, setTrue: setShowingFreeze, setFalse: clearShowingFreeze } = useToggle(false);
 
   const showFreeze = useCallback((photoPath: string) => {
     setFreezeUri(`file://${photoPath}`);
-    setIsShowingFreeze(true);
-  }, []);
+    setShowingFreeze();
+  }, [setShowingFreeze]);
 
   const hideFreeze = useCallback(() => {
-    setIsShowingFreeze(false);
+    clearShowingFreeze();
     setTimeout(() => {
       setFreezeUri(null);
     }, 300);
-  }, []);
+  }, [clearShowingFreeze]);
 
   const clearFreeze = useCallback(() => {
     setFreezeUri(null);
-    setIsShowingFreeze(false);
-  }, []);
+    clearShowingFreeze();
+  }, [clearShowingFreeze]);
 
   return {
     freezeUri,

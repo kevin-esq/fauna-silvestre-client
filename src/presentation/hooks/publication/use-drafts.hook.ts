@@ -19,7 +19,7 @@ export const useDrafts = () => {
       setDrafts(allDrafts);
       logger.info(`Loaded ${allDrafts.length} drafts`);
     } catch (err) {
-      const errorMessage = 'Error al cargar borradores';
+      const errorMessage = 'Error loading drafts';
       setError(errorMessage);
       logger.error(errorMessage, err as Error);
     } finally {
@@ -34,7 +34,7 @@ export const useDrafts = () => {
         await loadDrafts();
         logger.info(`Draft saved: ${draft.id}`);
       } catch (err) {
-        const errorMessage = 'Error al guardar borrador';
+        const errorMessage = 'Error saving draft';
         setError(errorMessage);
         logger.error(errorMessage, err as Error);
         throw err;
@@ -50,7 +50,7 @@ export const useDrafts = () => {
         await loadDrafts();
         logger.info(`Draft deleted: ${id}`);
       } catch (err) {
-        const errorMessage = 'Error al eliminar borrador';
+        const errorMessage = 'Error deleting draft';
         setError(errorMessage);
         logger.error(errorMessage, err as Error);
         throw err;
@@ -94,7 +94,7 @@ export const useDrafts = () => {
       setDrafts([]);
       logger.info('All drafts cleared');
     } catch (err) {
-      const errorMessage = 'Error al limpiar borradores';
+      const errorMessage = 'Error clearing drafts';
       setError(errorMessage);
       logger.error(errorMessage, err as Error);
       throw err;
