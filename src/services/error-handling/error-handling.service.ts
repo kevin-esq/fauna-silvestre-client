@@ -49,6 +49,22 @@ export class ErrorHandlingService {
   }
 
   /**
+   * Execute async operation and return default value on error
+   */
+  async executeWithDefault<T>(
+    operation: () => Promise<T>,
+    defaultValue: T,
+    context: ErrorContext,
+    logger?: ILogger
+  ): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      return this.handleWithDefault(error, defaultValue, context, logger);
+    }
+  }
+
+  /**
    * Execute operation with retry logic
    */
   async handleWithRetry<T>(

@@ -38,7 +38,7 @@ const DEFAULT_PREFERENCES: UserViewPreferences = {
 
 export const UserViewPreferencesService = {
   async getPreferences(): Promise<UserViewPreferences> {
-    return errorHandlingService.handleWithDefault(
+    return errorHandlingService.executeWithDefault(
       async () => {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         if (stored) {

@@ -69,7 +69,7 @@ export class PublicationViewPreferencesService {
   }
 
   async load(): Promise<PublicationViewPreferences> {
-    return this.errorHandler.handleWithDefault(
+    return this.errorHandler.executeWithDefault(
       async () => {
         const stored = await AsyncStorage.getItem(
           PUBLICATION_VIEW_PREFERENCES_KEY

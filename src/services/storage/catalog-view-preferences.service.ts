@@ -49,7 +49,7 @@ class CatalogViewPreferencesService {
   private readonly errorHandler = errorHandlingService;
 
   async load(): Promise<CatalogViewPreferences> {
-    return this.errorHandler.handleWithDefault(
+    return this.errorHandler.executeWithDefault(
       async () => {
         const stored = await AsyncStorage.getItem(CATALOG_PREFERENCES_KEY);
         if (stored) {
