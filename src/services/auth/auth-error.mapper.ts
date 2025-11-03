@@ -1,11 +1,11 @@
 import { AxiosError } from 'axios';
-import { AuthError } from '../../shared/errors/custom-errors';
-import { BaseResponse } from '../../domain/models/auth.models';
+import { AuthError } from '@/shared/errors/custom-errors';
+import { BaseResponse } from '@/domain/models/auth.models';
 import {
   ERROR_TRANSLATIONS,
   ERROR_KEYWORDS,
   GENERIC_ERROR_MESSAGES
-} from '../../shared/constants/error-messages';
+} from '@/shared/constants/error-messages';
 
 export class AuthErrorMapper {
   static map(error: unknown): AuthError {

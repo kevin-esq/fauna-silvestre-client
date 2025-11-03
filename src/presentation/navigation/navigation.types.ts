@@ -1,9 +1,9 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { PublicationModelResponse } from '../../domain/models/publication.models';
-import { AnimalModelResponse } from '../../domain/models/animal.models';
-import type { Location } from '../../domain/models/draft.models';
+import { PublicationModelResponse } from '@/domain/models/publication.models';
+import { AnimalModelResponse } from '@/domain/models/animal.models';
+import type { Location } from '@/domain/models/draft.models';
 import { PublicationStatus } from '@/services/publication/publication.service';
-import { UserData } from '../../domain/models/user.models';
+import { UserData } from '@/domain/models/user.models';
 
 export type RootStackParamList = {
   Login: undefined;

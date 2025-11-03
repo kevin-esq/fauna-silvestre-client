@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Text, StyleSheet, Animated } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useTheme } from '../../contexts/theme.context';
-import { useNetworkStatus } from '../../hooks/common/use-network-status.hook';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { useNetworkStatus } from '@/presentation/hooks/common/use-network-status.hook';
 
 export const OfflineBanner: React.FC = () => {
   const theme = useTheme();

@@ -6,8 +6,8 @@ import React, {
   useCallback
 } from 'react';
 import { View, ActivityIndicator, Text, Image, Animated } from 'react-native';
-import { useTheme } from '../../contexts/theme.context';
-import { createStyles } from './splash-screen.styles';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { createStyles } from '@/presentation/screens/home/splash-screen.styles';
 import SplashIcon from '../../../assets/splash-icon.png';
 
 interface AnimatedDotsProps {

@@ -1,4 +1,4 @@
-import { ILogger } from '../../services/logging/ILogger';
+import { ILogger } from '@/services/logging/ILogger';
 import Keychain from 'react-native-keychain';
 import Aes from 'react-native-aes-crypto';
 import { Platform } from 'react-native';

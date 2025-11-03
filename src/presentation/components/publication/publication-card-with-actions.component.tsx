@@ -10,7 +10,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '@/presentation/contexts/theme.context';
 import { PublicationCardVariant } from './publication-card-variants.component';
-import CustomModal from '../ui/custom-modal.component';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
 import { PublicationsModel } from '@/domain/models/publication.models';
 import {
   ViewLayout,

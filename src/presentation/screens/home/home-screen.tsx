@@ -10,25 +10,25 @@ import {
   StatusBar
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useAuth } from '../../contexts/auth.context';
-import { Theme, useTheme } from '../../contexts/theme.context';
-import { useDraftContext } from '../../contexts/draft.context';
-import { useNavigationActions } from '../../navigation/navigation-provider';
-import { useLocationInfo } from '../../hooks/catalog/use-location-info';
-import { useHomeData } from '../../hooks/publication/use-home-data.hook';
+import { useAuth } from '@/presentation/contexts/auth.context';
+import { Theme, useTheme } from '@/presentation/contexts/theme.context';
+import { useDraftContext } from '@/presentation/contexts/draft.context';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
+import { useLocationInfo } from '@/presentation/hooks/catalog/use-location-info';
+import { useHomeData } from '@/presentation/hooks/publication/use-home-data.hook';
 
-import { AnimalCardVariant } from '../../components/animal/animal-card-variants.component';
-import { useCatalogViewPreferences } from '../../contexts/catalog-view-preferences.context';
-import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
-import CustomModal from '../../components/ui/custom-modal.component';
-import { OfflineBanner } from '../../components/ui/offline-banner.component';
+import { AnimalCardVariant } from '@/presentation/components/animal/animal-card-variants.component';
+import { useCatalogViewPreferences } from '@/presentation/contexts/catalog-view-preferences.context';
+import AnimalSearchableDropdown from '@/presentation/components/animal/animal-searchable-dropdown.component';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
+import { OfflineBanner } from '@/presentation/components/ui/offline-banner.component';
 import {
   SkeletonLoader,
   StatCardSkeleton,
   AnimalCardSkeleton
-} from '../../components/ui/skeleton-loader.component';
+} from '@/presentation/components/ui/skeleton-loader.component';
 
-import { createStyles } from './home-screen.styles';
+import { createStyles } from '@/presentation/screens/home/home-screen.styles';
 import {
   AnimalModelResponse,
   CommonNounResponse

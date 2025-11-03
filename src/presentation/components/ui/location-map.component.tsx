@@ -13,7 +13,7 @@ import MapView, {
   LatLng,
   Callout
 } from 'react-native-maps';
-import { useTheme } from '../../contexts/theme.context';
+import { useTheme } from '@/presentation/contexts/theme.context';
 import { createLocationMapStyles } from './location-map.styles';
 
 interface LocationMapProps {

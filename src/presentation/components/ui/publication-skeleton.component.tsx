@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, ViewStyle } from 'react-native';
 import { useTheme } from '@/presentation/contexts/theme.context';
 import ImageSkeleton from './image-skeleton.component';
-import { ITEM_HEIGHT } from '../publication/publication-card.component';
+import { ITEM_HEIGHT } from '@/presentation/components/publication/publication-card.component';
 
 interface PublicationSkeletonProps {
   viewMode?: 'card' | 'list';

@@ -1,8 +1,8 @@
 import { AxiosInstance } from 'axios';
 import { BaseRepository } from './base.repository';
-import { ILogger } from '../../services/logging/ILogger';
-import { ICatalogRepository } from '../../domain/interfaces/catalog.repository.interface';
-import Animal from '../../domain/entities/animal.entity';
+import { ILogger } from '@/services/logging/ILogger';
+import { ICatalogRepository } from '@/domain/interfaces/catalog.repository.interface';
+import Animal from '@/domain/entities/animal.entity';
 import {
   CatalogModelResponse,
   LocationResponse,
@@ -14,9 +14,9 @@ import {
   UpdateAnimalImageRequest,
   AnimalCrudResponse,
   DeleteAnimalResponse
-} from '../../domain/models/animal.models';
-import { ApiService } from '../../services/http/api.service';
-import { ConsoleLogger } from '../../services/logging/console-logger';
+} from '@/domain/models/animal.models';
+import { ApiService } from '@/services/http/api.service';
+import { ConsoleLogger } from '@/services/logging/console-logger';
 
 const logger = new ConsoleLogger('info');
 export class CatalogRepository

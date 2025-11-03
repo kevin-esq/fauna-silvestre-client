@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { DraftPublication } from '../../../domain/models/draft.models';
-import { useTheme } from '../../contexts/theme.context';
+import { useTheme } from '@/presentation/contexts/theme.context';
 import { createStyles } from './draft-card.styles';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';

@@ -5,7 +5,7 @@ import {
   NotificationModel,
   NotificationType
 } from '../../../domain/models/notification.models';
-import { useTheme } from '../../contexts/theme.context';
+import { useTheme } from '@/presentation/contexts/theme.context';
 import { createStyles } from './notification-card.styles';
 
 interface NotificationCardProps {

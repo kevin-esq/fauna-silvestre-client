@@ -17,20 +17,20 @@ import {
   Animated
 } from 'react-native';
 
-import { useTheme } from '../../contexts/theme.context';
-import { usePublications } from '../../contexts/publication.context';
-import { usePublicationViewPreferences } from '../../contexts/publication-view-preferences.context';
-import { ITEM_HEIGHT } from '../../components/publication/publication-card.component';
-import { PublicationCardVariant } from '../../components/publication/publication-card-variants.component';
-import { PublicationViewSelector } from '../../components/publication/publication-view-selector.component';
-import PublicationSkeleton from '../../components/ui/publication-skeleton.component';
-import SearchBar from '../../components/ui/search-bar.component';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { usePublications } from '@/presentation/contexts/publication.context';
+import { usePublicationViewPreferences } from '@/presentation/contexts/publication-view-preferences.context';
+import { ITEM_HEIGHT } from '@/presentation/components/publication/publication-card.component';
+import { PublicationCardVariant } from '@/presentation/components/publication/publication-card-variants.component';
+import { PublicationViewSelector } from '@/presentation/components/publication/publication-view-selector.component';
+import PublicationSkeleton from '@/presentation/components/ui/publication-skeleton.component';
+import SearchBar from '@/presentation/components/ui/search-bar.component';
 
-import { PublicationModelResponse } from '../../../domain/models/publication.models';
-import { PublicationStatus } from '../../../services/publication/publication.service';
+import { PublicationModelResponse } from '@/domain/models/publication.models';
+import { PublicationStatus } from '@/services/publication/publication.service';
 import { useAuth } from '@/presentation/contexts/auth.context';
-import { useNavigationActions } from '../../navigation/navigation-provider';
-import { createPublicationScreenStyles } from './publication-screen.styles';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
+import { createPublicationScreenStyles } from '@/presentation/screens/publication/publication-screen.styles';
 
 const CONFIG = {
   SCROLL: {

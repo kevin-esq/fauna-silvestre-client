@@ -17,14 +17,14 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useTheme } from '../../contexts/theme.context';
-import { useCatalogViewPreferences } from '../../contexts/catalog-view-preferences.context';
-import SearchBar from '../../components/ui/search-bar.component';
-import { CatalogViewSelector } from '../../components/ui/catalog-view-selector.component';
-import { AnimalCardVariant } from '../../components/animal/animal-card-variants.component';
-import { useNavigationActions } from '../../navigation/navigation-provider';
-import { AnimalModelResponse } from '../../../domain/models/animal.models';
-import { useCatalog } from '../../contexts/catalog.context';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { useCatalogViewPreferences } from '@/presentation/contexts/catalog-view-preferences.context';
+import SearchBar from '@/presentation/components/ui/search-bar.component';
+import { CatalogViewSelector } from '@/presentation/components/ui/catalog-view-selector.component';
+import { AnimalCardVariant } from '@/presentation/components/animal/animal-card-variants.component';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
+import { AnimalModelResponse } from '@/domain/models/animal.models';
+import { useCatalog } from '@/presentation/contexts/catalog.context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SEARCH_DEBOUNCE_DELAY = 300;

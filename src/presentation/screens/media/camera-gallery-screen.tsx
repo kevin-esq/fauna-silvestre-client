@@ -7,24 +7,24 @@ import React, {
 } from 'react';
 import { SafeAreaView, StatusBar, Modal } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useCamera } from '../../hooks/camera/use-camera.hook';
-import { useRecentImagesWithLocation } from '../../hooks/media/use-recent-images.hook';
-import { useRequestPermissions } from '../../hooks/permissions/use-request-permissions.hook';
-import { useCameraAnimations } from '../../hooks/camera/use-camera-animations.hook';
-import { useCameraActions } from '../../hooks/camera/use-camera-actions.hook';
-import { useCameraFreeze } from '../../hooks/camera/use-camera-freeze.hook';
-import { useModalState } from '../../hooks/common/use-modal-state.hook';
+import { useCamera } from '@/presentation/hooks/camera/use-camera.hook';
+import { useRecentImagesWithLocation } from '@/presentation/hooks/media/use-recent-images.hook';
+import { useRequestPermissions } from '@/presentation/hooks/permissions/use-request-permissions.hook';
+import { useCameraAnimations } from '@/presentation/hooks/camera/use-camera-animations.hook';
+import { useCameraActions } from '@/presentation/hooks/camera/use-camera-actions.hook';
+import { useCameraFreeze } from '@/presentation/hooks/camera/use-camera-freeze.hook';
+import { useModalState } from '@/presentation/hooks/common/use-modal-state.hook';
 import {
   useBackHandler,
   useModalBackHandler
-} from '../../hooks/common/use-back-handler.hook';
-import { themeVariables, useTheme } from '../../contexts/theme.context';
-import { createStyles } from './camera-gallery-screen.styles';
-import { PermissionMessage } from '../../components/camera/permission-message.component';
-import { Loading } from '../../components/camera/loading.component';
-import { CameraView } from '../../components/camera/camera-view.component';
-import CustomImagePickerScreen from './custom-image-picker-screen';
-import CustomModal from '../../components/ui/custom-modal.component';
+} from '@/presentation/hooks/common/use-back-handler.hook';
+import { themeVariables, useTheme } from '@/presentation/contexts/theme.context';
+import { createStyles } from '@/presentation/screens/media/camera-gallery-screen.styles';
+import { PermissionMessage } from '@/presentation/components/camera/permission-message.component';
+import { Loading } from '@/presentation/components/camera/loading.component';
+import { CameraView } from '@/presentation/components/camera/camera-view.component';
+import CustomImagePickerScreen from '@/presentation/screens/media/custom-image-picker-screen';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
 
 interface ScreenWrapperProps {
   children: React.ReactNode;

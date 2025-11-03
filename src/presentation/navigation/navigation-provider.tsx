@@ -10,8 +10,8 @@ import {
   StackActions,
   CommonActions
 } from '@react-navigation/native';
-import { RootStackParamList } from './navigation.types';
-import { AnimalModelResponse } from '../../domain/models/animal.models';
+import { RootStackParamList } from '@/presentation/navigation/navigation.types';
+import { AnimalModelResponse } from '@/domain/models/animal.models';
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 

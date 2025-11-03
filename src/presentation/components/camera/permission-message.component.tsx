@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createStyles } from '../../screens/media/camera-gallery-screen.styles';
-import { PermissionType as PermissionTypeHook } from '../../hooks/permissions/use-request-permissions.hook';
+import { PermissionType as PermissionTypeHook } from '@/presentation/hooks/permissions/use-request-permissions.hook';
 
 type PermissionType = 'camera' | 'photos' | 'all';
 

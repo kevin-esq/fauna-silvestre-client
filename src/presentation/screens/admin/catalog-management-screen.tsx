@@ -16,14 +16,14 @@ import {
   StatusBar
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useCatalogManagement } from '../../hooks/admin/use-catalog-management.hook';
-import { useTheme } from '../../contexts/theme.context';
-import { useCatalogViewPreferences } from '../../contexts/catalog-view-preferences.context';
-import { useNavigationActions } from '../../navigation/navigation-provider';
+import { useCatalogManagement } from '@/presentation/hooks/admin/use-catalog-management.hook';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { useCatalogViewPreferences } from '@/presentation/contexts/catalog-view-preferences.context';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
 import { AnimalModelResponse } from '@/domain/models/animal.models';
-import SearchBar from '../../components/ui/search-bar.component';
-import { CatalogViewSelector } from '../../components/ui/catalog-view-selector.component';
-import { AnimalCardWithActions } from '../../components/animal/animal-card-with-actions.component';
+import SearchBar from '@/presentation/components/ui/search-bar.component';
+import { CatalogViewSelector } from '@/presentation/components/ui/catalog-view-selector.component';
+import { AnimalCardWithActions } from '@/presentation/components/animal/animal-card-with-actions.component';
 import { addEventListener, AppEvents } from '@/shared/utils/event-emitter';
 
 const CatalogManagementScreen: React.FC = () => {

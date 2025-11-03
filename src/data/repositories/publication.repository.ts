@@ -1,15 +1,15 @@
 import { AxiosInstance } from 'axios';
 import { BaseRepository } from './base.repository';
-import { ILogger } from '../../services/logging/ILogger';
-import { IPublicationRepository } from '../../domain/interfaces/publication.repository.interface';
+import { ILogger } from '@/services/logging/ILogger';
+import { IPublicationRepository } from '@/domain/interfaces/publication.repository.interface';
 import {
   CountsResponse,
   PublicationData,
   PublicationResponse,
   PublicationsModel,
   PublicationModelResponse
-} from '../../domain/models/publication.models';
-import { PublicationStatus } from '../../services/publication/publication.service';
+} from '@/domain/models/publication.models';
+import { PublicationStatus } from '@/services/publication/publication.service';
 
 export class PublicationRepository
   extends BaseRepository

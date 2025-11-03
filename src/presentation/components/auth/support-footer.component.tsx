@@ -3,8 +3,8 @@ import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import { useTheme, themeVariables } from '../../contexts/theme.context';
-import CustomModal from '../ui/custom-modal.component';
+import { useTheme, themeVariables } from '@/presentation/contexts/theme.context';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
 import { createStyles } from './support-footer.styles';
 import {
   SUPPORT_CONTACT_METHODS,

@@ -1,6 +1,6 @@
 import { Camera, PhotoFile } from 'react-native-vision-camera';
 import ImageResizer from '@bam.tech/react-native-image-resizer';
-import { metaToLocation } from '../../shared/utils/metaParser';
+import { metaToLocation } from '@/shared/utils/metaParser';
 
 export type FlashMode = 'off' | 'on' | 'auto';
 

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
-import { LocalFileService } from '../../../services/storage/local-file.service';
-import { catalogService } from '../../../services/catalog/catalog.service';
-import { RootStackParamList } from '../../navigation/navigation.types';
+import { LocalFileService } from '@/services/storage/local-file.service';
+import { catalogService } from '@/services/catalog/catalog.service';
+import { RootStackParamList } from '@/presentation/navigation/navigation.types';
 
 interface DownloadState {
   isDownloading: boolean;

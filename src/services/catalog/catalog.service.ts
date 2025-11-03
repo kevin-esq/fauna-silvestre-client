@@ -1,8 +1,8 @@
-import { ICatalogRepository } from '../../domain/interfaces/catalog.repository.interface';
-import Animal from '../../domain/entities/animal.entity';
-import { ApiService } from '../../services/http/api.service';
-import { CatalogRepository } from '../../data/repositories/catalog.repository';
-import { ConsoleLogger } from '../logging/console-logger';
+import { ICatalogRepository } from '@/domain/interfaces/catalog.repository.interface';
+import Animal from '@/domain/entities/animal.entity';
+import { ApiService } from '@/services/http/api.service';
+import { CatalogRepository } from '@/data/repositories/catalog.repository';
+import { ConsoleLogger } from '@/services/logging/console-logger';
 import {
   CatalogModelResponse,
   LocationResponse,
@@ -13,7 +13,7 @@ import {
   UpdateAnimalImageRequest,
   AnimalCrudResponse,
   DeleteAnimalResponse
-} from '../../domain/models/animal.models';
+} from '@/domain/models/animal.models';
 
 class CatalogService {
   constructor(private catalogRepository: ICatalogRepository) {}

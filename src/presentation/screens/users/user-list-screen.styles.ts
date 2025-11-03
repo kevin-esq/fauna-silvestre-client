@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { Theme } from '../../contexts/theme.context';
+import { Theme } from '@/presentation/contexts/theme.context';
 import { EdgeInsets } from 'react-native-safe-area-context';
 
 export const createStyles = (theme: Theme, insets?: EdgeInsets) => {

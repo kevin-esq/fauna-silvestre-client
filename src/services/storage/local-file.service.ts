@@ -1,7 +1,7 @@
 import RNFS from 'react-native-fs';
 import { Platform, NativeModules } from 'react-native';
 import RNFetchBlob from 'react-native-blob-util';
-import {} from '../catalog/catalog.service';
+import {} from '@/services/catalog/catalog.service';
 
 const getApplicationId = (): string => {
   if (Platform.OS === 'android') {

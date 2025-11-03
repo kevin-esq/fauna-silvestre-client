@@ -1,4 +1,4 @@
-import { ILogger } from '../../services/logging/ILogger';
+import { ILogger } from '@/services/logging/ILogger';
 
 export class ContextLogger implements ILogger {
   constructor(private readonly context: string = 'App') {}

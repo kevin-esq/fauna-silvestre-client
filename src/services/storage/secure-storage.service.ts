@@ -1,7 +1,7 @@
-import { ConsoleLogger } from '../logging/console-logger';
-import { StorageError } from '../../shared/errors/custom-errors';
+import { ConsoleLogger } from '@/services/logging/console-logger';
+import { StorageError } from '@/shared/errors/custom-errors';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import { ILogger } from '../logging/ILogger';
+import { ILogger } from '@/services/logging/ILogger';
 import {
   IKeyManager,
   CryptoService,

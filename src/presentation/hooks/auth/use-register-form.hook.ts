@@ -1,12 +1,12 @@
 import { useReducer, useCallback, useRef, useState } from 'react';
-import { useAuth } from '../../contexts/auth.context';
-import { useLoading } from '../../contexts/loading.context';
-import { useNavigationActions } from '../../navigation/navigation-provider';
-import { RegisterState } from '../../../domain/types/register-state';
-import { UserData } from '../../../domain/models/auth.models';
-import { validateRegisterFields } from '../../../shared/utils/validation';
-import { sanitizeRegisterFields } from '../../../shared/utils/sanitize';
-import { genderOptions } from '../../../shared/constants/registerOptions';
+import { useAuth } from '@/presentation/contexts/auth.context';
+import { useLoading } from '@/presentation/contexts/loading.context';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
+import { RegisterState } from '@/domain/types/register-state';
+import { UserData } from '@/domain/models/auth.models';
+import { validateRegisterFields } from '@/shared/utils/validation';
+import { sanitizeRegisterFields } from '@/shared/utils/sanitize';
+import { genderOptions } from '@/shared/constants/registerOptions';
 
 const initialState: RegisterState = {
   username: '',

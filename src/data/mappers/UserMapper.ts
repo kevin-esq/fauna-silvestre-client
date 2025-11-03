@@ -1,5 +1,5 @@
-import User from '../../domain/entities/user.entity';
-import { UserModel } from '../models/UserModel';
+import User from '@/domain/entities/user.entity';
+import { UserModel } from '@/data/models/UserModel';
 
 export class UserMapper {
   static toDomain(data: UserModel): User {

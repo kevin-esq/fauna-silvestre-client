@@ -7,21 +7,21 @@ import {
   TextStyle
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigationActions } from '../../navigation/navigation-provider';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
 import {
   useForgotPassword,
   ResetStep
-} from '../../hooks/auth/use-forgot-password.hook';
+} from '@/presentation/hooks/auth/use-forgot-password.hook';
 
-import AuthContainer from '../../components/auth/auth-container.component';
-import AuthTextInput from '../../components/auth/auth-text-input.component';
-import CodeInput from '../../components/auth/code-input.component';
-import ErrorMessage from '../../components/auth/error-message.component';
-import CustomButton from '../../components/ui/custom-button.component';
-import CustomModal from '../../components/ui/custom-modal.component';
-import { SupportFooter } from '../../components/auth/support-footer.component';
-import { createStyles } from './forgot-password-screen.styles';
-import { useTheme, Theme, themeVariables } from '../../contexts/theme.context';
+import AuthContainer from '@/presentation/components/auth/auth-container.component';
+import AuthTextInput from '@/presentation/components/auth/auth-text-input.component';
+import CodeInput from '@/presentation/components/auth/code-input.component';
+import ErrorMessage from '@/presentation/components/auth/error-message.component';
+import CustomButton from '@/presentation/components/ui/custom-button.component';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
+import { SupportFooter } from '@/presentation/components/auth/support-footer.component';
+import { createStyles } from '@/presentation/screens/auth/forgot-password-screen.styles';
+import { useTheme, Theme, themeVariables } from '@/presentation/contexts/theme.context';
 import { useAuth } from '@/presentation/contexts/auth.context';
 
 type StepProps = {

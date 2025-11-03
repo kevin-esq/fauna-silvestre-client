@@ -3,7 +3,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import OfflineHomeScreen from '../screens/offline/offline-home-screen';
 import DraftsScreen from '../screens/drafts/drafts-screen';
 import DownloadedFilesScreen from '../screens/media/downloaded-files-screen';
-import type { TabConfig } from './app.navigator';
+import type { TabConfig } from '@/presentation/navigation/app.navigator';
 
 export const offlineTabs: TabConfig[] = [
   {

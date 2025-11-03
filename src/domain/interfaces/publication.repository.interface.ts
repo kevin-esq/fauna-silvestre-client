@@ -3,7 +3,7 @@ import {
   PublicationData,
   PublicationResponse,
   PublicationsModel
-} from '../models/publication.models';
+} from '@/domain/models/publication.models';
 
 export interface IPublicationRepository {
   createPublication(data: PublicationData): Promise<void>;

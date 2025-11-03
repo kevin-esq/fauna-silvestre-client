@@ -11,16 +11,16 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useTheme } from '../../contexts/theme.context';
-import { useNavigationActions } from '../../navigation/navigation-provider';
-import { useUsers } from '../../hooks/users/use-users.hook';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
+import { useUsers } from '@/presentation/hooks/users/use-users.hook';
 import { UserData } from '@/domain/models/user.models';
-import { SkeletonLoader } from '../../components/ui/skeleton-loader.component';
-import SearchBar from '../../components/ui/search-bar.component';
-import { UserViewSelector } from '../../components/ui/user-view-selector.component';
-import { UserAvatar } from '../../components/ui/user-avatar.component';
-import { useUserViewPreferences } from '../../contexts/user-view-preferences.context';
-import { createStyles } from './user-list-screen.styles.ts';
+import { SkeletonLoader } from '@/presentation/components/ui/skeleton-loader.component';
+import SearchBar from '@/presentation/components/ui/search-bar.component';
+import { UserViewSelector } from '@/presentation/components/ui/user-view-selector.component';
+import { UserAvatar } from '@/presentation/components/ui/user-avatar.component';
+import { useUserViewPreferences } from '@/presentation/contexts/user-view-preferences.context';
+import { createStyles } from '@/presentation/screens/users/user-list-screen.styles';
 import { useBackHandler } from '@/presentation/hooks/common/use-back-handler.hook';
 import { addEventListener, AppEvents } from '@/shared/utils/event-emitter';
 

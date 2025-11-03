@@ -1,18 +1,18 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, Switch } from 'react-native';
 
-import { useNavigationActions } from '../../navigation/navigation-provider';
-import { useDoubleBackExit } from '../../hooks/common/use-double-back-exit.hook';
-import { useLoginForm } from '../../hooks/auth/use-login-form.hook';
-import { useTheme, themeVariables } from '../../contexts/theme.context';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
+import { useDoubleBackExit } from '@/presentation/hooks/common/use-double-back-exit.hook';
+import { useLoginForm } from '@/presentation/hooks/auth/use-login-form.hook';
+import { useTheme, themeVariables } from '@/presentation/contexts/theme.context';
 
-import AuthContainer from '../../components/auth/auth-container.component';
-import AuthTextInput from '../../components/auth/auth-text-input.component';
-import ErrorMessage from '../../components/auth/error-message.component';
-import CustomButton from '../../components/ui/custom-button.component';
-import SponsorsFooter from '../../components/auth/sponsors-footer.component';
-import { SupportFooter } from '../../components/auth/support-footer.component';
-import { createStyles } from './login-screen.styles';
+import AuthContainer from '@/presentation/components/auth/auth-container.component';
+import AuthTextInput from '@/presentation/components/auth/auth-text-input.component';
+import ErrorMessage from '@/presentation/components/auth/error-message.component';
+import CustomButton from '@/presentation/components/ui/custom-button.component';
+import SponsorsFooter from '@/presentation/components/auth/sponsors-footer.component';
+import { SupportFooter } from '@/presentation/components/auth/support-footer.component';
+import { createStyles } from '@/presentation/screens/auth/login-screen.styles';
 import { useAuth } from '@/presentation/contexts/auth.context';
 
 const LoginScreen = () => {

@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
-import { Theme, themeVariables } from '../../contexts/theme.context';
+import { Theme, themeVariables } from '@/presentation/contexts/theme.context';
 import { CommonNounResponse } from '../../../domain/models/animal.models';
 
 interface Props {

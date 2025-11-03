@@ -1,9 +1,9 @@
 import { AxiosInstance, AxiosResponse } from 'axios';
-import { IAuthService } from './interfaces/auth-service.interface';
-import { ITokenService } from './interfaces/token-service.interface';
-import { ILogger } from '../../services/logging/ILogger';
-import { AuthError } from '../../shared/errors/custom-errors';
-import User from '../../domain/entities/user.entity';
+import { IAuthService } from '@/services/auth/interfaces/auth-service.interface';
+import { ITokenService } from '@/services/auth/interfaces/token-service.interface';
+import { ILogger } from '@/services/logging/ILogger';
+import { AuthError } from '@/shared/errors/custom-errors';
+import User from '@/domain/entities/user.entity';
 import {
   Credentials,
   UserData,
@@ -12,11 +12,11 @@ import {
   ResetCodeResponse,
   VerifyCodeResponse,
   ChangePasswordResponse
-} from '../../domain/models/auth.models';
+} from '@/domain/models/auth.models';
 import { AuthErrorMapper } from './auth-error.mapper';
 import { authEventEmitter, AuthEvents } from './auth.events';
-import { USER_KEY } from '../storage/storage-keys';
-import { getSecureStorageService } from '../storage/secure-storage.service';
+import { USER_KEY } from '@/services/storage/storage-keys';
+import { getSecureStorageService } from '@/services/storage/secure-storage.service';
 
 interface TokenPair {
   accessToken: string;

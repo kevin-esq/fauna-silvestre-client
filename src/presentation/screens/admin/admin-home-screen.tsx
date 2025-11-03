@@ -11,26 +11,26 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { useAuth } from '../../contexts/auth.context';
-import { useTheme } from '../../contexts/theme.context';
-import { useDraftContext } from '../../contexts/draft.context';
-import { useNavigationActions } from '../../navigation/navigation-provider';
-import { useLocationInfo } from '../../hooks/catalog/use-location-info';
-import { useCurrentTime } from '../../hooks/common/use-current-time.hook';
-import { useAdminData } from '../../hooks/admin/use-admin-data.hook';
-import { useDoubleBackExit } from '../../hooks/common/use-double-back-exit.hook';
+import { useAuth } from '@/presentation/contexts/auth.context';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { useDraftContext } from '@/presentation/contexts/draft.context';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
+import { useLocationInfo } from '@/presentation/hooks/catalog/use-location-info';
+import { useCurrentTime } from '@/presentation/hooks/common/use-current-time.hook';
+import { useAdminData } from '@/presentation/hooks/admin/use-admin-data.hook';
+import { useDoubleBackExit } from '@/presentation/hooks/common/use-double-back-exit.hook';
 
 import {
   SkeletonLoader,
   UserListSkeleton,
   QuickActionSkeleton
-} from '../../components/ui/skeleton-loader.component';
+} from '@/presentation/components/ui/skeleton-loader.component';
 
-import CustomModal from '../../components/ui/custom-modal.component';
-import { OfflineBanner } from '../../components/ui/offline-banner.component';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
+import { OfflineBanner } from '@/presentation/components/ui/offline-banner.component';
 
 import { UserData } from '@/domain/models/user.models';
-import { useStyles } from './admin-home-screen.styles';
+import { useStyles } from '@/presentation/screens/admin/admin-home-screen.styles';
 import { RootStackParamList } from '@/presentation/navigation/navigation.types';
 
 const AdminHeader = React.memo<{

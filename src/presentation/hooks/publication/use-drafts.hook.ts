@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DraftPublication } from '../../../domain/models/draft.models';
-import { draftService } from '../../../services/storage/draft.service';
-import { ConsoleLogger } from '../../../services/logging/console-logger';
+import { DraftPublication } from '@/domain/models/draft.models';
+import { draftService } from '@/services/storage/draft.service';
+import { ConsoleLogger } from '@/services/logging/console-logger';
 
 const logger = new ConsoleLogger('info');
 

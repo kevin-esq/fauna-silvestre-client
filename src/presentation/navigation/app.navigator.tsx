@@ -6,16 +6,16 @@ import {
 } from '@react-navigation/material-top-tabs';
 import { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs';
 
-import { useAuth } from '../contexts/auth.context';
+import { useAuth } from '@/presentation/contexts/auth.context';
 import {
   Theme,
   themeVariables,
   ThemeVariablesType,
   useTheme
-} from '../contexts/theme.context';
-import { useApiStatus } from '../contexts/api-status.context';
-import { CatalogViewPreferencesProvider } from '../contexts/catalog-view-preferences.context';
-import TopTabsNavigationBar from '../components/ui/top-tabs-navigation-bar.component';
+} from '@/presentation/contexts/theme.context';
+import { useApiStatus } from '@/presentation/contexts/api-status.context';
+import { CatalogViewPreferencesProvider } from '@/presentation/contexts/catalog-view-preferences.context';
+import TopTabsNavigationBar from '@/presentation/components/ui/top-tabs-navigation-bar.component';
 
 import LoginScreen from '../screens/auth/login-screen';
 import RegisterScreen from '../screens/auth/register-screen';
@@ -34,10 +34,10 @@ import DraftsScreen from '../screens/drafts/drafts-screen';
 import UserListScreen from '../screens/users/user-list-screen';
 import UserDetailsScreen from '../screens/users/user-details-screen';
 
-import type { RootStackParamList } from './navigation.types';
-import { createRootStack } from './create-root-stack';
-import { adminTabs, userTabs } from './tabs-config';
-import { offlineTabs } from './offline-tabs-config';
+import type { RootStackParamList } from '@/presentation/navigation/navigation.types';
+import { createRootStack } from '@/presentation/navigation/create-root-stack';
+import { adminTabs, userTabs } from '@/presentation/navigation/tabs-config';
+import { offlineTabs } from '@/presentation/navigation/offline-tabs-config';
 import { useNetworkStatus } from '../hooks/common/use-network-status.hook';
 
 export type ValidRole = 'Admin' | 'User';

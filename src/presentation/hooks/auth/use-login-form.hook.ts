@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
-import { useAuth } from '../../contexts/auth.context';
-import { useLoading } from '../../contexts/loading.context';
-import { Credentials } from '../../../domain/models/auth.models';
+import { useAuth } from '@/presentation/contexts/auth.context';
+import { useLoading } from '@/presentation/contexts/loading.context';
+import { Credentials } from '@/domain/models/auth.models';
 
 export const useLoginForm = () => {
   const auth = useAuth();

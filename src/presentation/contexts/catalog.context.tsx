@@ -7,13 +7,13 @@ import React, {
   useMemo,
   useRef
 } from 'react';
-import { catalogService } from '../../services/catalog/catalog.service';
+import { catalogService } from '@/services/catalog/catalog.service';
 import {
   AnimalModelResponse,
   CatalogModelResponse,
   LocationResponse,
   PaginationModelResponse
-} from '../../domain/models/animal.models';
+} from '@/domain/models/animal.models';
 
 interface State {
   isLoading: boolean;

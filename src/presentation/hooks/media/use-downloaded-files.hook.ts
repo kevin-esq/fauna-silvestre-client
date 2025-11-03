@@ -3,8 +3,8 @@ import { Platform } from 'react-native';
 import {
   LocalFileService,
   DownloadedFile
-} from '../../../services/storage/local-file.service';
-import { catalogService } from '../../../services/catalog/catalog.service';
+} from '@/services/storage/local-file.service';
+import { catalogService } from '@/services/catalog/catalog.service';
 import RNFetchBlob from 'react-native-blob-util';
 
 interface DownloadedFilesState {

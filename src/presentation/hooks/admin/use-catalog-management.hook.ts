@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { catalogService } from '../../../services/catalog/catalog.service';
+import { catalogService } from '@/services/catalog/catalog.service';
 import {
   AnimalModelResponse,
   CreateAnimalRequest,

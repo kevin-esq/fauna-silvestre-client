@@ -3,7 +3,7 @@ import type {
   MaterialTopTabScreenProps
 } from '@react-navigation/material-top-tabs';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import type { RootStackParamList } from './navigation.types';
+import type { RootStackParamList } from '@/presentation/navigation/navigation.types';
 import AdminHomeScreen from '../screens/admin/admin-home-screen';
 import HomeScreen from '../screens/home/home-screen';
 import PublicationScreen from '../screens/publication/publication-screen';

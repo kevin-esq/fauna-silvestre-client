@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useTheme } from '../../contexts/theme.context';
+import { useTheme } from '@/presentation/contexts/theme.context';
 
 type Props = {
   onPress: () => void;

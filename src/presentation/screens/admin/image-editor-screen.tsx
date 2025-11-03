@@ -9,17 +9,17 @@ import {
   Image
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useTheme, Theme } from '../../contexts/theme.context';
-import { useNavigationActions } from '../../navigation/navigation-provider';
+import { useTheme, Theme } from '@/presentation/contexts/theme.context';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
 import { AnimalModelResponse } from '@/domain/models/animal.models';
-import { createStyles } from './image-editor-screen.styles';
+import { createStyles } from '@/presentation/screens/admin/image-editor-screen.styles';
 import { useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AnimalCardVariant } from '../../components/animal/animal-card-variants.component';
+import { AnimalCardVariant } from '@/presentation/components/animal/animal-card-variants.component';
 import { ViewLayout } from '@/services/storage/catalog-view-preferences.service';
-import { useImageEditor } from '../../hooks/forms/use-image-editor.hook';
+import { useImageEditor } from '@/presentation/hooks/forms/use-image-editor.hook';
 import { emitEvent, AppEvents } from '@/shared/utils/event-emitter';
-import CustomModal from '../../components/ui/custom-modal.component';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
 
 const EditorHeader = React.memo<{
   animalName: string;

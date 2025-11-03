@@ -1,12 +1,12 @@
-import { ITokenService } from './interfaces/token-service.interface';
-import { getSecureStorageService } from '../storage/secure-storage.service';
-import { AuthError } from '../../shared/errors/custom-errors';
-import { decodeJwt } from '../../shared/utils/jwt';
-import User from '../../domain/entities/user.entity';
-import { UserModel } from '../../data/models/UserModel';
-import { REFRESH_TOKEN_KEY, ACCESS_TOKEN_KEY } from '../storage/storage-keys';
+import { ITokenService } from '@/services/auth/interfaces/token-service.interface';
+import { getSecureStorageService } from '@/services/storage/secure-storage.service';
+import { AuthError } from '@/shared/errors/custom-errors';
+import { decodeJwt } from '@/shared/utils/jwt';
+import User from '@/domain/entities/user.entity';
+import { UserModel } from '@/data/models/UserModel';
+import { REFRESH_TOKEN_KEY, ACCESS_TOKEN_KEY } from '@/services/storage/storage-keys';
 import { AxiosInstance } from 'axios';
-import { ILogger } from '../../services/logging/ILogger';
+import { ILogger } from '@/services/logging/ILogger';
 
 export class TokenService implements ITokenService {
   constructor(

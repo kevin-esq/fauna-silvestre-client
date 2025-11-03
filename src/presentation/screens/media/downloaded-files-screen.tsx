@@ -17,12 +17,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useTheme, Theme } from '../../contexts/theme.context';
-import { useDownloadedFiles } from '../../hooks/media/use-downloaded-files.hook';
-import { DownloadedFile } from '../../../services/storage/local-file.service';
-import { createStyles } from './downloaded-files-screen.styles';
+import { useTheme, Theme } from '@/presentation/contexts/theme.context';
+import { useDownloadedFiles } from '@/presentation/hooks/media/use-downloaded-files.hook';
+import { DownloadedFile } from '@/services/storage/local-file.service';
+import { createStyles } from '@/presentation/screens/media/downloaded-files-screen.styles';
 import RNFetchBlob from 'react-native-blob-util';
-import CustomModal from '../../components/ui/custom-modal.component';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
 import Share from 'react-native-share';
 import { useBackHandler } from '@/presentation/hooks/common/use-back-handler.hook';
 import { useRoute, RouteProp } from '@react-navigation/native';

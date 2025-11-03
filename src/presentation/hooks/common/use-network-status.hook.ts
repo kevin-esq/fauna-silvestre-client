@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import NetInfo from '@react-native-community/netinfo';
-import { ConsoleLogger } from '../../../services/logging/console-logger';
+import { ConsoleLogger } from '@/services/logging/console-logger';
 
 const logger = new ConsoleLogger('info');
 

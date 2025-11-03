@@ -1,10 +1,10 @@
 import { AxiosInstance } from 'axios';
 import { BaseRepository } from './base.repository';
-import { IUserRepository } from '../../domain/interfaces/user.repository.interface';
-import User from '../../domain/entities/user.entity';
-import { UserMapper } from '../mappers/UserMapper';
-import { UserModel } from '../models/UserModel';
-import { ILogger } from '../../services/logging/ILogger';
+import { IUserRepository } from '@/domain/interfaces/user.repository.interface';
+import User from '@/domain/entities/user.entity';
+import { UserMapper } from '@/data/mappers/UserMapper';
+import { UserModel } from '@/data/models/UserModel';
+import { ILogger } from '@/services/logging/ILogger';
 import { UsersResponse, UserCountsResponse } from '@/domain/models/user.models';
 
 export class UserRepository extends BaseRepository implements IUserRepository {

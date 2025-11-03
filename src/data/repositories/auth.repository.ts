@@ -1,7 +1,7 @@
 import { BaseRepository } from './base.repository';
-import { IAuthRepository } from '../../domain/interfaces/auth.repository.interface';
-import { HttpError, NetworkError } from '../../shared/types/errors';
-import { Credentials, UserData } from '../../domain/models/auth.models';
+import { IAuthRepository } from '@/domain/interfaces/auth.repository.interface';
+import { HttpError, NetworkError } from '@/shared/types/errors';
+import { Credentials, UserData } from '@/domain/models/auth.models';
 
 export class AuthRepository extends BaseRepository implements IAuthRepository {
   async login(credentials: Credentials): Promise<string> {

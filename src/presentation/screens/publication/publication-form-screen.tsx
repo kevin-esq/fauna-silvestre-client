@@ -24,28 +24,28 @@ import {
 import { useRoute, RouteProp } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import CustomModal from '../../components/ui/custom-modal.component';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
 import ImageViewer from 'react-native-image-zoom-viewer';
-import AnimalSearchableDropdown from '../../components/animal/animal-searchable-dropdown.component';
-import { OfflineBanner } from '../../components/ui/offline-banner.component';
-import { useLoading } from '../../contexts/loading.context';
-import { useDraftContext } from '../../contexts/draft.context';
-import { useNavigationActions } from '../../navigation/navigation-provider';
-import { publicationService } from '../../../services/publication/publication.service';
+import AnimalSearchableDropdown from '@/presentation/components/animal/animal-searchable-dropdown.component';
+import { OfflineBanner } from '@/presentation/components/ui/offline-banner.component';
+import { useLoading } from '@/presentation/contexts/loading.context';
+import { useDraftContext } from '@/presentation/contexts/draft.context';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
+import { publicationService } from '@/services/publication/publication.service';
 import {
   useTheme,
   themeVariables,
   Theme,
   ThemeVariablesType
-} from '../../contexts/theme.context';
-import { createStyles } from './publication-form-screen.styles';
+} from '@/presentation/contexts/theme.context';
+import { createStyles } from '@/presentation/screens/publication/publication-form-screen.styles';
 import {
   SafeAreaProvider,
   useSafeAreaInsets
 } from 'react-native-safe-area-context';
-import { PublicationData } from '../../../domain/models/publication.models';
-import { useCommonNouns } from '../../hooks/catalog/use-common-nouns';
-import { CommonNounResponse } from '../../../domain/models/animal.models';
+import { PublicationData } from '@/domain/models/publication.models';
+import { useCommonNouns } from '@/presentation/hooks/catalog/use-common-nouns';
+import { CommonNounResponse } from '@/domain/models/animal.models';
 
 const { width, height } = Dimensions.get('window');
 

@@ -1,4 +1,4 @@
-import Animal from '../entities/animal.entity';
+import Animal from '@/domain/entities/animal.entity';
 import {
   CatalogModelResponse,
   LocationResponse,
@@ -9,7 +9,7 @@ import {
   UpdateAnimalImageRequest,
   AnimalCrudResponse,
   DeleteAnimalResponse
-} from '../models/animal.models';
+} from '@/domain/models/animal.models';
 
 export interface Location {
   latitude: number;

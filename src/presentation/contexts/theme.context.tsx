@@ -5,8 +5,8 @@ import React, {
   useEffect,
   useCallback
 } from 'react';
-import { SecureStorageService } from '../../services/storage/secure-storage.service';
-import { THEME_KEY } from '../../services/storage/storage-keys';
+import { SecureStorageService } from '@/services/storage/secure-storage.service';
+import { THEME_KEY } from '@/services/storage/storage-keys';
 
 export type FontWeight =
   | '100'

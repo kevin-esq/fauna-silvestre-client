@@ -14,7 +14,7 @@ import {
   ViewGroupBy,
   ViewSortBy,
   FilterByAnimalState
-} from '../../services/storage/publication-view-preferences.service';
+} from '@/services/storage/publication-view-preferences.service';
 
 interface PublicationViewPreferencesContextType
   extends PublicationViewPreferences {

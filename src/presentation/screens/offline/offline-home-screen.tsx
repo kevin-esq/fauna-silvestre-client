@@ -7,11 +7,11 @@ import {
   TouchableOpacity
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useTheme } from '../../contexts/theme.context';
-import { useDraftContext } from '../../contexts/draft.context';
-import { useNetworkStatus } from '../../hooks/common/use-network-status.hook';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { useDraftContext } from '@/presentation/contexts/draft.context';
+import { useNetworkStatus } from '@/presentation/hooks/common/use-network-status.hook';
 import { useNavigation } from '@react-navigation/native';
-import { styles } from './offline-home-screen.styles';
+import { styles } from '@/presentation/screens/offline/offline-home-screen.styles';
 
 const OfflineHomeScreen: React.FC = () => {
   const { theme } = useTheme();

@@ -1,13 +1,13 @@
-import { PublicationRepository } from '../../data/repositories/publication.repository';
-import { IPublicationRepository } from '../../domain/interfaces/publication.repository.interface';
+import { PublicationRepository } from '@/data/repositories/publication.repository';
+import { IPublicationRepository } from '@/domain/interfaces/publication.repository.interface';
 import {
   PublicationData,
   PublicationsModel,
   PublicationResponse,
   CountsResponse
-} from '../../domain/models/publication.models';
-import { ApiService } from '../http/api.service';
-import { ConsoleLogger } from '../logging/console-logger';
+} from '@/domain/models/publication.models';
+import { ApiService } from '@/services/http/api.service';
+import { ConsoleLogger } from '@/services/logging/console-logger';
 
 export enum PublicationStatus {
   PENDING = 'pending',

@@ -16,17 +16,17 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent
 } from 'react-native';
-import { useTheme } from '../../contexts/theme.context';
-import { PublicationModelResponse } from '../../../domain/models/publication.models';
-import { usePublications } from '../../contexts/publication.context';
-import { usePublicationViewPreferences } from '../../contexts/publication-view-preferences.context';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { PublicationModelResponse } from '@/domain/models/publication.models';
+import { usePublications } from '@/presentation/contexts/publication.context';
+import { usePublicationViewPreferences } from '@/presentation/contexts/publication-view-preferences.context';
 
-import { ITEM_HEIGHT } from '../../components/publication/publication-card.component';
-import { PublicationCardWithActions } from '../../components/publication/publication-card-with-actions.component';
-import { PublicationViewSelector } from '../../components/publication/publication-view-selector.component';
-import PublicationSkeleton from '../../components/ui/publication-skeleton.component';
-import SearchBar from '../../components/ui/search-bar.component';
-import { createReviewStyles } from './review-publications-screen.styles';
+import { ITEM_HEIGHT } from '@/presentation/components/publication/publication-card.component';
+import { PublicationCardWithActions } from '@/presentation/components/publication/publication-card-with-actions.component';
+import { PublicationViewSelector } from '@/presentation/components/publication/publication-view-selector.component';
+import PublicationSkeleton from '@/presentation/components/ui/publication-skeleton.component';
+import SearchBar from '@/presentation/components/ui/search-bar.component';
+import { createReviewStyles } from '@/presentation/screens/admin/review-publications-screen.styles';
 import { PublicationStatus } from '@/services/publication/publication.service';
 import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
 

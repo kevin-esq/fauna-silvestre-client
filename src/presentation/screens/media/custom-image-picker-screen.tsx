@@ -27,10 +27,10 @@ import {
   Theme,
   themeVariables,
   ThemeVariablesType
-} from '../../contexts/theme.context';
-import { createStyles } from './custom-image-picker-screen.styles';
+} from '@/presentation/contexts/theme.context';
+import { createStyles } from '@/presentation/screens/media/custom-image-picker-screen.styles';
 import { Location } from 'react-native-get-location';
-import { MediaLibraryService } from '../../../services/media/media-library.service';
+import { MediaLibraryService } from '@/services/media/media-library.service';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PAGE_SIZE = 100;

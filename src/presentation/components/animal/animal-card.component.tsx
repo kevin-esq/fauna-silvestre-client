@@ -14,7 +14,7 @@ import {
   ThemeColors,
   ThemeIconSizes,
   useTheme
-} from '../../contexts/theme.context';
+} from '@/presentation/contexts/theme.context';
 import { createStyles } from './animal-card.styles';
 import CustomModal from '@/presentation/components/ui/custom-modal.component';
 

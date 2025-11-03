@@ -1,4 +1,4 @@
-import { RegisterState } from '../../domain/types/register-state';
+import { RegisterState } from '@/domain/types/register-state';
 
 export const sanitizeRegisterFields = (
   state: RegisterState

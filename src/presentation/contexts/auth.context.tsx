@@ -6,11 +6,11 @@ import React, {
   useCallback,
   useMemo
 } from 'react';
-import { authService } from '../../services/auth/auth.factory';
-import { authEventEmitter, AuthEvents } from '../../services/auth/auth.events';
-import { AuthErrorMapper } from '../../services/auth/auth-error.mapper';
-import User from '../../domain/entities/user.entity';
-import { Credentials, UserData } from '../../domain/models/auth.models';
+import { authService } from '@/services/auth/auth.factory';
+import { authEventEmitter, AuthEvents } from '@/services/auth/auth.events';
+import { AuthErrorMapper } from '@/services/auth/auth-error.mapper';
+import User from '@/domain/entities/user.entity';
+import { Credentials, UserData } from '@/domain/models/auth.models';
 import { useApiStatus } from '@/presentation/contexts/api-status.context';
 import { getSecureStorageService } from '@/services/storage/secure-storage.service';
 import {

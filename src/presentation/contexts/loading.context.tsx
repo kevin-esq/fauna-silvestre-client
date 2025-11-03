@@ -5,7 +5,7 @@ import React, {
   useMemo,
   ReactNode
 } from 'react';
-import { LoadingModal } from '../components/common/loading-modal.component';
+import { LoadingModal } from '@/presentation/components/common/loading-modal.component';
 import { useTheme } from './theme.context';
 
 interface LoadingContextType {

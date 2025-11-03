@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { usePublications } from '../../contexts/publication.context';
-import { useUsers } from '../users/use-users.hook';
+import { usePublications } from '@/presentation/contexts/publication.context';
+import { useUsers } from '@/presentation/hooks/users/use-users.hook';
 import { UserData } from '@/domain/models/user.models';
 import { userService } from '@/services/user/user.service';
 

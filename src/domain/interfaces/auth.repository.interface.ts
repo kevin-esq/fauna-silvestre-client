@@ -1,5 +1,5 @@
-import { Credentials, UserData } from '../models/auth.models';
-import { HttpError, NetworkError } from '../../shared/types/errors';
+import { Credentials, UserData } from '@/domain/models/auth.models';
+import { HttpError, NetworkError } from '@/shared/types/errors';
 
 export interface IAuthRepository {
   login(credentials: Credentials): Promise<string>;

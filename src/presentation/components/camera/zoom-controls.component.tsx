@@ -7,8 +7,8 @@ import {
   ViewStyle
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useTheme } from '../../contexts/theme.context';
-import { useDeviceOrientation } from '../../hooks/common/use-device-orientation.hook';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { useDeviceOrientation } from '@/presentation/hooks/common/use-device-orientation.hook';
 
 interface ZoomControlsProps {
   currentZoom: number;

@@ -1,9 +1,9 @@
 import { AxiosInstance } from 'axios';
 import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
-import { ApiService } from '../http/api.service';
-import { ConsoleLogger } from '../logging/console-logger';
-import { ILogger } from '../../services/logging/ILogger';
+import { ApiService } from '@/services/http/api.service';
+import { ConsoleLogger } from '@/services/logging/console-logger';
+import { ILogger } from '@/services/logging/ILogger';
 
 export class AuthServiceFactory {
   static create(api?: AxiosInstance, logger?: ILogger): AuthService {

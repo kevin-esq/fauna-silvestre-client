@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
-import { useTheme } from '../../contexts/theme.context';
+import { useTheme } from '@/presentation/contexts/theme.context';
 
 interface NotificationSkeletonProps {
   count?: number;

@@ -10,7 +10,7 @@ import {
   ImageSourcePropType
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import CustomModal from '../ui/custom-modal.component';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
 import ConaforLogo from '@/assets/sponsors/conafor.jpeg';
 import MayasurLogo from '@/assets/sponsors/mayasur.jpeg';
 import FomentoLogo from '@/assets/sponsors/fomento.jpg';

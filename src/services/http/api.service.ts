@@ -5,13 +5,13 @@ import axios, {
   InternalAxiosRequestConfig
 } from 'axios';
 import axiosRetry from 'axios-retry';
-import { ILogger } from '../../services/logging/ILogger';
-import { ConsoleLogger } from '../logging/console-logger';
-import { ApiError, NetworkError } from '../../shared/errors/custom-errors';
+import { ILogger } from '@/services/logging/ILogger';
+import { ConsoleLogger } from '@/services/logging/console-logger';
+import { ApiError, NetworkError } from '@/shared/errors/custom-errors';
 import { extra } from '../../../app.json';
-import { getSecureStorageService } from '../storage/secure-storage.service';
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../storage/storage-keys';
-import { authService } from '../auth/auth.factory';
+import { getSecureStorageService } from '@/services/storage/secure-storage.service';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/services/storage/storage-keys';
+import { authService } from '@/services/auth/auth.factory';
 
 const { PUBLIC_API_URL, PUBLIC_API_TIMEOUT } = extra;
 interface CustomConfig extends InternalAxiosRequestConfig {

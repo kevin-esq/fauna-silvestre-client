@@ -10,7 +10,7 @@ import React, {
 import {
   NotificationModel,
   NotificationStatus
-} from '../../domain/models/notification.models';
+} from '@/domain/models/notification.models';
 
 const MOCK_NOTIFICATIONS: NotificationModel[] = [
   {

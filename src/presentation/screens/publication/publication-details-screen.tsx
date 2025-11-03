@@ -23,14 +23,14 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import { Theme, themeVariables, useTheme } from '../../contexts/theme.context';
-import LocationMap from '../../components/ui/location-map.component';
-import { createStyles } from './publication-details-screen.styles';
-import { useAuth } from '../../contexts/auth.context';
+import { Theme, themeVariables, useTheme } from '@/presentation/contexts/theme.context';
+import LocationMap from '@/presentation/components/ui/location-map.component';
+import { createStyles } from '@/presentation/screens/publication/publication-details-screen.styles';
+import { useAuth } from '@/presentation/contexts/auth.context';
 import type {
   PublicationModelResponse,
   PublicationStatus
-} from '../../../domain/models/publication.models';
+} from '@/domain/models/publication.models';
 import { useRoute } from '@react-navigation/native';
 import PublicationImage from '@/presentation/components/publication/publication-image.component';
 import CustomModal from '@/presentation/components/ui/custom-modal.component';
@@ -39,10 +39,10 @@ import Modal from 'react-native-modal';
 import {
   useBackHandler,
   useModalBackHandler
-} from '../../hooks/common/use-back-handler.hook';
+} from '@/presentation/hooks/common/use-back-handler.hook';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { Image } from 'moti';
-import { usePublications } from '../../contexts/publication.context';
+import { usePublications } from '@/presentation/contexts/publication.context';
 import { PublicationStatus as PubStatus } from '@/services/publication/publication.service';
 import {
   SUPPORT_CONTACT_METHODS,

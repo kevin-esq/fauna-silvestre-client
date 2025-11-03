@@ -1,5 +1,5 @@
 import { StyleSheet, Platform } from 'react-native';
-import { Theme } from '../../contexts/theme.context';
+import { Theme } from '@/presentation/contexts/theme.context';
 
 export const createPublicationScreenStyles = (theme: Theme) =>
   StyleSheet.create({

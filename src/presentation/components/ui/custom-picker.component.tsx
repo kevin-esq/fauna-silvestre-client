@@ -4,7 +4,7 @@ import {
   useTheme,
   themeVariables,
   ThemeVariablesType
-} from '../../contexts/theme.context';
+} from '@/presentation/contexts/theme.context';
 import { Picker } from '@react-native-picker/picker';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 

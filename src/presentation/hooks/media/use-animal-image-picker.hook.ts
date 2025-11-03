@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useGallery } from '../camera/use-gallery.hook';
+import { useGallery } from '@/presentation/hooks/camera/use-gallery.hook';
 import {
   launchCamera,
   launchImageLibrary,

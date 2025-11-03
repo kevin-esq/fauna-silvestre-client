@@ -3,10 +3,10 @@ import {
   PendingPublication,
   STORAGE_KEYS,
   DRAFT_CONFIG
-} from '../../domain/models/draft.models';
-import { publicationService } from '../publication/publication.service';
+} from '@/domain/models/draft.models';
+import { publicationService } from '@/services/publication/publication.service';
 import { draftService } from './draft.service';
-import { ConsoleLogger } from '../logging/console-logger';
+import { ConsoleLogger } from '@/services/logging/console-logger';
 
 const logger = new ConsoleLogger('info');
 

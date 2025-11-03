@@ -1,4 +1,4 @@
-import User from '../entities/user.entity';
+import User from '@/domain/entities/user.entity';
 import { UsersResponse, UserCountsResponse } from '@/domain/models/user.models';
 
 export interface IUserRepository {

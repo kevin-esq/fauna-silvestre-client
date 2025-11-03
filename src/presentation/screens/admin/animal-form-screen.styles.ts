@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { Theme } from '../../contexts/theme.context';
+import { Theme } from '@/presentation/contexts/theme.context';
 
 const createShadow = (elevation: number, theme: Theme) => ({
   shadowColor: theme.colors.shadow,

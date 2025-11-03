@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigationActions } from '../../navigation/navigation-provider';
-import { useRegisterForm } from '../../hooks/auth/use-register-form.hook';
+import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
+import { useRegisterForm } from '@/presentation/hooks/auth/use-register-form.hook';
 import {
   genderOptions,
   locationOptions
-} from '../../../shared/constants/registerOptions';
-import { useTheme } from '../../contexts/theme.context';
-import { themeVariables } from '../../contexts/theme.context';
+} from '@/shared/constants/registerOptions';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { themeVariables } from '@/presentation/contexts/theme.context';
 
-import AuthContainer from '../../components/auth/auth-container.component';
-import AuthTextInput from '../../components/auth/auth-text-input.component';
-import ErrorMessage from '../../components/auth/error-message.component';
-import CustomButton from '../../components/ui/custom-button.component';
-import CustomPicker from '../../components/ui/custom-picker.component';
-import StepIndicator from '../../components/auth/step-indicator.component';
-import CustomModal from '../../components/ui/custom-modal.component';
-import { SupportFooter } from '../../components/auth/support-footer.component';
-import { createStyles } from './register-screen.styles';
+import AuthContainer from '@/presentation/components/auth/auth-container.component';
+import AuthTextInput from '@/presentation/components/auth/auth-text-input.component';
+import ErrorMessage from '@/presentation/components/auth/error-message.component';
+import CustomButton from '@/presentation/components/ui/custom-button.component';
+import CustomPicker from '@/presentation/components/ui/custom-picker.component';
+import StepIndicator from '@/presentation/components/auth/step-indicator.component';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
+import { SupportFooter } from '@/presentation/components/auth/support-footer.component';
+import { createStyles } from '@/presentation/screens/auth/register-screen.styles';
 import { useAuth } from '@/presentation/contexts/auth.context';
 
 const TOTAL_STEPS = 3;

@@ -5,8 +5,8 @@ import {
   STORAGE_KEYS,
   DRAFT_CONFIG,
   DraftStatus
-} from '../../domain/models/draft.models';
-import { ConsoleLogger } from '../logging/console-logger';
+} from '@/domain/models/draft.models';
+import { ConsoleLogger } from '@/services/logging/console-logger';
 
 const logger = new ConsoleLogger('info');
 

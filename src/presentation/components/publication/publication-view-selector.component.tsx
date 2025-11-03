@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useTheme } from '../../contexts/theme.context';
-import { usePublicationViewPreferences } from '../../contexts/publication-view-preferences.context';
+import { useTheme } from '@/presentation/contexts/theme.context';
+import { usePublicationViewPreferences } from '@/presentation/contexts/publication-view-preferences.context';
 import {
   ViewLayout,
   ViewGroupBy,

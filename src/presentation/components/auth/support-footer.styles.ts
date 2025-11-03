@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { ThemeVariablesType } from '../../contexts/theme.context';
+import { ThemeVariablesType } from '@/presentation/contexts/theme.context';
 
 export const createStyles = (variables: ThemeVariablesType) =>
   StyleSheet.create({

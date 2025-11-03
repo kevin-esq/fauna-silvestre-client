@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import type { RootStackParamList } from './navigation.types';
+import type { RootStackParamList } from '@/presentation/navigation/navigation.types';
 import { ScreenStackProps } from 'react-native-screens';
 import { ParamListBase } from '@react-navigation/native';
 

@@ -8,20 +8,20 @@ import {
   SafeAreaView
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useDraftContext } from '../../contexts/draft.context';
-import { useTheme } from '../../contexts/theme.context';
+import { useDraftContext } from '@/presentation/contexts/draft.context';
+import { useTheme } from '@/presentation/contexts/theme.context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../../navigation/navigation.types';
+import type { RootStackParamList } from '@/presentation/navigation/navigation.types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSimpleBackHandler } from '../../hooks/common/use-back-handler.hook';
-import { DraftCard } from '../../components/draft/draft-card.component';
-import { OfflineBanner } from '../../components/ui/offline-banner.component';
-import { createStyles } from './drafts-screen.styles';
+import { useSimpleBackHandler } from '@/presentation/hooks/common/use-back-handler.hook';
+import { DraftCard } from '@/presentation/components/draft/draft-card.component';
+import { OfflineBanner } from '@/presentation/components/ui/offline-banner.component';
+import { createStyles } from '@/presentation/screens/drafts/drafts-screen.styles';
 import {
   DraftPublication,
   DraftStatus
-} from '../../../domain/models/draft.models';
+} from '@/domain/models/draft.models';
 import CustomModal from '@/presentation/components/ui/custom-modal.component';
 
 const DraftsScreen: React.FC = () => {

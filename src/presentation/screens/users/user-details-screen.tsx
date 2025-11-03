@@ -15,12 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import { useTheme } from '../../contexts/theme.context';
+import { useTheme } from '@/presentation/contexts/theme.context';
 import { UserData } from '@/domain/models/user.models';
 import { useBackHandler } from '@/presentation/hooks/common/use-back-handler.hook';
 import { useUsers } from '@/presentation/hooks/users/use-users.hook';
-import { createStyles } from './user-details.styles';
-import CustomModal from '../../components/ui/custom-modal.component';
+import { createStyles } from '@/presentation/screens/users/user-details.styles';
+import CustomModal from '@/presentation/components/ui/custom-modal.component';
 import {
   SUPPORT_CONTACT_METHODS,
   ContactMethod,
