@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { errorHandlingService } from '@/services/error-handling';
 
 const STORAGE_KEY = '@user_view_preferences';
 
@@ -37,56 +38,63 @@ const DEFAULT_PREFERENCES: UserViewPreferences = {
 
 export const UserViewPreferencesService = {
   async getPreferences(): Promise<UserViewPreferences> {
-    try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return { ...DEFAULT_PREFERENCES, ...parsed };
-      }
-      return DEFAULT_PREFERENCES;
-    } catch (error) {
-      console.error('Error loading user view preferences:', error);
-      return DEFAULT_PREFERENCES;
-    }
+    return errorHandlingService.handleWithDefault(
+      async () => {
+        const stored = await AsyncStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return { ...DEFAULT_PREFERENCES, ...parsed };
+        }
+        return DEFAULT_PREFERENCES;
+      },
+      DEFAULT_PREFERENCES,
+      { operation: 'getUserViewPreferences' }
+    );
   },
 
   async savePreferences(
     preferences: Partial<UserViewPreferences>
   ): Promise<void> {
-    try {
-      const current = await this.getPreferences();
-      const updated = { ...current, ...preferences };
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch (error) {
-      console.error('Error saving user view preferences:', error);
-    }
+    await errorHandlingService.handleWithRetry(
+      async () => {
+        const current = await this.getPreferences();
+        const updated = { ...current, ...preferences };
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      },
+      { operation: 'saveUserViewPreferences' },
+      { maxAttempts: 1 }
+    ).catch(() => {});
   },
 
   async resetPreferences(): Promise<void> {
-    try {
-      await AsyncStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(DEFAULT_PREFERENCES)
-      );
-    } catch (error) {
-      console.error('Error resetting user view preferences:', error);
-    }
+    await errorHandlingService.handleWithRetry(
+      async () => {
+        await AsyncStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(DEFAULT_PREFERENCES)
+        );
+      },
+      { operation: 'resetUserViewPreferences' },
+      { maxAttempts: 1 }
+    ).catch(() => {});
   },
 
   async clearFilters(): Promise<void> {
-    try {
-      const current = await this.getPreferences();
-      const cleared: UserViewPreferences = {
-        ...current,
-        showEmail: true,
-        showLocation: true,
-        showUserName: true,
-        showInitials: true,
-        highlightStatus: false
-      };
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cleared));
-    } catch (error) {
-      console.error('Error clearing user view filters:', error);
-    }
+    await errorHandlingService.handleWithRetry(
+      async () => {
+        const current = await this.getPreferences();
+        const cleared: UserViewPreferences = {
+          ...current,
+          showEmail: true,
+          showLocation: true,
+          showUserName: true,
+          showInitials: true,
+          highlightStatus: false
+        };
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cleared));
+      },
+      { operation: 'clearUserViewFilters' },
+      { maxAttempts: 1 }
+    ).catch(() => {});
   }
 };

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PUBLICATION_VIEW_PREFERENCES_KEY } from './storage-keys';
+import { errorHandlingService } from '@/services/error-handling';
 
 export type ViewLayout = 'list' | 'grid' | 'card' | 'timeline';
 export type ViewDensity = 'compact' | 'comfortable' | 'spacious';
@@ -55,6 +56,7 @@ export class PublicationViewPreferencesService {
   private static instance: PublicationViewPreferencesService;
   private preferences: PublicationViewPreferences =
     DEFAULT_PUBLICATION_VIEW_PREFERENCES;
+  private readonly errorHandler = errorHandlingService;
 
   private constructor() {}
 
@@ -67,44 +69,47 @@ export class PublicationViewPreferencesService {
   }
 
   async load(): Promise<PublicationViewPreferences> {
-    try {
-      const stored = await AsyncStorage.getItem(
-        PUBLICATION_VIEW_PREFERENCES_KEY
-      );
-      if (stored) {
-        this.preferences = {
-          ...DEFAULT_PUBLICATION_VIEW_PREFERENCES,
-          ...JSON.parse(stored)
-        };
-      }
-      return this.preferences;
-    } catch (error) {
-      console.error('Error loading publication view preferences:', error);
-      return DEFAULT_PUBLICATION_VIEW_PREFERENCES;
-    }
+    return this.errorHandler.handleWithDefault(
+      async () => {
+        const stored = await AsyncStorage.getItem(
+          PUBLICATION_VIEW_PREFERENCES_KEY
+        );
+        if (stored) {
+          this.preferences = {
+            ...DEFAULT_PUBLICATION_VIEW_PREFERENCES,
+            ...JSON.parse(stored)
+          };
+        }
+        return this.preferences;
+      },
+      DEFAULT_PUBLICATION_VIEW_PREFERENCES,
+      { operation: 'loadPublicationViewPreferences' }
+    );
   }
 
   async save(preferences: Partial<PublicationViewPreferences>): Promise<void> {
-    try {
-      this.preferences = { ...this.preferences, ...preferences };
-      await AsyncStorage.setItem(
-        PUBLICATION_VIEW_PREFERENCES_KEY,
-        JSON.stringify(this.preferences)
-      );
-    } catch (error) {
-      console.error('Error saving publication view preferences:', error);
-      throw error;
-    }
+    await this.errorHandler.handleWithRetry(
+      async () => {
+        this.preferences = { ...this.preferences, ...preferences };
+        await AsyncStorage.setItem(
+          PUBLICATION_VIEW_PREFERENCES_KEY,
+          JSON.stringify(this.preferences)
+        );
+      },
+      { operation: 'savePublicationViewPreferences' },
+      { maxAttempts: 1 }
+    );
   }
 
   async reset(): Promise<void> {
-    try {
-      this.preferences = DEFAULT_PUBLICATION_VIEW_PREFERENCES;
-      await AsyncStorage.removeItem(PUBLICATION_VIEW_PREFERENCES_KEY);
-    } catch (error) {
-      console.error('Error resetting publication view preferences:', error);
-      throw error;
-    }
+    await this.errorHandler.handleWithRetry(
+      async () => {
+        this.preferences = DEFAULT_PUBLICATION_VIEW_PREFERENCES;
+        await AsyncStorage.removeItem(PUBLICATION_VIEW_PREFERENCES_KEY);
+      },
+      { operation: 'resetPublicationViewPreferences' },
+      { maxAttempts: 1 }
+    );
   }
 
   getCurrent(): PublicationViewPreferences {

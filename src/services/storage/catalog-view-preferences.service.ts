@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { errorHandlingService } from '@/services/error-handling';
 
 const CATALOG_PREFERENCES_KEY = '@catalog_view_preferences';
 
@@ -45,46 +46,50 @@ export const DEFAULT_CATALOG_PREFERENCES: CatalogViewPreferences = {
 
 class CatalogViewPreferencesService {
   private preferences: CatalogViewPreferences = DEFAULT_CATALOG_PREFERENCES;
+  private readonly errorHandler = errorHandlingService;
 
   async load(): Promise<CatalogViewPreferences> {
-    try {
-      const stored = await AsyncStorage.getItem(CATALOG_PREFERENCES_KEY);
-      if (stored) {
-        this.preferences = {
-          ...DEFAULT_CATALOG_PREFERENCES,
-          ...JSON.parse(stored)
-        };
-      } else {
-        this.preferences = DEFAULT_CATALOG_PREFERENCES;
-      }
-      return this.preferences;
-    } catch (error) {
-      console.error('Error loading catalog preferences:', error);
-      return DEFAULT_CATALOG_PREFERENCES;
-    }
+    return this.errorHandler.handleWithDefault(
+      async () => {
+        const stored = await AsyncStorage.getItem(CATALOG_PREFERENCES_KEY);
+        if (stored) {
+          this.preferences = {
+            ...DEFAULT_CATALOG_PREFERENCES,
+            ...JSON.parse(stored)
+          };
+        } else {
+          this.preferences = DEFAULT_CATALOG_PREFERENCES;
+        }
+        return this.preferences;
+      },
+      DEFAULT_CATALOG_PREFERENCES,
+      { operation: 'loadCatalogViewPreferences' }
+    );
   }
 
   async save(preferences: Partial<CatalogViewPreferences>): Promise<void> {
-    try {
-      this.preferences = { ...this.preferences, ...preferences };
-      await AsyncStorage.setItem(
-        CATALOG_PREFERENCES_KEY,
-        JSON.stringify(this.preferences)
-      );
-    } catch (error) {
-      console.error('Error saving catalog preferences:', error);
-      throw error;
-    }
+    await this.errorHandler.handleWithRetry(
+      async () => {
+        this.preferences = { ...this.preferences, ...preferences };
+        await AsyncStorage.setItem(
+          CATALOG_PREFERENCES_KEY,
+          JSON.stringify(this.preferences)
+        );
+      },
+      { operation: 'saveCatalogViewPreferences' },
+      { maxAttempts: 1 }
+    );
   }
 
   async reset(): Promise<void> {
-    try {
-      this.preferences = DEFAULT_CATALOG_PREFERENCES;
-      await AsyncStorage.removeItem(CATALOG_PREFERENCES_KEY);
-    } catch (error) {
-      console.error('Error resetting catalog preferences:', error);
-      throw error;
-    }
+    await this.errorHandler.handleWithRetry(
+      async () => {
+        this.preferences = DEFAULT_CATALOG_PREFERENCES;
+        await AsyncStorage.removeItem(CATALOG_PREFERENCES_KEY);
+      },
+      { operation: 'resetCatalogViewPreferences' },
+      { maxAttempts: 1 }
+    );
   }
 
   get(): CatalogViewPreferences {
