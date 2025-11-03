@@ -9,7 +9,8 @@ import {
   Platform
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ModalOptionButton } from './modal-option-button.component';
+import { ModalToggle } from './modal-toggle.component';
 import { useTheme } from '@/presentation/contexts/theme.context';
 import { useCatalogViewPreferences } from '@/presentation/contexts/catalog-view-preferences.context';
 import {
@@ -279,71 +280,7 @@ export const CatalogViewSelector: React.FC<CatalogViewSelectorProps> = ({
     [colors, spacing, typography, borderRadius]
   );
 
-  const renderOption = (
-    value: ViewLayout,
-    label: string,
-    icon: string,
-    isActive: boolean,
-    onPress: () => void,
-    iconType: 'ionicons' | 'material' = 'ionicons'
-  ) => {
-    const IconComponent =
-      iconType === 'material' ? MaterialCommunityIcons : Ionicons;
-
-    return (
-      <TouchableOpacity
-        key={value}
-        style={[styles.optionButton, isActive && styles.optionButtonActive]}
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
-        <IconComponent
-          name={icon as never}
-          size={18}
-          color={isActive ? colors.primary : colors.textSecondary}
-          style={styles.optionIcon}
-        />
-        <Text
-          style={[styles.optionLabel, isActive && styles.optionLabelActive]}
-        >
-          {label}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderToggle = (
-    label: string,
-    value: boolean,
-    onToggle: () => void,
-    disabled: boolean = false
-  ) => {
-    return (
-      <TouchableOpacity
-        style={[styles.toggleRow, disabled && styles.toggleDisabled]}
-        onPress={disabled ? undefined : onToggle}
-        activeOpacity={disabled ? 1 : 0.7}
-        disabled={disabled}
-      >
-        <Text
-          style={[styles.toggleLabel, disabled && styles.toggleLabelDisabled]}
-        >
-          {label}
-        </Text>
-        <View
-          style={[
-            styles.toggleTrack,
-            value && styles.toggleTrackActive,
-            disabled && styles.toggleTrackDisabled
-          ]}
-        >
-          <View
-            style={[styles.toggleCircle, value && styles.toggleCircleActive]}
-          />
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  // Render functions removed - using ModalOptionButton and ModalToggle components
 
   return (
     <>
@@ -389,16 +326,17 @@ export const CatalogViewSelector: React.FC<CatalogViewSelectorProps> = ({
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Diseño</Text>
                 <View style={styles.optionsRow}>
-                  {LAYOUT_OPTIONS.map(opt =>
-                    renderOption(
-                      opt.value,
-                      opt.label,
-                      opt.icon,
-                      preferences.layout === opt.value,
-                      () => preferences.setLayout(opt.value),
-                      opt.iconType as 'ionicons' | 'material'
-                    )
-                  )}
+                  {LAYOUT_OPTIONS.map(opt => (
+                    <ModalOptionButton
+                      key={opt.value}
+                      value={opt.value}
+                      label={opt.label}
+                      icon={opt.icon}
+                      iconType={opt.iconType as 'ionicons' | 'material'}
+                      isActive={preferences.layout === opt.value}
+                      onPress={() => preferences.setLayout(opt.value)}
+                    />
+                  ))}
                 </View>
               </View>
 
@@ -406,35 +344,14 @@ export const CatalogViewSelector: React.FC<CatalogViewSelectorProps> = ({
                 <Text style={styles.sectionTitle}>Ordenar por</Text>
                 <View style={styles.optionsRow}>
                   {SORT_OPTIONS.map(opt => (
-                    <TouchableOpacity
+                    <ModalOptionButton
                       key={opt.value}
-                      style={[
-                        styles.sortOption,
-                        preferences.sortBy === opt.value &&
-                          styles.sortOptionActive
-                      ]}
+                      value={opt.value}
+                      label={opt.label}
+                      icon={opt.icon}
+                      isActive={preferences.sortBy === opt.value}
                       onPress={() => preferences.setSortBy(opt.value)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name={opt.icon as never}
-                        size={18}
-                        color={
-                          preferences.sortBy === opt.value
-                            ? colors.primary
-                            : colors.textSecondary
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.sortOptionText,
-                          preferences.sortBy === opt.value &&
-                            styles.sortOptionTextActive
-                        ]}
-                      >
-                        {opt.label}
-                      </Text>
-                    </TouchableOpacity>
+                    />
                   ))}
                 </View>
               </View>
@@ -448,40 +365,40 @@ export const CatalogViewSelector: React.FC<CatalogViewSelectorProps> = ({
                 >
                   Mostrar
                 </Text>
-                {renderToggle(
-                  'Imágenes',
-                  preferences.showImages,
-                  preferences.toggleImages
-                )}
-                {renderToggle(
-                  'Categoría',
-                  preferences.showCategory,
-                  preferences.toggleCategory,
-                  preferences.isToggleDisabled('showCategory')
-                )}
-                {renderToggle(
-                  'Especie',
-                  preferences.showSpecies,
-                  preferences.toggleSpecies,
-                  preferences.isToggleDisabled('showSpecies')
-                )}
-                {renderToggle(
-                  'Hábitat',
-                  preferences.showHabitat,
-                  preferences.toggleHabitat,
-                  preferences.isToggleDisabled('showHabitat')
-                )}
-                {renderToggle(
-                  'Descripción',
-                  preferences.showDescription,
-                  preferences.toggleDescription,
-                  preferences.isToggleDisabled('showDescription')
-                )}
-                {renderToggle(
-                  'Destacar con bordes',
-                  preferences.highlightStatus,
-                  preferences.toggleHighlightStatus
-                )}
+                <ModalToggle
+                  label="Imágenes"
+                  value={preferences.showImages}
+                  onToggle={preferences.toggleImages}
+                />
+                <ModalToggle
+                  label="Categoría"
+                  value={preferences.showCategory}
+                  onToggle={preferences.toggleCategory}
+                  disabled={preferences.isToggleDisabled('showCategory')}
+                />
+                <ModalToggle
+                  label="Especie"
+                  value={preferences.showSpecies}
+                  onToggle={preferences.toggleSpecies}
+                  disabled={preferences.isToggleDisabled('showSpecies')}
+                />
+                <ModalToggle
+                  label="Hábitat"
+                  value={preferences.showHabitat}
+                  onToggle={preferences.toggleHabitat}
+                  disabled={preferences.isToggleDisabled('showHabitat')}
+                />
+                <ModalToggle
+                  label="Descripción"
+                  value={preferences.showDescription}
+                  onToggle={preferences.toggleDescription}
+                  disabled={preferences.isToggleDisabled('showDescription')}
+                />
+                <ModalToggle
+                  label="Destacar con bordes"
+                  value={preferences.highlightStatus}
+                  onToggle={preferences.toggleHighlightStatus}
+                />
               </View>
 
               <View style={styles.toggleSection}>
@@ -493,11 +410,11 @@ export const CatalogViewSelector: React.FC<CatalogViewSelectorProps> = ({
                 >
                   Accesibilidad
                 </Text>
-                {renderToggle(
-                  'Reducir animaciones',
-                  preferences.reducedMotion,
-                  preferences.toggleReducedMotion
-                )}
+                <ModalToggle
+                  label="Reducir animaciones"
+                  value={preferences.reducedMotion}
+                  onToggle={preferences.toggleReducedMotion}
+                />
               </View>
 
               <View style={styles.buttonContainer}>

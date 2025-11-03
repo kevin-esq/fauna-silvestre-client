@@ -26,10 +26,10 @@ export interface ModalToggleProps {
 
 /**
  * Reusable toggle switch for modals
- * 
+ *
  * Provides consistent toggle UI with custom theming support.
  * Used across catalog, publication, and user view preference modals.
- * 
+ *
  * @example
  * <ModalToggle
  *   label="Show Images"
@@ -60,7 +60,11 @@ export const ModalToggle: React.FC<ModalToggleProps> = React.memo(
         borderRadius: 14,
         justifyContent: 'center',
         padding: 2,
-        backgroundColor: value ? colors.primary : (disabled ? colors.divider : colors.disabled)
+        backgroundColor: value
+          ? colors.primary
+          : disabled
+            ? colors.divider
+            : colors.disabled
       },
       circle: {
         width: 24,

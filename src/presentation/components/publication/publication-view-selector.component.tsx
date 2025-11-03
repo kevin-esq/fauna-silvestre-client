@@ -9,7 +9,8 @@ import {
   Platform
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ModalOptionButton } from '../ui/modal-option-button.component';
+import { ModalToggle } from '../ui/modal-toggle.component';
 import { useTheme } from '@/presentation/contexts/theme.context';
 import { usePublicationViewPreferences } from '@/presentation/contexts/publication-view-preferences.context';
 import {
@@ -310,67 +311,7 @@ export const PublicationViewSelector: React.FC<
     [colors, spacing, typography, borderRadius]
   );
 
-  const renderOption = (
-    value: string,
-    label: string,
-    icon: string,
-    isActive: boolean,
-    onPress: () => void,
-    iconType: 'ionicons' | 'material' = 'ionicons'
-  ) => {
-    const IconComponent =
-      iconType === 'material' ? MaterialCommunityIcons : Ionicons;
-
-    return (
-      <TouchableOpacity
-        key={value}
-        style={[styles.optionButton, isActive && styles.optionButtonActive]}
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
-        <IconComponent
-          name={icon}
-          size={18}
-          color={isActive ? colors.primary : colors.textSecondary}
-          style={styles.optionIcon}
-        />
-        <Text style={[styles.optionText, isActive && styles.optionTextActive]}>
-          {label}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderToggle = (
-    label: string,
-    value: boolean,
-    onToggle: () => void,
-    disabled: boolean = false
-  ) => (
-    <TouchableOpacity
-      style={[styles.toggleContainer, disabled && styles.toggleDisabled]}
-      onPress={disabled ? undefined : onToggle}
-      activeOpacity={disabled ? 1 : 0.7}
-      disabled={disabled}
-    >
-      <Text
-        style={[styles.toggleLabel, disabled && styles.toggleLabelDisabled]}
-      >
-        {label}
-      </Text>
-      <View
-        style={[
-          styles.toggleTrack,
-          value && styles.toggleTrackActive,
-          disabled && styles.toggleTrackDisabled
-        ]}
-      >
-        <View
-          style={[styles.toggleCircle, value && styles.toggleCircleActive]}
-        />
-      </View>
-    </TouchableOpacity>
-  );
+  // Render functions removed - using ModalOptionButton and ModalToggle components
 
   return (
     <>
@@ -416,61 +357,65 @@ export const PublicationViewSelector: React.FC<
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Diseño</Text>
                 <View style={styles.optionsRow}>
-                  {LAYOUT_OPTIONS.map(opt =>
-                    renderOption(
-                      opt.value,
-                      opt.label,
-                      opt.icon,
-                      preferences.layout === opt.value,
-                      () => preferences.setLayout(opt.value),
-                      opt.iconType
-                    )
-                  )}
+                  {LAYOUT_OPTIONS.map(opt => (
+                    <ModalOptionButton
+                      key={opt.value}
+                      value={opt.value}
+                      label={opt.label}
+                      icon={opt.icon}
+                      iconType={opt.iconType}
+                      isActive={preferences.layout === opt.value}
+                      onPress={() => preferences.setLayout(opt.value)}
+                    />
+                  ))}
                 </View>
               </View>
 
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Agrupar por</Text>
                 <View style={styles.optionsRow}>
-                  {GROUP_OPTIONS.map(opt =>
-                    renderOption(
-                      opt.value,
-                      opt.label,
-                      opt.icon,
-                      preferences.groupBy === opt.value,
-                      () => preferences.setGroupBy(opt.value)
-                    )
-                  )}
+                  {GROUP_OPTIONS.map(opt => (
+                    <ModalOptionButton
+                      key={opt.value}
+                      value={opt.value}
+                      label={opt.label}
+                      icon={opt.icon}
+                      isActive={preferences.groupBy === opt.value}
+                      onPress={() => preferences.setGroupBy(opt.value)}
+                    />
+                  ))}
                 </View>
               </View>
 
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Ordenar por</Text>
                 <View style={styles.optionsRow}>
-                  {SORT_OPTIONS.map(opt =>
-                    renderOption(
-                      opt.value,
-                      opt.label,
-                      opt.icon,
-                      preferences.sortBy === opt.value,
-                      () => preferences.setSortBy(opt.value)
-                    )
-                  )}
+                  {SORT_OPTIONS.map(opt => (
+                    <ModalOptionButton
+                      key={opt.value}
+                      value={opt.value}
+                      label={opt.label}
+                      icon={opt.icon}
+                      isActive={preferences.sortBy === opt.value}
+                      onPress={() => preferences.setSortBy(opt.value)}
+                    />
+                  ))}
                 </View>
               </View>
 
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Estado del animal</Text>
                 <View style={styles.optionsRow}>
-                  {ANIMAL_STATE_OPTIONS.map(opt =>
-                    renderOption(
-                      opt.value,
-                      opt.label,
-                      opt.icon,
-                      preferences.filterByAnimalState === opt.value,
-                      () => preferences.setFilterByAnimalState(opt.value)
-                    )
-                  )}
+                  {ANIMAL_STATE_OPTIONS.map(opt => (
+                    <ModalOptionButton
+                      key={opt.value}
+                      value={opt.value}
+                      label={opt.label}
+                      icon={opt.icon}
+                      isActive={preferences.filterByAnimalState === opt.value}
+                      onPress={() => preferences.setFilterByAnimalState(opt.value)}
+                    />
+                  ))}
                 </View>
               </View>
 
@@ -483,53 +428,48 @@ export const PublicationViewSelector: React.FC<
                 >
                   Mostrar
                 </Text>
-                {renderToggle(
-                  'Imágenes',
-                  preferences.showImages,
-                  preferences.toggleImages,
-                  false
+                <ModalToggle
+                  label="Imágenes"
+                  value={preferences.showImages}
+                  onToggle={preferences.toggleImages}
+                />
+                <ModalToggle
+                  label="Fecha de creación"
+                  value={preferences.layout === 'timeline' ? true : preferences.showCreatedDate}
+                  onToggle={preferences.toggleCreatedDate}
+                  disabled={preferences.layout === 'list' || preferences.layout === 'grid' || preferences.layout === 'timeline'}
+                />
+                <ModalToggle
+                  label="Fecha de aceptación"
+                  value={preferences.showAcceptedDate}
+                  onToggle={preferences.toggleAcceptedDate}
+                  disabled={preferences.layout !== 'card'}
+                />
+                <ModalToggle
+                  label="Estado del animal"
+                  value={preferences.showAnimalState}
+                  onToggle={preferences.toggleAnimalState}
+                  disabled={preferences.layout !== 'card'}
+                />
+                <ModalToggle
+                  label="Ubicación"
+                  value={preferences.showLocation}
+                  onToggle={preferences.toggleLocation}
+                  disabled={preferences.layout !== 'card'}
+                />
+                {currentStatus === 'rejected' && (
+                  <ModalToggle
+                    label="Motivo de rechazo"
+                    value={preferences.showRejectReason}
+                    onToggle={preferences.toggleRejectReason}
+                    disabled={preferences.layout !== 'card'}
+                  />
                 )}
-                {renderToggle(
-                  'Fecha de creación',
-                  preferences.layout === 'timeline'
-                    ? true
-                    : preferences.showCreatedDate,
-                  preferences.toggleCreatedDate,
-                  preferences.layout === 'list' ||
-                    preferences.layout === 'grid' ||
-                    preferences.layout === 'timeline'
-                )}
-                {renderToggle(
-                  'Fecha de aceptación',
-                  preferences.showAcceptedDate,
-                  preferences.toggleAcceptedDate,
-                  preferences.layout !== 'card'
-                )}
-                {renderToggle(
-                  'Estado del animal',
-                  preferences.showAnimalState,
-                  preferences.toggleAnimalState,
-                  preferences.layout !== 'card'
-                )}
-                {renderToggle(
-                  'Ubicación',
-                  preferences.showLocation,
-                  preferences.toggleLocation,
-                  preferences.layout !== 'card'
-                )}
-                {currentStatus === 'rejected' &&
-                  renderToggle(
-                    'Motivo de rechazo',
-                    preferences.showRejectReason,
-                    preferences.toggleRejectReason,
-                    preferences.layout !== 'card'
-                  )}
-                {renderToggle(
-                  'Destacar estado',
-                  preferences.highlightStatus,
-                  preferences.toggleHighlightStatus,
-                  false
-                )}
+                <ModalToggle
+                  label="Destacar estado"
+                  value={preferences.highlightStatus}
+                  onToggle={preferences.toggleHighlightStatus}
+                />
               </View>
 
               <View style={styles.toggleSection}>
@@ -541,11 +481,11 @@ export const PublicationViewSelector: React.FC<
                 >
                   Accesibilidad
                 </Text>
-                {renderToggle(
-                  'Reducir animaciones',
-                  preferences.reducedMotion,
-                  preferences.toggleReducedMotion
-                )}
+                <ModalToggle
+                  label="Reducir animaciones"
+                  value={preferences.reducedMotion}
+                  onToggle={preferences.toggleReducedMotion}
+                />
               </View>
 
               <View style={styles.buttonContainer}>
