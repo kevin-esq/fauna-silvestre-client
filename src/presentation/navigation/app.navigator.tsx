@@ -31,7 +31,6 @@ import ImageEditorScreen from '../screens/admin/image-editor-screen';
 import CatalogAnimalsScreen from '../screens/catalog/catalog-animals-screen';
 import DownloadedFilesScreen from '../screens/media/downloaded-files-screen';
 import DraftsScreen from '../screens/drafts/drafts-screen';
-import DraftEditorScreen from '../screens/drafts/draft-editor-screen';
 import UserListScreen from '../screens/users/user-list-screen';
 import UserDetailsScreen from '../screens/users/user-details-screen';
 
@@ -244,7 +243,6 @@ const createStackConfigurations = () => {
     { name: 'ImageEditor', component: ImageEditorScreen },
     { name: 'DownloadedFiles', component: DownloadedFilesScreen },
     { name: 'Drafts', component: DraftsScreen },
-    { name: 'DraftEditor', component: DraftEditorScreen },
     { name: 'UserList', component: UserListScreen },
     { name: 'UserDetails', component: UserDetailsScreen }
   ]);
@@ -257,8 +255,7 @@ const createStackConfigurations = () => {
     { name: 'AnimalDetails', component: AnimalDetailsScreen },
     { name: 'Catalog', component: CatalogAnimalsScreenWithProvider },
     { name: 'DownloadedFiles', component: DownloadedFilesScreen },
-    { name: 'Drafts', component: DraftsScreen },
-    { name: 'DraftEditor', component: DraftEditorScreen }
+    { name: 'Drafts', component: DraftsScreen }
   ]);
 
   const authStack = createRootStack<RootStackParamList>([
@@ -272,8 +269,7 @@ const createStackConfigurations = () => {
     { name: 'AddPublication', component: publicationFormStack },
     { name: 'PublicationForm', component: PublicationFormScreen },
     { name: 'DownloadedFiles', component: DownloadedFilesScreen },
-    { name: 'Drafts', component: DraftsScreen },
-    { name: 'DraftEditor', component: DraftEditorScreen }
+    { name: 'Drafts', component: DraftsScreen }
   ]);
 
   return {
