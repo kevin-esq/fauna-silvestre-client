@@ -55,9 +55,8 @@ export function useCamera() {
 
       await checkPermissions(['camera', 'gallery', 'location', 'allFiles']);
 
-      setTimeout(() => {
-        setIsRetrying(false);
-      }, 1000);
+      // Reset isRetrying after 1 second
+      setTimeout(() => setIsRetrying(false), 1000);
     } else if (!isReady && retryCountRef.current >= maxRetries) {
       console.error('❌ Cámara restringida después de reintentos');
       setCameraError(

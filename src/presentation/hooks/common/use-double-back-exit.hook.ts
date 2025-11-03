@@ -79,14 +79,9 @@ export const useBackHandler = (options: BackHandlerOptions = {}) => {
     }
 
     if (backPressedOnce.current) {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
       if (onExit) {
         onExit();
       }
-
       BackHandler.exitApp();
       return true;
     }
@@ -94,7 +89,8 @@ export const useBackHandler = (options: BackHandlerOptions = {}) => {
     backPressedOnce.current = true;
     ToastAndroid.show(exitMessage, ToastAndroid.SHORT);
 
-    timeoutRef.current = setTimeout(() => {
+    // Reset back pressed flag after timeout
+    setTimeout(() => {
       backPressedOnce.current = false;
     }, exitTimeout);
 
