@@ -16,8 +16,8 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome5Icons from 'react-native-vector-icons/FontAwesome5';
-import { useAnimalForm } from '../../hooks/use-animal-form.hook';
-import { useAnimalImagePicker } from '../../hooks/use-animal-image-picker.hook';
+import { useAnimalForm } from '../../hooks/forms/use-animal-form.hook';
+import { useAnimalImagePicker } from '../../hooks/media/use-animal-image-picker.hook';
 import { useTheme, Theme } from '../../contexts/theme.context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
 import { AnimalModelResponse } from '@/domain/models/animal.models';
@@ -26,7 +26,7 @@ import { useRoute } from '@react-navigation/native';
 import { AnimalCardVariant } from '../../components/animal/animal-card-variants.component';
 import { ViewLayout } from '@/services/storage/catalog-view-preferences.service';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRequestPermissions } from '../../hooks/use-request-permissions.hook';
+import { useRequestPermissions } from '../../hooks/permissions/use-request-permissions.hook';
 import CustomModal from '@/presentation/components/ui/custom-modal.component';
 import { emitEvent, AppEvents } from '@/shared/utils/event-emitter';
 

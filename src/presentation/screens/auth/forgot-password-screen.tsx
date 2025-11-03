@@ -11,7 +11,7 @@ import { useNavigationActions } from '../../navigation/navigation-provider';
 import {
   useForgotPassword,
   ResetStep
-} from '../../hooks/use-forgot-password.hook';
+} from '../../hooks/auth/use-forgot-password.hook';
 
 import AuthContainer from '../../components/auth/auth-container.component';
 import AuthTextInput from '../../components/auth/auth-text-input.component';

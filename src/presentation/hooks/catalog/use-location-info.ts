@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Location from 'react-native-get-location';
-import { useRequestPermissions } from './use-request-permissions.hook';
+import { useRequestPermissions } from '../permissions/use-request-permissions.hook';
 
 interface LocationInfo {
   city: string;

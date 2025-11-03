@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { useCatalog } from '../contexts/catalog.context';
-import { usePublications } from '../contexts/publication.context';
+import { useCatalog } from '../../contexts/catalog.context';
+import { usePublications } from '../../contexts/publication.context';
 
 export function useLoadData() {
   const { fetchCatalog } = useCatalog();

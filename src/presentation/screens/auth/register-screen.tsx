@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigationActions } from '../../navigation/navigation-provider';
-import { useRegisterForm } from '../../hooks/use-register-form.hook';
+import { useRegisterForm } from '../../hooks/auth/use-register-form.hook';
 import {
   genderOptions,
   locationOptions

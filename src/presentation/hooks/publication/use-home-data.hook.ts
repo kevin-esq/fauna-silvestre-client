@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useCatalog } from '../contexts/catalog.context';
+import { useCatalog } from '../../contexts/catalog.context';
 import {
   AnimalModelResponse,
   CommonNounResponse

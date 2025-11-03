@@ -3,7 +3,7 @@ import {
   launchImageLibrary,
   ImagePickerResponse
 } from 'react-native-image-picker';
-import { MediaLibraryService } from '../../services/media/media-library.service';
+import { MediaLibraryService } from '../../../services/media/media-library.service';
 
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 

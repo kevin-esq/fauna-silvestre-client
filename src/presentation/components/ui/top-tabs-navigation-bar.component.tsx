@@ -26,7 +26,7 @@ import favicon from '@/assets/favicon.png';
 import { Theme, useTheme } from '@/presentation/contexts/theme.context';
 import { createStyles } from './top-tabs-navigation-bar.styles';
 import { useNavigationActions } from '@/presentation/navigation/navigation-provider';
-import { useNotifications } from '@/presentation/hooks/use-notifications.hook';
+import { useNotifications } from '@/presentation/hooks/notifications/use-notifications.hook';
 import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
 import HelpModal from './help-modal.component';
 

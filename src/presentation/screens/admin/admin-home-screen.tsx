@@ -11,23 +11,23 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { useAuth } from '../../../contexts/auth.context';
-import { useTheme } from '../../../contexts/theme.context';
-import { useDraftContext } from '../../../contexts/draft.context';
-import { useNavigationActions } from '../../../navigation/navigation-provider';
-import { useLocationInfo } from '../../../hooks/use-location-info';
-import { useCurrentTime } from '../../../hooks/use-current-time.hook';
-import { useAdminData } from '../../../hooks/use-admin-data.hook';
-import { useDoubleBackExit } from '../../../hooks/use-double-back-exit.hook';
+import { useAuth } from '../../contexts/auth.context';
+import { useTheme } from '../../contexts/theme.context';
+import { useDraftContext } from '../../contexts/draft.context';
+import { useNavigationActions } from '../../navigation/navigation-provider';
+import { useLocationInfo } from '../../hooks/catalog/use-location-info';
+import { useCurrentTime } from '../../hooks/common/use-current-time.hook';
+import { useAdminData } from '../../hooks/admin/use-admin-data.hook';
+import { useDoubleBackExit } from '../../hooks/common/use-double-back-exit.hook';
 
 import {
   SkeletonLoader,
   UserListSkeleton,
   QuickActionSkeleton
-} from '../../../components/ui/skeleton-loader.component';
+} from '../../components/ui/skeleton-loader.component';
 
-import CustomModal from '../../../components/ui/custom-modal.component';
-import { OfflineBanner } from '../../../components/ui/offline-banner.component';
+import CustomModal from '../../components/ui/custom-modal.component';
+import { OfflineBanner } from '../../components/ui/offline-banner.component';
 
 import { UserData } from '@/domain/models/user.models';
 import { useStyles } from './admin-home-screen.styles';

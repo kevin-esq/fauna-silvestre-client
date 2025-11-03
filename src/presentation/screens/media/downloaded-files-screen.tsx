@@ -18,13 +18,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, Theme } from '../../contexts/theme.context';
-import { useDownloadedFiles } from '../../hooks/use-downloaded-files.hook';
+import { useDownloadedFiles } from '../../hooks/media/use-downloaded-files.hook';
 import { DownloadedFile } from '../../../services/storage/local-file.service';
 import { createStyles } from './downloaded-files-screen.styles';
 import RNFetchBlob from 'react-native-blob-util';
 import CustomModal from '../../components/ui/custom-modal.component';
 import Share from 'react-native-share';
-import { useBackHandler } from '@/presentation/hooks/use-back-handler.hook';
+import { useBackHandler } from '@/presentation/hooks/common/use-back-handler.hook';
 import { useRoute, RouteProp } from '@react-navigation/native';
 
 interface DownloadedFileCardProps {

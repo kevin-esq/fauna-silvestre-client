@@ -4,7 +4,7 @@ import type {
 } from '@react-navigation/material-top-tabs';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import type { RootStackParamList } from './navigation.types';
-import AdminHomeScreen from '../screens/admin/admin-home-screen/admin-home-screen';
+import AdminHomeScreen from '../screens/admin/admin-home-screen';
 import HomeScreen from '../screens/home/home-screen';
 import PublicationScreen from '../screens/publication/publication-screen';
 import ReviewPublicationsScreen from '../screens/admin/review-publications-screen';

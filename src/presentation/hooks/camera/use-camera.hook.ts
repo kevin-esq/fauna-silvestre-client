@@ -6,7 +6,7 @@ import {
   TakePhotoOptions
 } from 'react-native-vision-camera';
 import { AppState } from 'react-native';
-import { useRequestPermissions } from '../hooks/use-request-permissions.hook';
+import { useRequestPermissions } from '../permissions/use-request-permissions.hook';
 
 export type CameraPosition = 0 | 1;
 

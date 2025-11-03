@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import { useNotificationContext } from '../contexts/notification.context';
-import { NotificationModel } from '../../domain/models/notification.models';
+import { useNotificationContext } from '../../contexts/notification.context';
+import { NotificationModel } from '../../../domain/models/notification.models';
 
 export const useNotifications = () => {
   const {

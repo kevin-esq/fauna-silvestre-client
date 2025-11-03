@@ -38,7 +38,7 @@ import type { RootStackParamList } from './navigation.types';
 import { createRootStack } from './create-root-stack';
 import { adminTabs, userTabs } from './tabs-config';
 import { offlineTabs } from './offline-tabs-config';
-import { useNetworkStatus } from '../hooks/use-network-status.hook';
+import { useNetworkStatus } from '../hooks/common/use-network-status.hook';
 
 export type ValidRole = 'Admin' | 'User';
 

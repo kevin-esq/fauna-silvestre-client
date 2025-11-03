@@ -17,8 +17,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { useTheme } from '../../contexts/theme.context';
 import { UserData } from '@/domain/models/user.models';
-import { useBackHandler } from '@/presentation/hooks/use-back-handler.hook';
-import { useUsers } from '@/presentation/hooks/use-users.hook';
+import { useBackHandler } from '@/presentation/hooks/common/use-back-handler.hook';
+import { useUsers } from '@/presentation/hooks/users/use-users.hook';
 import { createStyles } from './user-details.styles';
 import CustomModal from '../../components/ui/custom-modal.component';
 import {

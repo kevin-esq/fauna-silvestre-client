@@ -1,7 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { BackHandler, Platform, ToastAndroid } from 'react-native';
-import { useNavigationActions } from '../navigation/navigation-provider';
+import { useNavigationActions } from '../../navigation/navigation-provider';
 
 interface BackHandlerOptions {
   isModalOpen?: boolean;

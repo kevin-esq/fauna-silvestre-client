@@ -7,17 +7,17 @@ import React, {
 } from 'react';
 import { SafeAreaView, StatusBar, Modal } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useCamera } from '../../hooks/use-camera.hook';
-import { useRecentImagesWithLocation } from '../../hooks/use-recent-images.hook';
-import { useRequestPermissions } from '../../hooks/use-request-permissions.hook';
-import { useCameraAnimations } from '../../hooks/use-camera-animations.hook';
-import { useCameraActions } from '../../hooks/use-camera-actions.hook';
-import { useCameraFreeze } from '../../hooks/use-camera-freeze.hook';
-import { useModalState } from '../../hooks/use-modal-state.hook';
+import { useCamera } from '../../hooks/camera/use-camera.hook';
+import { useRecentImagesWithLocation } from '../../hooks/media/use-recent-images.hook';
+import { useRequestPermissions } from '../../hooks/permissions/use-request-permissions.hook';
+import { useCameraAnimations } from '../../hooks/camera/use-camera-animations.hook';
+import { useCameraActions } from '../../hooks/camera/use-camera-actions.hook';
+import { useCameraFreeze } from '../../hooks/camera/use-camera-freeze.hook';
+import { useModalState } from '../../hooks/common/use-modal-state.hook';
 import {
   useBackHandler,
   useModalBackHandler
-} from '../../hooks/use-back-handler.hook';
+} from '../../hooks/common/use-back-handler.hook';
 import { themeVariables, useTheme } from '../../contexts/theme.context';
 import { createStyles } from './camera-gallery-screen.styles';
 import { PermissionMessage } from '../../components/camera/permission-message.component';

@@ -44,7 +44,7 @@ import {
   useSafeAreaInsets
 } from 'react-native-safe-area-context';
 import { PublicationData } from '../../../domain/models/publication.models';
-import { useCommonNouns } from '../../hooks/use-common-nouns';
+import { useCommonNouns } from '../../hooks/catalog/use-common-nouns';
 import { CommonNounResponse } from '../../../domain/models/animal.models';
 
 const { width, height } = Dimensions.get('window');

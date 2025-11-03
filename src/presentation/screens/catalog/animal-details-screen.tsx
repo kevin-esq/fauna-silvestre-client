@@ -31,10 +31,10 @@ import { useNavigationActions } from '../../navigation/navigation-provider';
 import { BackHandler } from 'react-native';
 import { useAuth } from '../../contexts/auth.context';
 import ImageZoom from 'react-native-image-pan-zoom';
-import { useFileDownload } from '../../hooks/use-file-download.hook';
+import { useFileDownload } from '../../hooks/media/use-file-download.hook';
 import LocationMap from '@/presentation/components/ui/location-map.component';
 import CustomModal from '@/presentation/components/ui/custom-modal.component';
-import { useCatalogManagement } from '../../hooks/use-catalog-management.hook';
+import { useCatalogManagement } from '../../hooks/admin/use-catalog-management.hook';
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
 import {

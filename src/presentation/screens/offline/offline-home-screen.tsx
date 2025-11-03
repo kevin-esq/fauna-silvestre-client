@@ -9,7 +9,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../contexts/theme.context';
 import { useDraftContext } from '../../contexts/draft.context';
-import { useNetworkStatus } from '../../hooks/use-network-status.hook';
+import { useNetworkStatus } from '../../hooks/common/use-network-status.hook';
 import { useNavigation } from '@react-navigation/native';
 import { styles } from './offline-home-screen.styles';
 

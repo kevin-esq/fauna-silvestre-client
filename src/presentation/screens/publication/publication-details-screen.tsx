@@ -39,7 +39,7 @@ import Modal from 'react-native-modal';
 import {
   useBackHandler,
   useModalBackHandler
-} from '../../hooks/use-back-handler.hook';
+} from '../../hooks/common/use-back-handler.hook';
 import ImageZoom from 'react-native-image-pan-zoom';
 import { Image } from 'moti';
 import { usePublications } from '../../contexts/publication.context';

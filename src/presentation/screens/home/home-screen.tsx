@@ -14,8 +14,8 @@ import { useAuth } from '../../contexts/auth.context';
 import { Theme, useTheme } from '../../contexts/theme.context';
 import { useDraftContext } from '../../contexts/draft.context';
 import { useNavigationActions } from '../../navigation/navigation-provider';
-import { useLocationInfo } from '../../hooks/use-location-info';
-import { useHomeData } from '../../hooks/use-home-data.hook';
+import { useLocationInfo } from '../../hooks/catalog/use-location-info';
+import { useHomeData } from '../../hooks/publication/use-home-data.hook';
 
 import { AnimalCardVariant } from '../../components/animal/animal-card-variants.component';
 import { useCatalogViewPreferences } from '../../contexts/catalog-view-preferences.context';
@@ -34,8 +34,8 @@ import {
   CommonNounResponse
 } from '@/domain/models/animal.models';
 import User from '@/domain/entities/user.entity';
-import { useCurrentTime } from '@/presentation/hooks/use-current-time.hook';
-import { useDoubleBackExit } from '@/presentation/hooks/use-double-back-exit.hook';
+import { useCurrentTime } from '@/presentation/hooks/common/use-current-time.hook';
+import { useDoubleBackExit } from '@/presentation/hooks/common/use-double-back-exit.hook';
 
 const UserHeader = React.memo<{
   user: User | null;

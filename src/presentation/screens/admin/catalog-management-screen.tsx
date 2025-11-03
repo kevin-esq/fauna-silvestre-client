@@ -16,7 +16,7 @@ import {
   StatusBar
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useCatalogManagement } from '../../hooks/use-catalog-management.hook';
+import { useCatalogManagement } from '../../hooks/admin/use-catalog-management.hook';
 import { useTheme } from '../../contexts/theme.context';
 import { useCatalogViewPreferences } from '../../contexts/catalog-view-preferences.context';
 import { useNavigationActions } from '../../navigation/navigation-provider';

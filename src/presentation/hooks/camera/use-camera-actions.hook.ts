@@ -3,7 +3,7 @@ import Location, {
   Location as LocationInterface,
   type Location as LocationType
 } from 'react-native-get-location';
-import { useNavigationActions } from '../navigation/navigation-provider';
+import { useNavigationActions } from '../../navigation/navigation-provider';
 import { useLoading } from '../contexts/loading.context';
 import { PhotoFile } from 'react-native-vision-camera';
 import { MediaLibraryService } from '@/services/media/media-library.service';

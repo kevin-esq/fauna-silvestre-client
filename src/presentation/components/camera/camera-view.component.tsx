@@ -12,7 +12,7 @@ import { ZoomControls } from './zoom-controls.component';
 import { CameraRestrictedOverlay } from './camera-restricted-overlay.component';
 import { createStyles } from '@/presentation/screens/media/camera-gallery-screen.styles';
 import { FreezeOverlay } from './freeze-overlay.component';
-import { RecentImage } from '@/presentation/hooks/use-recent-images.hook';
+import { RecentImage } from '../../hooks/media/use-recent-images.hook';
 
 interface CameraViewProps {
   cameraRef: React.RefObject<Camera | null>;

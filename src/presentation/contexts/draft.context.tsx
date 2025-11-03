@@ -13,7 +13,7 @@ import {
 } from '../../domain/models/draft.models';
 import { draftService } from '../../services/storage/draft.service';
 import { offlineQueueService } from '../../services/storage/offline-queue.service';
-import { useNetworkStatus } from '../hooks/use-network-status.hook';
+import { useNetworkStatus } from '../hooks/common/use-network-status.hook';
 import { ConsoleLogger } from '../../services/logging/console-logger';
 import { CommonNounResponse } from '../../domain/models/animal.models';
 import RNFS from 'react-native-fs';

@@ -3,9 +3,9 @@ import {
   AnimalModelResponse,
   UpdateAnimalImageRequest
 } from '@/domain/models/animal.models';
-import { useAnimalImagePicker } from './use-animal-image-picker.hook';
+import { useAnimalImagePicker } from '../media/use-animal-image-picker.hook';
 import { catalogService } from '@/services/catalog/catalog.service';
-import { useNavigationActions } from '../navigation/navigation-provider';
+import { useNavigationActions } from '../../navigation/navigation-provider';
 
 interface UseImageEditorProps {
   animal: AnimalModelResponse;

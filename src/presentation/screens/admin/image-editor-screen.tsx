@@ -17,7 +17,7 @@ import { useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimalCardVariant } from '../../components/animal/animal-card-variants.component';
 import { ViewLayout } from '@/services/storage/catalog-view-preferences.service';
-import { useImageEditor } from '../../hooks/use-image-editor.hook';
+import { useImageEditor } from '../../hooks/forms/use-image-editor.hook';
 import { emitEvent, AppEvents } from '@/shared/utils/event-emitter';
 import CustomModal from '../../components/ui/custom-modal.component';
 

@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { NotificationModel } from '../../../domain/models/notification.models';
 import { useTheme } from '../../contexts/theme.context';
-import { useNotifications } from '../../hooks/use-notifications.hook';
+import { useNotifications } from '../../hooks/notifications/use-notifications.hook';
 import NotificationCard from '../../components/notification/notification-card.component';
 import NotificationSkeleton from '../../components/ui/notification-skeleton.component';
 import { createStyles } from './notifications-screen.styles';

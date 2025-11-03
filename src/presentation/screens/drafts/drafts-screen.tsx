@@ -14,7 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/navigation.types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSimpleBackHandler } from '../../hooks/use-back-handler.hook';
+import { useSimpleBackHandler } from '../../hooks/common/use-back-handler.hook';
 import { DraftCard } from '../../components/draft/draft-card.component';
 import { OfflineBanner } from '../../components/ui/offline-banner.component';
 import { createStyles } from './drafts-screen.styles';
