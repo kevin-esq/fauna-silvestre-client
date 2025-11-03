@@ -414,6 +414,6 @@ const CatalogAnimalsScreen = () => {
   );
 };
 
-export default CatalogAnimalsScreen;
+export default React.memo(CatalogAnimalsScreen);
 
 export { AnimalCardVariant as CatalogAnimalCard };

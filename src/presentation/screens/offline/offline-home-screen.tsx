@@ -152,4 +152,4 @@ const OfflineHomeScreen: React.FC = () => {
   );
 };
 
-export default OfflineHomeScreen;
+export default React.memo(OfflineHomeScreen);

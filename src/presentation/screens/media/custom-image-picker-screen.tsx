@@ -857,4 +857,4 @@ const CustomImagePickerScreen: React.FC<Props> = memo(
   }
 );
 
-export default memo(CustomImagePickerScreen);
+export default React.memo(memo(CustomImagePickerScreen));

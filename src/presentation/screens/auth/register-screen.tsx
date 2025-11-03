@@ -316,4 +316,4 @@ const RegisterScreen = () => {
   );
 };
 
-export default RegisterScreen;
+export default React.memo(RegisterScreen);

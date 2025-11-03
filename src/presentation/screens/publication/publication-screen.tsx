@@ -849,4 +849,4 @@ const PublicationScreen: React.FC = () => {
   );
 };
 
-export default PublicationScreen;
+export default React.memo(PublicationScreen);

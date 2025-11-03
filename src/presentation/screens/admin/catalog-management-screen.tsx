@@ -433,4 +433,4 @@ const CatalogManagementScreen: React.FC = () => {
   );
 };
 
-export default CatalogManagementScreen;
+export default React.memo(CatalogManagementScreen);

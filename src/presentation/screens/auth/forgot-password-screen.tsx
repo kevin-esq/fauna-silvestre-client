@@ -251,4 +251,4 @@ const ForgotPasswordScreen = () => {
   );
 };
 
-export default ForgotPasswordScreen;
+export default React.memo(ForgotPasswordScreen);

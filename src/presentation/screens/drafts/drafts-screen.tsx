@@ -549,4 +549,4 @@ const DraftsScreen: React.FC = () => {
   );
 };
 
-export default DraftsScreen;
+export default React.memo(DraftsScreen);
