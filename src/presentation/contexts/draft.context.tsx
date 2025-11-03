@@ -4,6 +4,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   ReactNode
 } from 'react';
 import {
@@ -14,37 +15,13 @@ import {
 import { draftService } from '@/services/storage/draft.service';
 import { offlineQueueService } from '@/services/storage/offline-queue.service';
 import { useNetworkStatus } from '@/presentation/hooks/common/use-network-status.hook';
+import { ValidationService } from '@/services/validation';
 import { ConsoleLogger } from '@/services/logging/console-logger';
 import { CommonNounResponse } from '@/domain/models/animal.models';
+import type { DraftContextType } from './draft/types';
 import RNFS from 'react-native-fs';
 
 const logger = new ConsoleLogger('info');
-
-interface DraftContextType {
-  drafts: DraftPublication[];
-  isLoading: boolean;
-  error: string | null;
-  isOnline: boolean;
-  pendingCount: number;
-
-  createDraft: (
-    imageUri: string,
-    description: string,
-    selectedAnimal: CommonNounResponse | null,
-    customAnimalName: string,
-    animalState: AnimalState,
-    location?: { latitude: number; longitude: number }
-  ) => Promise<DraftPublication>;
-  updateDraft: (draft: DraftPublication) => Promise<void>;
-  deleteDraft: (id: string) => Promise<void>;
-  getDraftById: (id: string) => Promise<DraftPublication | null>;
-
-  submitDraft: (draftId: string) => Promise<void>;
-  retryFailedDrafts: () => Promise<void>;
-  clearAllDrafts: () => Promise<void>;
-
-  refreshDrafts: () => Promise<void>;
-}
 
 const DraftContext = createContext<DraftContextType | undefined>(undefined);
 
@@ -103,7 +80,7 @@ export const DraftProvider: React.FC<{ children: ReactNode }> = ({
         logger.info(`Draft created: ${draft.id}`);
         return draft;
       } catch (err) {
-        const errorMessage = 'Error al crear borrador';
+        const errorMessage = 'Error creating draft';
         setError(errorMessage);
         logger.error(errorMessage, err as Error);
         throw err;
@@ -124,7 +101,7 @@ export const DraftProvider: React.FC<{ children: ReactNode }> = ({
         await loadDrafts();
         logger.info(`Draft updated: ${draft.id}`);
       } catch (err) {
-        const errorMessage = 'Error al actualizar borrador';
+        const errorMessage = 'Error updating draft';
         setError(errorMessage);
         logger.error(errorMessage, err as Error);
         throw err;
@@ -145,7 +122,7 @@ export const DraftProvider: React.FC<{ children: ReactNode }> = ({
         await loadDrafts();
         logger.info(`Draft deleted: ${id}`);
       } catch (err) {
-        const errorMessage = 'Error al eliminar borrador';
+        const errorMessage = 'Error deleting draft';
         setError(errorMessage);
         logger.error(errorMessage, err as Error);
         throw err;
@@ -177,8 +154,10 @@ export const DraftProvider: React.FC<{ children: ReactNode }> = ({
         const draft = await draftService.getDraftById(draftId);
 
         if (!draft) {
-          throw new Error('Borrador no encontrado');
+          throw new Error('Draft not found');
         }
+
+        ValidationService.validateId(draftId, 'submitDraft');
 
         const imageBase64 = await RNFS.readFile(
           draft.imageUri.replace('file://', ''),
@@ -211,7 +190,7 @@ export const DraftProvider: React.FC<{ children: ReactNode }> = ({
         await loadDrafts();
         logger.info(`Draft submitted: ${draftId}`);
       } catch (err) {
-        const errorMessage = 'Error al enviar borrador';
+        const errorMessage = 'Error submitting draft';
         setError(errorMessage);
         logger.error(errorMessage, err as Error);
         throw err;
@@ -224,7 +203,7 @@ export const DraftProvider: React.FC<{ children: ReactNode }> = ({
 
   const retryFailedDrafts = useCallback(async (): Promise<void> => {
     if (!isConnected) {
-      setError('No hay conexión a internet');
+      setError('No internet connection');
       return;
     }
 
@@ -236,7 +215,7 @@ export const DraftProvider: React.FC<{ children: ReactNode }> = ({
       await loadDrafts();
       logger.info('Retrying failed drafts');
     } catch (err) {
-      const errorMessage = 'Error al reintentar borradores';
+      const errorMessage = 'Error retrying drafts';
       setError(errorMessage);
       logger.error(errorMessage, err as Error);
     } finally {
@@ -255,7 +234,7 @@ export const DraftProvider: React.FC<{ children: ReactNode }> = ({
       setPendingCount(0);
       logger.info('All drafts cleared');
     } catch (err) {
-      const errorMessage = 'Error al limpiar borradores';
+      const errorMessage = 'Error clearing drafts';
       setError(errorMessage);
       logger.error(errorMessage, err as Error);
       throw err;
@@ -282,21 +261,38 @@ export const DraftProvider: React.FC<{ children: ReactNode }> = ({
     loadDrafts();
   }, [loadDrafts]);
 
-  const value: DraftContextType = {
-    drafts,
-    isLoading,
-    error,
-    isOnline: isConnected,
-    pendingCount,
-    createDraft,
-    updateDraft,
-    deleteDraft,
-    getDraftById,
-    submitDraft,
-    retryFailedDrafts,
-    clearAllDrafts,
-    refreshDrafts
-  };
+  const value = useMemo(
+    () => ({
+      drafts,
+      isLoading,
+      error,
+      isOnline: isConnected,
+      pendingCount,
+      createDraft,
+      updateDraft,
+      deleteDraft,
+      getDraftById,
+      submitDraft,
+      retryFailedDrafts,
+      clearAllDrafts,
+      refreshDrafts
+    }),
+    [
+      drafts,
+      isLoading,
+      error,
+      isConnected,
+      pendingCount,
+      createDraft,
+      updateDraft,
+      deleteDraft,
+      getDraftById,
+      submitDraft,
+      retryFailedDrafts,
+      clearAllDrafts,
+      refreshDrafts
+    ]
+  );
 
   return (
     <DraftContext.Provider value={value}>{children}</DraftContext.Provider>
