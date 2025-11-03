@@ -9,16 +9,22 @@ import React, {
 } from 'react';
 import { useAuth } from '@/presentation/contexts/auth.context';
 import {
-  PublicationResponse,
-  PublicationModelResponse,
-  CountsResponse
-} from '@/domain/models/publication.models';
-import {
   publicationService,
   PublicationStatus
 } from '@/services/publication/publication.service';
 import { AuthService } from '@/services/auth/auth.service';
-import User from '@/domain/entities/user.entity';
+import { ValidationService } from '@/services/validation';
+import { PublicationFilters } from '@/utils/publication-filters';
+import { StateCreators } from './publication/state-creators';
+import { ReducerHandlers } from './publication/reducer-handlers';
+import type {
+  State,
+  PublicationState,
+  Action,
+  LoadOptions,
+  BulkAction,
+  BulkOperationResult
+} from './publication/types';
 
 const CONFIG = {
   DEFAULT_PAGE_SIZE: 10,
@@ -26,382 +32,6 @@ const CONFIG = {
   PREFETCH_THRESHOLD: 0.7,
   DEBOUNCE_DELAY: 300
 } as const;
-
-interface PaginationState {
-  readonly page: number;
-  readonly size: number;
-  readonly total: number;
-  readonly totalPages: number;
-  readonly hasNext: boolean;
-  readonly hasPrev: boolean;
-}
-
-interface PublicationState {
-  readonly publications: PublicationModelResponse[];
-  readonly filteredPublications: PublicationModelResponse[];
-  readonly isLoading: boolean;
-  readonly isLoadingMore: boolean;
-  readonly isRefreshing: boolean;
-  readonly isEmpty: boolean;
-  readonly pagination: PaginationState;
-  readonly currentSearchQuery: string;
-  readonly lastUpdated: number | null;
-  readonly error?: string;
-}
-
-
-interface CountsState {
-  readonly data: CountsResponse | null;
-  readonly isLoading: boolean;
-  readonly lastUpdated: number | null;
-  readonly error?: string;
-}
-
-interface State {
-  readonly [PublicationStatus.PENDING]: PublicationState;
-  readonly [PublicationStatus.ACCEPTED]: PublicationState;
-  readonly [PublicationStatus.REJECTED]: PublicationState;
-  readonly counts: CountsState;
-}
-
-type PublicationActionType =
-  | 'FETCH_STATUS_START'
-  | 'FETCH_STATUS_SUCCESS'
-  | 'FETCH_MORE_START'
-  | 'FETCH_MORE_SUCCESS'
-  | 'REFRESH_START'
-  | 'REFRESH_SUCCESS'
-  | 'FILTER_PUBLICATIONS'
-  | 'OPERATION_FAILURE'
-  | 'RESET_STATUS'
-  | 'RESET_ALL'
-  | 'UPDATE_PUBLICATION_STATUS'
-  | 'FETCH_COUNTS_START'
-  | 'FETCH_COUNTS_SUCCESS'
-  | 'FETCH_COUNTS_FAILURE'
-  | 'INVALIDATE_CACHE_AND_COUNTS';
-
-interface BaseAction<T extends PublicationActionType> {
-  readonly type: T;
-}
-
-interface FetchStatusStartAction extends BaseAction<'FETCH_STATUS_START'> {
-  readonly status: PublicationStatus;
-}
-
-interface FetchStatusSuccessAction extends BaseAction<'FETCH_STATUS_SUCCESS'> {
-  readonly status: PublicationStatus;
-  readonly payload: PublicationResponse;
-  readonly searchQuery: string;
-  readonly resetPage: boolean;
-}
-
-interface FetchMoreStartAction extends BaseAction<'FETCH_MORE_START'> {
-  readonly status: PublicationStatus;
-}
-
-interface FetchMoreSuccessAction extends BaseAction<'FETCH_MORE_SUCCESS'> {
-  readonly status: PublicationStatus;
-  readonly payload: PublicationResponse;
-}
-
-interface RefreshStartAction extends BaseAction<'REFRESH_START'> {
-  readonly status: PublicationStatus;
-}
-
-interface RefreshSuccessAction extends BaseAction<'REFRESH_SUCCESS'> {
-  readonly status: PublicationStatus;
-  readonly payload: PublicationResponse;
-}
-
-interface FilterPublicationsAction extends BaseAction<'FILTER_PUBLICATIONS'> {
-  readonly status: PublicationStatus;
-  readonly searchQuery: string;
-}
-
-interface OperationFailureAction extends BaseAction<'OPERATION_FAILURE'> {
-  readonly payload: string;
-  readonly status?: PublicationStatus;
-}
-
-interface ResetStatusAction extends BaseAction<'RESET_STATUS'> {
-  readonly status: PublicationStatus;
-}
-
-interface UpdatePublicationStatusAction
-  extends BaseAction<'UPDATE_PUBLICATION_STATUS'> {
-  readonly publicationId: string;
-  readonly currentStatus: PublicationStatus;
-  readonly newStatus: PublicationStatus;
-}
-
-interface FetchCountsSuccessAction extends BaseAction<'FETCH_COUNTS_SUCCESS'> {
-  readonly payload: CountsResponse;
-}
-
-interface FetchCountsFailureAction extends BaseAction<'FETCH_COUNTS_FAILURE'> {
-  readonly payload: string;
-}
-
-type Action =
-  | FetchStatusStartAction
-  | FetchStatusSuccessAction
-  | FetchMoreStartAction
-  | FetchMoreSuccessAction
-  | RefreshStartAction
-  | RefreshSuccessAction
-  | FilterPublicationsAction
-  | OperationFailureAction
-  | ResetStatusAction
-  | BaseAction<'RESET_ALL'>
-  | UpdatePublicationStatusAction
-  | BaseAction<'FETCH_COUNTS_START'>
-  | FetchCountsSuccessAction
-  | FetchCountsFailureAction
-  | BaseAction<'INVALIDATE_CACHE_AND_COUNTS'>;
-
-interface LoadOptions {
-  readonly searchQuery?: string;
-  readonly forceRefresh?: boolean;
-}
-
-type BulkAction = 'accept' | 'reject';
-
-interface BulkOperationResult {
-  readonly success: string[];
-  readonly failed: string[];
-}
-
-class PublicationFilters {
-  public static filterByQuery(
-    publications: readonly PublicationModelResponse[],
-    searchQuery: string
-  ): PublicationModelResponse[] {
-    if (!searchQuery.trim()) return [...publications];
-
-    const query = searchQuery.toLowerCase().trim();
-    return publications.filter(
-      publication =>
-        publication.commonNoun?.toLowerCase().includes(query) ||
-        publication.description?.toLowerCase().includes(query) ||
-        publication.location?.toLowerCase().includes(query)
-    );
-  }
-}
-
-
-class ValidationUtils {
-  public static validatePaginationParams(page: number, size: number): void {
-    if (!Number.isInteger(page) || page < 1) {
-      throw new Error('El número de página debe ser un entero mayor a 0');
-    }
-
-    if (!Number.isInteger(size) || size < 1 || size > 100) {
-      throw new Error('El límite debe ser un entero entre 1 y 100');
-    }
-  }
-
-  public static validateUser(user: User | null): asserts user is User {
-    if (!user?.role) {
-      throw new Error('User not authenticated');
-    }
-  }
-}
-
-class StateCreators {
-  public static createInitialPublicationState(): PublicationState {
-    return {
-      publications: [],
-      filteredPublications: [],
-      isLoading: false,
-      isLoadingMore: false,
-      isRefreshing: false,
-      isEmpty: true,
-      pagination: {
-        page: CONFIG.INITIAL_PAGE,
-        size: CONFIG.DEFAULT_PAGE_SIZE,
-        total: 0,
-        totalPages: 0,
-        hasNext: false,
-        hasPrev: false
-      },
-      currentSearchQuery: '',
-      lastUpdated: null,
-      error: undefined
-    };
-  }
-
-  public static createInitialCountsState(): CountsState {
-    return {
-      data: null,
-      isLoading: false,
-      lastUpdated: null,
-      error: undefined
-    };
-  }
-
-  public static createInitialState(): State {
-    return {
-      [PublicationStatus.PENDING]: this.createInitialPublicationState(),
-      [PublicationStatus.ACCEPTED]: this.createInitialPublicationState(),
-      [PublicationStatus.REJECTED]: this.createInitialPublicationState(),
-      counts: this.createInitialCountsState()
-    };
-  }
-}
-
-class ReducerHandlers {
-  public static handleFetchStart(
-    state: State,
-    action: FetchStatusStartAction
-  ): State {
-    const currentState = state[action.status];
-
-    return {
-      ...state,
-      [action.status]: {
-        ...currentState,
-        isLoading: true,
-        error: undefined
-      }
-    };
-  }
-
-  public static handleFetchSuccess(
-    state: State,
-    action: FetchStatusSuccessAction
-  ): State {
-    const { status, payload, searchQuery, resetPage } = action;
-    const currentState = state[status];
-
-    const newPublications = resetPage
-      ? payload.records
-      : [...currentState.publications, ...payload.records];
-
-    const filteredPublications = PublicationFilters.filterByQuery(
-      newPublications,
-      searchQuery
-    );
-
-    return {
-      ...state,
-      [status]: {
-        ...currentState,
-        publications: newPublications,
-        filteredPublications,
-        isLoading: false,
-        isEmpty: newPublications.length === 0,
-        pagination: payload.pagination,
-        currentSearchQuery: searchQuery,
-        lastUpdated: Date.now(),
-        error: undefined
-      }
-    };
-  }
-
-  public static handleFetchMoreSuccess(
-    state: State,
-    action: FetchMoreSuccessAction
-  ): State {
-    const { status, payload } = action;
-    const currentState = state[status];
-
-    const allPublications = [...currentState.publications, ...payload.records];
-    const limitedPublications = allPublications;
-
-    const filteredPublications = PublicationFilters.filterByQuery(
-      limitedPublications,
-      currentState.currentSearchQuery
-    );
-
-    return {
-      ...state,
-      [status]: {
-        ...currentState,
-        publications: limitedPublications,
-        filteredPublications,
-        isLoadingMore: false,
-        isEmpty: limitedPublications.length === 0,
-        pagination: payload.pagination,
-        lastUpdated: Date.now(),
-        error: undefined
-      }
-    };
-  }
-
-  public static handleOperationFailure(
-    state: State,
-    action: OperationFailureAction
-  ): State {
-    const { payload: errorMessage, status } = action;
-
-    if (status) {
-      return {
-        ...state,
-        [status]: {
-          ...state[status],
-          isLoading: false,
-          isLoadingMore: false,
-          isRefreshing: false,
-          error: errorMessage
-        }
-      };
-    }
-
-    return state;
-  }
-
-  public static handleUpdatePublicationStatus(
-    state: State,
-    action: UpdatePublicationStatusAction
-  ): State {
-    const { publicationId, currentStatus, newStatus } = action;
-    const fromState = state[currentStatus];
-    const toState = state[newStatus];
-
-    const publication = fromState.publications.find(
-      pub => pub.recordId.toString() === publicationId
-    );
-
-    if (!publication) return state;
-
-    const updatedFromPublications = fromState.publications.filter(
-      pub => pub.recordId.toString() !== publicationId
-    );
-
-    const updatedToPublications = [...toState.publications, publication];
-
-    return {
-      ...state,
-      [currentStatus]: {
-        ...fromState,
-        publications: updatedFromPublications,
-        filteredPublications: PublicationFilters.filterByQuery(
-          updatedFromPublications,
-          fromState.currentSearchQuery
-        ),
-        isEmpty: updatedFromPublications.length === 0,
-        pagination: {
-          ...fromState.pagination,
-          total: Math.max(0, fromState.pagination.total - 1)
-        }
-      },
-      [newStatus]: {
-        ...toState,
-        publications: updatedToPublications,
-        filteredPublications: PublicationFilters.filterByQuery(
-          updatedToPublications,
-          toState.currentSearchQuery
-        ),
-        isEmpty: false,
-        pagination: {
-          ...toState.pagination,
-          total: toState.pagination.total + 1
-        }
-      }
-    };
-  }
-}
 
 const publicationReducer = (state: State, action: Action): State => {
   switch (action.type) {
@@ -670,7 +300,7 @@ export const PublicationProvider: React.FC<{
       const { searchQuery = '' } = options;
 
       try {
-        ValidationUtils.validateUser(user);
+        ValidationService.validateUser(user);
 
         const currentState = state[status];
         if (currentState.isLoading) {
@@ -678,7 +308,7 @@ export const PublicationProvider: React.FC<{
           return;
         }
 
-        ValidationUtils.validatePaginationParams(
+        ValidationService.validatePaginationParams(
           CONFIG.INITIAL_PAGE,
           CONFIG.DEFAULT_PAGE_SIZE
         );
@@ -745,7 +375,7 @@ export const PublicationProvider: React.FC<{
   const loadMoreStatus = useCallback(
     async (status: PublicationStatus): Promise<void> => {
       try {
-        ValidationUtils.validateUser(user);
+        ValidationService.validateUser(user);
 
         const currentState = state[status];
         if (currentState.isLoadingMore || !currentState.pagination.hasNext) {
@@ -753,7 +383,7 @@ export const PublicationProvider: React.FC<{
         }
 
         const nextPage = currentState.pagination.page + 1;
-        ValidationUtils.validatePaginationParams(
+        ValidationService.validatePaginationParams(
           nextPage,
           CONFIG.DEFAULT_PAGE_SIZE
         );
@@ -789,7 +419,7 @@ export const PublicationProvider: React.FC<{
   const refreshStatus = useCallback(
     async (status: PublicationStatus): Promise<void> => {
       try {
-        ValidationUtils.validateUser(user);
+        ValidationService.validateUser(user);
 
         const currentState = state[status];
         if (currentState.isRefreshing) {
@@ -956,10 +586,7 @@ export const PublicationProvider: React.FC<{
         return false;
       }
 
-      return (
-        statusState.pagination.hasNext &&
-        !statusState.isLoadingMore
-      );
+      return statusState.pagination.hasNext && !statusState.isLoadingMore;
     },
     [state]
   );
