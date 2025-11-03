@@ -35,7 +35,7 @@ export class CatalogService {
   ): Promise<CatalogModelResponse> {
     this.validatePaginationParams(page, size);
 
-    this.logger.debug('Obteniendo todos los catálogos', { page, size });
+    this.logger.debug('Fetching all catalogs', { page, size });
 
     return this.errorHandler.handleWithRetry(
       () => this.catalogRepository.getAllCatalogs(page, size, signal),
@@ -52,7 +52,7 @@ export class CatalogService {
       'getCatalogByCommonName'
     );
 
-    this.logger.debug('Obteniendo catálogo por nombre común', { commonName });
+    this.logger.debug('Fetching catalog by common name', { commonName });
 
     return this.errorHandler.handleWithRetry(
       () => this.catalogRepository.getCatalogByCommonName(commonName),
@@ -65,7 +65,7 @@ export class CatalogService {
   async getCatalogById(catalogId: string): Promise<AnimalModelResponse> {
     this.validateId(catalogId, 'getCatalogById');
 
-    this.logger.debug('Obteniendo catálogo por ID', { catalogId });
+    this.logger.debug('Fetching catalog by ID', { catalogId });
 
     return this.errorHandler.handleWithRetry(
       () => this.catalogRepository.getCatalogById(catalogId),
@@ -80,7 +80,7 @@ export class CatalogService {
   ): Promise<AnimalCrudResponse> {
     this.validateCreateRequest(createAnimalRequest);
 
-    this.logger.debug('Creando catálogo', {
+    this.logger.debug('Creating catalog', {
       specie: createAnimalRequest.specie
     });
 
@@ -94,7 +94,7 @@ export class CatalogService {
       this.logger
     );
 
-    this.logger.info('Catálogo creado exitosamente', {
+    this.logger.info('Catalog created successfully', {
       specie: createAnimalRequest.specie
     });
 
@@ -106,7 +106,7 @@ export class CatalogService {
   ): Promise<AnimalCrudResponse> {
     this.validateUpdateRequest(updateAnimalRequest);
 
-    this.logger.debug('Actualizando catálogo', {
+    this.logger.debug('Updating catalog', {
       catalogId: updateAnimalRequest.catalogId
     });
 
@@ -120,7 +120,7 @@ export class CatalogService {
       this.logger
     );
 
-    this.logger.info('Catálogo actualizado exitosamente', {
+    this.logger.info('Catalog updated successfully', {
       catalogId: updateAnimalRequest.catalogId
     });
 
@@ -132,7 +132,7 @@ export class CatalogService {
   ): Promise<AnimalCrudResponse> {
     this.validateImageUpdateRequest(updateAnimalImageRequest);
 
-    this.logger.debug('Actualizando imagen de catálogo', {
+    this.logger.debug('Updating catalog image', {
       catalogId: updateAnimalImageRequest.catalogId
     });
 
@@ -146,7 +146,7 @@ export class CatalogService {
       this.logger
     );
 
-    this.logger.info('Imagen de catálogo actualizada exitosamente', {
+    this.logger.info('Catalog image updated successfully', {
       catalogId: updateAnimalImageRequest.catalogId
     });
 
@@ -156,7 +156,7 @@ export class CatalogService {
   async deleteCatalog(id: string): Promise<DeleteAnimalResponse> {
     this.validateId(id, 'deleteCatalog');
 
-    this.logger.debug('Eliminando catálogo', { id });
+    this.logger.debug('Deleting catalog', { id });
 
     const result = await this.errorHandler.handleWithRetry(
       () => this.catalogRepository.deleteCatalog(id),
@@ -165,7 +165,7 @@ export class CatalogService {
       this.logger
     );
 
-    this.logger.info('Catálogo eliminado exitosamente', { id });
+    this.logger.info('Catalog deleted successfully', { id });
 
     return result;
   }
@@ -173,7 +173,7 @@ export class CatalogService {
   async getLocations(catalogId: string): Promise<LocationResponse> {
     this.validateId(catalogId, 'getLocations');
 
-    this.logger.debug('Obteniendo ubicaciones', { catalogId });
+    this.logger.debug('Fetching locations', { catalogId });
 
     return this.errorHandler.handleWithRetry(
       () => this.catalogRepository.getLocations(catalogId),
@@ -186,7 +186,7 @@ export class CatalogService {
   async downloadAnimalSheet(catalogId: string): Promise<Blob> {
     this.validateId(catalogId, 'downloadAnimalSheet');
 
-    this.logger.debug('Descargando ficha de animal', { catalogId });
+    this.logger.debug('Downloading animal sheet', { catalogId });
 
     const result = await this.errorHandler.handleWithRetry(
       () => this.catalogRepository.downloadAnimalSheet(catalogId),
@@ -195,13 +195,13 @@ export class CatalogService {
       this.logger
     );
 
-    this.logger.info('Ficha descargada exitosamente', { catalogId });
+    this.logger.info('Animal sheet downloaded successfully', { catalogId });
 
     return result;
   }
 
   async getCommonNouns(): Promise<CommonNounResponse[]> {
-    this.logger.debug('Obteniendo nombres comunes');
+    this.logger.debug('Fetching common nouns');
 
     return this.errorHandler.handleWithRetry(
       () => this.catalogRepository.getCommonNouns(),

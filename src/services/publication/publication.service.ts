@@ -96,7 +96,7 @@ export class PublicationService {
   }
 
   async createPublication(publication: PublicationData): Promise<void> {
-    this.logger.debug('Creando publicación', { publication });
+    this.logger.debug('Creating publication', { publication });
 
     await this.errorHandler.handleWithRetry(
       async () => {
@@ -108,11 +108,11 @@ export class PublicationService {
       this.logger
     );
 
-    this.logger.info('Publicación creada exitosamente');
+    this.logger.info('Publication created successfully');
   }
 
   async getUserPublications(): Promise<PublicationsModel[]> {
-    this.logger.debug('Obteniendo publicaciones del usuario');
+    this.logger.debug('Fetching user publications');
 
     return this.errorHandler.handleWithRetry(
       () => this.repository.getUserPublications(),
@@ -123,7 +123,7 @@ export class PublicationService {
   }
 
   async getAllPublications(): Promise<PublicationsModel[]> {
-    this.logger.debug('Obteniendo todas las publicaciones');
+    this.logger.debug('Fetching all publications');
 
     return this.errorHandler.handleWithRetry(
       () => this.repository.getAllPublications(),
@@ -146,7 +146,7 @@ export class PublicationService {
       throw new Error(`Estado de publicación inválido: ${status}`);
     }
 
-    this.logger.debug('Obteniendo publicaciones por estado', {
+    this.logger.debug('Fetching publications by status', {
       status,
       page,
       size,
@@ -166,7 +166,7 @@ export class PublicationService {
   async getPublicationById(recordId: string): Promise<PublicationResponse> {
     this.validatePublicationId(recordId, 'getPublicationById');
 
-    this.logger.debug('Obteniendo publicación por ID', { recordId });
+    this.logger.debug('Fetching publication by ID', { recordId });
 
     return this.errorHandler.handleWithRetry(
       () => this.repository.getPublicationById(recordId),
@@ -180,15 +180,15 @@ export class PublicationService {
     this.validatePublicationId(publicationId, 'acceptPublication');
 
     try {
-      this.logger.debug('Aceptando publicación', { publicationId });
+      this.logger.debug('Accepting publication', { publicationId });
       await this.repository.acceptPublication(publicationId);
 
       this.invalidateCountsCache();
       this.onCacheInvalidate?.();
 
-      this.logger.info('Publicación aceptada exitosamente', { publicationId });
+      this.logger.info('Publication accepted successfully', { publicationId });
     } catch (error) {
-      this.logger.error('Error al aceptar publicación', error as Error, {
+      this.logger.error('Error accepting publication', error as Error, {
         publicationId
       });
       throw error;
@@ -202,18 +202,18 @@ export class PublicationService {
     this.validatePublicationId(publicationId, 'rejectPublication');
 
     try {
-      this.logger.debug('Rechazando publicación', { publicationId, reason });
+      this.logger.debug('Rejecting publication', { publicationId, reason });
       await this.repository.rejectPublication(publicationId, reason);
 
       this.invalidateCountsCache();
       this.onCacheInvalidate?.();
 
-      this.logger.info('Publicación rechazada exitosamente', {
+      this.logger.info('Publication rejected successfully', {
         publicationId,
         reason
       });
     } catch (error) {
-      this.logger.error('Error al rechazar publicación', error as Error, {
+      this.logger.error('Error rejecting publication', error as Error, {
         publicationId
       });
       throw error;
@@ -222,11 +222,11 @@ export class PublicationService {
 
   async getCounts(): Promise<CountsResponse> {
     if (this.isCacheValid()) {
-      this.logger.debug('Retornando conteos desde cache');
+      this.logger.debug('Returning counts from cache');
       return this.countsCache!.data;
     }
 
-    this.logger.debug('Obteniendo conteos desde repositorio');
+    this.logger.debug('Fetching counts from repository');
 
     const counts = await this.errorHandler.handleWithRetry(
       () => this.repository.getCounts(),
@@ -322,7 +322,7 @@ export class PublicationService {
 
   private invalidateCountsCache(): void {
     this.countsCache = null;
-    this.logger.debug('Cache de conteos invalidado');
+    this.logger.debug('Counts cache invalidated');
   }
 }
 
