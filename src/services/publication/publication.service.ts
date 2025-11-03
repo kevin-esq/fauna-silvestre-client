@@ -31,12 +31,18 @@ interface CacheEntry<T> {
 }
 
 export class PublicationService {
+  // Configuration constants
+  private static readonly DEFAULT_BATCH_SIZE = 5;
+  private static readonly MAX_PAGE_SIZE = 100;
+  private static readonly MIN_PAGE_SIZE = 1;
+  private static readonly MIN_PAGE_NUMBER = 1;
+  private static readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
   private readonly repository: IPublicationRepository;
   private readonly logger: ConsoleLogger;
-  private onCacheInvalidate?: (() => void) | null;
+  private onCacheInvalidate?: () => void;
 
   private countsCache: CacheEntry<CountsResponse> | null = null;
-  private readonly CACHE_TTL = 5 * 60 * 1000;
 
   private readonly statusHandlers = new Map<
     PublicationStatus,
@@ -75,14 +81,14 @@ export class PublicationService {
   ]);
 
   constructor(apiService: ApiService) {
+    this.logger = new ConsoleLogger();
     this.repository = new PublicationRepository(
       apiService.client,
-      new ConsoleLogger()
+      this.logger
     );
-    this.logger = new ConsoleLogger();
   }
 
-  setOnCacheInvalidate(callback: (() => void) | null) {
+  setOnCacheInvalidate(callback?: () => void) {
     this.onCacheInvalidate = callback;
   }
 
@@ -96,7 +102,7 @@ export class PublicationService {
       this.logger.info('Publicación creada exitosamente');
     } catch (error) {
       this.logger.error('Error al crear publicación', error as Error);
-      throw new Error('No se pudo crear la publicación');
+      throw error;
     }
   }
 
@@ -109,7 +115,7 @@ export class PublicationService {
         'Error al obtener publicaciones del usuario',
         error as Error
       );
-      throw new Error('No se pudieron obtener las publicaciones del usuario');
+      throw error;
     }
   }
 
@@ -122,7 +128,7 @@ export class PublicationService {
         'Error al obtener todas las publicaciones',
         error as Error
       );
-      throw new Error('No se pudieron obtener las publicaciones');
+      throw error;
     }
   }
 
@@ -160,16 +166,12 @@ export class PublicationService {
           forAdmin
         }
       );
-      throw new Error(
-        `No se pudieron obtener las publicaciones con estado ${status}`
-      );
+      throw error;
     }
   }
 
   async getPublicationById(recordId: string): Promise<PublicationResponse> {
-    if (!recordId?.trim()) {
-      throw new Error('ID de publicación es requerido');
-    }
+    this.validatePublicationId(recordId, 'getPublicationById');
 
     try {
       this.logger.debug('Obteniendo publicación por ID', { recordId });
@@ -178,21 +180,18 @@ export class PublicationService {
       this.logger.error('Error al obtener publicación por ID', error as Error, {
         recordId
       });
-      throw new Error(`No se pudo obtener la publicación con ID: ${recordId}`);
+      throw error;
     }
   }
 
   async acceptPublication(publicationId: string): Promise<void> {
-    if (!publicationId?.trim()) {
-      throw new Error('ID de publicación es requerido');
-    }
+    this.validatePublicationId(publicationId, 'acceptPublication');
 
     try {
       this.logger.debug('Aceptando publicación', { publicationId });
       await this.repository.acceptPublication(publicationId);
 
       this.invalidateCountsCache();
-
       this.onCacheInvalidate?.();
 
       this.logger.info('Publicación aceptada exitosamente', { publicationId });
@@ -208,16 +207,13 @@ export class PublicationService {
     publicationId: string,
     reason?: string
   ): Promise<void> {
-    if (!publicationId?.trim()) {
-      throw new Error('ID de publicación es requerido');
-    }
+    this.validatePublicationId(publicationId, 'rejectPublication');
 
     try {
       this.logger.debug('Rechazando publicación', { publicationId, reason });
       await this.repository.rejectPublication(publicationId, reason);
 
       this.invalidateCountsCache();
-
       this.onCacheInvalidate?.();
 
       this.logger.info('Publicación rechazada exitosamente', {
@@ -245,13 +241,13 @@ export class PublicationService {
       this.countsCache = {
         data: counts,
         timestamp: Date.now(),
-        ttl: this.CACHE_TTL
+        ttl: PublicationService.CACHE_TTL_MS
       };
 
       return counts;
     } catch (error) {
-      this.logger.debug('Error al obtener conteos', error as Error);
-      throw new Error('No se pudieron obtener los conteos');
+      this.logger.error('Error al obtener conteos', error as Error);
+      throw error;
     }
   }
 
@@ -261,17 +257,16 @@ export class PublicationService {
   ): Promise<{ success: string[]; failed: string[] }> {
     const results = { success: [] as string[], failed: [] as string[] };
 
-    const BATCH_SIZE = 5;
-    for (let i = 0; i < publicationIds.length; i += BATCH_SIZE) {
-      const batch = publicationIds.slice(i, i + BATCH_SIZE);
+    const actionHandler = action === 'accept'
+      ? (id: string) => this.acceptPublication(id)
+      : (id: string) => this.rejectPublication(id);
+
+    for (let i = 0; i < publicationIds.length; i += PublicationService.DEFAULT_BATCH_SIZE) {
+      const batch = publicationIds.slice(i, i + PublicationService.DEFAULT_BATCH_SIZE);
 
       const promises = batch.map(async id => {
         try {
-          if (action === 'accept') {
-            await this.acceptPublication(id);
-          } else {
-            await this.rejectPublication(id);
-          }
+          await actionHandler(id);
           return { id, success: true };
         } catch (error) {
           this.logger.error(
@@ -293,15 +288,35 @@ export class PublicationService {
       });
     }
 
+    // Invalidate cache if any operations succeeded
+    if (results.success.length > 0) {
+      this.invalidateCountsCache();
+      this.onCacheInvalidate?.();
+    }
+
     return results;
   }
 
   private validatePaginationParams(page: number, size: number): void {
-    if (!Number.isInteger(page) || page < 1) {
-      throw new Error('El número de página debe ser un entero mayor a 0');
+    if (!Number.isInteger(page) || page < PublicationService.MIN_PAGE_NUMBER) {
+      throw new Error(
+        `El número de página debe ser un entero mayor o igual a ${PublicationService.MIN_PAGE_NUMBER}`
+      );
     }
-    if (!Number.isInteger(size) || size < 1 || size > 100) {
-      throw new Error('El límite debe ser un entero entre 1 y 100');
+    if (
+      !Number.isInteger(size) ||
+      size < PublicationService.MIN_PAGE_SIZE ||
+      size > PublicationService.MAX_PAGE_SIZE
+    ) {
+      throw new Error(
+        `El límite debe ser un entero entre ${PublicationService.MIN_PAGE_SIZE} y ${PublicationService.MAX_PAGE_SIZE}`
+      );
+    }
+  }
+
+  private validatePublicationId(id: string, context: string): void {
+    if (!id?.trim()) {
+      throw new Error(`ID de publicación es requerido para ${context}`);
     }
   }
 
@@ -319,7 +334,7 @@ export class PublicationService {
 }
 
 export class PublicationServiceFactory {
-  private static instance: PublicationService | null = null;
+  private static instance: PublicationService;
 
   static getInstance(): PublicationService {
     if (!this.instance) {
@@ -329,11 +344,9 @@ export class PublicationServiceFactory {
     return this.instance;
   }
 
-  static createInstance(apiService?: ApiService): PublicationService {
-    if (apiService) {
-      return new PublicationService(apiService);
-    }
-    return this.getInstance();
+  static resetInstance(): void {
+    // @ts-expect-error - Allow reset for testing purposes
+    this.instance = undefined;
   }
 }
 

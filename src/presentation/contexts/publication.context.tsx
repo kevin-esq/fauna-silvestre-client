@@ -732,7 +732,7 @@ export const PublicationProvider: React.FC<{
     }
 
     return () => {
-      publicationService.setOnCacheInvalidate(null);
+      publicationService.setOnCacheInvalidate(undefined);
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
