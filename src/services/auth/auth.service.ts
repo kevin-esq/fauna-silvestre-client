@@ -31,11 +31,19 @@ interface AuthServiceDependencies {
 
 export class AuthService implements IAuthService {
   private static instance: AuthService;
-  private readonly MIN_PASSWORD_LENGTH = 8;
+
+  // Configuration constants
+  private static readonly MIN_PASSWORD_LENGTH = 8;
+  private static readonly MIN_USERNAME_LENGTH = 3;
+  private static readonly MAX_USERNAME_LENGTH = 50;
+  private static readonly TOKEN_REFRESH_BUFFER_SECONDS = 300; // 5 minutes
+  private static readonly LOGOUT_DEBOUNCE_MS = 1000;
+  private static readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   private onUnauthorizedCallback: (() => void) | null = null;
   private onClearUserDataCallback: (() => void) | null = null;
   private isRefreshing = false;
+  private refreshPromise: Promise<string> | null = null;
 
   private constructor(
     private readonly api: AxiosInstance,
@@ -66,10 +74,6 @@ export class AuthService implements IAuthService {
   }
 
   private initializeEventListeners(): void {
-    authEventEmitter.on(
-      AuthEvents.USER_SIGNED_IN,
-      this.handleUserSignedIn.bind(this)
-    );
     authEventEmitter.on(
       AuthEvents.USER_SIGNED_OUT,
       this.handleUserSignedOut.bind(this)
@@ -196,22 +200,19 @@ export class AuthService implements IAuthService {
     );
 
     try {
-      this.api.defaults.headers.common['Authorization'] =
-        `Bearer ${sanitizedToken}`;
       const response = await this.api.post<ChangePasswordResponse>(
         '/Authentication/change-password',
         {
           email: sanitizedEmail,
           password: sanitizedPassword
+        },
+        {
+          headers: { Authorization: `Bearer ${sanitizedToken}` }
         }
       );
 
-      delete this.api.defaults.headers.common['Authorization'];
-
       this.validateApiResponse(response.data, 'Error al cambiar contraseña');
     } catch (error) {
-      delete this.api.defaults.headers.common['Authorization'];
-
       this.logger.error('[AuthService] Change password failed');
       throw AuthErrorMapper.map(error);
     }
@@ -226,6 +227,22 @@ export class AuthService implements IAuthService {
       throw new AuthError('Token de actualización inválido');
     }
 
+    // Prevent multiple simultaneous refresh requests
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.refreshPromise = this.performTokenRefresh(refreshToken);
+
+    try {
+      const result = await this.refreshPromise;
+      return result;
+    } finally {
+      this.refreshPromise = null;
+    }
+  }
+
+  private async performTokenRefresh(refreshToken: string): Promise<string> {
     try {
       const response = await this.api.post('/Authentication/refresh-token', {
         refreshToken: refreshToken.trim()
@@ -296,7 +313,10 @@ export class AuthService implements IAuthService {
     if (!this.isRefreshing) {
       this.isRefreshing = true;
       authEventEmitter.emit(AuthEvents.USER_SIGNED_OUT);
-      setTimeout(() => (this.isRefreshing = false), 1000);
+      setTimeout(
+        () => (this.isRefreshing = false),
+        AuthService.LOGOUT_DEBOUNCE_MS
+      );
     }
   }
 
@@ -324,13 +344,13 @@ export class AuthService implements IAuthService {
       throw new AuthError('Usuario y contraseña son requeridos');
     }
 
-    if (credentials.UserName.length < 3) {
+    if (credentials.UserName.length < AuthService.MIN_USERNAME_LENGTH) {
       throw new AuthError(
-        'El nombre de usuario debe tener al menos 3 caracteres'
+        `El nombre de usuario debe tener al menos ${AuthService.MIN_USERNAME_LENGTH} caracteres`
       );
     }
 
-    if (credentials.UserName.length > 50) {
+    if (credentials.UserName.length > AuthService.MAX_USERNAME_LENGTH) {
       throw new AuthError('El nombre de usuario es demasiado largo');
     }
   }
@@ -346,14 +366,13 @@ export class AuthService implements IAuthService {
       throw new AuthError('El correo electrónico es requerido');
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(userData.email)) {
+    if (!AuthService.EMAIL_REGEX.test(userData.email)) {
       throw new AuthError('El formato del correo electrónico no es válido');
     }
 
-    if (userData.userName.length < 3) {
+    if (userData.userName.length < AuthService.MIN_USERNAME_LENGTH) {
       throw new AuthError(
-        'El nombre de usuario debe tener al menos 3 caracteres'
+        `El nombre de usuario debe tener al menos ${AuthService.MIN_USERNAME_LENGTH} caracteres`
       );
     }
 
@@ -367,9 +386,9 @@ export class AuthService implements IAuthService {
   }
 
   private validatePasswordStrength(password: string): void {
-    if (password.length < this.MIN_PASSWORD_LENGTH) {
+    if (password.length < AuthService.MIN_PASSWORD_LENGTH) {
       throw new AuthError(
-        `La contraseña debe tener al menos ${this.MIN_PASSWORD_LENGTH} caracteres`
+        `La contraseña debe tener al menos ${AuthService.MIN_PASSWORD_LENGTH} caracteres`
       );
     }
 
@@ -390,8 +409,7 @@ export class AuthService implements IAuthService {
       throw new AuthError('El correo electrónico es requerido');
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+    if (!AuthService.EMAIL_REGEX.test(email.trim())) {
       throw new AuthError('El formato del correo electrónico no es válido');
     }
   }
@@ -525,39 +543,12 @@ export class AuthService implements IAuthService {
     }
   }
 
-  private getErrorDetails(error: unknown): Error {
-    if (error instanceof Error) {
-      return error;
-    }
-
-    if (error && typeof error === 'object' && 'message' in error) {
-      return new Error(String(error.message));
-    }
-
-    return new Error('Unknown error occurred');
-  }
-
   private async handleUserSignedOut(): Promise<void> {
     try {
       await this.tokenService.clearTokens();
       await this.clearUserData();
     } catch {
       this.logger.error('[AuthService] Error handling user sign out');
-    }
-  }
-
-  private handleUserSignedIn(): void {
-    authEventEmitter.off(
-      AuthEvents.USER_SIGNED_IN,
-      this.handleUserSignedIn.bind(this)
-    );
-  }
-
-  private async handleUnauthorized(): Promise<void> {
-    try {
-      authEventEmitter.emit(AuthEvents.USER_SIGNED_OUT);
-    } catch {
-      this.logger.error('[AuthService] Error handling unauthorized');
     }
   }
 }

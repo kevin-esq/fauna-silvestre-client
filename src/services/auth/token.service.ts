@@ -4,7 +4,10 @@ import { AuthError } from '@/shared/errors/custom-errors';
 import { decodeJwt } from '@/shared/utils/jwt';
 import User from '@/domain/entities/user.entity';
 import { UserModel } from '@/data/models/UserModel';
-import { REFRESH_TOKEN_KEY, ACCESS_TOKEN_KEY } from '@/services/storage/storage-keys';
+import {
+  REFRESH_TOKEN_KEY,
+  ACCESS_TOKEN_KEY
+} from '@/services/storage/storage-keys';
 import { AxiosInstance } from 'axios';
 import { ILogger } from '@/services/logging/ILogger';
 
@@ -60,6 +63,7 @@ export class TokenService implements ITokenService {
     try {
       const payload = decodeJwt(token);
       const currentTime = Math.floor(Date.now() / 1000);
+      // 300 seconds (5 minutes) buffer before actual expiration
       return payload.exp < currentTime + 300;
     } catch (error) {
       this.logger.error(
