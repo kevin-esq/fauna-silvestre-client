@@ -3,6 +3,7 @@ import Animal from '@/domain/entities/animal.entity';
 import { ApiService } from '@/services/http/api.service';
 import { CatalogRepository } from '@/data/repositories/catalog.repository';
 import { ConsoleLogger } from '@/services/logging/console-logger';
+import { ErrorHandlingService } from '@/services/error-handling';
 import {
   CatalogModelResponse,
   LocationResponse,
@@ -23,7 +24,8 @@ export class CatalogService {
 
   constructor(
     private readonly catalogRepository: ICatalogRepository,
-    private readonly logger: ConsoleLogger
+    private readonly logger: ConsoleLogger,
+    private readonly errorHandler: ErrorHandlingService
   ) {}
 
   async getAllCatalogs(
@@ -33,50 +35,44 @@ export class CatalogService {
   ): Promise<CatalogModelResponse> {
     this.validatePaginationParams(page, size);
 
-    try {
-      this.logger.debug('Obteniendo todos los catálogos', { page, size });
-      return await this.catalogRepository.getAllCatalogs(page, size, signal);
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        this.logger.debug('Request cancelado por el usuario');
-        throw error;
-      }
-      this.logger.error('Error al obtener catálogos', error as Error, {
-        page,
-        size
-      });
-      throw error;
-    }
+    this.logger.debug('Obteniendo todos los catálogos', { page, size });
+
+    return this.errorHandler.handleWithRetry(
+      () => this.catalogRepository.getAllCatalogs(page, size, signal),
+      { operation: 'getAllCatalogs', params: { page, size } },
+      { maxAttempts: 2 },
+      this.logger
+    );
   }
 
   async getCatalogByCommonName(commonName: string): Promise<Animal> {
-    this.validateNonEmptyString(commonName, 'commonName', 'getCatalogByCommonName');
+    this.validateNonEmptyString(
+      commonName,
+      'commonName',
+      'getCatalogByCommonName'
+    );
 
-    try {
-      this.logger.debug('Obteniendo catálogo por nombre común', { commonName });
-      return await this.catalogRepository.getCatalogByCommonName(commonName);
-    } catch (error) {
-      this.logger.error(
-        'Error al obtener catálogo por nombre común',
-        error as Error,
-        { commonName }
-      );
-      throw error;
-    }
+    this.logger.debug('Obteniendo catálogo por nombre común', { commonName });
+
+    return this.errorHandler.handleWithRetry(
+      () => this.catalogRepository.getCatalogByCommonName(commonName),
+      { operation: 'getCatalogByCommonName', params: { commonName } },
+      { maxAttempts: 2 },
+      this.logger
+    );
   }
 
   async getCatalogById(catalogId: string): Promise<AnimalModelResponse> {
     this.validateId(catalogId, 'getCatalogById');
 
-    try {
-      this.logger.debug('Obteniendo catálogo por ID', { catalogId });
-      return await this.catalogRepository.getCatalogById(catalogId);
-    } catch (error) {
-      this.logger.error('Error al obtener catálogo por ID', error as Error, {
-        catalogId
-      });
-      throw error;
-    }
+    this.logger.debug('Obteniendo catálogo por ID', { catalogId });
+
+    return this.errorHandler.handleWithRetry(
+      () => this.catalogRepository.getCatalogById(catalogId),
+      { operation: 'getCatalogById', params: { catalogId } },
+      { maxAttempts: 2 },
+      this.logger
+    );
   }
 
   async createCatalog(
@@ -84,21 +80,25 @@ export class CatalogService {
   ): Promise<AnimalCrudResponse> {
     this.validateCreateRequest(createAnimalRequest);
 
-    try {
-      this.logger.debug('Creando catálogo', {
-        specie: createAnimalRequest.specie
-      });
-      const result = await this.catalogRepository.createCatalog(createAnimalRequest);
-      this.logger.info('Catálogo creado exitosamente', {
-        specie: createAnimalRequest.specie
-      });
-      return result;
-    } catch (error) {
-      this.logger.error('Error al crear catálogo', error as Error, {
-        specie: createAnimalRequest.specie
-      });
-      throw error;
-    }
+    this.logger.debug('Creando catálogo', {
+      specie: createAnimalRequest.specie
+    });
+
+    const result = await this.errorHandler.handleWithRetry(
+      () => this.catalogRepository.createCatalog(createAnimalRequest),
+      {
+        operation: 'createCatalog',
+        params: { specie: createAnimalRequest.specie }
+      },
+      { maxAttempts: 1 }, // No retry for mutations
+      this.logger
+    );
+
+    this.logger.info('Catálogo creado exitosamente', {
+      specie: createAnimalRequest.specie
+    });
+
+    return result;
   }
 
   async updateCatalog(
@@ -106,21 +106,25 @@ export class CatalogService {
   ): Promise<AnimalCrudResponse> {
     this.validateUpdateRequest(updateAnimalRequest);
 
-    try {
-      this.logger.debug('Actualizando catálogo', {
-        catalogId: updateAnimalRequest.catalogId
-      });
-      const result = await this.catalogRepository.updateCatalog(updateAnimalRequest);
-      this.logger.info('Catálogo actualizado exitosamente', {
-        catalogId: updateAnimalRequest.catalogId
-      });
-      return result;
-    } catch (error) {
-      this.logger.error('Error al actualizar catálogo', error as Error, {
-        catalogId: updateAnimalRequest.catalogId
-      });
-      throw error;
-    }
+    this.logger.debug('Actualizando catálogo', {
+      catalogId: updateAnimalRequest.catalogId
+    });
+
+    const result = await this.errorHandler.handleWithRetry(
+      () => this.catalogRepository.updateCatalog(updateAnimalRequest),
+      {
+        operation: 'updateCatalog',
+        params: { catalogId: updateAnimalRequest.catalogId }
+      },
+      { maxAttempts: 1 },
+      this.logger
+    );
+
+    this.logger.info('Catálogo actualizado exitosamente', {
+      catalogId: updateAnimalRequest.catalogId
+    });
+
+    return result;
   }
 
   async updateCatalogImage(
@@ -128,79 +132,83 @@ export class CatalogService {
   ): Promise<AnimalCrudResponse> {
     this.validateImageUpdateRequest(updateAnimalImageRequest);
 
-    try {
-      this.logger.debug('Actualizando imagen de catálogo', {
-        catalogId: updateAnimalImageRequest.catalogId
-      });
-      const result = await this.catalogRepository.updateCatalogImage(
-        updateAnimalImageRequest
-      );
-      this.logger.info('Imagen de catálogo actualizada exitosamente', {
-        catalogId: updateAnimalImageRequest.catalogId
-      });
-      return result;
-    } catch (error) {
-      this.logger.error(
-        'Error al actualizar imagen de catálogo',
-        error as Error,
-        { catalogId: updateAnimalImageRequest.catalogId }
-      );
-      throw error;
-    }
+    this.logger.debug('Actualizando imagen de catálogo', {
+      catalogId: updateAnimalImageRequest.catalogId
+    });
+
+    const result = await this.errorHandler.handleWithRetry(
+      () => this.catalogRepository.updateCatalogImage(updateAnimalImageRequest),
+      {
+        operation: 'updateCatalogImage',
+        params: { catalogId: updateAnimalImageRequest.catalogId }
+      },
+      { maxAttempts: 1 },
+      this.logger
+    );
+
+    this.logger.info('Imagen de catálogo actualizada exitosamente', {
+      catalogId: updateAnimalImageRequest.catalogId
+    });
+
+    return result;
   }
 
   async deleteCatalog(id: string): Promise<DeleteAnimalResponse> {
     this.validateId(id, 'deleteCatalog');
 
-    try {
-      this.logger.debug('Eliminando catálogo', { id });
-      const result = await this.catalogRepository.deleteCatalog(id);
-      this.logger.info('Catálogo eliminado exitosamente', { id });
-      return result;
-    } catch (error) {
-      this.logger.error('Error al eliminar catálogo', error as Error, { id });
-      throw error;
-    }
+    this.logger.debug('Eliminando catálogo', { id });
+
+    const result = await this.errorHandler.handleWithRetry(
+      () => this.catalogRepository.deleteCatalog(id),
+      { operation: 'deleteCatalog', params: { id } },
+      { maxAttempts: 1 },
+      this.logger
+    );
+
+    this.logger.info('Catálogo eliminado exitosamente', { id });
+
+    return result;
   }
 
   async getLocations(catalogId: string): Promise<LocationResponse> {
     this.validateId(catalogId, 'getLocations');
 
-    try {
-      this.logger.debug('Obteniendo ubicaciones', { catalogId });
-      return await this.catalogRepository.getLocations(catalogId);
-    } catch (error) {
-      this.logger.error('Error al obtener ubicaciones', error as Error, {
-        catalogId
-      });
-      throw error;
-    }
+    this.logger.debug('Obteniendo ubicaciones', { catalogId });
+
+    return this.errorHandler.handleWithRetry(
+      () => this.catalogRepository.getLocations(catalogId),
+      { operation: 'getLocations', params: { catalogId } },
+      { maxAttempts: 2 },
+      this.logger
+    );
   }
 
   async downloadAnimalSheet(catalogId: string): Promise<Blob> {
     this.validateId(catalogId, 'downloadAnimalSheet');
 
-    try {
-      this.logger.debug('Descargando ficha de animal', { catalogId });
-      const result = await this.catalogRepository.downloadAnimalSheet(catalogId);
-      this.logger.info('Ficha descargada exitosamente', { catalogId });
-      return result;
-    } catch (error) {
-      this.logger.error('Error al descargar ficha', error as Error, {
-        catalogId
-      });
-      throw error;
-    }
+    this.logger.debug('Descargando ficha de animal', { catalogId });
+
+    const result = await this.errorHandler.handleWithRetry(
+      () => this.catalogRepository.downloadAnimalSheet(catalogId),
+      { operation: 'downloadAnimalSheet', params: { catalogId } },
+      { maxAttempts: 2 },
+      this.logger
+    );
+
+    this.logger.info('Ficha descargada exitosamente', { catalogId });
+
+    return result;
   }
 
   async getCommonNouns(): Promise<CommonNounResponse[]> {
-    try {
-      this.logger.debug('Obteniendo nombres comunes');
-      return await this.catalogRepository.getCommonNouns();
-    } catch (error) {
-      this.logger.error('Error al obtener nombres comunes', error as Error);
-      throw error;
-    }
+    this.logger.debug('Obteniendo nombres comunes');
+
+    return this.errorHandler.handleWithRetry(
+      () => this.catalogRepository.getCommonNouns(),
+      { operation: 'getCommonNouns' },
+      { maxAttempts: 2 },
+      this.logger
+    );
   }
 
   // Validation methods
@@ -277,11 +285,16 @@ export class CatalogServiceFactory {
   static getInstance(): CatalogService {
     if (!this.instance) {
       const logger = new ConsoleLogger('debug');
+      const errorHandler = new ErrorHandlingService();
       const catalogRepository = new CatalogRepository(
         ApiService.getInstance().client,
         logger
       );
-      this.instance = new CatalogService(catalogRepository, logger);
+      this.instance = new CatalogService(
+        catalogRepository,
+        logger,
+        errorHandler
+      );
     }
     return this.instance;
   }
