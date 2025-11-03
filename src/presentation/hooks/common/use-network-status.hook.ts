@@ -20,6 +20,8 @@ export const useNetworkStatus = () => {
   });
 
   useEffect(() => {
+    let previousIsConnected: boolean | null = null;
+
     const unsubscribe = NetInfo.addEventListener(state => {
       const isConnected = state.isConnected ?? false;
       const isInternetReachable = state.isInternetReachable;
@@ -34,9 +36,13 @@ export const useNetworkStatus = () => {
 
       setNetworkStatus(status);
 
-      logger.info(
-        `Network status changed: ${status.isConnected ? 'Online' : 'Offline'}`
-      );
+      // Only log when connection status actually changes
+      if (previousIsConnected !== null && previousIsConnected !== isConnected) {
+        logger.info(
+          `Network status changed: ${status.isConnected ? 'Online' : 'Offline'}`
+        );
+      }
+      previousIsConnected = isConnected;
     });
 
     NetInfo.fetch().then(state => {

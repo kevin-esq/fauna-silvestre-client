@@ -108,40 +108,25 @@ const useRoleValidation = () => {
 
 const useNavigationState = () => {
   const { status } = useApiStatus();
-  const { isAuthenticated, initializing, user } = useAuth();
+  const { isAuthenticated, initializing } = useAuth();
   const { role, isValidRole: hasValidRole } = useRoleValidation();
   const { isOffline } = useNetworkStatus();
 
   return useMemo(() => {
-    console.log('[Navigation] State:', {
-      status,
-      initializing,
-      isAuthenticated,
-      isOffline,
-      hasUser: !!user,
-      role
-    });
-
     if (status === 'BOOTING' || initializing) {
-      console.log('[Navigation] -> splash (booting/initializing)');
       return 'splash';
     }
 
     if (isOffline) {
-      console.log('[Navigation] -> offline (offline + has user)');
       return 'offline';
     }
 
     if (status === 'AUTHENTICATING' || status === 'UNAUTHENTICATED') {
-      console.log('[Navigation] -> auth (authenticating/unauthenticated)');
       return 'auth';
     }
     if (status === 'AUTHENTICATED' && isAuthenticated && hasValidRole) {
-      const navState = role === 'Admin' ? 'admin' : 'user';
-      console.log(`[Navigation] -> ${navState} (authenticated)`);
-      return navState;
+      return role === 'Admin' ? 'admin' : 'user';
     }
-    console.log('[Navigation] -> splash (fallback)');
     return 'splash';
   }, [
     status,
@@ -149,8 +134,7 @@ const useNavigationState = () => {
     isAuthenticated,
     hasValidRole,
     role,
-    isOffline,
-    user
+    isOffline
   ]);
 };
 

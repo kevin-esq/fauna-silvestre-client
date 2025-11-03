@@ -25,8 +25,6 @@ const ErrorMessage: React.FC<FeedbackMessageProps> = ({
     }).start();
   }, [message, opacity]);
 
-  console.log('[ErrorMessage] Received message:', message);
-
   if (!message) {
     return null;
   }
