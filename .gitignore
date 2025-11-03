@@ -89,3 +89,22 @@ yarn-error.log
 
 
 android/app/src/main/res/values/strings.xml
+
+# Editor temporary and backup files
+# Vim
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Backup files
+*.backup
+*.backup.*
+*.bak
+*.old
