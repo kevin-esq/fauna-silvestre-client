@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState
 } from 'react';
+import { useDebounce } from '@/presentation/hooks/utils/use-debounce.hook';
 import {
   View,
   FlatList,
@@ -28,34 +29,6 @@ import { useCatalog } from '@/presentation/contexts/catalog.context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SEARCH_DEBOUNCE_DELAY = 300;
-
-const useSearchDebounce = (
-  value: string,
-  delay: number = SEARCH_DEBOUNCE_DELAY
-) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    const normalizedValue = value.trim().toLowerCase();
-
-    timeoutRef.current = setTimeout(() => {
-      setDebouncedValue(normalizedValue);
-    }, delay);
-
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-};
 
 const normalizeString = (str: string): string => {
   if (!str) return '';
@@ -90,7 +63,8 @@ const CatalogAnimalsScreen = () => {
   const insets = useSafeAreaInsets();
 
   const [searchInput, setSearchInput] = useState('');
-  const searchQuery = useSearchDebounce(searchInput, SEARCH_DEBOUNCE_DELAY);
+  const normalizedInput = searchInput.trim().toLowerCase();
+  const searchQuery = useDebounce(normalizedInput, SEARCH_DEBOUNCE_DELAY);
   const flatListRef = useRef<FlatList>(null);
   const hasInitiallyLoaded = useRef(false);
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useDebounce } from '../utils/use-debounce.hook';
 import { catalogService } from '@/services/catalog/catalog.service';
 import {
   AnimalModelResponse,
@@ -63,7 +64,6 @@ const DEFAULT_PAGE_SIZE = 10;
 export const useCatalogManagement = (): CatalogManagementReturn => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const stateRef = useRef<CatalogManagementState>(null);
-  const searchTimeoutRef = useRef<number | null>(null);
 
   const [state, setState] = useState<CatalogManagementState>({
     animals: [],
@@ -86,14 +86,13 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
     stateRef.current = state;
   }, [state]);
 
+  // Debounce search query with 300ms delay
+  const debouncedSearch = useDebounce(state.inputValue, 300);
+
   const cleanup = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
-    }
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
     }
   }, []);
 
@@ -163,15 +162,12 @@ export const useCatalogManagement = (): CatalogManagementReturn => {
 
   const searchAnimals = useCallback((query: string) => {
     setState(prev => ({ ...prev, inputValue: query }));
-
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      setState(prev => ({ ...prev, searchQuery: query }));
-    }, 300);
   }, []);
+
+  // Update searchQuery when debounced value changes
+  useEffect(() => {
+    setState(prev => ({ ...prev, searchQuery: debouncedSearch }));
+  }, [debouncedSearch]);
 
   const filterByCategory = useCallback((category: string) => {
     setState(prev => ({ ...prev, selectedCategory: category }));
