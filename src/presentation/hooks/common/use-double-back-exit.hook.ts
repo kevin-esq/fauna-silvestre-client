@@ -60,9 +60,10 @@ export const useBackHandler = (options: BackHandlerOptions = {}) => {
   optionsRef.current = options;
 
   useEffect(() => {
+    const timeoutId = timeoutRef.current;
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
   }, []);
