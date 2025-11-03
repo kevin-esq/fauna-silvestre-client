@@ -37,7 +37,6 @@ export type RootStackParamList = {
   OfflineHome: undefined;
   DownloadedFiles: { justDownloadedId?: string };
   Drafts: undefined;
-  DraftEditor: { draftId: string };
   UserProfile: undefined;
   UserSettings: {
     userId: string;
@@ -155,8 +154,4 @@ export type UserDetailsScreenProps = NativeStackScreenProps<
 export type DraftsScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'Drafts'
->;
-export type DraftEditorScreenProps = NativeStackScreenProps<
-  RootStackParamList,
-  'DraftEditor'
 >;

@@ -9,7 +9,6 @@ import HomeScreen from '../screens/home/home-screen';
 import PublicationScreen from '../screens/publication/publication-screen';
 import ReviewPublicationsScreen from '../screens/admin/review-publications-screen';
 import CatalogManagementScreen from '../screens/admin/catalog-management-screen';
-//import NotificationsScreen from '../screens/notifications/notifications-screen';
 import { ParamListBase } from '@react-navigation/native';
 
 type TabConfig<ParamList extends ParamListBase> = {
